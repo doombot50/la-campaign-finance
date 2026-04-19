@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+"""
+Louisiana Politician Party Lookup Builder
+==========================================
+Fetches Louisiana candidate data from the FEC API (federal races),
+supplements with a curated list of state-level officials (Governor,
+Legislature, statewide offices) since 2010, and writes the result to
+la_politicians_lookup.json for use by la_ethics_server.py.
+
+Usage:
+    python build_politician_lookup.py [--api-key YOUR_FEC_KEY]
+
+Requires no third-party packages (stdlib only).
+"""
+
+import urllib.request, urllib.parse, json, re, argparse, time, sys, os
+
+OUT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'la_politicians_lookup.json')
+
+# ── FEC config ─────────────────────────────────────────────────────────────────
+FEC_BASE = 'https://api.open.fec.gov/v1'
+DEFAULT_KEY = '9xkMNTQ7N9DP3bjyxyE29K40Xfji7ikIGJ4XsZxD'
+
+PARTY_MAP = {
+    'DEM': 'DEM', 'REP': 'REP',
+    'DEMOCRATIC PARTY': 'DEM', 'REPUBLICAN PARTY': 'REP',
+    'D': 'DEM', 'R': 'REP',
+}
+
+def normalize(name: str) -> str:
+    """Uppercase, strip titles/punctuation, collapse whitespace."""
+    name = name.upper()
+    name = re.sub(r'\b(DR|MR|MRS|MS|JR|SR|II|III|IV|ESQ|PHD|MD)\.?\b', '', name)
+    name = re.sub(r'[^A-Z\s]', ' ', name)
+    return ' '.join(name.split())
+
+def parse_fec_name(raw: str):
+    """'SCALISE, STEVE' → ('STEVE', 'SCALISE').  Falls back to split."""
+    raw = raw.strip()
+    if ',' in raw:
+        last, first = raw.split(',', 1)
+        return normalize(first.strip()), normalize(last.strip())
+    parts = raw.split()
+    if len(parts) >= 2:
+        return normalize(parts[0]), normalize(parts[-1])
+    return normalize(raw), ''
+
+# ── FEC fetch ──────────────────────────────────────────────────────────────────
+def fetch_fec_candidates(api_key: str) -> list:
+    """Pull all Louisiana federal candidates since 2010 from FEC."""
+    records = []
+    page = 1
+    print('Fetching FEC candidates for Louisiana …')
+    while True:
+        params = urllib.parse.urlencode({
+            'state': 'LA',
+            'per_page': 100,
+            'page': page,
+            'sort': 'name',
+            'min_first_file_date': '01/01/2010',
+            'api_key': api_key,
+        })
+        url = f'{FEC_BASE}/candidates/?{params}'
+        try:
+            with urllib.request.urlopen(url, timeout=30) as r:
+                data = json.load(r)
+        except Exception as e:
+            print(f'  FEC page {page} error: {e}')
+            break
+
+        results = data.get('results', [])
+        records.extend(results)
+        pagination = data.get('pagination', {})
+        total_pages = pagination.get('pages', 1)
+        print(f'  Page {page}/{total_pages} — {len(results)} records')
+
+        if page >= total_pages:
+            break
+        page += 1
+        time.sleep(0.3)   # be polite
+
+    print(f'  Total FEC records: {len(records)}')
+    return records
+
+def fec_to_lookup(records: list) -> dict:
+    lookup = {}
+    for r in records:
+        raw_party = r.get('party_full') or r.get('party') or ''
+        party = PARTY_MAP.get(raw_party.upper()) or PARTY_MAP.get(r.get('party', '').upper())
+        if not party:
+            continue                         # skip unknowns
+        first, last = parse_fec_name(r.get('name', ''))
+        if not last:
+            continue
+        full_key = f'{first} {last}'.strip()
+        entry = {
+            'party': party,
+            'first': first,
+            'last': last,
+            'office': r.get('office_full', ''),
+            'district': r.get('district', ''),
+            'election_years': r.get('election_years', []),
+            'source': 'FEC',
+        }
+        # Store by full key (first + last)
+        lookup[full_key] = entry
+        # Also store by last-name-only key for quick fallback (may be overwritten by
+        # later entries — that's fine, ambiguous last names need full matching anyway)
+        lookup[last] = entry
+    return lookup
+
+# ── Curated state-level politicians ────────────────────────────────────────────
+# Format: (first, last, party, office, years_active_approx)
+CURATED = [
+    # Governors
+    ('JEFF',       'LANDRY',       'REP', 'Governor',                [2023]),
+    ('JOHN BEL',   'EDWARDS',      'DEM', 'Governor',                [2016, 2020]),
+    ('BOBBY',      'JINDAL',       'REP', 'Governor',                [2008, 2012]),
+    ('KATHLEEN',   'BLANCO',       'DEM', 'Governor',                [2004]),
+    # Lieutenant Governors
+    ('BILLY',      'NUNGESSER',    'REP', 'Lt. Governor',            [2016, 2020, 2023]),
+    ('JAY',        'DARDENNE',     'REP', 'Lt. Governor',            [2010, 2014]),
+    ('MITCH',      'LANDRIEU',     'DEM', 'Lt. Governor',            [2004]),
+    # Attorneys General
+    ('LIZMURRILL', 'MURRILL',      'REP', 'Attorney General',        [2023]),
+    ('LIZ',        'MURRILL',      'REP', 'Attorney General',        [2023]),
+    ('JEFF',       'LANDRY',       'REP', 'Attorney General',        [2012, 2016, 2020]),
+    ('BUDDY',      'CALDWELL',     'REP', 'Attorney General',        [2008]),
+    # Secretaries of State
+    ('NANCY',      'LANDRY',       'REP', 'Secretary of State',      [2023]),
+    ('KYLE',       'ARDOIN',       'REP', 'Secretary of State',      [2018, 2019, 2023]),
+    ('TOM',        'SCHEDLER',     'REP', 'Secretary of State',      [2010, 2015]),
+    # Treasurers
+    ('JOHN',       'SCHRODER',     'REP', 'Treasurer',               [2018, 2023]),
+    ('RON',        'HENSON',       'REP', 'Treasurer',               [2010]),
+    # Insurance Commissioner
+    ('JIM',        'DONELON',      'REP', 'Insurance Commissioner',  [2010, 2016, 2020, 2023]),
+    # Agriculture
+    ('MIKE',       'STRAIN',       'REP', 'Agriculture Commissioner',[2008, 2012, 2016, 2020, 2023]),
+    # State Senate leadership
+    ('PAGE',       'CORTEZ',       'REP', 'State Senate President',  [2020, 2024]),
+    ('JOHN',       'ALARIO',       'REP', 'State Senate President',  [2010, 2016]),
+    ('NORBY',      'CHABERT',      'REP', 'State Senator',           [2010, 2016, 2020]),
+    ('SHARON',     'HEWITT',       'REP', 'State Senator',           [2016, 2020, 2023]),
+    ('BODI',       'WHITE',        'REP', 'State Senator',           [2010, 2016, 2020]),
+    ('FRED',       'MILLS',        'REP', 'State Senator',           [2012, 2016, 2020]),
+    ('FRANKLIN',   'FOIL',         'REP', 'State Senator',           [2012, 2016, 2020]),
+    ('MIKE',       'REESE',        'REP', 'State Senator',           [2016, 2020]),
+    ('ALAN',       'SEABAUGH',     'REP', 'State Senator',           [2012, 2016, 2020]),
+    ('MARK',       'ABRAHAM',      'REP', 'State Senator',           [2012, 2016, 2020]),
+    ('RICK',       'WARD',         'REP', 'State Senator',           [2016, 2020]),
+    ('BETH',       'MIZELL',       'REP', 'State Senator',           [2016, 2020]),
+    ('LANCE',      'HARRIS',       'REP', 'State Representative',    [2008, 2012, 2016, 2020]),
+    ('GENE',       'REYNOLDS',     'DEM', 'State Representative',    [2012, 2016, 2020]),
+    ('PATRICIA',   'SMITH',        'DEM', 'State Representative',    [2004, 2008, 2012, 2016]),
+    ('KATRINA',    'JACKSON',      'DEM', 'State Senator',           [2012, 2016, 2020, 2023]),
+    ('ROYCE',      'DUPLESSIS',    'DEM', 'State Senator',           [2020, 2023]),
+    ('MANDIE',     'LANDRY',       'DEM', 'State Representative',    [2020, 2023]),
+    ('MATTHEW',    'WILLARD',      'DEM', 'State Representative',    [2012, 2016, 2020, 2023]),
+    ('TED',        'JAMES',        'DEM', 'State Representative',    [2012, 2016, 2020]),
+    ('SAM',        'JONES',        'DEM', 'State Representative',    [2008, 2012, 2016]),
+    # House Speakers
+    ('CLAY',       'SCHEXNAYDER',  'REP', 'State House Speaker',     [2020, 2023]),
+    ('TAYLOR',     'BARRAS',       'REP', 'State House Speaker',     [2016, 2020]),
+    ('CHUCK',      'KLECKLEY',     'REP', 'State House Speaker',     [2012, 2016]),
+    ('JIM',        'TUCKER',       'REP', 'State House Speaker',     [2008]),
+    # Other statewide
+    ('STEPHEN',    'WAGUESPACK',   'REP', 'Gubernatorial Candidate', [2023]),
+    ('HUNTER',     'LUNDY',        'DEM', 'Gubernatorial Candidate', [2023]),
+    ('GARY',       'CHAMBERS',     'DEM', 'US Senate Candidate',     [2022]),
+    ('SHAWN',      'WILSON',       'DEM', 'Gubernatorial Candidate', [2023]),
+    ('EDDIE',      'RISPONE',      'REP', 'Gubernatorial Candidate', [2019]),
+    ('RALPH',      'ABRAHAM',      'REP', 'Gubernatorial Candidate', [2019]),
+    # Additional House members
+    ('CAMERON',    'HENRY',        'REP', 'State Representative',    [2004, 2008, 2012, 2016, 2020]),
+    ('TONY',       'BACALA',       'REP', 'State Representative',    [2016, 2020]),
+    ('RICK',       'EDMONDS',      'REP', 'State Representative',    [2016, 2020]),
+    ('RAYMOND',    'GAROFALO',     'REP', 'State Representative',    [2012, 2016, 2020]),
+    ('STEPHANIE',  'HILFERTY',     'REP', 'State Representative',    [2016, 2020]),
+    ('JACK',       'DONAHUE',      'REP', 'State Representative',    [2008, 2012, 2016]),
+    ('BEAU',       'BEAULLIEU',    'REP', 'State Representative',    [2016, 2020]),
+    ('MIKE',       'FESI',         'REP', 'State Representative',    [2016, 2020]),
+    ('ROBBY',      'CARTER',       'DEM', 'State Representative',    [2016, 2020]),
+    ('ROBERT',     'CARTER',       'DEM', 'State Representative',    [2016, 2020]),
+    ('THOMAS',     'MCMAHON',      'DEM', 'State Representative',    [2016, 2020]),
+    # Parish/local level notable politicians
+    ('LATOYA',     'CANTRELL',     'DEM', 'Mayor (New Orleans)',      [2018, 2022]),
+    ('MITCH',      'LANDRIEU',     'DEM', 'Mayor (New Orleans)',      [2010, 2014]),
+    ('RAY',        'NAGIN',        'DEM', 'Mayor (New Orleans)',      [2002, 2006]),
+    ('SHARON WESTON', 'BROOME',    'DEM', 'Mayor-President (EBR)',    [2016, 2020]),
+    ('SHARON',     'BROOME',       'DEM', 'Mayor-President (EBR)',    [2016, 2020]),
+    ('JEFF',       'JEFF',         'DEM', 'Mayor-President (EBR)',    []),  # placeholder
+    ('MIKE',       'MICHOT',       'REP', 'State Senator',           [2004, 2008]),
+    # Additional US House members
+    ('CEDRIC',     'RICHMOND',     'DEM', 'House',                   [2010, 2012, 2014, 2016, 2018, 2020]),
+    ('BILL',       'JEFFERSON',    'DEM', 'House',                   []),
+    ('CHARLIE',    'BOUSTANY',     'REP', 'House',                   [2004, 2006, 2008, 2010, 2012, 2014]),
+    ('RODNEY',     'ALEXANDER',    'REP', 'House',                   [2002, 2004, 2006, 2008, 2010, 2012]),
+    ('JIM',        'MCCRERY',      'REP', 'House',                   []),
+    # Current / recent US House members (may not appear in FEC first-file-date filter)
+    ('MIKE',       'JOHNSON',      'REP', 'House',                   [2016, 2018, 2020, 2022, 2024]),
+    ('STEVE',      'SCALISE',      'REP', 'House',                   [2008, 2010, 2012, 2014, 2016, 2018, 2020, 2022, 2024]),
+    ('GARRET',     'GRAVES',       'REP', 'House',                   [2014, 2016, 2018, 2020, 2022, 2024]),
+    ('JULIA',      'LETLOW',       'REP', 'House',                   [2021, 2022, 2024]),
+    ('CLAY',       'HIGGINS',      'REP', 'House',                   [2016, 2018, 2020, 2022, 2024]),
+    ('TROY',       'CARTER',       'DEM', 'House',                   [2021, 2022, 2024]),
+    ('MIKE',       'EZELL',        'REP', 'House',                   [2022, 2024]),
+    # US Senate
+    ('JOHN',       'KENNEDY',      'REP', 'US Senate',               [2016, 2022]),
+    ('BILL',       'CASSIDY',      'REP', 'US Senate',               [2014, 2020]),
+    ('DAVID',      'VITTER',       'REP', 'US Senate',               [2004, 2010]),
+    ('MARY',       'LANDRIEU',     'DEM', 'US Senate',               [2002, 2008, 2014]),
+    ('JOHN',       'BREAUX',       'DEM', 'US Senate',               []),
+    ('BOB',        'LIVINGSTON',   'REP', 'House',                   []),
+    ('RICHARD',    'BAKER',        'REP', 'House',                   []),
+]
+
+def curated_to_lookup() -> dict:
+    lookup = {}
+    for first, last, party, office, years in CURATED:
+        fn = normalize(first)
+        ln = normalize(last)
+        if not ln:
+            continue
+        full_key = f'{fn} {ln}'.strip()
+        entry = {
+            'party': party,
+            'first': fn,
+            'last': ln,
+            'office': office,
+            'election_years': years,
+            'source': 'curated',
+        }
+        lookup[full_key] = entry
+        if ln not in lookup:      # don't overwrite FEC entry for last-name key
+            lookup[ln] = entry
+    return lookup
+
+# ── Main ───────────────────────────────────────────────────────────────────────
+def main():
+    ap = argparse.ArgumentParser(description='Build Louisiana politician party lookup')
+    ap.add_argument('--api-key', default=DEFAULT_KEY, help='FEC API key')
+    ap.add_argument('--skip-fec', action='store_true', help='Skip FEC fetch (offline mode)')
+    args = ap.parse_args()
+
+    lookup = {}
+
+    # 1. Curated state politicians (base layer)
+    print('Loading curated state politicians …')
+    curated = curated_to_lookup()
+    lookup.update(curated)
+    print(f'  {len([k for k in curated if " " in k])} curated entries')
+
+    # 2. FEC federal candidates (overrides curated where both exist)
+    if not args.skip_fec:
+        fec_records = fetch_fec_candidates(args.api_key)
+        fec_lookup = fec_to_lookup(fec_records)
+        # FEC is authoritative — overwrite curated entries
+        lookup.update(fec_lookup)
+        print(f'  {len([k for k in fec_lookup if " " in k])} FEC entries merged')
+
+    # 3. Summary
+    full_name_entries = {k: v for k, v in lookup.items() if ' ' in k}
+    dem = sum(1 for v in full_name_entries.values() if v['party'] == 'DEM')
+    rep = sum(1 for v in full_name_entries.values() if v['party'] == 'REP')
+    print(f'\nTotal unique politicians: {len(full_name_entries)}  (D={dem}, R={rep})')
+
+    with open(OUT_FILE, 'w') as f:
+        json.dump(lookup, f, indent=2, default=list)
+    print(f'Saved -> {OUT_FILE}')
+
+if __name__ == '__main__':
+    main()

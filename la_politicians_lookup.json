@@ -1,0 +1,5503 @@
+{
+  "JEFF LANDRY": {
+    "party": "REP",
+    "first": "JEFF",
+    "last": "LANDRY",
+    "office": "Attorney General",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "LANDRY": {
+    "party": "REP",
+    "first": "JEFF",
+    "last": "LANDRY",
+    "office": "Governor",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "JOHN BEL EDWARDS": {
+    "party": "DEM",
+    "first": "JOHN BEL",
+    "last": "EDWARDS",
+    "office": "Governor",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "EDWARDS": {
+    "party": "DEM",
+    "first": "EDWIN WASHINGTON",
+    "last": "EDWARDS",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "BOBBY JINDAL": {
+    "party": "REP",
+    "first": "BOBBY",
+    "last": "JINDAL",
+    "office": "Governor",
+    "election_years": [
+      2008,
+      2012
+    ],
+    "source": "curated"
+  },
+  "JINDAL": {
+    "party": "REP",
+    "first": "BOBBY",
+    "last": "JINDAL",
+    "office": "Governor",
+    "election_years": [
+      2008,
+      2012
+    ],
+    "source": "curated"
+  },
+  "KATHLEEN BLANCO": {
+    "party": "DEM",
+    "first": "KATHLEEN",
+    "last": "BLANCO",
+    "office": "Governor",
+    "election_years": [
+      2004
+    ],
+    "source": "curated"
+  },
+  "BLANCO": {
+    "party": "DEM",
+    "first": "KATHLEEN",
+    "last": "BLANCO",
+    "office": "Governor",
+    "election_years": [
+      2004
+    ],
+    "source": "curated"
+  },
+  "BILLY NUNGESSER": {
+    "party": "REP",
+    "first": "BILLY",
+    "last": "NUNGESSER",
+    "office": "Lt. Governor",
+    "election_years": [
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "NUNGESSER": {
+    "party": "REP",
+    "first": "BILLY",
+    "last": "NUNGESSER",
+    "office": "Lt. Governor",
+    "election_years": [
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "JAY DARDENNE": {
+    "party": "REP",
+    "first": "JAY",
+    "last": "DARDENNE",
+    "office": "Lt. Governor",
+    "election_years": [
+      2010,
+      2014
+    ],
+    "source": "curated"
+  },
+  "DARDENNE": {
+    "party": "REP",
+    "first": "JAY",
+    "last": "DARDENNE",
+    "office": "Lt. Governor",
+    "election_years": [
+      2010,
+      2014
+    ],
+    "source": "curated"
+  },
+  "MITCH LANDRIEU": {
+    "party": "DEM",
+    "first": "MITCH",
+    "last": "LANDRIEU",
+    "office": "Mayor (New Orleans)",
+    "election_years": [
+      2010,
+      2014
+    ],
+    "source": "curated"
+  },
+  "LANDRIEU": {
+    "party": "DEM",
+    "first": "GARY C",
+    "last": "LANDRIEU",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2012,
+      2014
+    ],
+    "source": "FEC"
+  },
+  "LIZMURRILL MURRILL": {
+    "party": "REP",
+    "first": "LIZMURRILL",
+    "last": "MURRILL",
+    "office": "Attorney General",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "MURRILL": {
+    "party": "REP",
+    "first": "LIZMURRILL",
+    "last": "MURRILL",
+    "office": "Attorney General",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "LIZ MURRILL": {
+    "party": "REP",
+    "first": "LIZ",
+    "last": "MURRILL",
+    "office": "Attorney General",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "BUDDY CALDWELL": {
+    "party": "REP",
+    "first": "BUDDY",
+    "last": "CALDWELL",
+    "office": "Attorney General",
+    "election_years": [
+      2008
+    ],
+    "source": "curated"
+  },
+  "CALDWELL": {
+    "party": "REP",
+    "first": "BUDDY",
+    "last": "CALDWELL",
+    "office": "Attorney General",
+    "election_years": [
+      2008
+    ],
+    "source": "curated"
+  },
+  "NANCY LANDRY": {
+    "party": "REP",
+    "first": "NANCY",
+    "last": "LANDRY",
+    "office": "Secretary of State",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "KYLE ARDOIN": {
+    "party": "REP",
+    "first": "KYLE",
+    "last": "ARDOIN",
+    "office": "Secretary of State",
+    "election_years": [
+      2018,
+      2019,
+      2023
+    ],
+    "source": "curated"
+  },
+  "ARDOIN": {
+    "party": "REP",
+    "first": "CHELSEA",
+    "last": "ARDOIN",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "TOM SCHEDLER": {
+    "party": "REP",
+    "first": "TOM",
+    "last": "SCHEDLER",
+    "office": "Secretary of State",
+    "election_years": [
+      2010,
+      2015
+    ],
+    "source": "curated"
+  },
+  "SCHEDLER": {
+    "party": "REP",
+    "first": "TOM",
+    "last": "SCHEDLER",
+    "office": "Secretary of State",
+    "election_years": [
+      2010,
+      2015
+    ],
+    "source": "curated"
+  },
+  "JOHN SCHRODER": {
+    "party": "REP",
+    "first": "JOHN",
+    "last": "SCHRODER",
+    "office": "Treasurer",
+    "election_years": [
+      2018,
+      2023
+    ],
+    "source": "curated"
+  },
+  "SCHRODER": {
+    "party": "REP",
+    "first": "JOHN",
+    "last": "SCHRODER",
+    "office": "Treasurer",
+    "election_years": [
+      2018,
+      2023
+    ],
+    "source": "curated"
+  },
+  "RON HENSON": {
+    "party": "REP",
+    "first": "RON",
+    "last": "HENSON",
+    "office": "Treasurer",
+    "election_years": [
+      2010
+    ],
+    "source": "curated"
+  },
+  "HENSON": {
+    "party": "REP",
+    "first": "RON",
+    "last": "HENSON",
+    "office": "Treasurer",
+    "election_years": [
+      2010
+    ],
+    "source": "curated"
+  },
+  "JIM DONELON": {
+    "party": "REP",
+    "first": "JIM",
+    "last": "DONELON",
+    "office": "Insurance Commissioner",
+    "election_years": [
+      2010,
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "DONELON": {
+    "party": "REP",
+    "first": "JIM",
+    "last": "DONELON",
+    "office": "Insurance Commissioner",
+    "election_years": [
+      2010,
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "MIKE STRAIN": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "STRAIN",
+    "office": "Agriculture Commissioner",
+    "election_years": [
+      2008,
+      2012,
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "STRAIN": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "STRAIN",
+    "office": "Agriculture Commissioner",
+    "election_years": [
+      2008,
+      2012,
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "PAGE CORTEZ": {
+    "party": "REP",
+    "first": "PAGE",
+    "last": "CORTEZ",
+    "office": "State Senate President",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "CORTEZ": {
+    "party": "REP",
+    "first": "PAGE",
+    "last": "CORTEZ",
+    "office": "State Senate President",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "JOHN ALARIO": {
+    "party": "REP",
+    "first": "JOHN",
+    "last": "ALARIO",
+    "office": "State Senate President",
+    "election_years": [
+      2010,
+      2016
+    ],
+    "source": "curated"
+  },
+  "ALARIO": {
+    "party": "REP",
+    "first": "JOHN",
+    "last": "ALARIO",
+    "office": "State Senate President",
+    "election_years": [
+      2010,
+      2016
+    ],
+    "source": "curated"
+  },
+  "NORBY CHABERT": {
+    "party": "REP",
+    "first": "NORBY",
+    "last": "CHABERT",
+    "office": "State Senator",
+    "election_years": [
+      2010,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "CHABERT": {
+    "party": "REP",
+    "first": "NORBY",
+    "last": "CHABERT",
+    "office": "State Senator",
+    "election_years": [
+      2010,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "SHARON HEWITT": {
+    "party": "REP",
+    "first": "SHARON",
+    "last": "HEWITT",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "HEWITT": {
+    "party": "REP",
+    "first": "SHARON",
+    "last": "HEWITT",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "BODI WHITE": {
+    "party": "REP",
+    "first": "BODI",
+    "last": "WHITE",
+    "office": "State Senator",
+    "election_years": [
+      2010,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "WHITE": {
+    "party": "REP",
+    "first": "BODI",
+    "last": "WHITE",
+    "office": "State Senator",
+    "election_years": [
+      2010,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "FRED MILLS": {
+    "party": "REP",
+    "first": "FRED",
+    "last": "MILLS",
+    "office": "State Senator",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "MILLS": {
+    "party": "REP",
+    "first": "FRED",
+    "last": "MILLS",
+    "office": "State Senator",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "FRANKLIN FOIL": {
+    "party": "REP",
+    "first": "FRANKLIN",
+    "last": "FOIL",
+    "office": "State Senator",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "FOIL": {
+    "party": "REP",
+    "first": "FRANKLIN",
+    "last": "FOIL",
+    "office": "State Senator",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "MIKE REESE": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "REESE",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "REESE": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "REESE",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "ALAN SEABAUGH": {
+    "party": "REP",
+    "first": "ALAN",
+    "last": "SEABAUGH",
+    "office": "State Senator",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "SEABAUGH": {
+    "party": "REP",
+    "first": "ALAN",
+    "last": "SEABAUGH",
+    "office": "State Senator",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "MARK ABRAHAM": {
+    "party": "REP",
+    "first": "MARK",
+    "last": "ABRAHAM",
+    "office": "State Senator",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "ABRAHAM": {
+    "party": "REP",
+    "first": "RALPH LEE",
+    "last": "ABRAHAM",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014,
+      2016,
+      2018,
+      2020
+    ],
+    "source": "FEC"
+  },
+  "RICK WARD": {
+    "party": "REP",
+    "first": "RICK",
+    "last": "WARD",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "WARD": {
+    "party": "REP",
+    "first": "RICHARD J",
+    "last": "WARD",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "BETH MIZELL": {
+    "party": "REP",
+    "first": "BETH",
+    "last": "MIZELL",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "MIZELL": {
+    "party": "REP",
+    "first": "BETH",
+    "last": "MIZELL",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "LANCE HARRIS": {
+    "party": "REP",
+    "first": "LANCE",
+    "last": "HARRIS",
+    "office": "State Representative",
+    "election_years": [
+      2008,
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "HARRIS": {
+    "party": "REP",
+    "first": "JOHN LANCE",
+    "last": "HARRIS",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "GENE REYNOLDS": {
+    "party": "DEM",
+    "first": "GENE",
+    "last": "REYNOLDS",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "REYNOLDS": {
+    "party": "DEM",
+    "first": "GENE",
+    "last": "REYNOLDS",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "PATRICIA SMITH": {
+    "party": "DEM",
+    "first": "PATRICIA",
+    "last": "SMITH",
+    "office": "State Representative",
+    "election_years": [
+      2004,
+      2008,
+      2012,
+      2016
+    ],
+    "source": "curated"
+  },
+  "SMITH": {
+    "party": "REP",
+    "first": "SANCHA",
+    "last": "SMITH",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "KATRINA JACKSON": {
+    "party": "DEM",
+    "first": "KATRINA",
+    "last": "JACKSON",
+    "office": "State Senator",
+    "election_years": [
+      2012,
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "JACKSON": {
+    "party": "DEM",
+    "first": "KATRINA",
+    "last": "JACKSON",
+    "office": "State Senator",
+    "election_years": [
+      2012,
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "ROYCE DUPLESSIS": {
+    "party": "DEM",
+    "first": "ROYCE",
+    "last": "DUPLESSIS",
+    "office": "State Senator",
+    "election_years": [
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "DUPLESSIS": {
+    "party": "DEM",
+    "first": "ROYCE",
+    "last": "DUPLESSIS",
+    "office": "State Senator",
+    "election_years": [
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "MANDIE LANDRY": {
+    "party": "DEM",
+    "first": "MANDIE",
+    "last": "LANDRY",
+    "office": "State Representative",
+    "election_years": [
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "MATTHEW WILLARD": {
+    "party": "DEM",
+    "first": "MATTHEW",
+    "last": "WILLARD",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "WILLARD": {
+    "party": "DEM",
+    "first": "MATTHEW",
+    "last": "WILLARD",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "TED JAMES": {
+    "party": "DEM",
+    "first": "TED",
+    "last": "JAMES",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "JAMES": {
+    "party": "DEM",
+    "first": "TED",
+    "last": "JAMES",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "SAM JONES": {
+    "party": "DEM",
+    "first": "SAM",
+    "last": "JONES",
+    "office": "State Representative",
+    "election_years": [
+      2008,
+      2012,
+      2016
+    ],
+    "source": "curated"
+  },
+  "JONES": {
+    "party": "DEM",
+    "first": "J MARSHALL",
+    "last": "JONES",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CLAY SCHEXNAYDER": {
+    "party": "REP",
+    "first": "CLAY",
+    "last": "SCHEXNAYDER",
+    "office": "State House Speaker",
+    "election_years": [
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "SCHEXNAYDER": {
+    "party": "REP",
+    "first": "CLAY",
+    "last": "SCHEXNAYDER",
+    "office": "State House Speaker",
+    "election_years": [
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "TAYLOR BARRAS": {
+    "party": "REP",
+    "first": "TAYLOR",
+    "last": "BARRAS",
+    "office": "State House Speaker",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "BARRAS": {
+    "party": "REP",
+    "first": "TAYLOR",
+    "last": "BARRAS",
+    "office": "State House Speaker",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "CHUCK KLECKLEY": {
+    "party": "REP",
+    "first": "CHUCK",
+    "last": "KLECKLEY",
+    "office": "State House Speaker",
+    "election_years": [
+      2012,
+      2016
+    ],
+    "source": "curated"
+  },
+  "KLECKLEY": {
+    "party": "REP",
+    "first": "CHUCK",
+    "last": "KLECKLEY",
+    "office": "State House Speaker",
+    "election_years": [
+      2012,
+      2016
+    ],
+    "source": "curated"
+  },
+  "JIM TUCKER": {
+    "party": "REP",
+    "first": "JIM",
+    "last": "TUCKER",
+    "office": "State House Speaker",
+    "election_years": [
+      2008
+    ],
+    "source": "curated"
+  },
+  "TUCKER": {
+    "party": "REP",
+    "first": "JIM",
+    "last": "TUCKER",
+    "office": "State House Speaker",
+    "election_years": [
+      2008
+    ],
+    "source": "curated"
+  },
+  "STEPHEN WAGUESPACK": {
+    "party": "REP",
+    "first": "STEPHEN",
+    "last": "WAGUESPACK",
+    "office": "Gubernatorial Candidate",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "WAGUESPACK": {
+    "party": "REP",
+    "first": "STEPHEN",
+    "last": "WAGUESPACK",
+    "office": "Gubernatorial Candidate",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "HUNTER LUNDY": {
+    "party": "DEM",
+    "first": "HUNTER",
+    "last": "LUNDY",
+    "office": "Gubernatorial Candidate",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "LUNDY": {
+    "party": "DEM",
+    "first": "HUNTER",
+    "last": "LUNDY",
+    "office": "Gubernatorial Candidate",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "GARY CHAMBERS": {
+    "party": "DEM",
+    "first": "GARY",
+    "last": "CHAMBERS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "CHAMBERS": {
+    "party": "DEM",
+    "first": "GARY",
+    "last": "CHAMBERS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "SHAWN WILSON": {
+    "party": "DEM",
+    "first": "SHAWN",
+    "last": "WILSON",
+    "office": "Gubernatorial Candidate",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "WILSON": {
+    "party": "DEM",
+    "first": "SHAWN",
+    "last": "WILSON",
+    "office": "Gubernatorial Candidate",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "EDDIE RISPONE": {
+    "party": "REP",
+    "first": "EDDIE",
+    "last": "RISPONE",
+    "office": "Gubernatorial Candidate",
+    "election_years": [
+      2019
+    ],
+    "source": "curated"
+  },
+  "RISPONE": {
+    "party": "REP",
+    "first": "EDDIE",
+    "last": "RISPONE",
+    "office": "Gubernatorial Candidate",
+    "election_years": [
+      2019
+    ],
+    "source": "curated"
+  },
+  "RALPH ABRAHAM": {
+    "party": "REP",
+    "first": "RALPH",
+    "last": "ABRAHAM",
+    "office": "Gubernatorial Candidate",
+    "election_years": [
+      2019
+    ],
+    "source": "curated"
+  },
+  "CAMERON HENRY": {
+    "party": "REP",
+    "first": "CAMERON",
+    "last": "HENRY",
+    "office": "State Representative",
+    "election_years": [
+      2004,
+      2008,
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "HENRY": {
+    "party": "REP",
+    "first": "CAMERON",
+    "last": "HENRY",
+    "office": "State Representative",
+    "election_years": [
+      2004,
+      2008,
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "TONY BACALA": {
+    "party": "REP",
+    "first": "TONY",
+    "last": "BACALA",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "BACALA": {
+    "party": "REP",
+    "first": "TONY",
+    "last": "BACALA",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "RICK EDMONDS": {
+    "party": "REP",
+    "first": "RICK",
+    "last": "EDMONDS",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "EDMONDS": {
+    "party": "REP",
+    "first": "RICK",
+    "last": "EDMONDS",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "RAYMOND GAROFALO": {
+    "party": "REP",
+    "first": "RAYMOND",
+    "last": "GAROFALO",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "GAROFALO": {
+    "party": "REP",
+    "first": "RAYMOND",
+    "last": "GAROFALO",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "STEPHANIE HILFERTY": {
+    "party": "REP",
+    "first": "STEPHANIE",
+    "last": "HILFERTY",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "HILFERTY": {
+    "party": "REP",
+    "first": "STEPHANIE",
+    "last": "HILFERTY",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "JACK DONAHUE": {
+    "party": "REP",
+    "first": "JACK",
+    "last": "DONAHUE",
+    "office": "State Representative",
+    "election_years": [
+      2008,
+      2012,
+      2016
+    ],
+    "source": "curated"
+  },
+  "DONAHUE": {
+    "party": "REP",
+    "first": "JACK",
+    "last": "DONAHUE",
+    "office": "State Representative",
+    "election_years": [
+      2008,
+      2012,
+      2016
+    ],
+    "source": "curated"
+  },
+  "BEAU BEAULLIEU": {
+    "party": "REP",
+    "first": "BEAU",
+    "last": "BEAULLIEU",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "BEAULLIEU": {
+    "party": "REP",
+    "first": "BEAU",
+    "last": "BEAULLIEU",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "MIKE FESI": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "FESI",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "FESI": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "FESI",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "ROBBY CARTER": {
+    "party": "DEM",
+    "first": "ROBBY",
+    "last": "CARTER",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "CARTER": {
+    "party": "DEM",
+    "first": "TROY A",
+    "last": "CARTER",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021,
+      2022,
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "ROBERT CARTER": {
+    "party": "DEM",
+    "first": "ROBERT",
+    "last": "CARTER",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "THOMAS MCMAHON": {
+    "party": "DEM",
+    "first": "THOMAS",
+    "last": "MCMAHON",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "MCMAHON": {
+    "party": "DEM",
+    "first": "THOMAS",
+    "last": "MCMAHON",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "LATOYA CANTRELL": {
+    "party": "DEM",
+    "first": "LATOYA",
+    "last": "CANTRELL",
+    "office": "Mayor (New Orleans)",
+    "election_years": [
+      2018,
+      2022
+    ],
+    "source": "curated"
+  },
+  "CANTRELL": {
+    "party": "DEM",
+    "first": "LATOYA",
+    "last": "CANTRELL",
+    "office": "Mayor (New Orleans)",
+    "election_years": [
+      2018,
+      2022
+    ],
+    "source": "curated"
+  },
+  "RAY NAGIN": {
+    "party": "DEM",
+    "first": "RAY",
+    "last": "NAGIN",
+    "office": "Mayor (New Orleans)",
+    "election_years": [
+      2002,
+      2006
+    ],
+    "source": "curated"
+  },
+  "NAGIN": {
+    "party": "DEM",
+    "first": "RAY",
+    "last": "NAGIN",
+    "office": "Mayor (New Orleans)",
+    "election_years": [
+      2002,
+      2006
+    ],
+    "source": "curated"
+  },
+  "SHARON WESTON BROOME": {
+    "party": "DEM",
+    "first": "SHARON WESTON",
+    "last": "BROOME",
+    "office": "Mayor-President (EBR)",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "BROOME": {
+    "party": "DEM",
+    "first": "SHARON WESTON",
+    "last": "BROOME",
+    "office": "Mayor-President (EBR)",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "SHARON BROOME": {
+    "party": "DEM",
+    "first": "SHARON",
+    "last": "BROOME",
+    "office": "Mayor-President (EBR)",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "JEFF JEFF": {
+    "party": "DEM",
+    "first": "JEFF",
+    "last": "JEFF",
+    "office": "Mayor-President (EBR)",
+    "election_years": [],
+    "source": "curated"
+  },
+  "JEFF": {
+    "party": "DEM",
+    "first": "JEFF",
+    "last": "JEFF",
+    "office": "Mayor-President (EBR)",
+    "election_years": [],
+    "source": "curated"
+  },
+  "MIKE MICHOT": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "MICHOT",
+    "office": "State Senator",
+    "election_years": [
+      2004,
+      2008
+    ],
+    "source": "curated"
+  },
+  "MICHOT": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "MICHOT",
+    "office": "State Senator",
+    "election_years": [
+      2004,
+      2008
+    ],
+    "source": "curated"
+  },
+  "CEDRIC RICHMOND": {
+    "party": "DEM",
+    "first": "CEDRIC",
+    "last": "RICHMOND",
+    "office": "House",
+    "election_years": [
+      2010,
+      2012,
+      2014,
+      2016,
+      2018,
+      2020
+    ],
+    "source": "curated"
+  },
+  "RICHMOND": {
+    "party": "DEM",
+    "first": "CEDRIC",
+    "last": "RICHMOND",
+    "office": "House",
+    "election_years": [
+      2010,
+      2012,
+      2014,
+      2016,
+      2018,
+      2020
+    ],
+    "source": "curated"
+  },
+  "BILL JEFFERSON": {
+    "party": "DEM",
+    "first": "BILL",
+    "last": "JEFFERSON",
+    "office": "House",
+    "election_years": [],
+    "source": "curated"
+  },
+  "JEFFERSON": {
+    "party": "DEM",
+    "first": "BILL",
+    "last": "JEFFERSON",
+    "office": "House",
+    "election_years": [],
+    "source": "curated"
+  },
+  "CHARLIE BOUSTANY": {
+    "party": "REP",
+    "first": "CHARLIE",
+    "last": "BOUSTANY",
+    "office": "House",
+    "election_years": [
+      2004,
+      2006,
+      2008,
+      2010,
+      2012,
+      2014
+    ],
+    "source": "curated"
+  },
+  "BOUSTANY": {
+    "party": "REP",
+    "first": "CHARLES W",
+    "last": "BOUSTANY",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "RODNEY ALEXANDER": {
+    "party": "REP",
+    "first": "RODNEY",
+    "last": "ALEXANDER",
+    "office": "House",
+    "election_years": [
+      2002,
+      2004,
+      2006,
+      2008,
+      2010,
+      2012
+    ],
+    "source": "curated"
+  },
+  "ALEXANDER": {
+    "party": "REP",
+    "first": "RODNEY",
+    "last": "ALEXANDER",
+    "office": "House",
+    "election_years": [
+      2002,
+      2004,
+      2006,
+      2008,
+      2010,
+      2012
+    ],
+    "source": "curated"
+  },
+  "JIM MCCRERY": {
+    "party": "REP",
+    "first": "JIM",
+    "last": "MCCRERY",
+    "office": "House",
+    "election_years": [],
+    "source": "curated"
+  },
+  "MCCRERY": {
+    "party": "REP",
+    "first": "JIM",
+    "last": "MCCRERY",
+    "office": "House",
+    "election_years": [],
+    "source": "curated"
+  },
+  "MIKE JOHNSON": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "JOHNSON",
+    "office": "House",
+    "election_years": [
+      2016,
+      2018,
+      2020,
+      2022,
+      2024
+    ],
+    "source": "curated"
+  },
+  "JOHNSON": {
+    "party": "DEM",
+    "first": "ROBERT ALLEN",
+    "last": "JOHNSON",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "STEVE SCALISE": {
+    "party": "REP",
+    "first": "STEVE",
+    "last": "SCALISE",
+    "office": "House",
+    "election_years": [
+      2008,
+      2010,
+      2012,
+      2014,
+      2016,
+      2018,
+      2020,
+      2022,
+      2024
+    ],
+    "source": "curated"
+  },
+  "SCALISE": {
+    "party": "REP",
+    "first": "STEVE",
+    "last": "SCALISE",
+    "office": "House",
+    "election_years": [
+      2008,
+      2010,
+      2012,
+      2014,
+      2016,
+      2018,
+      2020,
+      2022,
+      2024
+    ],
+    "source": "curated"
+  },
+  "GARRET GRAVES": {
+    "party": "REP",
+    "first": "GARRET",
+    "last": "GRAVES",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014,
+      2016,
+      2018,
+      2020,
+      2022,
+      2024
+    ],
+    "source": "FEC"
+  },
+  "GRAVES": {
+    "party": "REP",
+    "first": "GARRET",
+    "last": "GRAVES",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014,
+      2016,
+      2018,
+      2020,
+      2022,
+      2024
+    ],
+    "source": "FEC"
+  },
+  "JULIA LETLOW": {
+    "party": "REP",
+    "first": "JULIA",
+    "last": "LETLOW",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2022,
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "LETLOW": {
+    "party": "REP",
+    "first": "LUKE JOSHUA",
+    "last": "LETLOW",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "CLAY HIGGINS": {
+    "party": "REP",
+    "first": "CLAY",
+    "last": "HIGGINS",
+    "office": "House",
+    "election_years": [
+      2016,
+      2018,
+      2020,
+      2022,
+      2024
+    ],
+    "source": "curated"
+  },
+  "HIGGINS": {
+    "party": "REP",
+    "first": "CLAY CAPTAIN",
+    "last": "HIGGINS",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016,
+      2018,
+      2020,
+      2022,
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "TROY CARTER": {
+    "party": "DEM",
+    "first": "TROY",
+    "last": "CARTER",
+    "office": "House",
+    "election_years": [
+      2021,
+      2022,
+      2024
+    ],
+    "source": "curated"
+  },
+  "MIKE EZELL": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "EZELL",
+    "office": "House",
+    "election_years": [
+      2022,
+      2024
+    ],
+    "source": "curated"
+  },
+  "EZELL": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "EZELL",
+    "office": "House",
+    "election_years": [
+      2022,
+      2024
+    ],
+    "source": "curated"
+  },
+  "JOHN KENNEDY": {
+    "party": "REP",
+    "first": "JOHN",
+    "last": "KENNEDY",
+    "office": "US Senate",
+    "election_years": [
+      2016,
+      2022
+    ],
+    "source": "curated"
+  },
+  "KENNEDY": {
+    "party": "REP",
+    "first": "JOHN",
+    "last": "KENNEDY",
+    "office": "US Senate",
+    "election_years": [
+      2016,
+      2022
+    ],
+    "source": "curated"
+  },
+  "BILL CASSIDY": {
+    "party": "REP",
+    "first": "BILL",
+    "last": "CASSIDY",
+    "office": "US Senate",
+    "election_years": [
+      2014,
+      2020
+    ],
+    "source": "curated"
+  },
+  "CASSIDY": {
+    "party": "REP",
+    "first": "WILLIAM M",
+    "last": "CASSIDY",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2014,
+      2020,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "DAVID VITTER": {
+    "party": "REP",
+    "first": "DAVID",
+    "last": "VITTER",
+    "office": "US Senate",
+    "election_years": [
+      2004,
+      2010
+    ],
+    "source": "curated"
+  },
+  "VITTER": {
+    "party": "REP",
+    "first": "DAVID",
+    "last": "VITTER",
+    "office": "US Senate",
+    "election_years": [
+      2004,
+      2010
+    ],
+    "source": "curated"
+  },
+  "MARY LANDRIEU": {
+    "party": "DEM",
+    "first": "MARY",
+    "last": "LANDRIEU",
+    "office": "US Senate",
+    "election_years": [
+      2002,
+      2008,
+      2014
+    ],
+    "source": "curated"
+  },
+  "JOHN BREAUX": {
+    "party": "DEM",
+    "first": "JOHN",
+    "last": "BREAUX",
+    "office": "US Senate",
+    "election_years": [],
+    "source": "curated"
+  },
+  "BREAUX": {
+    "party": "DEM",
+    "first": "JOHN",
+    "last": "BREAUX",
+    "office": "US Senate",
+    "election_years": [],
+    "source": "curated"
+  },
+  "BOB LIVINGSTON": {
+    "party": "REP",
+    "first": "BOB",
+    "last": "LIVINGSTON",
+    "office": "House",
+    "election_years": [],
+    "source": "curated"
+  },
+  "LIVINGSTON": {
+    "party": "REP",
+    "first": "BOB",
+    "last": "LIVINGSTON",
+    "office": "House",
+    "election_years": [],
+    "source": "curated"
+  },
+  "RICHARD BAKER": {
+    "party": "REP",
+    "first": "RICHARD",
+    "last": "BAKER",
+    "office": "House",
+    "election_years": [],
+    "source": "curated"
+  },
+  "BAKER": {
+    "party": "REP",
+    "first": "RICHARD",
+    "last": "BAKER",
+    "office": "House",
+    "election_years": [],
+    "source": "curated"
+  },
+  "MURIEL WAYNE ABLES": {
+    "party": "DEM",
+    "first": "MURIEL WAYNE",
+    "last": "ABLES",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "ABLES": {
+    "party": "DEM",
+    "first": "MURIEL WAYNE",
+    "last": "ABLES",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "RALPH LEE ABRAHAM": {
+    "party": "REP",
+    "first": "RALPH LEE",
+    "last": "ABRAHAM",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014,
+      2016,
+      2018,
+      2020
+    ],
+    "source": "FEC"
+  },
+  "QUENTIN ANTHONY ANDERSON": {
+    "party": "DEM",
+    "first": "QUENTIN ANTHONY",
+    "last": "ANDERSON",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014,
+      2024
+    ],
+    "source": "FEC"
+  },
+  "ANDERSON": {
+    "party": "DEM",
+    "first": "ROBERT JON",
+    "last": "ANDERSON",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2018,
+      2020
+    ],
+    "source": "FEC"
+  },
+  "ROBERT JON ANDERSON": {
+    "party": "DEM",
+    "first": "ROBERT JON",
+    "last": "ANDERSON",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2018,
+      2020
+    ],
+    "source": "FEC"
+  },
+  "SCOTT ANGELLE": {
+    "party": "REP",
+    "first": "SCOTT",
+    "last": "ANGELLE",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "ANGELLE": {
+    "party": "REP",
+    "first": "SCOTT",
+    "last": "ANGELLE",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "ANJANITA MONIQUE APPEANING": {
+    "party": "REP",
+    "first": "ANJANITA MONIQUE",
+    "last": "APPEANING",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "APPEANING": {
+    "party": "REP",
+    "first": "ANJANITA MONIQUE",
+    "last": "APPEANING",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "CHELSEA ARDOIN": {
+    "party": "REP",
+    "first": "CHELSEA",
+    "last": "ARDOIN",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "RANDALL STEVEN ARRINGTON": {
+    "party": "REP",
+    "first": "RANDALL STEVEN",
+    "last": "ARRINGTON",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "ARRINGTON": {
+    "party": "REP",
+    "first": "RANDALL STEVEN",
+    "last": "ARRINGTON",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "RALPH W BAUCUM": {
+    "party": "REP",
+    "first": "RALPH W",
+    "last": "BAUCUM",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "BAUCUM": {
+    "party": "REP",
+    "first": "RALPH W",
+    "last": "BAUCUM",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "BRIAN T BELZER": {
+    "party": "REP",
+    "first": "BRIAN T",
+    "last": "BELZER",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "BELZER": {
+    "party": "REP",
+    "first": "BRIAN T",
+    "last": "BELZER",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "CLASTON BERNARD": {
+    "party": "REP",
+    "first": "CLASTON",
+    "last": "BERNARD",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "BERNARD": {
+    "party": "REP",
+    "first": "CLASTON",
+    "last": "BERNARD",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "JAQUELINE YVONNE BLANEY": {
+    "party": "DEM",
+    "first": "JAQUELINE YVONNE",
+    "last": "BLANEY",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "BLANEY": {
+    "party": "DEM",
+    "first": "JAQUELINE YVONNE",
+    "last": "BLANEY",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "CHARLES W BOUSTANY": {
+    "party": "REP",
+    "first": "CHARLES W",
+    "last": "BOUSTANY",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "HARRIS BROWN": {
+    "party": "REP",
+    "first": "HARRIS",
+    "last": "BROWN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "BROWN": {
+    "party": "REP",
+    "first": "HARRIS",
+    "last": "BROWN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "TRACIE BURKE": {
+    "party": "DEM",
+    "first": "TRACIE",
+    "last": "BURKE",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "BURKE": {
+    "party": "DEM",
+    "first": "TRACIE",
+    "last": "BURKE",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "CONRAD ROBERTS CABLE": {
+    "party": "DEM",
+    "first": "CONRAD ROBERTS",
+    "last": "CABLE",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "CABLE": {
+    "party": "DEM",
+    "first": "CONRAD ROBERTS",
+    "last": "CABLE",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "FOSTER LONNNIE CAMPBELL": {
+    "party": "DEM",
+    "first": "FOSTER LONNNIE",
+    "last": "CAMPBELL",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CAMPBELL": {
+    "party": "DEM",
+    "first": "FOSTER LONNNIE",
+    "last": "CAMPBELL",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "JOSEPH CAO": {
+    "party": "REP",
+    "first": "JOSEPH",
+    "last": "CAO",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CAO": {
+    "party": "REP",
+    "first": "JOSEPH",
+    "last": "CAO",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "TROY A CARTER": {
+    "party": "DEM",
+    "first": "TROY A",
+    "last": "CARTER",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021,
+      2022,
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "WILLIAM M CASSIDY": {
+    "party": "REP",
+    "first": "WILLIAM M",
+    "last": "CASSIDY",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2014,
+      2020,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "STEWART CATHEY": {
+    "party": "REP",
+    "first": "STEWART",
+    "last": "CATHEY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "CATHEY": {
+    "party": "REP",
+    "first": "STEWART",
+    "last": "CATHEY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "SANDRA CHRISTOPHE": {
+    "party": "DEM",
+    "first": "SANDRA",
+    "last": "CHRISTOPHE",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020,
+      2021
+    ],
+    "source": "FEC"
+  },
+  "CHRISTOPHE": {
+    "party": "DEM",
+    "first": "SANDRA",
+    "last": "CHRISTOPHE",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020,
+      2021
+    ],
+    "source": "FEC"
+  },
+  "DANIEL A CLAITOR": {
+    "party": "REP",
+    "first": "DANIEL A",
+    "last": "CLAITOR",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "CLAITOR": {
+    "party": "REP",
+    "first": "DANIEL A",
+    "last": "CLAITOR",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "NORMAN NORM LEE CLARK": {
+    "party": "REP",
+    "first": "NORMAN NORM LEE",
+    "last": "CLARK",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "CLARK": {
+    "party": "REP",
+    "first": "NORMAN NORM LEE",
+    "last": "CLARK",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "THOMAS PATRICK CLEMENTS": {
+    "party": "REP",
+    "first": "THOMAS PATRICK",
+    "last": "CLEMENTS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2014,
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CLEMENTS": {
+    "party": "REP",
+    "first": "THOMAS PATRICK",
+    "last": "CLEMENTS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2014,
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CHAD CONERLY": {
+    "party": "REP",
+    "first": "CHAD",
+    "last": "CONERLY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "CONERLY": {
+    "party": "REP",
+    "first": "CHAD",
+    "last": "CONERLY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "PHILLIP CONNER": {
+    "party": "DEM",
+    "first": "PHILLIP",
+    "last": "CONNER",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "CONNER": {
+    "party": "DEM",
+    "first": "PHILLIP",
+    "last": "CONNER",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "MISTI SMITH CORDELL": {
+    "party": "REP",
+    "first": "MISTI SMITH",
+    "last": "CORDELL",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "CORDELL": {
+    "party": "REP",
+    "first": "MISTI SMITH",
+    "last": "CORDELL",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "MARKEDA ANN COTTONHAM": {
+    "party": "REP",
+    "first": "MARKEDA ANN",
+    "last": "COTTONHAM",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "COTTONHAM": {
+    "party": "REP",
+    "first": "MARKEDA ANN",
+    "last": "COTTONHAM",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "DONALD L CRAWFORD": {
+    "party": "REP",
+    "first": "DONALD L",
+    "last": "CRAWFORD",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CRAWFORD": {
+    "party": "REP",
+    "first": "DONALD L",
+    "last": "CRAWFORD",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "GARY CROCKETT": {
+    "party": "DEM",
+    "first": "GARY",
+    "last": "CROCKETT",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "CROCKETT": {
+    "party": "DEM",
+    "first": "GARY",
+    "last": "CROCKETT",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "KATIE DARLING DARLING": {
+    "party": "DEM",
+    "first": "KATIE DARLING",
+    "last": "DARLING",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "DARLING": {
+    "party": "DEM",
+    "first": "KATIE DARLING",
+    "last": "DARLING",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "ZACH DASHER": {
+    "party": "REP",
+    "first": "ZACH",
+    "last": "DASHER",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "DASHER": {
+    "party": "REP",
+    "first": "ZACH",
+    "last": "DASHER",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "DEVIN CHARLES DAVIS": {
+    "party": "DEM",
+    "first": "DEVIN CHARLES",
+    "last": "DAVIS",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "DAVIS": {
+    "party": "REP",
+    "first": "LARRY",
+    "last": "DAVIS",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JAMIE DAVIS": {
+    "party": "DEM",
+    "first": "JAMIE",
+    "last": "DAVIS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "LARRY DAVIS": {
+    "party": "REP",
+    "first": "LARRY",
+    "last": "DAVIS",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JOHN DAVID DAY": {
+    "party": "DEM",
+    "first": "JOHN DAVID",
+    "last": "DAY",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "DAY": {
+    "party": "DEM",
+    "first": "JOHN DAVID",
+    "last": "DAY",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "TRACY COLLENE DENDY": {
+    "party": "REP",
+    "first": "TRACY COLLENE",
+    "last": "DENDY",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "DENDY": {
+    "party": "REP",
+    "first": "TRACY COLLENE",
+    "last": "DENDY",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JASON DEWITT": {
+    "party": "DEM",
+    "first": "JASON",
+    "last": "DEWITT",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "DEWITT": {
+    "party": "DEM",
+    "first": "JUSTIN",
+    "last": "DEWITT",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "JUSTIN DEWITT": {
+    "party": "DEM",
+    "first": "JUSTIN",
+    "last": "DEWITT",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "PAUL DIETZEL": {
+    "party": "REP",
+    "first": "PAUL",
+    "last": "DIETZEL",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "DIETZEL": {
+    "party": "REP",
+    "first": "PAUL",
+    "last": "DIETZEL",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "HUNTINGTON B DOWNER": {
+    "party": "REP",
+    "first": "HUNTINGTON B",
+    "last": "DOWNER",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "DOWNER": {
+    "party": "REP",
+    "first": "HUNTINGTON B",
+    "last": "DOWNER",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "LEE ANN DUGAS": {
+    "party": "DEM",
+    "first": "LEE ANN",
+    "last": "DUGAS",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2014,
+      2016,
+      2022
+    ],
+    "source": "FEC"
+  },
+  "DUGAS": {
+    "party": "DEM",
+    "first": "LEE ANN",
+    "last": "DUGAS",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2014,
+      2016,
+      2022
+    ],
+    "source": "FEC"
+  },
+  "MICHAEL CHARLES ECHOLS": {
+    "party": "REP",
+    "first": "MICHAEL CHARLES",
+    "last": "ECHOLS",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "ECHOLS": {
+    "party": "REP",
+    "first": "MICHAEL CHARLES",
+    "last": "ECHOLS",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "DERRICK EDWARDS": {
+    "party": "DEM",
+    "first": "DERRICK",
+    "last": "EDWARDS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "FEC"
+  },
+  "EDWIN WASHINGTON EDWARDS": {
+    "party": "DEM",
+    "first": "EDWIN WASHINGTON",
+    "last": "EDWARDS",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "ULOMA EKPETE KAMA": {
+    "party": "DEM",
+    "first": "ULOMA",
+    "last": "EKPETE KAMA",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "EKPETE KAMA": {
+    "party": "DEM",
+    "first": "ULOMA",
+    "last": "EKPETE KAMA",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "GREGORY W LT COL ELLISON": {
+    "party": "REP",
+    "first": "GREGORY W LT COL",
+    "last": "ELLISON",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "ELLISON": {
+    "party": "REP",
+    "first": "GREGORY W LT COL",
+    "last": "ELLISON",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "JULIE CATHRYN EMERSON": {
+    "party": "REP",
+    "first": "JULIE CATHRYN",
+    "last": "EMERSON",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "EMERSON": {
+    "party": "REP",
+    "first": "JULIE CATHRYN",
+    "last": "EMERSON",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "DANIL FAUST": {
+    "party": "DEM",
+    "first": "DANIL",
+    "last": "FAUST",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "FAUST": {
+    "party": "DEM",
+    "first": "DANIL",
+    "last": "FAUST",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CATHRYN CAROLINE FAYARD": {
+    "party": "DEM",
+    "first": "CATHRYN CAROLINE",
+    "last": "FAYARD",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "FAYARD": {
+    "party": "DEM",
+    "first": "CATHRYN CAROLINE",
+    "last": "FAYARD",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CASSIE ERIN FELDER": {
+    "party": "REP",
+    "first": "CASSIE ERIN",
+    "last": "FELDER",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "FELDER": {
+    "party": "REP",
+    "first": "CASSIE ERIN",
+    "last": "FELDER",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "CLEO FIELDS": {
+    "party": "DEM",
+    "first": "CLEO",
+    "last": "FIELDS",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "FIELDS": {
+    "party": "DEM",
+    "first": "CLEO",
+    "last": "FIELDS",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JESSEE CARLTON FLEENOR": {
+    "party": "DEM",
+    "first": "JESSEE CARLTON",
+    "last": "FLEENOR",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "FLEENOR": {
+    "party": "DEM",
+    "first": "JESSEE CARLTON",
+    "last": "FLEENOR",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "JOHN C FLEMING": {
+    "party": "REP",
+    "first": "JOHN C",
+    "last": "FLEMING",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "FLEMING": {
+    "party": "REP",
+    "first": "JOHN C",
+    "last": "FLEMING",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "LARRY W FOY": {
+    "party": "DEM",
+    "first": "LARRY W",
+    "last": "FOY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "FOY": {
+    "party": "DEM",
+    "first": "LARRY W",
+    "last": "FOY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JIM FRANCIS": {
+    "party": "DEM",
+    "first": "JIM",
+    "last": "FRANCIS",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "FRANCIS": {
+    "party": "DEM",
+    "first": "JIM",
+    "last": "FRANCIS",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "LINDSAY GARCIA": {
+    "party": "DEM",
+    "first": "LINDSAY",
+    "last": "GARCIA",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "GARCIA": {
+    "party": "DEM",
+    "first": "LINDSAY",
+    "last": "GARCIA",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "STEVEN JUDE GAVI": {
+    "party": "DEM",
+    "first": "STEVEN JUDE",
+    "last": "GAVI",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "GAVI": {
+    "party": "DEM",
+    "first": "STEVEN JUDE",
+    "last": "GAVI",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "BRETT F GEYMANN": {
+    "party": "REP",
+    "first": "BRETT F",
+    "last": "GEYMANN",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "GEYMANN": {
+    "party": "REP",
+    "first": "BRETT F",
+    "last": "GEYMANN",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "BEN GIBSON": {
+    "party": "REP",
+    "first": "BEN",
+    "last": "GIBSON",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "GIBSON": {
+    "party": "REP",
+    "first": "BEN",
+    "last": "GIBSON",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "PRISCILLA GONZALEZ": {
+    "party": "DEM",
+    "first": "PRISCILLA",
+    "last": "GONZALEZ",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "GONZALEZ": {
+    "party": "DEM",
+    "first": "PRISCILLA",
+    "last": "GONZALEZ",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "MILTON C GORDON": {
+    "party": "REP",
+    "first": "MILTON C",
+    "last": "GORDON",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "GORDON": {
+    "party": "REP",
+    "first": "MILTON C",
+    "last": "GORDON",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "DUSTIN GRANGER": {
+    "party": "DEM",
+    "first": "DUSTIN",
+    "last": "GRANGER",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "GRANGER": {
+    "party": "DEM",
+    "first": "DUSTIN",
+    "last": "GRANGER",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "EUGENE J GREEN": {
+    "party": "DEM",
+    "first": "EUGENE J",
+    "last": "GREEN",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "GREEN": {
+    "party": "DEM",
+    "first": "EUGENE J",
+    "last": "GREEN",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "MATTHEW GROMLICH": {
+    "party": "DEM",
+    "first": "MATTHEW",
+    "last": "GROMLICH",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "GROMLICH": {
+    "party": "DEM",
+    "first": "MATTHEW",
+    "last": "GROMLICH",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JEFFREY D GUERRIERO": {
+    "party": "REP",
+    "first": "JEFFREY D",
+    "last": "GUERRIERO",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "GUERRIERO": {
+    "party": "REP",
+    "first": "JEFFREY D",
+    "last": "GUERRIERO",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "ELBERT GUILLORY": {
+    "party": "REP",
+    "first": "ELBERT",
+    "last": "GUILLORY",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2016,
+      2024
+    ],
+    "source": "FEC"
+  },
+  "GUILLORY": {
+    "party": "REP",
+    "first": "JOSHUA S",
+    "last": "GUILLORY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2018,
+      2022
+    ],
+    "source": "FEC"
+  },
+  "ELBERT LEE GUILLORY": {
+    "party": "REP",
+    "first": "ELBERT LEE",
+    "last": "GUILLORY",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "JOSHUA S GUILLORY": {
+    "party": "REP",
+    "first": "JOSHUA S",
+    "last": "GUILLORY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2018,
+      2022
+    ],
+    "source": "FEC"
+  },
+  "BRAYLON HARRIS": {
+    "party": "DEM",
+    "first": "BRAYLON",
+    "last": "HARRIS",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "JOHN LANCE HARRIS": {
+    "party": "REP",
+    "first": "JOHN LANCE",
+    "last": "HARRIS",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "MATTHEW HASTY": {
+    "party": "REP",
+    "first": "MATTHEW",
+    "last": "HASTY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "HASTY": {
+    "party": "REP",
+    "first": "MATTHEW",
+    "last": "HASTY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "JACOB DORIAN PHIBIAN HEBERT": {
+    "party": "DEM",
+    "first": "JACOB DORIAN PHIBIAN",
+    "last": "HEBERT",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "HEBERT": {
+    "party": "DEM",
+    "first": "JACOB DORIAN PHIBIAN",
+    "last": "HEBERT",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CLAY CAPTAIN HIGGINS": {
+    "party": "REP",
+    "first": "CLAY CAPTAIN",
+    "last": "HIGGINS",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016,
+      2018,
+      2020,
+      2022,
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "HOLDEN HOGGATT": {
+    "party": "REP",
+    "first": "HOLDEN",
+    "last": "HOGGATT",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "HOGGATT": {
+    "party": "REP",
+    "first": "HOLDEN",
+    "last": "HOGGATT",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "MELVIN KIP HOLDEN": {
+    "party": "DEM",
+    "first": "MELVIN KIP",
+    "last": "HOLDEN",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "HOLDEN": {
+    "party": "DEM",
+    "first": "MELVIN KIP",
+    "last": "HOLDEN",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CHRISTOPHER LEE HOLDER": {
+    "party": "REP",
+    "first": "CHRISTOPHER LEE",
+    "last": "HOLDER",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "HOLDER": {
+    "party": "REP",
+    "first": "CHRISTOPHER LEE",
+    "last": "HOLDER",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "PAUL B HOLLIS": {
+    "party": "REP",
+    "first": "PAUL B",
+    "last": "HOLLIS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "HOLLIS": {
+    "party": "REP",
+    "first": "PAUL B",
+    "last": "HOLLIS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "KENNY HOUSTON": {
+    "party": "DEM",
+    "first": "KENNY",
+    "last": "HOUSTON",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "HOUSTON": {
+    "party": "DEM",
+    "first": "KENNY",
+    "last": "HOUSTON",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "WALTER EARL HUFF": {
+    "party": "DEM",
+    "first": "WALTER EARL",
+    "last": "HUFF",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "HUFF": {
+    "party": "DEM",
+    "first": "WALTER EARL",
+    "last": "HUFF",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "MARCUS LAMAR HUNTER": {
+    "party": "DEM",
+    "first": "MARCUS LAMAR",
+    "last": "HUNTER",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "HUNTER": {
+    "party": "DEM",
+    "first": "MARCUS LAMAR",
+    "last": "HUNTER",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "OLIVER LTCOL JENKINS": {
+    "party": "REP",
+    "first": "OLIVER LTCOL",
+    "last": "JENKINS",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "JENKINS": {
+    "party": "REP",
+    "first": "OLIVER LTCOL",
+    "last": "JENKINS",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "LAUREN JEWETT": {
+    "party": "DEM",
+    "first": "LAUREN",
+    "last": "JEWETT",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JEWETT": {
+    "party": "DEM",
+    "first": "LAUREN",
+    "last": "JEWETT",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "HAROLD JOHN": {
+    "party": "DEM",
+    "first": "HAROLD",
+    "last": "JOHN",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "JOHN": {
+    "party": "REP",
+    "first": "XAN",
+    "last": "JOHN",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "RICHARD MICHAEL JOHN": {
+    "party": "REP",
+    "first": "RICHARD MICHAEL",
+    "last": "JOHN",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "CHRISTIAN RASHAD JOHNSON": {
+    "party": "REP",
+    "first": "CHRISTIAN RASHAD",
+    "last": "JOHNSON",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "GARY JOHNSON": {
+    "party": "DEM",
+    "first": "GARY",
+    "last": "JOHNSON",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "JAMES MICHAEL JOHNSON": {
+    "party": "REP",
+    "first": "JAMES MICHAEL",
+    "last": "JOHNSON",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2016,
+      2018,
+      2020,
+      2022,
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JORDAN JOHNSON": {
+    "party": "DEM",
+    "first": "JORDAN",
+    "last": "JOHNSON",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "ROBERT ALLEN JOHNSON": {
+    "party": "DEM",
+    "first": "ROBERT ALLEN",
+    "last": "JOHNSON",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "XAN JOHN": {
+    "party": "REP",
+    "first": "XAN",
+    "last": "JOHN",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "J MARSHALL JONES": {
+    "party": "DEM",
+    "first": "J MARSHALL",
+    "last": "JONES",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "MYRON B KATZ": {
+    "party": "DEM",
+    "first": "MYRON B",
+    "last": "KATZ",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "KATZ": {
+    "party": "DEM",
+    "first": "MYRON B",
+    "last": "KATZ",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "GARY W KING": {
+    "party": "REP",
+    "first": "GARY W",
+    "last": "KING",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2012
+    ],
+    "source": "FEC"
+  },
+  "KING": {
+    "party": "REP",
+    "first": "GARY W",
+    "last": "KING",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2012
+    ],
+    "source": "FEC"
+  },
+  "DANY OHANNES KITISHIAN": {
+    "party": "REP",
+    "first": "DANY OHANNES",
+    "last": "KITISHIAN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "KITISHIAN": {
+    "party": "REP",
+    "first": "DANY OHANNES",
+    "last": "KITISHIAN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "ERICK KNEZEK": {
+    "party": "REP",
+    "first": "ERICK",
+    "last": "KNEZEK",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "KNEZEK": {
+    "party": "REP",
+    "first": "ERICK",
+    "last": "KNEZEK",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "ALBERT KYDER": {
+    "party": "REP",
+    "first": "ALBERT",
+    "last": "KYDER",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "KYDER": {
+    "party": "REP",
+    "first": "ALBERT",
+    "last": "KYDER",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "JESSE P LAGARDE": {
+    "party": "DEM",
+    "first": "JESSE P",
+    "last": "LAGARDE",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "LAGARDE": {
+    "party": "DEM",
+    "first": "JESSE P",
+    "last": "LAGARDE",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "GARY C LANDRIEU": {
+    "party": "DEM",
+    "first": "GARY C",
+    "last": "LANDRIEU",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2012,
+      2014
+    ],
+    "source": "FEC"
+  },
+  "ROBERT KENT LANSDEN": {
+    "party": "REP",
+    "first": "ROBERT KENT",
+    "last": "LANSDEN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "LANSDEN": {
+    "party": "REP",
+    "first": "ROBERT KENT",
+    "last": "LANSDEN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "JOSUE LAROSE": {
+    "party": "REP",
+    "first": "JOSUE",
+    "last": "LAROSE",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2012
+    ],
+    "source": "FEC"
+  },
+  "LAROSE": {
+    "party": "REP",
+    "first": "JOSUE",
+    "last": "LAROSE",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2012
+    ],
+    "source": "FEC"
+  },
+  "TIA MARIE LEBRUN": {
+    "party": "DEM",
+    "first": "TIA MARIE",
+    "last": "LEBRUN",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2022,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "LEBRUN": {
+    "party": "DEM",
+    "first": "TIA MARIE",
+    "last": "LEBRUN",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2022,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "MARTIN LEMELLE": {
+    "party": "DEM",
+    "first": "MARTIN",
+    "last": "LEMELLE",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "LEMELLE": {
+    "party": "DEM",
+    "first": "MARTIN",
+    "last": "LEMELLE",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "CHRIS LEOPOLD": {
+    "party": "REP",
+    "first": "CHRIS",
+    "last": "LEOPOLD",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "LEOPOLD": {
+    "party": "REP",
+    "first": "CHRIS",
+    "last": "LEOPOLD",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "LUKE JOSHUA LETLOW": {
+    "party": "REP",
+    "first": "LUKE JOSHUA",
+    "last": "LETLOW",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "RICHARD LIEBERMAN": {
+    "party": "DEM",
+    "first": "RICHARD",
+    "last": "LIEBERMAN",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014,
+      2016
+    ],
+    "source": "FEC"
+  },
+  "LIEBERMAN": {
+    "party": "DEM",
+    "first": "RICHARD",
+    "last": "LIEBERMAN",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014,
+      2016
+    ],
+    "source": "FEC"
+  },
+  "GREGORY LIRETTE": {
+    "party": "REP",
+    "first": "GREGORY",
+    "last": "LIRETTE",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "LIRETTE": {
+    "party": "REP",
+    "first": "GREGORY",
+    "last": "LIRETTE",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "DANIEL ANTHONY LUX": {
+    "party": "REP",
+    "first": "DANIEL ANTHONY",
+    "last": "LUX",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "LUX": {
+    "party": "REP",
+    "first": "DANIEL ANTHONY",
+    "last": "LUX",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "CHRISTY LYNCH": {
+    "party": "REP",
+    "first": "CHRISTY",
+    "last": "LYNCH",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "LYNCH": {
+    "party": "REP",
+    "first": "CHRISTY",
+    "last": "LYNCH",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "AUSTIN MAGEE": {
+    "party": "REP",
+    "first": "AUSTIN",
+    "last": "MAGEE",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "MAGEE": {
+    "party": "REP",
+    "first": "AUSTIN",
+    "last": "MAGEE",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "DONNA FAYE MAJOR": {
+    "party": "DEM",
+    "first": "DONNA FAYE",
+    "last": "MAJOR",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "MAJOR": {
+    "party": "DEM",
+    "first": "DONNA FAYE",
+    "last": "MAJOR",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "ROBERT L COL RET MANESS": {
+    "party": "REP",
+    "first": "ROBERT L COL RET",
+    "last": "MANESS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2014,
+      2016
+    ],
+    "source": "FEC"
+  },
+  "MANESS": {
+    "party": "REP",
+    "first": "ROBERT L COL RET",
+    "last": "MANESS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2014,
+      2016
+    ],
+    "source": "FEC"
+  },
+  "MEL INARI MANUEL": {
+    "party": "DEM",
+    "first": "MEL INARI",
+    "last": "MANUEL",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "MANUEL": {
+    "party": "DEM",
+    "first": "MEL INARI",
+    "last": "MANUEL",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "CHARLES MARSALA": {
+    "party": "REP",
+    "first": "CHARLES",
+    "last": "MARSALA",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "MARSALA": {
+    "party": "REP",
+    "first": "CHARLES",
+    "last": "MARSALA",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "JAMIE MAYO": {
+    "party": "DEM",
+    "first": "JAMIE",
+    "last": "MAYO",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014,
+      2016
+    ],
+    "source": "FEC"
+  },
+  "MAYO": {
+    "party": "DEM",
+    "first": "JAMIE",
+    "last": "MAYO",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014,
+      2016
+    ],
+    "source": "FEC"
+  },
+  "VANCE MICHAEL MCALLISTER": {
+    "party": "REP",
+    "first": "VANCE MICHAEL",
+    "last": "MCALLISTER",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "MCALLISTER": {
+    "party": "REP",
+    "first": "VANCE MICHAEL",
+    "last": "MCALLISTER",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "CRAIG MCCULLOCH": {
+    "party": "REP",
+    "first": "CRAIG",
+    "last": "MCCULLOCH",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "MCCULLOCH": {
+    "party": "REP",
+    "first": "CRAIG",
+    "last": "MCCULLOCH",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "DAN MCKAY": {
+    "party": "DEM",
+    "first": "DAN",
+    "last": "MCKAY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "MCKAY": {
+    "party": "DEM",
+    "first": "DAN",
+    "last": "MCKAY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "DIXON MCMAKIN": {
+    "party": "REP",
+    "first": "DIXON",
+    "last": "MCMAKIN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "MCMAKIN": {
+    "party": "REP",
+    "first": "DIXON",
+    "last": "MCMAKIN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "MICHAEL EDWARD MEBRUER": {
+    "party": "REP",
+    "first": "MICHAEL EDWARD",
+    "last": "MEBRUER",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "MEBRUER": {
+    "party": "REP",
+    "first": "MICHAEL EDWARD",
+    "last": "MEBRUER",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "DAVID ROLAND MELVILLE": {
+    "party": "DEM",
+    "first": "DAVID ROLAND",
+    "last": "MELVILLE",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "MELVILLE": {
+    "party": "DEM",
+    "first": "DAVID ROLAND",
+    "last": "MELVILLE",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "MANLIO VINICIO MENDOZA": {
+    "party": "DEM",
+    "first": "MANLIO VINICIO",
+    "last": "MENDOZA",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "MENDOZA": {
+    "party": "DEM",
+    "first": "MANLIO VINICIO",
+    "last": "MENDOZA",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "CHARLES DAVID METCALF": {
+    "party": "DEM",
+    "first": "CHARLES DAVID",
+    "last": "METCALF",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "METCALF": {
+    "party": "DEM",
+    "first": "CHARLES DAVID",
+    "last": "METCALF",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "MIMI METHVIN": {
+    "party": "DEM",
+    "first": "MIMI",
+    "last": "METHVIN",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "METHVIN": {
+    "party": "DEM",
+    "first": "MIMI",
+    "last": "METHVIN",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "BLAKE MIGUEZ": {
+    "party": "REP",
+    "first": "BLAKE",
+    "last": "MIGUEZ",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "MIGUEZ": {
+    "party": "REP",
+    "first": "BLAKE",
+    "last": "MIGUEZ",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JOSEPH KYLE MILLER": {
+    "party": "REP",
+    "first": "JOSEPH KYLE",
+    "last": "MILLER",
+    "office": "House",
+    "district": "07",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "MILLER": {
+    "party": "REP",
+    "first": "JOSEPH KYLE",
+    "last": "MILLER",
+    "office": "House",
+    "district": "07",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "LUKE MIXON": {
+    "party": "DEM",
+    "first": "LUKE",
+    "last": "MIXON",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "MIXON": {
+    "party": "DEM",
+    "first": "LUKE",
+    "last": "MIXON",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "JOSHUA MOROTT": {
+    "party": "REP",
+    "first": "JOSHUA",
+    "last": "MOROTT",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "MOROTT": {
+    "party": "REP",
+    "first": "JOSHUA",
+    "last": "MOROTT",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JOHN CLYDE MORRIS": {
+    "party": "REP",
+    "first": "JOHN CLYDE",
+    "last": "MORRIS",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "MORRIS": {
+    "party": "REP",
+    "first": "JOHN CLYDE",
+    "last": "MORRIS",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "DUSTIN MURPHY": {
+    "party": "REP",
+    "first": "DUSTIN",
+    "last": "MURPHY",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "MURPHY": {
+    "party": "REP",
+    "first": "DUSTIN",
+    "last": "MURPHY",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "MICHAEL NICHOLS": {
+    "party": "REP",
+    "first": "MICHAEL",
+    "last": "NICHOLS",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "NICHOLS": {
+    "party": "REP",
+    "first": "MICHAEL",
+    "last": "NICHOLS",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "TANIA NYMAN": {
+    "party": "DEM",
+    "first": "TANIA",
+    "last": "NYMAN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "NYMAN": {
+    "party": "DEM",
+    "first": "TANIA",
+    "last": "NYMAN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "DESIREE ONTIVEROS": {
+    "party": "DEM",
+    "first": "DESIREE",
+    "last": "ONTIVEROS",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "ONTIVEROS": {
+    "party": "DEM",
+    "first": "DESIREE",
+    "last": "ONTIVEROS",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "CANDIDA PEARLL PAGEL": {
+    "party": "DEM",
+    "first": "CANDIDA PEARLL",
+    "last": "PAGEL",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "PAGEL": {
+    "party": "DEM",
+    "first": "CANDIDA PEARLL",
+    "last": "PAGEL",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "ABHAY PATEL": {
+    "party": "REP",
+    "first": "ABHAY",
+    "last": "PATEL",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "PATEL": {
+    "party": "REP",
+    "first": "ABHAY",
+    "last": "PATEL",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "THOMAS LANE PAYNE": {
+    "party": "REP",
+    "first": "THOMAS LANE",
+    "last": "PAYNE",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "PAYNE": {
+    "party": "REP",
+    "first": "THOMAS LANE",
+    "last": "PAYNE",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "JOSHUA A PELLERIN": {
+    "party": "DEM",
+    "first": "JOSHUA A",
+    "last": "PELLERIN",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "PELLERIN": {
+    "party": "DEM",
+    "first": "JOSHUA A",
+    "last": "PELLERIN",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "ADRIAN PERKINS": {
+    "party": "DEM",
+    "first": "ADRIAN",
+    "last": "PERKINS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "PERKINS": {
+    "party": "DEM",
+    "first": "ADRIAN",
+    "last": "PERKINS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "KAREN CARTER PETERSON": {
+    "party": "DEM",
+    "first": "KAREN CARTER",
+    "last": "PETERSON",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "PETERSON": {
+    "party": "DEM",
+    "first": "KAREN CARTER",
+    "last": "PETERSON",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "ANTOINE PIERCE": {
+    "party": "DEM",
+    "first": "ANTOINE",
+    "last": "PIERCE",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "PIERCE": {
+    "party": "DEM",
+    "first": "ANTOINE",
+    "last": "PIERCE",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "BRODY PIERROTTIE": {
+    "party": "DEM",
+    "first": "BRODY",
+    "last": "PIERROTTIE",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "PIERROTTIE": {
+    "party": "DEM",
+    "first": "BRODY",
+    "last": "PIERROTTIE",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "HUNTER I PULLEN": {
+    "party": "REP",
+    "first": "HUNTER I",
+    "last": "PULLEN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "PULLEN": {
+    "party": "REP",
+    "first": "HUNTER I",
+    "last": "PULLEN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "LARRY RADER": {
+    "party": "DEM",
+    "first": "LARRY",
+    "last": "RADER",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016,
+      2018
+    ],
+    "source": "FEC"
+  },
+  "RADER": {
+    "party": "DEM",
+    "first": "LARRY",
+    "last": "RADER",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016,
+      2018
+    ],
+    "source": "FEC"
+  },
+  "AUGUST J RANTZ": {
+    "party": "REP",
+    "first": "AUGUST J",
+    "last": "RANTZ",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "RANTZ": {
+    "party": "REP",
+    "first": "AUGUST J",
+    "last": "RANTZ",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "GROVER JOSEPH REES": {
+    "party": "REP",
+    "first": "GROVER JOSEPH",
+    "last": "REES",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "REES": {
+    "party": "REP",
+    "first": "GROVER JOSEPH",
+    "last": "REES",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "RON RICHARD": {
+    "party": "DEM",
+    "first": "RON",
+    "last": "RICHARD",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2012
+    ],
+    "source": "FEC"
+  },
+  "RICHARD": {
+    "party": "DEM",
+    "first": "RON",
+    "last": "RICHARD",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2012
+    ],
+    "source": "FEC"
+  },
+  "HARTWELL NEIL RISER": {
+    "party": "REP",
+    "first": "HARTWELL NEIL",
+    "last": "RISER",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "RISER": {
+    "party": "REP",
+    "first": "HARTWELL NEIL",
+    "last": "RISER",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "RANDALL SCOTT ROBINSON": {
+    "party": "REP",
+    "first": "RANDALL SCOTT",
+    "last": "ROBINSON",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "ROBINSON": {
+    "party": "REP",
+    "first": "RANDALL SCOTT",
+    "last": "ROBINSON",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "WELDON RUSSELL": {
+    "party": "DEM",
+    "first": "WELDON",
+    "last": "RUSSELL",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "RUSSELL": {
+    "party": "DEM",
+    "first": "WELDON",
+    "last": "RUSSELL",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "ANDIE SAIZAN": {
+    "party": "DEM",
+    "first": "ANDIE",
+    "last": "SAIZAN",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "SAIZAN": {
+    "party": "DEM",
+    "first": "ANDIE",
+    "last": "SAIZAN",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "BRANDON SANDAGE": {
+    "party": "REP",
+    "first": "BRANDON",
+    "last": "SANDAGE",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "SANDAGE": {
+    "party": "REP",
+    "first": "BRANDON",
+    "last": "SANDAGE",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "TAMMY MARIE SAVOIE": {
+    "party": "DEM",
+    "first": "TAMMY MARIE",
+    "last": "SAVOIE",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "SAVOIE": {
+    "party": "DEM",
+    "first": "TAMMY MARIE",
+    "last": "SAVOIE",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2018
+    ],
+    "source": "FEC"
+  },
+  "KATHY W SEIDEN": {
+    "party": "REP",
+    "first": "KATHY W",
+    "last": "SEIDEN",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "SEIDEN": {
+    "party": "REP",
+    "first": "KATHY W",
+    "last": "SEIDEN",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "JACOB LEWIS SHAHEEN": {
+    "party": "REP",
+    "first": "JACOB LEWIS",
+    "last": "SHAHEEN",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "SHAHEEN": {
+    "party": "REP",
+    "first": "JACOB LEWIS",
+    "last": "SHAHEEN",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "ERIC SKRMETTA": {
+    "party": "REP",
+    "first": "ERIC",
+    "last": "SKRMETTA",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "SKRMETTA": {
+    "party": "REP",
+    "first": "ERIC",
+    "last": "SKRMETTA",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "CARL RAY SMITH": {
+    "party": "REP",
+    "first": "CARL RAY",
+    "last": "SMITH",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "SANCHA SMITH": {
+    "party": "REP",
+    "first": "SANCHA",
+    "last": "SMITH",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "PHILLIP SNOWDEN": {
+    "party": "DEM",
+    "first": "PHILLIP",
+    "last": "SNOWDEN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "SNOWDEN": {
+    "party": "DEM",
+    "first": "PHILLIP",
+    "last": "SNOWDEN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "SCOTT RYAN SONNIER": {
+    "party": "REP",
+    "first": "SCOTT RYAN",
+    "last": "SONNIER",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "SONNIER": {
+    "party": "REP",
+    "first": "SCOTT RYAN",
+    "last": "SONNIER",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "MARK SPENCER": {
+    "party": "REP",
+    "first": "MARK",
+    "last": "SPENCER",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "SPENCER": {
+    "party": "REP",
+    "first": "MARK",
+    "last": "SPENCER",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "SYRITA STEIB": {
+    "party": "DEM",
+    "first": "SYRITA",
+    "last": "STEIB",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "STEIB": {
+    "party": "DEM",
+    "first": "SYRITA",
+    "last": "STEIB",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2022
+    ],
+    "source": "FEC"
+  },
+  "SADI SUMMERLIN": {
+    "party": "DEM",
+    "first": "SADI",
+    "last": "SUMMERLIN",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "SUMMERLIN": {
+    "party": "DEM",
+    "first": "SADI",
+    "last": "SUMMERLIN",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "JOSEPH C SWIDER": {
+    "party": "DEM",
+    "first": "JOSEPH C",
+    "last": "SWIDER",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "SWIDER": {
+    "party": "DEM",
+    "first": "JOSEPH C",
+    "last": "SWIDER",
+    "office": "House",
+    "district": "01",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "EDWARD L TARPLEY": {
+    "party": "REP",
+    "first": "EDWARD L",
+    "last": "TARPLEY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "TARPLEY": {
+    "party": "REP",
+    "first": "EDWARD L",
+    "last": "TARPLEY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "CHARLES TREY THOMAS": {
+    "party": "REP",
+    "first": "CHARLES TREY",
+    "last": "THOMAS",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "THOMAS": {
+    "party": "DEM",
+    "first": "VERONE A",
+    "last": "THOMAS",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2018,
+      2020
+    ],
+    "source": "FEC"
+  },
+  "VERONE A THOMAS": {
+    "party": "DEM",
+    "first": "VERONE A",
+    "last": "THOMAS",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2018,
+      2020
+    ],
+    "source": "FEC"
+  },
+  "CHET D TRAYLOR": {
+    "party": "REP",
+    "first": "CHET D",
+    "last": "TRAYLOR",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "TRAYLOR": {
+    "party": "REP",
+    "first": "CHET D",
+    "last": "TRAYLOR",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2010
+    ],
+    "source": "FEC"
+  },
+  "RYAN TRUNDLE": {
+    "party": "DEM",
+    "first": "RYAN",
+    "last": "TRUNDLE",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2018,
+      2020
+    ],
+    "source": "FEC"
+  },
+  "TRUNDLE": {
+    "party": "DEM",
+    "first": "RYAN",
+    "last": "TRUNDLE",
+    "office": "House",
+    "district": "04",
+    "election_years": [
+      2018,
+      2020
+    ],
+    "source": "FEC"
+  },
+  "MICHAEL VALLIEN": {
+    "party": "DEM",
+    "first": "MICHAEL",
+    "last": "VALLIEN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "VALLIEN": {
+    "party": "DEM",
+    "first": "MICHAEL",
+    "last": "VALLIEN",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2024
+    ],
+    "source": "FEC"
+  },
+  "HERMAN L VIDRINE": {
+    "party": "REP",
+    "first": "HERMAN L",
+    "last": "VIDRINE",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "VIDRINE": {
+    "party": "REP",
+    "first": "HERMAN L",
+    "last": "VIDRINE",
+    "office": "House",
+    "district": "03",
+    "election_years": [
+      2016
+    ],
+    "source": "FEC"
+  },
+  "SHELDON CHARLES H LA VINCENT": {
+    "party": "REP",
+    "first": "SHELDON CHARLES H LA",
+    "last": "VINCENT",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "VINCENT": {
+    "party": "REP",
+    "first": "SHELDON CHARLES H LA",
+    "last": "VINCENT",
+    "office": "House",
+    "district": "02",
+    "election_years": [
+      2021
+    ],
+    "source": "FEC"
+  },
+  "JABARIE WALKER": {
+    "party": "DEM",
+    "first": "JABARIE",
+    "last": "WALKER",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "WALKER": {
+    "party": "DEM",
+    "first": "JABARIE",
+    "last": "WALKER",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "RICHARD J WARD": {
+    "party": "REP",
+    "first": "RICHARD J",
+    "last": "WARD",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "PHILLIP BLAKE WEATHERLY": {
+    "party": "REP",
+    "first": "PHILLIP BLAKE",
+    "last": "WEATHERLY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "WEATHERLY": {
+    "party": "REP",
+    "first": "PHILLIP BLAKE",
+    "last": "WEATHERLY",
+    "office": "House",
+    "district": "05",
+    "election_years": [
+      2013
+    ],
+    "source": "FEC"
+  },
+  "PETER WENSTRUP": {
+    "party": "DEM",
+    "first": "PETER",
+    "last": "WENSTRUP",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "WENSTRUP": {
+    "party": "DEM",
+    "first": "PETER",
+    "last": "WENSTRUP",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "LENAR WHITNEY": {
+    "party": "REP",
+    "first": "LENAR",
+    "last": "WHITNEY",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "WHITNEY": {
+    "party": "REP",
+    "first": "LENAR",
+    "last": "WHITNEY",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014
+    ],
+    "source": "FEC"
+  },
+  "DARTANYON A WILLIAMS": {
+    "party": "DEM",
+    "first": "DARTANYON A",
+    "last": "WILLIAMS",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2020
+    ],
+    "source": "FEC"
+  },
+  "WILLIAMS": {
+    "party": "REP",
+    "first": "PETER",
+    "last": "WILLIAMS",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014,
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "PETER WILLIAMS": {
+    "party": "REP",
+    "first": "PETER",
+    "last": "WILLIAMS",
+    "office": "House",
+    "district": "06",
+    "election_years": [
+      2014,
+      2024,
+      2026
+    ],
+    "source": "FEC"
+  },
+  "SAMUEL LEE WYATT": {
+    "party": "REP",
+    "first": "SAMUEL LEE",
+    "last": "WYATT",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  },
+  "WYATT": {
+    "party": "REP",
+    "first": "SAMUEL LEE",
+    "last": "WYATT",
+    "office": "Senate",
+    "district": "00",
+    "election_years": [
+      2026
+    ],
+    "source": "FEC"
+  }
+}

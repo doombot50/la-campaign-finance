@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Louisiana Campaign Finance Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --gold: #c8a951;
+    --border: #30363d;
+    --dem: #2166ac;
+    --rep: #d73027;
+    --oth: #4dac26;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --purple: #7b5ea7;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; }
+  a { color: var(--gold); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* HEADER */
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    position: sticky; top: 0; z-index: 1000;
+  }
+  .header-inner {
+    max-width: 1400px; margin: 0 auto;
+    display: flex; align-items: center; gap: 16px;
+    flex-wrap: wrap; padding: 12px 0;
+  }
+  .header-logo { font-size: 28px; }
+  .header-title { font-size: 18px; font-weight: 700; color: var(--gold); flex: 1; }
+  .header-subtitle { font-size: 12px; color: var(--muted); }
+
+  /* CONTROLS */
+  .controls-bar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+  }
+  .controls-inner {
+    max-width: 1400px; margin: 0 auto;
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+  }
+  .ctrl-group { display: flex; flex-direction: column; gap: 4px; }
+  .ctrl-group label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .ctrl-select, .ctrl-input {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 10px; border-radius: 6px; font-size: 13px;
+    transition: border-color 0.2s;
+  }
+  .ctrl-select:focus, .ctrl-input:focus { outline: none; border-color: var(--gold); }
+  .ctrl-select { cursor: pointer; }
+  .amount-wrap { display: flex; gap: 6px; align-items: center; }
+  .amount-wrap span { color: var(--muted); font-size: 12px; }
+  .ctrl-input.amount { width: 90px; }
+  .ctrl-input.search { width: 180px; }
+  .btn-load {
+    background: var(--gold); color: #000; border: none; padding: 7px 20px;
+    border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px;
+    transition: opacity 0.2s; white-space: nowrap;
+  }
+  .btn-load:hover { opacity: 0.85; }
+  .btn-secondary {
+    background: transparent; color: var(--gold); border: 1px solid var(--gold);
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-secondary:hover { background: rgba(200,169,81,0.1); }
+  .btn-secondary.active { background: rgba(200,169,81,0.15); }
+
+  /* PROXY BANNER */
+  #proxy-banner {
+    display: none; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: #1a2a1a; border: 1px solid #2d5a2d; border-left: 4px solid #c8a951;
+    padding: 10px 24px; font-size: 13px; color: #a8c8a8;
+  }
+  #proxy-banner strong { color: #c8a951; }
+  #proxy-banner code {
+    background: #0d1f0d; border: 1px solid #2d5a2d; border-radius: 4px;
+    padding: 2px 8px; font-family: monospace; font-size: 12px; color: #7fff7f;
+  }
+  #proxy-banner .dismiss-btn {
+    margin-left: auto; background: none; border: 1px solid #2d5a2d;
+    color: #a8c8a8; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 12px;
+  }
+  #proxy-live-badge {
+    display: none; align-items: center; gap: 6px;
+    background: #1a2a1a; border: 1px solid #2d5a2d;
+    padding: 6px 14px; font-size: 12px; color: #7fff7f;
+  }
+  #proxy-live-badge .dot { width:8px; height:8px; border-radius:50%; background:#3fb950; animation: pulse 2s infinite; }
+
+  /* MAIN CONTENT */
+  .main { max-width: 1400px; margin: 0 auto; padding: 20px 24px; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--gold); line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* MAP + PANEL ROW */
+  .map-panel-row { display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 20px; }
+  .map-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; position: relative; min-height: 480px;
+  }
+  .map-card-header {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 500;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: rgba(22,27,34,0.85);
+    border-bottom: 1px solid var(--border); backdrop-filter: blur(4px);
+  }
+  .map-title { font-size: 13px; font-weight: 600; color: var(--gold); }
+  .map-toggle-btns { display: flex; gap: 4px; }
+  .map-toggle-btn {
+    padding: 4px 12px; border-radius: 5px; font-size: 12px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+    transition: all 0.2s;
+  }
+  .map-toggle-btn.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 600; }
+  #map { height: 100%; min-height: 480px; padding-top: 44px; }
+  .map-spinner {
+    display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    z-index: 600; text-align: center; color: var(--gold);
+  }
+  .spinner-ring {
+    width: 48px; height: 48px; border: 3px solid var(--border);
+    border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin: 0 auto 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* SELECTED PARISH PANEL */
+  #selected-panel {
+    display: none; position: absolute; bottom: 40px; left: 10px; z-index: 500;
+    background: rgba(22,27,34,0.95); border: 1px solid var(--gold); border-radius: 8px;
+    padding: 12px 16px; min-width: 200px; backdrop-filter: blur(4px);
+  }
+  #selected-panel h4 { color: var(--gold); margin-bottom: 8px; font-size: 14px; }
+  #selected-panel .sp-row { display: flex; justify-content: space-between; gap: 20px; font-size: 12px; margin-bottom: 4px; }
+  #selected-panel .sp-label { color: var(--muted); }
+  #selected-panel .sp-val { color: var(--text); font-weight: 600; }
+  #selected-panel .sp-close { position: absolute; top: 8px; right: 10px; cursor: pointer; color: var(--muted); font-size: 16px; }
+
+  /* RIGHT PANEL */
+  .right-panel { display: flex; flex-direction: column; gap: 16px; }
+  .panel-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px;
+  }
+  .panel-card-title {
+    font-size: 13px; font-weight: 600; color: var(--gold);
+    margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .chart-wrap { position: relative; height: 220px; }
+  .top-parishes-list { }
+  .top-parish-sort { display: flex; gap: 4px; margin-bottom: 10px; }
+  .tp-sort-btn {
+    padding: 3px 9px; border-radius: 4px; font-size: 11px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+    transition: all 0.2s;
+  }
+  .tp-sort-btn.active { background: rgba(200,169,81,0.15); color: var(--gold); border-color: var(--gold); }
+  .top-parish-item {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .tp-rank { font-size: 11px; color: var(--muted); width: 18px; text-align: right; flex-shrink: 0; }
+  .tp-name { font-size: 13px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tp-bar-wrap { width: 80px; height: 6px; background: var(--border); border-radius: 3px; flex-shrink: 0; }
+  .tp-bar { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.4s; }
+  .tp-val { font-size: 12px; color: var(--muted); width: 70px; text-align: right; flex-shrink: 0; }
+
+  /* TREND CHART */
+  .trend-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 20px;
+  }
+  .trend-title { font-size: 13px; font-weight: 600; color: var(--gold); margin-bottom: 14px; }
+  .trend-wrap { position: relative; height: 200px; }
+
+  /* DATA TABLE */
+  .table-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 20px; overflow-x: auto;
+  }
+  .table-header-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+  }
+  .table-title { font-size: 13px; font-weight: 600; color: var(--gold); }
+  .table-actions { display: flex; gap: 8px; align-items: center; }
+  .upload-btn {
+    background: transparent; color: var(--gold); border: 1px solid var(--gold);
+    padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;
+    transition: all 0.2s;
+  }
+  .upload-btn:hover { background: rgba(200,169,81,0.1); }
+  #csv-upload { display: none; }
+  table { width: 100%; border-collapse: collapse; min-width: 700px; }
+  thead th {
+    padding: 8px 12px; text-align: left; font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border);
+    cursor: pointer; white-space: nowrap; user-select: none;
+  }
+  thead th:hover { color: var(--gold); }
+  thead th.sort-asc::after { content: ' ↑'; color: var(--gold); }
+  thead th.sort-desc::after { content: ' ↓'; color: var(--gold); }
+  tbody tr { border-bottom: 1px solid rgba(48,54,61,0.5); transition: background 0.15s; }
+  tbody tr:hover { background: rgba(200,169,81,0.04); }
+  td { padding: 8px 12px; font-size: 13px; }
+  .party-badge {
+    display: inline-block; padding: 2px 7px; border-radius: 4px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  }
+  .party-badge.dem { background: rgba(33,102,172,0.25); color: #64b0ff; border: 1px solid rgba(33,102,172,0.4); }
+  .party-badge.rep { background: rgba(215,48,39,0.25); color: #ff7070; border: 1px solid rgba(215,48,39,0.4); }
+  .party-badge.oth { background: rgba(77,172,38,0.25); color: #80e040; border: 1px solid rgba(77,172,38,0.4); }
+  .party-badge.pac     { background: rgba(153,102,255,0.2); color: #bf9fff; border: 1px solid rgba(153,102,255,0.4); }
+  .party-badge.pac-dem { background: rgba(33,102,172,0.15); color: #9fc8ff; border: 1px solid rgba(0,100,200,0.5); }
+  .party-badge.pac-rep { background: rgba(215,48,39,0.15);  color: #ffaaaa; border: 1px solid rgba(200,0,0,0.5); }
+  .party-badge.org     { background: rgba(255,165,0,0.15);  color: #ffcc66; border: 1px solid rgba(255,165,0,0.4); }
+  .party-badge.bus     { background: rgba(100,100,100,0.2); color: #aaaaaa; border: 1px solid rgba(120,120,120,0.4); }
+  .party-badge.ind     { background: rgba(80,180,120,0.15); color: #80c8a0; border: 1px solid rgba(80,180,120,0.3); }
+  .source-badge {
+    display: inline-block; padding: 2px 7px; border-radius: 4px;
+    font-size: 11px; font-weight: 700;
+  }
+  .source-badge.la { background: rgba(200,169,81,0.2); color: var(--gold); border: 1px solid rgba(200,169,81,0.4); }
+  .amount-cell { color: #4caf7d; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .empty-state {
+    text-align: center; padding: 48px 20px; color: var(--muted);
+  }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .pagination {
+    display: flex; justify-content: center; align-items: center;
+    gap: 8px; margin-top: 14px; flex-wrap: wrap;
+  }
+  .page-btn {
+    padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 12px;
+    transition: all 0.2s;
+  }
+  .page-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+  .page-btn.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
+  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .page-info { font-size: 12px; color: var(--muted); }
+
+  /* EXPANDABLE ROW DETAIL */
+  tbody tr.data-row { cursor: pointer; }
+  tbody tr.data-row:hover { background: rgba(200,169,81,0.06); }
+  tbody tr.data-row.filing-fee-row { border-left: 3px solid #e0782a; }
+  tbody tr.data-row.filing-fee-row:hover { background: rgba(224,120,42,0.07); }
+  td.expand-cell { width: 28px; padding: 8px 6px 8px 10px; color: var(--muted); font-size: 11px; user-select: none; }
+  .expand-icon { display: inline-block; transition: transform 0.2s; line-height: 1; }
+  tr.data-row.open .expand-icon { transform: rotate(90deg); color: var(--gold); }
+  tr.detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
+  tr.detail-row.filing-fee-row td { border-left: 3px solid #e0782a; }
+  .detail-panel {
+    padding: 14px 16px 16px 36px;
+    background: #0f1319;
+    animation: slideDown 0.15s ease-out;
+  }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .filing-fee-alert {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: rgba(224,120,42,0.12); border: 1px solid rgba(224,120,42,0.45);
+    border-left: 4px solid #e0782a; border-radius: 6px;
+    padding: 10px 14px; margin-bottom: 14px; color: #f0a060;
+  }
+  .filing-fee-alert .ff-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .filing-fee-alert strong { display: block; font-size: 13px; margin-bottom: 3px; }
+  .filing-fee-alert p { font-size: 12px; color: #c8966a; margin: 0; line-height: 1.4; }
+  .party-badge.filing-fee {
+    background: rgba(224,120,42,0.2); color: #f0a060; border: 1px solid rgba(224,120,42,0.5);
+  }
+  .detail-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px 24px;
+  }
+  .detail-section h4 {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.7px;
+    margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;
+  }
+  .detail-field {
+    display: flex; flex-direction: column; gap: 1px; margin-bottom: 7px;
+  }
+  .detail-field label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .detail-field span { font-size: 12px; color: var(--text); word-break: break-word; }
+  .detail-field span.empty { color: var(--muted); font-style: italic; }
+  .detail-notes { grid-column: 1 / -1; }
+  .notes-text {
+    font-size: 12px; color: #e0c080; background: rgba(200,169,81,0.07);
+    border: 1px solid rgba(200,169,81,0.2); border-radius: 5px;
+    padding: 8px 12px; margin-top: 4px; font-style: italic; word-break: break-word;
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    background: var(--card); border-top: 1px solid var(--border);
+    padding: 8px 24px;
+  }
+  .status-inner {
+    max-width: 1400px; margin: 0 auto;
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.ok { background: #4caf7d; box-shadow: 0 0 6px #4caf7d; }
+  .status-dot.err { background: #d73027; box-shadow: 0 0 6px #d73027; }
+  .status-dot.loading { background: var(--gold); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+  .status-text { font-size: 12px; color: var(--muted); }
+  .status-text span { color: var(--text); font-weight: 600; }
+
+  /* FOOTER */
+  footer {
+    background: var(--card); border-top: 1px solid var(--border);
+    padding: 16px 24px; text-align: center;
+  }
+  footer p { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+
+  /* LEAFLET OVERRIDES */
+  .leaflet-container { background: #0d1117 !important; }
+  .leaflet-control-zoom a { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
+  .leaflet-control-zoom a:hover { background: var(--gold) !important; color: #000 !important; }
+  .leaflet-popup-content-wrapper { background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); }
+  .leaflet-popup-tip { background: var(--card); }
+  .tooltip-inner { font-size: 13px; line-height: 1.6; }
+  .tooltip-inner strong { color: var(--gold); display: block; margin-bottom: 4px; font-size: 14px; }
+  .tooltip-inner .t-row { display: flex; justify-content: space-between; gap: 16px; }
+  .tooltip-inner .t-label { color: var(--muted); }
+  .tooltip-inner .t-val { color: var(--text); font-weight: 600; }
+
+  /* LEGEND */
+  .map-legend {
+    background: rgba(22,27,34,0.92); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; font-size: 11px; line-height: 1.8;
+    backdrop-filter: blur(4px);
+  }
+  .map-legend .legend-title { font-weight: 700; color: var(--gold); margin-bottom: 6px; font-size: 12px; }
+  .legend-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .legend-size-row { display: flex; align-items: flex-end; gap: 6px; margin-top: 8px; }
+  .legend-circle { border-radius: 50%; background: rgba(200,169,81,0.4); border: 1px solid var(--gold); flex-shrink: 0; }
+
+  /* RESPONSIVE */
+  @media (max-width: 1100px) {
+    .map-panel-row { grid-template-columns: 1fr; }
+    .right-panel { flex-direction: row; flex-wrap: wrap; }
+    .right-panel .panel-card { flex: 1 1 300px; }
+  }
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .header-inner { gap: 10px; }
+    .header-title { font-size: 15px; }
+    .controls-inner { gap: 8px; }
+    .ctrl-input.search { width: 140px; }
+    .stat-value { font-size: 22px; }
+  }
+  @media (max-width: 480px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .map-panel-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="header-logo">⚜️</div>
+    <div>
+      <div class="header-title">Louisiana Campaign Finance Dashboard</div>
+      <div class="header-subtitle">Louisiana State Ethics campaign finance data</div>
+    </div>
+  </div>
+</header>
+
+<!-- PROXY BANNER -->
+<div id="proxy-banner">
+  <span>⚡</span>
+  <span><strong>Enable live Louisiana Ethics data:</strong> run <code>python la_ethics_server.py</code> in this folder, then reload. Downloads real contribution data directly from <strong>ethics.la.gov</strong> — updated daily.</span>
+  <button class="dismiss-btn" onclick="document.getElementById('proxy-banner').style.display='none'">Dismiss</button>
+</div>
+<div id="proxy-live-badge">
+  <span class="dot"></span> LA Ethics proxy connected — real data active
+</div>
+
+<!-- CONTROLS -->
+<div class="controls-bar">
+  <div class="controls-inner">
+    <div class="ctrl-group">
+      <label>Election Year</label>
+      <select class="ctrl-select" id="cycle-select">
+        <option value="2027">2027 — LA Gov.</option>
+        <option value="2026">2026 — Federal</option>
+        <option value="2025">2025 — LA State</option>
+        <option value="2024" selected>2024 — Federal</option>
+        <option value="2023">2023 — LA Gov.</option>
+        <option value="2022">2022 — Federal</option>
+        <option value="2021">2021 — LA State</option>
+        <option value="2020">2020 — Federal</option>
+        <option value="2019">2019 — LA Gov.</option>
+        <option value="2018">2018 — Federal</option>
+        <option value="2017">2017 — LA State</option>
+        <option value="2016">2016 — Federal</option>
+        <option value="2015">2015 — LA Gov.</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Party</label>
+      <select class="ctrl-select" id="party-select">
+        <option value="ALL">All Parties</option>
+        <option value="DEM">Democrat</option>
+        <option value="REP">Republican</option>
+        <option value="PAC">Any PAC</option>
+        <option value="PAC-DEM">PAC — Democrat-leaning</option>
+        <option value="PAC-REP">PAC — Republican-leaning</option>
+        <option value="OTH">Other / Unknown</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Amount Range</label>
+      <div class="amount-wrap">
+        <input type="number" class="ctrl-input amount" id="amt-min" placeholder="Min $" min="0">
+        <span>–</span>
+        <input type="number" class="ctrl-input amount" id="amt-max" placeholder="Max $" min="0">
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <label>Parish</label>
+      <select class="ctrl-select" id="parish-select">
+        <option value="ALL">All Parishes</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Committee</label>
+      <input type="text" class="ctrl-input search" id="candidate-search" placeholder="Search committee...">
+    </div>
+    <div class="ctrl-group">
+      <label>Donor</label>
+      <input type="text" class="ctrl-input search" id="donor-search" placeholder="Search donor...">
+    </div>
+    <div class="ctrl-group">
+      <label>Map View</label>
+      <div class="map-toggle-btns" style="flex-direction:row;">
+        <button class="map-toggle-btn active" id="btn-bubbles">Bubbles</button>
+        <button class="map-toggle-btn" id="btn-choropleth">Choropleth</button>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <label>&nbsp;</label>
+      <button class="btn-secondary" id="btn-excl-ff" title="Toggle to hide contributions restricted to filing/qualifying fees">Exclude Filing Fees</button>
+    </div>
+    <button class="btn-load" id="btn-load">Load Data</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Raised</div>
+      <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-sub" id="stat-total-sub">Loading...</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"># Donations</div>
+      <div class="stat-value" id="stat-count">—</div>
+      <div class="stat-sub" id="stat-count-sub">across all sources</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Donation</div>
+      <div class="stat-value" id="stat-avg">—</div>
+      <div class="stat-sub" id="stat-avg-sub">per contribution</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Top Parish</div>
+      <div class="stat-value" id="stat-top-parish" style="font-size:20px;">—</div>
+      <div class="stat-sub" id="stat-top-parish-sub">by total raised</div>
+    </div>
+  </div>
+
+  <!-- MAP + RIGHT PANEL -->
+  <div class="map-panel-row">
+    <div class="map-card">
+      <div id="map"></div>
+      <div class="map-spinner" id="map-spinner">
+        <div class="spinner-ring"></div>
+        <div style="font-size:12px;">Loading data...</div>
+      </div>
+      <div id="selected-panel">
+        <span class="sp-close" id="sp-close">×</span>
+        <h4 id="sp-name">Parish Name</h4>
+        <div class="sp-row"><span class="sp-label">Total Raised</span><span class="sp-val" id="sp-total">—</span></div>
+        <div class="sp-row"><span class="sp-label">Donations</span><span class="sp-val" id="sp-count">—</span></div>
+        <div class="sp-row"><span class="sp-label">Avg Donation</span><span class="sp-val" id="sp-avg">—</span></div>
+        <div class="sp-row"><span class="sp-label">Top Candidate</span><span class="sp-val" id="sp-cand">—</span></div>
+        <div class="sp-row"><span class="sp-label">Dominant Party</span><span class="sp-val" id="sp-party">—</span></div>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="panel-card">
+        <div class="panel-card-title">Party Breakdown</div>
+        <div class="chart-wrap">
+          <canvas id="party-chart"></canvas>
+        </div>
+      </div>
+      <div class="panel-card">
+        <div class="panel-card-title">Donor Type Breakdown</div>
+        <div class="chart-wrap">
+          <canvas id="donor-type-chart"></canvas>
+        </div>
+      </div>
+      <div class="panel-card">
+        <div class="panel-card-title">
+          Top 10 Parishes
+          <div class="top-parish-sort">
+            <button class="tp-sort-btn active" data-tpsort="total">Total</button>
+            <button class="tp-sort-btn" data-tpsort="count">Count</button>
+            <button class="tp-sort-btn" data-tpsort="avg">Avg</button>
+          </div>
+        </div>
+        <div class="top-parishes-list" id="top-parishes-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TREND CHART -->
+  <div class="trend-card">
+    <div class="trend-title">Monthly Contribution Totals (Last 24 Months)</div>
+    <div class="trend-wrap">
+      <canvas id="trend-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="table-card">
+    <div class="table-header-row">
+      <div class="table-title">Contribution Records</div>
+      <div class="table-actions">
+        <button class="upload-btn" onclick="downloadCSV()">⬇ Download CSV</button>
+        <button class="upload-btn" id="upload-csv-btn">⬆ Upload LA Ethics CSV</button>
+        <input type="file" id="csv-upload" accept=".csv">
+      </div>
+    </div>
+    <table id="data-table">
+      <thead>
+        <tr>
+          <th style="width:28px;cursor:default"></th>
+          <th data-col="date">Date</th>
+          <th data-col="contributor">Contributor</th>
+          <th data-col="parish">Parish</th>
+          <th data-col="candidate">Candidate</th>
+          <th data-col="party">Party</th>
+          <th data-col="donorType">Donor Type</th>
+          <th data-col="amount">Amount</th>
+          <th data-col="source">Source</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+    <div class="empty-state" id="empty-state" style="display:none;">
+      <div class="empty-icon">🔍</div>
+      <div>No records match the current filters</div>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <div class="status-inner">
+    <div class="status-dot ok" id="status-dot"></div>
+    <div class="status-text" id="status-text">Ready · <span id="status-records">0</span> records loaded · Last updated: <span id="status-updated">—</span></div>
+    <div class="status-text" style="margin-left:auto;">LA Ethics: <span id="la-status">Sample data</span></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p><strong style="color:var(--gold);">Data Source:</strong>
+    <a href="https://ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank">Louisiana Ethics Administration Campaign Finance</a>
+  </p>
+  <p>This dashboard is for informational and research purposes. Sample LA Ethics data is illustrative.</p>
+</footer>
+
+<script>
+// ============================================================
+// CONSTANTS & DATA
+// ============================================================
+const PARISHES = [
+  {name:"Acadia",lat:30.28,lng:-92.40},{name:"Allen",lat:30.70,lng:-92.82},
+  {name:"Ascension",lat:30.20,lng:-90.88},{name:"Assumption",lat:29.93,lng:-91.10},
+  {name:"Avoyelles",lat:31.07,lng:-92.00},{name:"Beauregard",lat:30.60,lng:-93.35},
+  {name:"Bienville",lat:32.35,lng:-93.07},{name:"Bossier",lat:32.67,lng:-93.62},
+  {name:"Caddo",lat:32.58,lng:-93.88},{name:"Calcasieu",lat:30.23,lng:-93.35},
+  {name:"Caldwell",lat:32.07,lng:-92.13},{name:"Cameron",lat:29.80,lng:-93.05},
+  {name:"Catahoula",lat:31.68,lng:-91.85},{name:"Claiborne",lat:32.80,lng:-92.98},
+  {name:"Concordia",lat:31.47,lng:-91.63},{name:"De Soto",lat:32.05,lng:-93.77},
+  {name:"East Baton Rouge",lat:30.53,lng:-91.10},{name:"East Carroll",lat:32.75,lng:-91.23},
+  {name:"East Feliciana",lat:30.87,lng:-90.93},{name:"Evangeline",lat:30.73,lng:-92.42},
+  {name:"Franklin",lat:32.12,lng:-91.67},{name:"Grant",lat:31.57,lng:-92.57},
+  {name:"Iberia",lat:29.97,lng:-91.73},{name:"Iberville",lat:30.27,lng:-91.42},
+  {name:"Jackson",lat:32.32,lng:-92.55},{name:"Jefferson",lat:29.70,lng:-90.13},
+  {name:"Jefferson Davis",lat:30.28,lng:-92.82},{name:"Lafayette",lat:30.22,lng:-92.02},
+  {name:"Lafourche",lat:29.45,lng:-90.47},{name:"LaSalle",lat:31.68,lng:-92.17},
+  {name:"Lincoln",lat:32.60,lng:-92.65},{name:"Livingston",lat:30.50,lng:-90.47},
+  {name:"Madison",lat:32.38,lng:-91.25},{name:"Morehouse",lat:32.80,lng:-91.80},
+  {name:"Natchitoches",lat:31.77,lng:-93.08},{name:"Orleans",lat:29.95,lng:-90.07},
+  {name:"Ouachita",lat:32.50,lng:-92.10},{name:"Plaquemines",lat:29.38,lng:-89.82},
+  {name:"Pointe Coupee",lat:30.72,lng:-91.60},{name:"Rapides",lat:31.25,lng:-92.48},
+  {name:"Red River",lat:32.08,lng:-93.38},{name:"Richland",lat:32.42,lng:-91.77},
+  {name:"Sabine",lat:31.55,lng:-93.57},{name:"St. Bernard",lat:29.88,lng:-89.85},
+  {name:"St. Charles",lat:29.95,lng:-90.37},{name:"St. Helena",lat:30.78,lng:-90.62},
+  {name:"St. James",lat:30.00,lng:-90.73},{name:"St. John the Baptist",lat:30.02,lng:-90.48},
+  {name:"St. Landry",lat:30.65,lng:-92.05},{name:"St. Martin",lat:30.12,lng:-91.58},
+  {name:"St. Mary",lat:29.73,lng:-91.35},{name:"St. Tammany",lat:30.43,lng:-89.95},
+  {name:"Tangipahoa",lat:30.68,lng:-90.40},{name:"Tensas",lat:32.02,lng:-91.35},
+  {name:"Terrebonne",lat:29.35,lng:-90.82},{name:"Union",lat:32.80,lng:-92.38},
+  {name:"Vermilion",lat:29.77,lng:-92.27},{name:"Vernon",lat:31.10,lng:-93.18},
+  {name:"Washington",lat:30.87,lng:-89.92},{name:"Webster",lat:32.72,lng:-93.33},
+  {name:"West Baton Rouge",lat:30.40,lng:-91.28},{name:"West Carroll",lat:32.80,lng:-91.45},
+  {name:"West Feliciana",lat:30.88,lng:-91.53},{name:"Winn",lat:31.97,lng:-92.67}
+];
+
+const CITY_TO_PARISH = {
+  "NEW ORLEANS":"Orleans","BATON ROUGE":"East Baton Rouge","SHREVEPORT":"Caddo",
+  "METAIRIE":"Jefferson","BOSSIER CITY":"Bossier","KENNER":"Jefferson",
+  "LAFAYETTE":"Lafayette","LAKE CHARLES":"Calcasieu","MONROE":"Ouachita",
+  "WEST MONROE":"Ouachita","ALEXANDRIA":"Rapides","HOUMA":"Terrebonne",
+  "MANDEVILLE":"St. Tammany","SLIDELL":"St. Tammany","COVINGTON":"St. Tammany",
+  "HAMMOND":"Tangipahoa","PRAIRIEVILLE":"Ascension","GONZALES":"Ascension",
+  "DONALDSONVILLE":"Ascension","DENHAM SPRINGS":"Livingston","WALKER":"Livingston",
+  "ZACHARY":"East Baton Rouge","PORT ALLEN":"West Baton Rouge","PLAQUEMINE":"Iberville",
+  "NEW ROADS":"Pointe Coupee","GRETNA":"Jefferson","MARRERO":"Jefferson",
+  "HARVEY":"Jefferson","WESTWEGO":"Jefferson","HARAHAN":"Jefferson",
+  "CHALMETTE":"St. Bernard","BELLE CHASSE":"Plaquemines","SULPHUR":"Calcasieu",
+  "WESTLAKE":"Calcasieu","DERIDDER":"Beauregard","LEESVILLE":"Vernon",
+  "NATCHITOCHES":"Natchitoches","MANY":"Sabine","MANSFIELD":"De Soto",
+  "MINDEN":"Webster","SPRINGHILL":"Webster","ARCADIA":"Bienville",
+  "HOMER":"Claiborne","HAYNESVILLE":"Claiborne","RUSTON":"Lincoln",
+  "GRAMBLING":"Lincoln","FARMERVILLE":"Union","BASTROP":"Morehouse",
+  "TALLULAH":"Madison","DELHI":"Richland","RAYVILLE":"Richland",
+  "WINNSBORO":"Franklin","COLUMBIA":"Caldwell","MARKSVILLE":"Avoyelles",
+  "BUNKIE":"Avoyelles","JENA":"LaSalle","VIDALIA":"Concordia",
+  "FERRIDAY":"Concordia","JONESVILLE":"Catahoula","JONESBORO":"Jackson",
+  "WINNFIELD":"Winn","COUSHATTA":"Red River","BOGALUSA":"Washington",
+  "FRANKLINTON":"Washington","AMITE":"Tangipahoa","PONCHATOULA":"Tangipahoa",
+  "GREENSBURG":"St. Helena","CLINTON":"East Feliciana","ST. FRANCISVILLE":"West Feliciana",
+  "THIBODAUX":"Lafourche","CUT OFF":"Lafourche","LOCKPORT":"Lafourche",
+  "MORGAN CITY":"St. Mary","FRANKLIN":"St. Mary","NEW IBERIA":"Iberia",
+  "JEANERETTE":"Iberia","BREAUX BRIDGE":"St. Martin","ST. MARTINVILLE":"St. Martin",
+  "OPELOUSAS":"St. Landry","EUNICE":"St. Landry","ABBEVILLE":"Vermilion",
+  "CROWLEY":"Acadia","RAYNE":"Acadia","VILLE PLATTE":"Evangeline",
+  "JENNINGS":"Jefferson Davis","LAPLACE":"St. John the Baptist",
+  "DESTREHAN":"St. Charles","LULING":"St. Charles","HAHNVILLE":"St. Charles"
+};
+
+// ============================================================
+// LOUISIANA ETHICS SAMPLE DATA (100 records)
+// ============================================================
+const LA_SAMPLE_DATA = [
+  {contributor:"Entergy Louisiana LLC",city:"Baton Rouge",parish:"East Baton Rouge",amount:50000,date:"2024-03-15",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Association of Business & Industry",city:"Baton Rouge",parish:"East Baton Rouge",amount:25000,date:"2024-02-10",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Ochsner Health System",city:"New Orleans",parish:"Orleans",amount:15000,date:"2024-01-22",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
+  {contributor:"Turner Industries Group",city:"Baton Rouge",parish:"East Baton Rouge",amount:10000,date:"2024-03-01",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Taylor Energy Company",city:"New Orleans",parish:"Orleans",amount:75000,date:"2023-11-05",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana AFL-CIO",city:"Baton Rouge",parish:"East Baton Rouge",amount:20000,date:"2024-01-15",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"Breazeale Sachse & Wilson LLP",city:"Baton Rouge",parish:"East Baton Rouge",amount:8500,date:"2023-09-20",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Cox Communications Louisiana",city:"New Orleans",parish:"Orleans",amount:12000,date:"2024-02-28",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
+  {contributor:"Acadian Ambulance Service",city:"Lafayette",parish:"Lafayette",amount:7500,date:"2023-10-12",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"New Orleans Saints LLC",city:"New Orleans",parish:"Orleans",amount:30000,date:"2023-12-01",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
+  {contributor:"Chevron Phillips Chemical",city:"Lake Charles",parish:"Calcasieu",amount:45000,date:"2024-01-08",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Bankers Association PAC",city:"Baton Rouge",parish:"East Baton Rouge",amount:18000,date:"2023-08-15",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
+  {contributor:"Danos & Curole Marine Contractors",city:"Houma",parish:"Terrebonne",amount:9000,date:"2024-03-10",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
+  {contributor:"LSU Foundation",city:"Baton Rouge",parish:"East Baton Rouge",amount:5000,date:"2023-07-20",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"McDermott International",city:"New Orleans",parish:"Orleans",amount:22000,date:"2024-02-05",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
+  {contributor:"Peoples Health Network",city:"Metairie",parish:"Jefferson",amount:14000,date:"2023-11-18",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Medical Association PAC",city:"New Orleans",parish:"Orleans",amount:35000,date:"2024-01-30",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
+  {contributor:"CLECO Corporation",city:"Alexandria",parish:"Rapides",amount:28000,date:"2023-10-05",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
+  {contributor:"Waste Connections Inc.",city:"Shreveport",parish:"Caddo",amount:11000,date:"2024-02-20",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
+  {contributor:"New Orleans Business Alliance",city:"New Orleans",parish:"Orleans",amount:16000,date:"2023-12-15",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
+  {contributor:"Louisiana Chemical Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:40000,date:"2024-03-20",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Adams and Reese LLP",city:"New Orleans",parish:"Orleans",amount:7000,date:"2023-09-10",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
+  {contributor:"Cajun Industries",city:"Baton Rouge",parish:"East Baton Rouge",amount:12500,date:"2024-01-25",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Shaw Group Inc.",city:"Baton Rouge",parish:"East Baton Rouge",amount:55000,date:"2023-11-22",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
+  {contributor:"Greater New Orleans Inc.",city:"New Orleans",parish:"Orleans",amount:8000,date:"2024-02-12",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"ExxonMobil Chemical Plant",city:"Baton Rouge",parish:"East Baton Rouge",amount:100000,date:"2023-08-01",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
+  {contributor:"Gilchrist Construction Co.",city:"Alexandria",parish:"Rapides",amount:6500,date:"2024-03-05",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Realtors PAC",city:"Baton Rouge",parish:"East Baton Rouge",amount:22500,date:"2023-10-25",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
+  {contributor:"BorgWarner Thermal Systems",city:"Shreveport",parish:"Caddo",amount:9500,date:"2024-01-18",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Hospital Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:32000,date:"2023-12-08",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
+  {contributor:"Port of New Orleans",city:"New Orleans",parish:"Orleans",amount:5000,date:"2024-02-22",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
+  {contributor:"Lamar Advertising Company",city:"Baton Rouge",parish:"East Baton Rouge",amount:18500,date:"2023-11-30",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Pinnacle Entertainment Inc.",city:"Harvey",parish:"Jefferson",amount:27000,date:"2024-01-10",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Farm Bureau PAC",city:"Baton Rouge",parish:"East Baton Rouge",amount:15000,date:"2023-09-15",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
+  {contributor:"Tulane University",city:"New Orleans",parish:"Orleans",amount:4000,date:"2024-03-12",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"W-H Energy Services",city:"Broussard",parish:"Lafayette",amount:8000,date:"2023-10-18",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Gordon Arata Montgomery Barnett",city:"New Orleans",parish:"Orleans",amount:6000,date:"2024-02-08",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Association of Educators",city:"Baton Rouge",parish:"East Baton Rouge",amount:25000,date:"2023-12-20",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"Berry Dunn McNeil & Parker",city:"Baton Rouge",parish:"East Baton Rouge",amount:7500,date:"2024-01-05",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
+  {contributor:"Jacobs Engineering Group",city:"Baton Rouge",parish:"East Baton Rouge",amount:33000,date:"2023-08-28",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
+  {contributor:"Basin Street Properties",city:"New Orleans",parish:"Orleans",amount:10000,date:"2024-03-08",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
+  {contributor:"LHC Group Inc.",city:"Lafayette",parish:"Lafayette",amount:19000,date:"2023-11-10",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"New Orleans Pelicans LLC",city:"New Orleans",parish:"Orleans",amount:20000,date:"2024-01-28",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
+  {contributor:"Stone Energy Corporation",city:"Lafayette",parish:"Lafayette",amount:13500,date:"2023-09-25",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Baton Rouge Area Chamber",city:"Baton Rouge",parish:"East Baton Rouge",amount:9000,date:"2024-02-15",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Petroleum Council",city:"Baton Rouge",parish:"East Baton Rouge",amount:60000,date:"2023-07-15",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
+  {contributor:"Syngenta Crop Protection",city:"Shreveport",parish:"Caddo",amount:8500,date:"2024-03-18",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
+  {contributor:"Hess Corporation",city:"New Orleans",parish:"Orleans",amount:42000,date:"2023-10-30",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Trial Lawyers Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:30000,date:"2024-01-20",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"Entergy Gulf States Louisiana",city:"Lake Charles",parish:"Calcasieu",amount:37000,date:"2023-12-05",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
+  {contributor:"LABI Political Action Committee",city:"Baton Rouge",parish:"East Baton Rouge",amount:48000,date:"2024-02-25",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Slidell Memorial Hospital",city:"Slidell",parish:"St. Tammany",amount:6000,date:"2023-11-14",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
+  {contributor:"Folger Coffee Company",city:"New Orleans",parish:"Orleans",amount:14500,date:"2024-01-12",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
+  {contributor:"Cargill Inc.",city:"Memphis",parish:"Ouachita",amount:17000,date:"2023-08-20",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
+  {contributor:"Blue Cross Blue Shield of Louisiana",city:"Baton Rouge",parish:"East Baton Rouge",amount:52000,date:"2024-03-02",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
+  {contributor:"BancorpSouth Inc.",city:"Monroe",parish:"Ouachita",amount:11500,date:"2023-10-08",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
+  {contributor:"Thibodaux Regional Medical Center",city:"Thibodaux",parish:"Lafourche",amount:7000,date:"2024-02-18",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
+  {contributor:"Raising Cane's Restaurants",city:"Baton Rouge",parish:"East Baton Rouge",amount:25000,date:"2023-12-12",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Freeport-McMoRan Oil & Gas",city:"New Orleans",parish:"Orleans",amount:38000,date:"2024-01-15",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
+  {contributor:"Southern University System",city:"Baton Rouge",parish:"East Baton Rouge",amount:3000,date:"2023-09-05",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"Marathon Oil Louisiana LLC",city:"Gretna",parish:"Jefferson",amount:46000,date:"2024-03-25",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
+  {contributor:"Hibernia Corporation",city:"Lafayette",parish:"Lafayette",amount:16000,date:"2023-11-20",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Popeyes Louisiana Kitchen",city:"Atlanta",parish:"East Baton Rouge",amount:12000,date:"2024-01-22",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Vermilion Parish Police Jury",city:"Abbeville",parish:"Vermilion",amount:4500,date:"2023-10-15",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Capitol Federal Savings",city:"Baton Rouge",parish:"East Baton Rouge",amount:8000,date:"2024-02-05",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
+  {contributor:"TOPS PAC Louisiana",city:"New Orleans",parish:"Orleans",amount:21000,date:"2023-12-22",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
+  {contributor:"Louisiana Sugarcane League",city:"New Roads",parish:"Pointe Coupee",amount:9500,date:"2024-03-14",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
+  {contributor:"Ochsner Clinic Foundation",city:"Mandeville",parish:"St. Tammany",amount:18000,date:"2023-08-10",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
+  {contributor:"Superior Energy Services",city:"Harvey",parish:"Jefferson",amount:29000,date:"2024-01-30",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Association of Realtors",city:"Baton Rouge",parish:"East Baton Rouge",amount:14000,date:"2023-11-25",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Pelican State Credit Union",city:"Baton Rouge",parish:"East Baton Rouge",amount:6500,date:"2024-02-28",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"New Orleans Advocate LLC",city:"New Orleans",parish:"Orleans",amount:3500,date:"2023-09-18",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"Gulf South Pipeline",city:"Houston",parish:"Calcasieu",amount:34000,date:"2024-01-08",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
+  {contributor:"Union Tank Car Company",city:"Shreveport",parish:"Caddo",amount:11000,date:"2023-10-22",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Physical Therapy Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:5500,date:"2024-03-20",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
+  {contributor:"Dynamic Industries Inc.",city:"New Iberia",parish:"Iberia",amount:8500,date:"2023-12-18",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Associated Builders & Contractors LA",city:"Baton Rouge",parish:"East Baton Rouge",amount:22000,date:"2024-02-10",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Capital One Financial Corp",city:"Glen Allen",parish:"East Baton Rouge",amount:58000,date:"2023-07-28",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
+  {contributor:"Covington City Council PAC",city:"Covington",parish:"St. Tammany",amount:7500,date:"2024-01-16",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
+  {contributor:"New Orleans Chamber of Commerce",city:"New Orleans",parish:"Orleans",amount:13000,date:"2023-11-08",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
+  {contributor:"Southwestern Electric Power Co.",city:"Shreveport",parish:"Caddo",amount:26000,date:"2024-03-08",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Homebuilders Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:17500,date:"2023-10-02",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Offshore Logistics Inc.",city:"Lafayette",parish:"Lafayette",amount:20000,date:"2024-02-20",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
+  {contributor:"Calcasieu Parish Police Jury",city:"Lake Charles",parish:"Calcasieu",amount:5000,date:"2023-12-28",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Nurses Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:8000,date:"2024-01-25",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"BHP Billiton Petroleum",city:"Houston",parish:"St. Tammany",amount:43000,date:"2023-08-22",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
+  {contributor:"Centurion Medical Products",city:"Garner",parish:"Caddo",amount:9500,date:"2024-03-15",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
+  {contributor:"Bossier City Chamber PAC",city:"Bossier City",parish:"Bossier",amount:6000,date:"2023-11-12",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
+  {contributor:"Tensas Parish Council",city:"Tallulah",parish:"Madison",amount:2500,date:"2024-02-02",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
+  {contributor:"Rapides Foundation",city:"Alexandria",parish:"Rapides",amount:11000,date:"2023-09-28",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
+  {contributor:"IBERIABANK Corporation",city:"Lafayette",parish:"Lafayette",amount:36000,date:"2024-01-20",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Tangipahoa Parish Economic Dev.",city:"Hammond",parish:"Tangipahoa",amount:7000,date:"2023-12-10",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Citizens for Excellence",city:"Baton Rouge",parish:"East Baton Rouge",amount:19500,date:"2024-03-22",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
+  {contributor:"Dow Chemical Louisiana",city:"Plaquemine",parish:"Iberville",amount:44000,date:"2023-10-14",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
+  {contributor:"Progressive Democrats of Louisiana",city:"New Orleans",parish:"Orleans",amount:15000,date:"2024-02-14",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"Louisiana Land and Exploration",city:"New Orleans",parish:"Orleans",amount:68000,date:"2023-07-10",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
+  {contributor:"Terrebonne Parish Consolidated Govt",city:"Houma",parish:"Terrebonne",amount:8000,date:"2024-01-05",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
+  {contributor:"Southern Pacific Transport",city:"Monroe",parish:"Ouachita",amount:12500,date:"2023-11-02",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
+  {contributor:"St. Tammany Parish Chamber",city:"Covington",parish:"St. Tammany",amount:9000,date:"2024-03-28",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
+  {contributor:"Louisiana Dental Association PAC",city:"Baton Rouge",parish:"East Baton Rouge",amount:14500,date:"2023-08-15",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
+  {contributor:"New Orleans Ernest N. Morial MCCNO",city:"New Orleans",parish:"Orleans",amount:6500,date:"2024-02-06",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
+  {contributor:"Clean Energy Capital LLC",city:"Baton Rouge",parish:"East Baton Rouge",amount:500,date:"2020-06-15",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
+  {contributor:"Rural Louisianians United PAC",city:"Ruston",parish:"Lincoln",amount:3500,date:"2022-09-20",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
+];
+
+LA_SAMPLE_DATA.forEach(d => {
+  d.donorType = detectDonorType(d.contributor);
+});
+
+// ============================================================
+// STATE
+// ============================================================
+let allData = [...LA_SAMPLE_DATA];
+let filteredData = [];
+let laEthicsData = [];
+// When served from the Python server itself, use relative URLs.
+// When opened as a local file://, fall back to explicit localhost.
+const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8765' : '';
+let proxyAvailable = false;
+let currentPage = 1;
+const PAGE_SIZE = 20;
+let sortCol = 'date';
+let sortDir = 'desc';
+let topParishSort = 'total';
+let mapMode = 'bubbles';
+let partyChart = null;
+let donorTypeChart = null;
+let trendChart = null;
+let mapMarkers = [];
+let choroplethLayer = null;
+let geojsonData = null;
+let debounceTimer = null;
+let selectedParish = null;
+
+// ============================================================
+// INIT MAP
+// ============================================================
+const map = L.map('map', {zoomControl: true}).setView([31.0, -91.8], 7);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd', maxZoom: 19
+}).addTo(map);
+
+// Legend
+const legend = L.control({position:'bottomright'});
+legend.onAdd = function() {
+  const div = L.DomUtil.create('div','map-legend');
+  div.innerHTML = `<div class="legend-title">Party Dominance</div>
+    <div><span class="legend-swatch" style="background:#2166ac;opacity:0.8;"></span> Democrat (&gt;60%)</div>
+    <div><span class="legend-swatch" style="background:#d73027;opacity:0.8;"></span> Republican (&gt;60%)</div>
+    <div><span class="legend-swatch" style="background:#7b5ea7;opacity:0.8;"></span> Mixed</div>
+    <div style="margin-top:8px;font-size:11px;color:#8b949e;">Circle size = total raised</div>`;
+  return div;
+};
+legend.addTo(map);
+
+// ============================================================
+// POPULATE PARISH DROPDOWN
+// ============================================================
+const parishSel = document.getElementById('parish-select');
+PARISHES.forEach(p => {
+  const opt = document.createElement('option');
+  opt.value = p.name; opt.textContent = p.name;
+  parishSel.appendChild(opt);
+});
+
+// ============================================================
+// FILTERS & EVENTS
+// ============================================================
+document.getElementById('btn-load').addEventListener('click', loadData);
+
+document.getElementById('btn-bubbles').addEventListener('click', () => {
+  mapMode = 'bubbles';
+  document.getElementById('btn-bubbles').classList.add('active');
+  document.getElementById('btn-choropleth').classList.remove('active');
+  renderMap();
+});
+
+document.getElementById('btn-choropleth').addEventListener('click', () => {
+  mapMode = 'choropleth';
+  document.getElementById('btn-choropleth').classList.add('active');
+  document.getElementById('btn-bubbles').classList.remove('active');
+  renderMap();
+});
+
+['cycle-select','party-select','parish-select'].forEach(id => {
+  document.getElementById(id).addEventListener('change', debounceFilter);
+});
+['amt-min','amt-max'].forEach(id => {
+  document.getElementById(id).addEventListener('input', debounceFilter);
+});
+document.getElementById('candidate-search').addEventListener('input', debounceFilter);
+document.getElementById('donor-search').addEventListener('input', debounceFilter);
+document.getElementById('btn-excl-ff').addEventListener('click', function() {
+  this.classList.toggle('active');
+  applyFiltersAndRender();
+});
+
+document.querySelectorAll('.tp-sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tp-sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    topParishSort = btn.dataset.tpsort;
+    renderTopParishes();
+  });
+});
+
+document.querySelectorAll('thead th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    else { sortCol = col; sortDir = 'asc'; }
+    currentPage = 1;
+    renderTable();
+  });
+});
+
+document.getElementById('upload-csv-btn').addEventListener('click', () => {
+  document.getElementById('csv-upload').click();
+});
+document.getElementById('csv-upload').addEventListener('change', handleCSVUpload);
+
+document.getElementById('sp-close').addEventListener('click', () => {
+  document.getElementById('selected-panel').style.display = 'none';
+  selectedParish = null;
+});
+
+// ============================================================
+// DEBOUNCE
+// ============================================================
+function debounceFilter() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(applyFiltersAndRender, 300);
+}
+
+// ============================================================
+// LOAD DATA
+// ============================================================
+async function loadData() {
+  const cycle = document.getElementById('cycle-select').value;
+
+  setStatus('loading');
+  showMapSpinner(true);
+
+  if (proxyAvailable) {
+    await fetchLAEthicsLive(cycle);
+  }
+
+  mergeAndRender();
+  showMapSpinner(false);
+  setStatus('ok');
+}
+
+async function fetchLAEthicsLive(cycle) {
+  const cacheKey = `la_live_${cycle}`;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    try {
+      laEthicsData = JSON.parse(cached);
+      document.getElementById('la-status').textContent = `${laEthicsData.length.toLocaleString()} LA Ethics records (cached)`;
+      return;
+    } catch(e) { sessionStorage.removeItem(cacheKey); }
+  }
+
+  document.getElementById('la-status').textContent = 'LA Ethics: downloading from ethics.la.gov…';
+  try {
+    const resp = await fetch(`${API_BASE}/api/la-ethics?cycle=${cycle}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    laEthicsData = await resp.json();
+    laEthicsData.forEach(d => {
+      if (!d.donorType) d.donorType = detectDonorType(d.contributor);
+      // keep d.party as the recipient's party; donorType carries the donor classification
+    });
+    try { sessionStorage.setItem(cacheKey, JSON.stringify(laEthicsData)); } catch(e) {}
+    document.getElementById('la-status').textContent = `${laEthicsData.length.toLocaleString()} LA Ethics records`;
+  } catch(err) {
+    console.warn('LA Ethics proxy error:', err);
+    document.getElementById('la-status').textContent = `${LA_SAMPLE_DATA.length} sample records (proxy offline)`;
+  }
+}
+
+function mergeAndRender() {
+  allData = laEthicsData.length > 0 ? [...laEthicsData] : [...LA_SAMPLE_DATA];
+  applyFiltersAndRender();
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+function applyFiltersAndRender() {
+  const cycle = document.getElementById('cycle-select').value;
+  const party = document.getElementById('party-select').value;
+  const minAmt = parseFloat(document.getElementById('amt-min').value) || 0;
+  const maxAmt = parseFloat(document.getElementById('amt-max').value) || Infinity;
+  const parish = document.getElementById('parish-select').value;
+  const search = document.getElementById('candidate-search').value.toLowerCase().trim();
+  const donorSearch = document.getElementById('donor-search').value.toLowerCase().trim();
+  const exclFilingFees = document.getElementById('btn-excl-ff').classList.contains('active');
+  const cycleStart = parseInt(cycle) - 1;
+
+  filteredData = allData.filter(d => {
+    const yr = new Date(d.date).getFullYear();
+    if (yr < cycleStart || yr > parseInt(cycle)) return false;
+    if (party !== 'ALL') {
+      if (party === 'PAC') { if (d.donorType !== 'PAC') return false; }
+      else if (party === 'PAC-DEM') { if (d.donorType !== 'PAC' || detectPACParty(d.contributor) !== 'PAC-DEM') return false; }
+      else if (party === 'PAC-REP') { if (d.donorType !== 'PAC' || detectPACParty(d.contributor) !== 'PAC-REP') return false; }
+      else if (d.party !== party) return false;
+    }
+    if (d.amount < minAmt || d.amount > maxAmt) return false;
+    if (parish !== 'ALL' && d.parish !== parish) return false;
+    if (search && !d.candidate.toLowerCase().includes(search)) return false;
+    if (donorSearch && !d.contributor.toLowerCase().includes(donorSearch)) return false;
+    if (exclFilingFees && d.isFilingFee) return false;
+    return true;
+  });
+
+  currentPage = 1;
+  renderAll();
+}
+
+// ============================================================
+// RENDER ALL
+// ============================================================
+function renderAll() {
+  renderStats();
+  renderMap();
+  renderPartyChart();
+  renderDonorTypeChart();
+  renderTopParishes();
+  renderTrendChart();
+  renderTable();
+  updateStatusBar();
+}
+
+// ============================================================
+// STATS
+// ============================================================
+function renderStats() {
+  const total = filteredData.reduce((s,d) => s+d.amount, 0);
+  const count = filteredData.length;
+  const avg = count ? total/count : 0;
+
+  const parishTotals = {};
+  filteredData.forEach(d => {
+    parishTotals[d.parish] = (parishTotals[d.parish]||0) + d.amount;
+  });
+  const topParish = Object.entries(parishTotals).sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('stat-total').textContent = formatMoney(total);
+  document.getElementById('stat-total-sub').textContent = `from ${count} records`;
+  document.getElementById('stat-count').textContent = count.toLocaleString();
+  document.getElementById('stat-avg').textContent = formatMoney(avg);
+  document.getElementById('stat-top-parish').textContent = topParish ? topParish[0] : '—';
+  document.getElementById('stat-top-parish-sub').textContent = topParish ? formatMoney(topParish[1]) : 'No data';
+}
+
+// ============================================================
+// MAP
+// ============================================================
+function renderMap() {
+  clearMapLayers();
+  if (mapMode === 'bubbles') renderBubbles();
+  else renderChoropleth();
+}
+
+function clearMapLayers() {
+  mapMarkers.forEach(m => map.removeLayer(m));
+  mapMarkers = [];
+  if (choroplethLayer) { map.removeLayer(choroplethLayer); choroplethLayer = null; }
+}
+
+function getParishStats() {
+  const stats = {};
+  PARISHES.forEach(p => {
+    stats[p.name] = {total:0, count:0, dem:0, rep:0, oth:0, candidates:{}, lat:p.lat, lng:p.lng};
+  });
+  filteredData.forEach(d => {
+    if (!stats[d.parish]) return;
+    const s = stats[d.parish];
+    s.total += d.amount;
+    s.count++;
+    if (d.party === 'DEM') s.dem += d.amount;
+    else if (d.party === 'REP') s.rep += d.amount;
+    else s.oth += d.amount;
+    s.candidates[d.candidate] = (s.candidates[d.candidate]||0) + d.amount;
+  });
+  return stats;
+}
+
+function renderBubbles() {
+  const stats = getParishStats();
+  const maxTotal = Math.max(...Object.values(stats).map(s=>s.total), 1);
+
+  Object.entries(stats).forEach(([name, s]) => {
+    if (s.total === 0) return;
+    const r = Math.max(6, Math.sqrt(s.total / maxTotal) * 50);
+    const color = getPartyColor(s.dem, s.rep, s.oth);
+    const topCand = Object.entries(s.candidates).sort((a,b)=>b[1]-a[1])[0];
+    const domParty = getDomPartyLabel(s.dem, s.rep, s.oth);
+
+    const circle = L.circleMarker([s.lat, s.lng], {
+      radius: r, fillColor: color, color: 'rgba(255,255,255,0.3)',
+      weight: 1, fillOpacity: 0.75
+    });
+
+    circle.bindTooltip(`<div class="tooltip-inner">
+      <strong>${name} Parish</strong>
+      <div class="t-row"><span class="t-label">Total Raised</span><span class="t-val">${formatMoney(s.total)}</span></div>
+      <div class="t-row"><span class="t-label">Donations</span><span class="t-val">${s.count.toLocaleString()}</span></div>
+      <div class="t-row"><span class="t-label">Top Candidate</span><span class="t-val">${topCand ? topCand[0] : 'N/A'}</span></div>
+      <div class="t-row"><span class="t-label">Dominant Party</span><span class="t-val">${domParty}</span></div>
+    </div>`, {sticky:true, className:'leaflet-tooltip-dark'});
+
+    circle.on('click', () => showSelectedParish(name, s, topCand, domParty));
+    circle.addTo(map);
+    mapMarkers.push(circle);
+  });
+}
+
+async function renderChoropleth() {
+  showMapSpinner(true);
+  if (!geojsonData) {
+    try {
+      const resp = await fetch('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json');
+      const data = await resp.json();
+      // Filter to Louisiana (FIPS starts with 22)
+      geojsonData = {
+        type: 'FeatureCollection',
+        features: data.features.filter(f => f.id && String(f.id).startsWith('22'))
+      };
+    } catch(e) {
+      console.warn('Could not load GeoJSON:', e);
+      showMapSpinner(false);
+      renderBubbles();
+      return;
+    }
+  }
+
+  const stats = getParishStats();
+  const maxTotal = Math.max(...Object.values(stats).map(s=>s.total), 1);
+
+  // Build FIPS -> parish name map (approximate)
+  const FIPS_PARISH = {
+    "22001":"Acadia","22003":"Allen","22005":"Ascension","22007":"Assumption",
+    "22009":"Avoyelles","22011":"Beauregard","22013":"Bienville","22015":"Bossier",
+    "22017":"Caddo","22019":"Calcasieu","22021":"Caldwell","22023":"Cameron",
+    "22025":"Catahoula","22027":"Claiborne","22029":"Concordia","22031":"De Soto",
+    "22033":"East Baton Rouge","22035":"East Carroll","22037":"East Feliciana",
+    "22039":"Evangeline","22041":"Franklin","22043":"Grant","22045":"Iberia",
+    "22047":"Iberville","22049":"Jackson","22051":"Jefferson","22053":"Jefferson Davis",
+    "22055":"Lafayette","22057":"Lafourche","22059":"LaSalle","22061":"Lincoln",
+    "22063":"Livingston","22065":"Madison","22067":"Morehouse","22069":"Natchitoches",
+    "22071":"Orleans","22073":"Ouachita","22075":"Plaquemines","22077":"Pointe Coupee",
+    "22079":"Rapides","22081":"Red River","22083":"Richland","22085":"Sabine",
+    "22087":"St. Bernard","22089":"St. Charles","22091":"St. Helena","22093":"St. James",
+    "22095":"St. John the Baptist","22097":"St. Landry","22099":"St. Martin",
+    "22101":"St. Mary","22103":"St. Tammany","22105":"Tangipahoa","22107":"Tensas",
+    "22109":"Terrebonne","22111":"Union","22113":"Vermilion","22115":"Vernon",
+    "22117":"Washington","22119":"Webster","22121":"West Baton Rouge",
+    "22123":"West Carroll","22125":"West Feliciana","22127":"Winn"
+  };
+
+  choroplethLayer = L.geoJSON(geojsonData, {
+    style: (feature) => {
+      const parish = FIPS_PARISH[feature.id];
+      const s = parish ? stats[parish] : null;
+      const total = s ? s.total : 0;
+      const intensity = Math.pow(total / maxTotal, 0.5);
+      const color = s && s.total > 0 ? getPartyColor(s.dem, s.rep, s.oth) : '#2a2a2a';
+      return {
+        fillColor: color,
+        fillOpacity: 0.2 + intensity * 0.55,
+        color: '#30363d', weight: 1
+      };
+    },
+    onEachFeature: (feature, layer) => {
+      const parish = FIPS_PARISH[feature.id];
+      const s = parish ? stats[parish] : null;
+      if (s) {
+        const topCand = Object.entries(s.candidates||{}).sort((a,b)=>b[1]-a[1])[0];
+        const domParty = getDomPartyLabel(s.dem, s.rep, s.oth);
+        layer.bindTooltip(`<div class="tooltip-inner">
+          <strong>${parish} Parish</strong>
+          <div class="t-row"><span class="t-label">Total</span><span class="t-val">${formatMoney(s.total)}</span></div>
+          <div class="t-row"><span class="t-label">Count</span><span class="t-val">${s.count}</span></div>
+          <div class="t-row"><span class="t-label">Party</span><span class="t-val">${domParty}</span></div>
+        </div>`, {sticky:true});
+        layer.on('click', () => showSelectedParish(parish, s, topCand, domParty));
+      }
+    }
+  }).addTo(map);
+  showMapSpinner(false);
+}
+
+function showSelectedParish(name, s, topCand, domParty) {
+  selectedParish = name;
+  const panel = document.getElementById('selected-panel');
+  document.getElementById('sp-name').textContent = name + ' Parish';
+  document.getElementById('sp-total').textContent = formatMoney(s.total);
+  document.getElementById('sp-count').textContent = s.count.toLocaleString();
+  document.getElementById('sp-avg').textContent = s.count ? formatMoney(s.total/s.count) : '—';
+  document.getElementById('sp-cand').textContent = topCand ? topCand[0] : '—';
+  document.getElementById('sp-party').textContent = domParty;
+  panel.style.display = 'block';
+}
+
+function getPartyColor(dem, rep, oth) {
+  const verified = dem + rep;
+  if (!verified) return '#555';
+  if (dem/verified > 0.6) return '#2166ac';
+  if (rep/verified > 0.6) return '#d73027';
+  return '#7b5ea7';
+}
+
+function getDomPartyLabel(dem, rep, oth) {
+  const verified = dem + rep;
+  if (!verified) return 'Unverified';
+  if (dem/verified > 0.6) return 'Democrat';
+  if (rep/verified > 0.6) return 'Republican';
+  return 'Mixed';
+}
+
+// ============================================================
+// PARTY CHART
+// ============================================================
+function renderPartyChart() {
+  const demTotal = filteredData.filter(d=>d.party==='DEM').reduce((s,d)=>s+d.amount,0);
+  const repTotal = filteredData.filter(d=>d.party==='REP').reduce((s,d)=>s+d.amount,0);
+  const othTotal = filteredData.filter(d=>d.party==='OTH').reduce((s,d)=>s+d.amount,0);
+
+  if (partyChart) { partyChart.destroy(); partyChart = null; }
+  const ctx = document.getElementById('party-chart').getContext('2d');
+  partyChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Democrat','Republican','Other'],
+      datasets: [{
+        data: [demTotal, repTotal, othTotal],
+        backgroundColor: ['rgba(33,102,172,0.85)','rgba(215,48,39,0.85)','rgba(77,172,38,0.85)'],
+        borderColor: ['#2166ac','#d73027','#4dac26'],
+        borderWidth: 2,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#8b949e', font: {size: 12}, padding: 12, boxWidth: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.label}: ${formatMoney(ctx.raw)} (${((ctx.raw/(demTotal+repTotal+othTotal||1))*100).toFixed(1)}%)`
+          }
+        }
+      }
+    }
+  });
+}
+
+// ============================================================
+// DONOR TYPE CHART
+// ============================================================
+function renderDonorTypeChart() {
+  const totals = { IND: 0, PAC: 0, BUS: 0, ORG: 0, OTH: 0 };
+  filteredData.forEach(d => {
+    const dt = d.donorType || 'OTH';
+    if (totals[dt] !== undefined) totals[dt] += d.amount;
+    else totals.OTH += d.amount;
+  });
+  const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0) || 1;
+
+  if (donorTypeChart) { donorTypeChart.destroy(); donorTypeChart = null; }
+  const ctx = document.getElementById('donor-type-chart').getContext('2d');
+  donorTypeChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Individual', 'PAC', 'Business', 'Organization', 'Other'],
+      datasets: [{
+        data: [totals.IND, totals.PAC, totals.BUS, totals.ORG, totals.OTH],
+        backgroundColor: [
+          'rgba(80,180,120,0.85)',
+          'rgba(153,102,255,0.85)',
+          'rgba(140,140,140,0.85)',
+          'rgba(255,165,0,0.85)',
+          'rgba(90,90,90,0.85)'
+        ],
+        borderColor: ['#50b478','#9966ff','#8c8c8c','#ffa500','#5a5a5a'],
+        borderWidth: 2,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#8b949e', font: { size: 12 }, padding: 12, boxWidth: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.label}: ${formatMoney(ctx.raw)} (${((ctx.raw / grandTotal) * 100).toFixed(1)}%)`
+          }
+        }
+      }
+    }
+  });
+}
+
+// ============================================================
+// TOP PARISHES
+// ============================================================
+function renderTopParishes() {
+  const stats = getParishStats();
+  let entries = Object.entries(stats).filter(([,s])=>s.total>0).map(([name,s])=>({
+    name, total:s.total, count:s.count, avg: s.count ? s.total/s.count : 0
+  }));
+
+  if (topParishSort === 'total') entries.sort((a,b)=>b.total-a.total);
+  else if (topParishSort === 'count') entries.sort((a,b)=>b.count-a.count);
+  else entries.sort((a,b)=>b.avg-a.avg);
+
+  entries = entries.slice(0,10);
+  const maxVal = entries.length ? (topParishSort==='total'?entries[0].total:topParishSort==='count'?entries[0].count:entries[0].avg) : 1;
+
+  const list = document.getElementById('top-parishes-list');
+  if (!entries.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px;">No data</div>';
+    return;
+  }
+  list.innerHTML = entries.map((e,i) => {
+    const val = topParishSort==='total'?e.total:topParishSort==='count'?e.count:e.avg;
+    const displayVal = topParishSort==='count'?e.count.toLocaleString():formatMoney(val);
+    const pct = maxVal ? (val/maxVal)*100 : 0;
+    return `<div class="top-parish-item">
+      <span class="tp-rank">${i+1}</span>
+      <span class="tp-name" title="${e.name}">${e.name}</span>
+      <div class="tp-bar-wrap"><div class="tp-bar" style="width:${pct}%"></div></div>
+      <span class="tp-val">${displayVal}</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// TREND CHART
+// ============================================================
+function renderTrendChart() {
+  const now = new Date();
+  const months = [];
+  for (let i = 23; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+
+  const demByMonth = {}, repByMonth = {}, othByMonth = {};
+  months.forEach(m => { demByMonth[m]=0; repByMonth[m]=0; othByMonth[m]=0; });
+
+  filteredData.forEach(d => {
+    const m = d.date.substring(0,7);
+    if (!months.includes(m)) return;
+    if (d.party==='DEM') demByMonth[m]=(demByMonth[m]||0)+d.amount;
+    else if (d.party==='REP') repByMonth[m]=(repByMonth[m]||0)+d.amount;
+    else othByMonth[m]=(othByMonth[m]||0)+d.amount;
+  });
+
+  const labels = months.map(m => {
+    const [y,mo] = m.split('-');
+    return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1]} ${y.slice(2)}`;
+  });
+
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {label:'Republican',data:months.map(m=>repByMonth[m]),borderColor:'#d73027',backgroundColor:'rgba(215,48,39,0.1)',tension:0.4,pointRadius:3,fill:true},
+        {label:'Democrat',data:months.map(m=>demByMonth[m]),borderColor:'#2166ac',backgroundColor:'rgba(33,102,172,0.1)',tension:0.4,pointRadius:3,fill:true},
+        {label:'Other',data:months.map(m=>othByMonth[m]),borderColor:'#4dac26',backgroundColor:'rgba(77,172,38,0.08)',tension:0.4,pointRadius:3,fill:true},
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: {mode:'index',intersect:false},
+      scales: {
+        x: {ticks:{color:'#8b949e',maxTicksLimit:12,font:{size:11}},grid:{color:'rgba(48,54,61,0.5)'}},
+        y: {ticks:{color:'#8b949e',font:{size:11},callback:v=>formatMoneyShort(v)},grid:{color:'rgba(48,54,61,0.5)'}}
+      },
+      plugins: {
+        legend:{labels:{color:'#8b949e',font:{size:12},boxWidth:12}},
+        tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${formatMoney(ctx.raw)}`}}
+      }
+    }
+  });
+}
+
+// ============================================================
+// TABLE
+// ============================================================
+function renderTable() {
+  const sorted = [...filteredData].sort((a,b) => {
+    let av = a[sortCol], bv = b[sortCol];
+    if (sortCol === 'amount') { av = Number(av); bv = Number(bv); }
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    if (av < bv) return sortDir === 'asc' ? -1 : 1;
+    if (av > bv) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  document.querySelectorAll('thead th[data-col]').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.col === sortCol) th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage-1)*PAGE_SIZE;
+  const pageData = sorted.slice(start, start+PAGE_SIZE);
+
+  const tbody = document.getElementById('table-body');
+  const empty = document.getElementById('empty-state');
+
+  if (!pageData.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    tbody.innerHTML = pageData.map((d, i) => {
+      const rid = `dr-${currentPage}-${i}`;
+      const ffBadge = d.isFilingFee
+        ? `<span class="party-badge filing-fee" title="Restricted: may only be used to pay qualifying/filing fee">⚠ Filing Fee</span> `
+        : '';
+      return `
+      <tr class="data-row${d.isFilingFee ? ' filing-fee-row' : ''}" onclick="toggleDetail('${rid}')">
+        <td class="expand-cell"><span class="expand-icon">▶</span></td>
+        <td>${d.date}</td>
+        <td>${ffBadge}${escHtml(d.contributor)}</td>
+        <td>${escHtml(d.parish)}</td>
+        <td>${escHtml(d.candidate)}</td>
+        <td>${partyBadgeHtml(d)}</td>
+        <td>${donorTypeBadgeHtml(d)}</td>
+        <td class="amount-cell">${formatMoney(d.amount)}</td>
+        <td><span class="source-badge la">LA Ethics</span></td>
+      </tr>
+      <tr class="detail-row${d.isFilingFee ? ' filing-fee-row' : ''}" id="${rid}" style="display:none">
+        <td colspan="9">${buildDetailPanel(d)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  renderPagination(totalPages, total);
+}
+
+function renderPagination(totalPages, total) {
+  const pag = document.getElementById('pagination');
+  if (totalPages <= 1) { pag.innerHTML = ''; return; }
+
+  let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>`;
+
+  const range = getPageRange(currentPage, totalPages);
+  range.forEach(p => {
+    if (p === '...') html += `<span class="page-info" style="padding:0 4px">…</span>`;
+    else html += `<button class="page-btn${p===currentPage?' active':''}" onclick="goPage(${p})">${p}</button>`;
+  });
+
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Next ›</button>`;
+  html += `<span class="page-info">${total.toLocaleString()} records</span>`;
+  pag.innerHTML = html;
+}
+
+function getPageRange(cur, total) {
+  if (total <= 7) return Array.from({length:total},(_,i)=>i+1);
+  const pages = [1];
+  if (cur > 3) pages.push('...');
+  for (let i=Math.max(2,cur-1); i<=Math.min(total-1,cur+1); i++) pages.push(i);
+  if (cur < total-2) pages.push('...');
+  pages.push(total);
+  return pages;
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderTable();
+}
+
+// ============================================================
+// CSV DOWNLOAD
+// ============================================================
+function downloadCSV() {
+  if (!filteredData.length) { alert('No records to export.'); return; }
+
+  const cols = [
+    ['Date',          d => d.date],
+    ['Contributor',   d => d.contributor],
+    ['Address',       d => [d.contributorAddress, d.city, d.contributorState, d.contributorZip].filter(Boolean).join(', ')],
+    ['Employer',      d => d.employer || ''],
+    ['Occupation',    d => d.occupation || ''],
+    ['Parish',        d => d.parish],
+    ['Committee',     d => d.candidate],
+    ['Filer Number',  d => d.filerNumber || ''],
+    ['Filer Type',    d => d.filerType || ''],
+    ['Office',        d => d.officeDescription || ''],
+    ['Election Year', d => d.electionYear || ''],
+    ['Party',         d => d.party],
+    ['Donor Type',    d => d.donorType || ''],
+    ['Amount',        d => d.amount],
+    ['Type',          d => d.type || ''],
+    ['Schedule',      d => d.scheduleType || ''],
+    ['Report Code',   d => d.reportCode || ''],
+    ['Filing Fee',    d => d.isFilingFee ? 'YES' : ''],
+    ['Notes',         d => d.notes || ''],
+    ['Source',        d => d.source],
+  ];
+
+  const esc = v => {
+    const s = String(v == null ? '' : v);
+    return (s.includes(',') || s.includes('"') || s.includes('\n'))
+      ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const header = cols.map(([h]) => h).join(',');
+  const rows   = filteredData.map(d => cols.map(([, fn]) => esc(fn(d))).join(','));
+  const csv    = [header, ...rows].join('\r\n');
+
+  const cycle = document.getElementById('cycle-select').value;
+  const blob  = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement('a');
+  a.href      = url;
+  a.download  = `la_contributions_${cycle}_${filteredData.length}records.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// CSV UPLOAD
+// ============================================================
+function handleCSVUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const lines = ev.target.result.split('\n').map(l => l.trim()).filter(Boolean);
+      if (!lines.length) return;
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g,''));
+      const rows = [];
+      for (let i=1; i<lines.length; i++) {
+        const vals = parseCSVLine(lines[i]);
+        if (vals.length < 4) continue;
+        const row = {};
+        headers.forEach((h,j) => { row[h] = (vals[j]||'').replace(/['"]/g,'').trim(); });
+        const parish = row.parish || CITY_TO_PARISH[(row.city||'').toUpperCase()] || 'East Baton Rouge';
+        rows.push({
+          contributor: row.contributor || row.contributor_name || 'Unknown',
+          city: row.city || '',
+          parish: parish,
+          amount: parseFloat(row.amount||row.contribution_receipt_amount||0),
+          date: row.date || row.contribution_receipt_date || '2024-01-01',
+          candidate: row.candidate || row.committee || 'Unknown',
+          party: normalizeParty(row.party || 'OTH'),
+          source: 'LA Ethics'
+        });
+      }
+      if (rows.length) {
+        allData = [...allData, ...rows];
+        applyFiltersAndRender();
+        alert(`Imported ${rows.length} records from CSV.`);
+      }
+    } catch(err) { alert('CSV parse error: ' + err.message); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQuote = false;
+  for (let i=0; i<line.length; i++) {
+    const c = line[i];
+    if (c === '"') inQuote = !inQuote;
+    else if (c === ',' && !inQuote) { result.push(cur); cur = ''; }
+    else cur += c;
+  }
+  result.push(cur);
+  return result;
+}
+
+function normalizeParty(p) {
+  const u = (p||'').toUpperCase().trim();
+  if (u === 'DEM' || u === 'D' || u === 'DEMOCRAT' || u === 'DEMOCRATIC') return 'DEM';
+  if (u === 'REP' || u === 'R' || u === 'REPUBLICAN') return 'REP';
+  return 'OTH';
+}
+
+// ============================================================
+// STATUS BAR
+// ============================================================
+function updateStatusBar() {
+  document.getElementById('status-records').textContent = filteredData.length.toLocaleString();
+  document.getElementById('status-updated').textContent = new Date().toLocaleTimeString();
+  document.getElementById('la-status').textContent = `${LA_SAMPLE_DATA.length} sample records`;
+}
+
+function setStatus(state) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot ' + state;
+}
+
+function showMapSpinner(show) {
+  document.getElementById('map-spinner').style.display = show ? 'block' : 'none';
+}
+
+// ============================================================
+// DONOR TYPE DETECTION
+// ============================================================
+function detectDonorType(name) {
+  const n = (name || '').toUpperCase();
+  if (/\bPAC\b/.test(n) || n.includes('POLITICAL ACTION') || n.includes('ACTION COMMITTEE') ||
+      n.includes('LEADERSHIP FUND') || n.includes('SUPER PAC') || n.includes('ACTION FUND')) return 'PAC';
+  if (n.includes('AFL-CIO') || n.includes(' UNION') || n.includes('WORKERS ') ||
+      n.includes('SEIU') || n.includes('IBEW') || n.includes('UAW') || n.includes('TEAMSTERS')) return 'ORG';
+  if (/\b(LLC|INC|CORP|LTD|CO\.|L\.L\.C|LP\b|LLP\b|COMPANY|CORPORATION|INDUSTRIES|SERVICES|GROUP|HOLDINGS|ENTERPRISES)\b/.test(n)) return 'BUS';
+  if (/^[A-Z]+,\s+[A-Z]/.test(n)) return 'IND';
+  return 'OTH';
+}
+
+function detectPACParty(name) {
+  const n = (name || '').toUpperCase();
+  const repSignals = ['REPUBLICAN', 'GOP ', 'NRCC', 'NRSC', 'RNCC', 'RSLC', 'RNC ', 'CONSERVATIVE', 'TRUMP', 'REAGAN', 'FREEDOM CAUCUS', 'LIBERTY PAC', 'PATRIOT'];
+  const demSignals = ['DEMOCRAT', 'DCCC', 'DSCC', 'DNC ', 'DLCC', 'PROGRESSIVE', 'ACTBLUE', "EMILY'S LIST", 'PLANNED PARENTHOOD', 'AFL-CIO', ' UNION', 'SEIU', 'IBEW', 'UAW', 'TEAMSTERS', 'TEACHERS', 'WORKERS'];
+  for (const s of repSignals) if (n.includes(s)) return 'PAC-REP';
+  for (const s of demSignals) if (n.includes(s)) return 'PAC-DEM';
+  return 'PAC';
+}
+
+function partyBadgeHtml(d) {
+  const p = d.party || 'OTH';
+  return `<span class="party-badge ${p.toLowerCase()}">${p}</span>`;
+}
+
+function donorTypeBadgeHtml(d) {
+  const dt = d.donorType || 'OTH';
+  if (dt === 'PAC') {
+    const align = detectPACParty(d.contributor);
+    if (align === 'PAC-REP') return `<span class="party-badge pac-rep">PAC (R)</span>`;
+    if (align === 'PAC-DEM') return `<span class="party-badge pac-dem">PAC (D)</span>`;
+    return `<span class="party-badge pac">PAC</span>`;
+  }
+  const map = { IND: ['ind','Individual'], BUS: ['bus','Business'], ORG: ['org','Organization'], OTH: ['oth','Other'] };
+  const [cls, label] = map[dt] || ['oth', dt];
+  return `<span class="party-badge ${cls}">${label}</span>`;
+}
+
+// ============================================================
+// EXPANDABLE ROW DETAIL
+// ============================================================
+function toggleDetail(rid) {
+  const detailRow = document.getElementById(rid);
+  if (!detailRow) return;
+  const mainRow = detailRow.previousElementSibling;
+  const isOpen = detailRow.style.display !== 'none';
+  detailRow.style.display = isOpen ? 'none' : '';
+  if (mainRow) mainRow.classList.toggle('open', !isOpen);
+}
+
+function df(label, value) {
+  const v = (value || '').toString().trim();
+  return `<div class="detail-field">
+    <label>${escHtml(label)}</label>
+    <span${v ? '' : ' class="empty"'}>${v ? escHtml(v) : '—'}</span>
+  </div>`;
+}
+
+function buildDetailPanel(d) {
+  // Build full address string
+  const addrParts = [d.contributorAddress, d.city,
+    [d.contributorState, d.contributorZip].filter(Boolean).join(' ')
+  ].filter(Boolean);
+  const fullAddr = addrParts.join(', ');
+
+  // Filing fee alert block
+  const ffAlert = d.isFilingFee ? `
+    <div class="filing-fee-alert">
+      <span class="ff-icon">⚠</span>
+      <div>
+        <strong>Restricted Contribution — Filing / Qualifying Fee</strong>
+        <p>Per Louisiana RS 18:1505.2, contributions designated as filing or qualifying fees
+        may <em>only</em> be used to pay the candidate's qualifying fee to the Secretary of State.
+        They cannot be spent on general campaign expenses.</p>
+      </div>
+    </div>` : '';
+
+  // Notes block (only shown when non-empty)
+  const notesBlock = (d.notes || '').trim() ? `
+    <div class="detail-field detail-notes">
+      <label>Notes / Description</label>
+      <div class="notes-text">${escHtml(d.notes)}</div>
+    </div>` : '';
+
+  return `<div class="detail-panel">
+    ${ffAlert}
+    <div class="detail-grid">
+
+      <div class="detail-section">
+        <h4>Contributor</h4>
+        ${df('Name', d.contributor)}
+        ${df('Address', fullAddr)}
+        ${df('Employer', d.employer)}
+        ${df('Occupation', d.occupation)}
+      </div>
+
+      <div class="detail-section">
+        <h4>Recipient / Filer</h4>
+        ${df('Candidate', d.candidate)}
+        ${df('Filer Number', d.filerNumber)}
+        ${df('Filer Type', d.filerType)}
+        ${df('Office', d.officeDescription)}
+        ${df('Election Year', d.electionYear)}
+      </div>
+
+      <div class="detail-section">
+        <h4>Contribution</h4>
+        ${df('Amount', d.amount ? '$' + d.amount.toLocaleString('en-US', {minimumFractionDigits:2}) : '')}
+        ${df('Date', d.date)}
+        ${df('Type', d.type)}
+        ${df('Schedule', d.scheduleType)}
+        ${df('Report Code', d.reportCode)}
+      </div>
+
+      ${notesBlock}
+
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function formatMoney(n) {
+  if (!n && n !== 0) return '—';
+  if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + Math.round(n).toLocaleString();
+}
+
+function formatMoneyShort(n) {
+  if (!n) return '$0';
+  if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  if (Math.abs(n) >= 1e3) return '$' + (n/1e3).toFixed(0) + 'K';
+  return '$' + Math.round(n);
+}
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async function init() {
+  allData = [...LA_SAMPLE_DATA];
+  document.getElementById('la-status').textContent = `${LA_SAMPLE_DATA.length} sample records`;
+
+  // Check if the local proxy is running
+  try {
+    const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(1500) });
+    if (r.ok) {
+      proxyAvailable = true;
+      document.getElementById('proxy-banner').style.display = 'none';
+      document.getElementById('proxy-live-badge').style.display = 'inline-flex';
+    }
+  } catch(e) {
+    proxyAvailable = false;
+    document.getElementById('proxy-banner').style.display = 'flex';
+    document.getElementById('proxy-live-badge').style.display = 'none';
+  }
+
+  loadData();
+})();
+</script>
+</body>
+</html>

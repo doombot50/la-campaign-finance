@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: la-campaign-finance
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python la_ethics_server.py
+    envVars:
+      - key: PORT
+        value: 10000
+    healthCheckPath: /health
