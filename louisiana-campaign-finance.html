@@ -479,6 +479,10 @@
       <input type="text" class="ctrl-input search" id="donor-search" placeholder="Search donor...">
     </div>
     <div class="ctrl-group">
+      <label>ZIP Code</label>
+      <input type="text" class="ctrl-input search" id="zip-search" placeholder="e.g. 70801" maxlength="10" style="width:110px">
+    </div>
+    <div class="ctrl-group">
       <label>Donor Origin</label>
       <select class="ctrl-select" id="origin-select">
         <option value="ALL">All States</option>
@@ -977,6 +981,7 @@ document.getElementById('btn-us-states').addEventListener('click', () => {
 });
 document.getElementById('candidate-search').addEventListener('input', debounceFilter);
 document.getElementById('donor-search').addEventListener('input', debounceFilter);
+document.getElementById('zip-search').addEventListener('input', debounceFilter);
 document.getElementById('btn-excl-ff').addEventListener('click', function() {
   this.classList.toggle('active');
   applyFiltersAndRender();
@@ -1117,6 +1122,7 @@ function applyFiltersAndRender() {
   const parish = document.getElementById('parish-select').value;
   const search = document.getElementById('candidate-search').value.toLowerCase().trim();
   const donorSearch = document.getElementById('donor-search').value.toLowerCase().trim();
+  const zipSearch   = document.getElementById('zip-search').value.trim();
   const origin = document.getElementById('origin-select').value;
   const exclFilingFees = document.getElementById('btn-excl-ff').classList.contains('active');
   const cycleStart = parseInt(cycle) - 1;
@@ -1134,6 +1140,7 @@ function applyFiltersAndRender() {
     if (parish !== 'ALL' && d.parish !== parish) return false;
     if (search && !d.candidate.toLowerCase().includes(search)) return false;
     if (donorSearch && !d.contributor.toLowerCase().includes(donorSearch)) return false;
+    if (zipSearch && !(d.contributorZip || '').startsWith(zipSearch)) return false;
     if (origin !== 'ALL' && origin !== 'OOS') {
       if ((d.contributorState || '').toUpperCase() !== origin) return false;
     } else if (origin === 'OOS') {
