@@ -347,6 +347,20 @@
   .leaflet-control-zoom a:hover { background: var(--gold) !important; color: #000 !important; }
   .leaflet-popup-content-wrapper { background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); }
   .leaflet-popup-tip { background: var(--card); }
+  /* Override Leaflet's default white tooltip with dark theme */
+  .leaflet-tooltip {
+    background: rgba(22,27,34,0.97) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 7px !important;
+    color: var(--text) !important;
+    font-size: 12px !important;
+    line-height: 1.6 !important;
+    padding: 8px 11px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+    backdrop-filter: blur(4px);
+  }
+  .leaflet-tooltip::before { border-top-color: var(--border) !important; }
+  .leaflet-tooltip strong { color: var(--gold); }
   .tooltip-inner { font-size: 13px; line-height: 1.6; }
   .tooltip-inner strong { color: var(--gold); display: block; margin-bottom: 4px; font-size: 14px; }
   .tooltip-inner .t-row { display: flex; justify-content: space-between; gap: 16px; }
