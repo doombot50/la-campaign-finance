@@ -973,6 +973,8 @@ let choroplethLayer = null;
 let geojsonData = null;
 let debounceTimer = null;
 let selectedParish = null;
+let cpCurrentContribs = [];
+let cpCurrentName = '';
 
 // ============================================================
 // INIT MAP
@@ -2268,6 +2270,8 @@ function showContributorProfile(name) {
   `;
   document.getElementById('cp-tbody').innerHTML = summaryRows + dividerRow + giftRows;
 
+  cpCurrentContribs = contribs;
+  cpCurrentName     = name;
   document.getElementById('cp-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -2275,6 +2279,54 @@ function showContributorProfile(name) {
 function closeContributorProfile() {
   document.getElementById('cp-overlay').classList.remove('open');
   document.body.style.overflow = '';
+}
+
+function exportContributorProfileCSV() {
+  if (!cpCurrentContribs.length) { alert('No contributions to export.'); return; }
+
+  const cols = [
+    ['Date',          d => d.date],
+    ['Contributor',   d => d.contributor],
+    ['Employer',      d => d.employer || ''],
+    ['Occupation',    d => d.occupation || ''],
+    ['State',         d => d.contributorState || ''],
+    ['Address',       d => [d.contributorAddress, d.city, d.contributorState, d.contributorZip].filter(Boolean).join(', ')],
+    ['Parish',        d => d.parish || ''],
+    ['Committee',     d => d.candidate || ''],
+    ['Party',         d => d.party || ''],
+    ['Office',        d => d.officeDescription || ''],
+    ['Election Year', d => d.electionYear || ''],
+    ['Donor Type',    d => d.donorType || ''],
+    ['Amount',        d => d.amount],
+    ['Type',          d => d.type || ''],
+    ['Schedule',      d => d.scheduleType || ''],
+    ['Report Code',   d => d.reportCode || ''],
+    ['Filing Fee',    d => d.isFilingFee ? 'YES' : ''],
+    ['Notes',         d => d.notes || ''],
+    ['Source',        d => d.source || ''],
+  ];
+
+  const esc = v => {
+    const s = String(v == null ? '' : v);
+    return (s.includes(',') || s.includes('"') || s.includes('\n'))
+      ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const header = cols.map(([h]) => h).join(',');
+  const rows   = cpCurrentContribs.map(d => cols.map(([, fn]) => esc(fn(d))).join(','));
+  const csv    = [header, ...rows].join('\r\n');
+
+  const safeName = cpCurrentName.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
+  const cycle    = document.getElementById('cycle-select').value;
+  const blob     = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url      = URL.createObjectURL(blob);
+  const a        = document.createElement('a');
+  a.href         = url;
+  a.download     = `contributor_${safeName}_${cycle}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function handleCPOverlayClick(e) {
@@ -2324,7 +2376,10 @@ document.addEventListener('keydown', e => {
         <div class="cp-name" id="cp-name">—</div>
         <div class="cp-meta" id="cp-meta"></div>
       </div>
-      <button class="cp-close" onclick="closeContributorProfile()">✕</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+        <button class="btn-secondary" style="font-size:12px;padding:4px 12px;white-space:nowrap" onclick="exportContributorProfileCSV()">⬇ Export CSV</button>
+        <button class="cp-close" onclick="closeContributorProfile()">✕</button>
+      </div>
     </div>
     <div class="cp-stats">
       <div class="cp-stat"><div class="cp-stat-val" id="cp-total">—</div><div class="cp-stat-lbl">Total Contributed</div></div>
