@@ -372,9 +372,15 @@ def _parse_contribution_row(row):
                                row.get('ScheduleType') or '').strip(),
         'reportCode':         (row.get('ReportCode')         or '').strip(),
         'notes':              notes_raw,
-        'isFilingFee':        any(p in ff_text for p in [
-                                  'FILING FEE', 'QUALIFYING FEE',
-                                  'QUALIFICATION FEE', 'FILING/QUALIFYING']),
+        'isFilingFee':        (
+                                  any(p in ff_text for p in [
+                                      'FILING FEE', 'QUALIFYING FEE',
+                                      'QUALIFICATION FEE', 'FILING/QUALIFYING'])
+                                  # Payments from any parish Clerk of Court to a party
+                                  # committee are qualifying/filing fees forwarded by the
+                                  # clerk — flag them even when notes are blank.
+                                  or 'CLERK OF COURT' in (row.get('ContributorName') or '').upper()
+                              ),
     }
 
 def _parse_expenditure_row(row):
