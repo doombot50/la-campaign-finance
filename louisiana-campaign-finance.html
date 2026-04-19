@@ -941,20 +941,45 @@ async function fetchLAEthicsLive(cycle) {
     } catch(e) { sessionStorage.removeItem(cacheKey); }
   }
 
-  document.getElementById('la-status').textContent = 'LA Ethics: downloading from ethics.la.gov…';
-  try {
-    const resp = await fetch(`${API_BASE}/api/la-ethics?cycle=${cycle}`);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    laEthicsData = await resp.json();
-    laEthicsData.forEach(d => {
-      if (!d.donorType) d.donorType = detectDonorType(d.contributor);
-      // keep d.party as the recipient's party; donorType carries the donor classification
-    });
-    try { sessionStorage.setItem(cacheKey, JSON.stringify(laEthicsData)); } catch(e) {}
-    document.getElementById('la-status').textContent = `${laEthicsData.length.toLocaleString()} LA Ethics records`;
-  } catch(err) {
-    console.warn('LA Ethics proxy error:', err);
-    document.getElementById('la-status').textContent = `${LA_SAMPLE_DATA.length} sample records (proxy offline)`;
+  // Poll until the server has finished downloading and caching the CSV.
+  // On first deploy the server pre-fetches in the background; we just need to wait.
+  const MAX_POLLS = 40;   // up to ~3.5 minutes
+  const POLL_MS   = 5000; // check every 5 seconds
+
+  for (let attempt = 0; attempt <= MAX_POLLS; attempt++) {
+    try {
+      const resp = await fetch(`${API_BASE}/api/la-ethics?cycle=${cycle}`);
+
+      if (resp.status === 202) {
+        // Server is still downloading — show progress and wait
+        const info = await resp.json().catch(() => ({}));
+        const elapsed = attempt * (POLL_MS / 1000);
+        document.getElementById('la-status').textContent =
+          `Downloading data from ethics.la.gov… (${elapsed}s elapsed — this happens once)`;
+        if (attempt < MAX_POLLS) {
+          await new Promise(r => setTimeout(r, POLL_MS));
+          continue;
+        }
+        throw new Error('Timed out waiting for server to download data');
+      }
+
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      laEthicsData = await resp.json();
+      laEthicsData.forEach(d => {
+        if (!d.donorType) d.donorType = detectDonorType(d.contributor);
+      });
+      try { sessionStorage.setItem(cacheKey, JSON.stringify(laEthicsData)); } catch(e) {}
+      document.getElementById('la-status').textContent =
+        `${laEthicsData.length.toLocaleString()} LA Ethics records`;
+      return;
+
+    } catch(err) {
+      console.warn('LA Ethics fetch error:', err);
+      document.getElementById('la-status').textContent =
+        `${LA_SAMPLE_DATA.length} sample records (${err.message})`;
+      return;
+    }
   }
 }
 

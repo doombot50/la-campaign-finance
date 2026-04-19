@@ -14,9 +14,14 @@ Cache is stored in .la_cache/ and refreshed every 24 hours.
 """
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 import urllib.request
 import json, csv, io, os, re, time, gzip, threading, sys
+
+class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    """Handle each HTTP request in its own thread so a slow download never blocks the server."""
+    daemon_threads = True
 
 PORT = int(os.environ.get('PORT', 8765))
 BIND_HOST = '0.0.0.0'   # listen on all interfaces when deployed; localhost when running locally
@@ -25,6 +30,19 @@ CACHE_DIR = os.path.join(BASE_DIR, '.la_cache')
 os.makedirs(CACHE_DIR, exist_ok=True)
 CACHE_TTL = 86400  # 24 hours
 HTML_FILE = os.path.join(BASE_DIR, 'louisiana-campaign-finance.html')
+
+# ── Download status tracker ────────────────────────────────────────────────────
+# Maps cache_key -> {'status': 'idle'|'downloading'|'ready'|'error', 'message': str}
+_dl_status: dict = {}
+_dl_status_lock = threading.Lock()
+
+def set_status(key, status, message=''):
+    with _dl_status_lock:
+        _dl_status[key] = {'status': status, 'message': message, 'ts': time.time()}
+
+def get_status(key):
+    with _dl_status_lock:
+        return _dl_status.get(key, {'status': 'idle', 'message': ''})
 
 # ── CSV source URLs ────────────────────────────────────────────────────────────
 CSV_URLS = {
@@ -213,9 +231,17 @@ def get_lock(key):
             _locks[key] = threading.Lock()
         return _locks[key]
 
+def is_cached_fresh(csv_key, report_type='contributions'):
+    """Return True if a fresh cache file exists for this key."""
+    cache_file = os.path.join(CACHE_DIR, f'{report_type}_{csv_key.replace("-","_")}.json.gz')
+    if os.path.exists(cache_file):
+        return (time.time() - os.path.getmtime(cache_file)) < CACHE_TTL
+    return False
+
 def fetch_and_cache(csv_key, report_type='contributions'):
     """Download, parse, gzip-cache a CSV. Returns list of records."""
     cache_file = os.path.join(CACHE_DIR, f'{report_type}_{csv_key.replace("-","_")}.json.gz')
+    status_key = f'{report_type}_{csv_key}'
 
     with get_lock(cache_file):
         # Return cached if fresh
@@ -223,6 +249,7 @@ def fetch_and_cache(csv_key, report_type='contributions'):
             age = time.time() - os.path.getmtime(cache_file)
             if age < CACHE_TTL:
                 print(f'  Cache hit: {os.path.basename(cache_file)}')
+                set_status(status_key, 'ready')
                 with gzip.open(cache_file, 'rt', encoding='utf-8') as f:
                     return json.load(f)
 
@@ -231,6 +258,7 @@ def fetch_and_cache(csv_key, report_type='contributions'):
         if not url:
             raise ValueError(f'No URL for {report_type}/{csv_key}')
 
+        set_status(status_key, 'downloading', f'Downloading {csv_key} from ethics.la.gov…')
         print(f'  Downloading {url}')
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 LACampaignFinanceDashboard/1.0'})
         with urllib.request.urlopen(req, timeout=300) as resp:
@@ -317,7 +345,25 @@ def fetch_and_cache(csv_key, report_type='contributions'):
         with gzip.open(cache_file, 'wt', encoding='utf-8') as f:
             json.dump(records, f, separators=(',', ':'))
 
+        set_status(status_key, 'ready', f'{len(records):,} records cached')
         return records
+
+
+def prefetch_background(csv_key, report_type='contributions'):
+    """Kick off a background thread to warm the cache for a given CSV key."""
+    status_key = f'{report_type}_{csv_key}'
+    if is_cached_fresh(csv_key, report_type):
+        set_status(status_key, 'ready', 'cached')
+        return
+    def _run():
+        try:
+            fetch_and_cache(csv_key, report_type)
+            print(f'  Background prefetch done: {csv_key}')
+        except Exception as e:
+            set_status(status_key, 'error', str(e))
+            print(f'  Background prefetch error for {csv_key}: {e}')
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
 
 # ── HTTP Handler ──────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
@@ -352,6 +398,17 @@ class Handler(BaseHTTPRequestHandler):
                         'cached_files': os.listdir(CACHE_DIR)})
             return
 
+        if parsed.path == '/api/data-status':
+            cycle = params.get('cycle', ['2024'])[0]
+            csv_key = get_csv_key(cycle)
+            st = get_status(f'contributions_{csv_key}')
+            self._json({
+                'status':  st['status'],
+                'message': st['message'],
+                'cached':  is_cached_fresh(csv_key, 'contributions'),
+            })
+            return
+
         if parsed.path not in ('/api/la-ethics', '/api/la-expenditures'):
             self.send_response(404)
             self._cors_headers()
@@ -361,6 +418,25 @@ class Handler(BaseHTTPRequestHandler):
         report_type = 'contributions' if parsed.path == '/api/la-ethics' else 'expenditures'
         cycle = params.get('cycle', ['2024'])[0]
         csv_key = get_csv_key(cycle)
+        status_key = f'{report_type}_{csv_key}'
+
+        # If not yet cached, start a background download and tell the browser to poll back
+        if not is_cached_fresh(csv_key, report_type):
+            st = get_status(status_key)
+            if st['status'] != 'downloading':
+                prefetch_background(csv_key, report_type)
+            body = json.dumps({
+                'loading': True,
+                'status':  'downloading',
+                'message': f'Downloading {csv_key} data from ethics.la.gov — please wait…',
+            }).encode('utf-8')
+            self.send_response(202)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self._cors_headers()
+            self.end_headers()
+            self.wfile.write(body)
+            return
 
         try:
             records = fetch_and_cache(csv_key, report_type)
@@ -421,18 +497,26 @@ if __name__ == '__main__':
     _load_politician_lookup()
     _bust_stale_caches()
     print()
+
+    # Warm the cache for the two most-requested ranges before any user hits the server
+    print('  Pre-fetching recent contribution data in background...')
+    prefetch_background('2024-2027', 'contributions')
+    prefetch_background('2020-2023', 'contributions')
+
+    print()
     print('  Endpoints:')
     print('    GET /health                         -- server status')
+    print('    GET /api/data-status?cycle=2024     -- cache status (poll this while loading)')
     print('    GET /api/la-ethics?cycle=2024       -- contributions')
     print('    GET /api/la-expenditures?cycle=2024 -- expenditures')
     print()
-    print('  First request downloads ~62 MB from ethics.la.gov.')
+    print('  Data pre-fetching in background. First user request returns immediately.')
     print('  Cache is refreshed automatically every 24 hours.')
     print()
     print('  Press Ctrl+C to stop.')
     print('=' * 60)
 
-    server = HTTPServer((BIND_HOST, PORT), Handler)
+    server = ThreadingHTTPServer((BIND_HOST, PORT), Handler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
