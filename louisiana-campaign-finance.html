@@ -288,6 +288,13 @@
   .party-badge.filing-fee {
     background: rgba(224,120,42,0.2); color: #f0a060; border: 1px solid rgba(224,120,42,0.5);
   }
+  /* Contributor state badges */
+  .state-badge {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 1px 5px; border-radius: 4px; font-family: monospace;
+  }
+  .state-badge-la  { background: rgba(200,169,81,0.15); color: var(--gold); border: 1px solid rgba(200,169,81,0.3); }
+  .state-badge-oos { background: rgba(139,148,158,0.12); color: var(--muted); border: 1px solid var(--border); }
   .detail-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 16px 24px;
@@ -456,6 +463,14 @@
       <input type="text" class="ctrl-input search" id="donor-search" placeholder="Search donor...">
     </div>
     <div class="ctrl-group">
+      <label>Donor Origin</label>
+      <select class="ctrl-select" id="origin-select">
+        <option value="ALL">All States</option>
+        <option value="LA">In-State (LA)</option>
+        <option value="OOS">Out of State</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
       <label>Map View</label>
       <div class="map-toggle-btns" style="flex-direction:row;">
         <button class="map-toggle-btn active" id="btn-bubbles">Bubbles</button>
@@ -566,6 +581,7 @@
           <th style="width:28px;cursor:default"></th>
           <th data-col="date">Date</th>
           <th data-col="contributor">Contributor</th>
+          <th data-col="contributorState" style="width:52px">State</th>
           <th data-col="parish">Parish</th>
           <th data-col="candidate">Candidate</th>
           <th data-col="party">Party</th>
@@ -862,7 +878,7 @@ document.getElementById('btn-choropleth').addEventListener('click', () => {
   renderMap();
 });
 
-['cycle-select','party-select','parish-select'].forEach(id => {
+['cycle-select','party-select','parish-select','origin-select'].forEach(id => {
   document.getElementById(id).addEventListener('change', debounceFilter);
 });
 ['amt-min','amt-max'].forEach(id => {
@@ -999,6 +1015,7 @@ function applyFiltersAndRender() {
   const parish = document.getElementById('parish-select').value;
   const search = document.getElementById('candidate-search').value.toLowerCase().trim();
   const donorSearch = document.getElementById('donor-search').value.toLowerCase().trim();
+  const origin = document.getElementById('origin-select').value;
   const exclFilingFees = document.getElementById('btn-excl-ff').classList.contains('active');
   const cycleStart = parseInt(cycle) - 1;
 
@@ -1015,6 +1032,8 @@ function applyFiltersAndRender() {
     if (parish !== 'ALL' && d.parish !== parish) return false;
     if (search && !d.candidate.toLowerCase().includes(search)) return false;
     if (donorSearch && !d.contributor.toLowerCase().includes(donorSearch)) return false;
+    if (origin === 'LA'  && (d.contributorState || '').toUpperCase() !== 'LA') return false;
+    if (origin === 'OOS' && (d.contributorState || '').toUpperCase() === 'LA') return false;
     if (exclFilingFees && d.isFilingFee) return false;
     return true;
   });
@@ -1446,6 +1465,7 @@ function renderTable() {
         <td class="expand-cell"><span class="expand-icon">▶</span></td>
         <td>${d.date}</td>
         <td>${ffBadge}${escHtml(d.contributor)}</td>
+        <td>${stateCell(d.contributorState)}</td>
         <td>${escHtml(d.parish)}</td>
         <td>${escHtml(d.candidate)}</td>
         <td>${partyBadgeHtml(d)}</td>
@@ -1454,7 +1474,7 @@ function renderTable() {
         <td><span class="source-badge la">LA Ethics</span></td>
       </tr>
       <tr class="detail-row${d.isFilingFee ? ' filing-fee-row' : ''}" id="${rid}" style="display:none">
-        <td colspan="9">${buildDetailPanel(d)}</td>
+        <td colspan="10">${buildDetailPanel(d)}</td>
       </tr>`;
     }).join('');
   }
@@ -1505,6 +1525,7 @@ function downloadCSV() {
   const cols = [
     ['Date',          d => d.date],
     ['Contributor',   d => d.contributor],
+    ['State',         d => d.contributorState || ''],
     ['Address',       d => [d.contributorAddress, d.city, d.contributorState, d.contributorZip].filter(Boolean).join(', ')],
     ['Employer',      d => d.employer || ''],
     ['Occupation',    d => d.occupation || ''],
@@ -1647,6 +1668,13 @@ function detectPACParty(name) {
   for (const s of repSignals) if (n.includes(s)) return 'PAC-REP';
   for (const s of demSignals) if (n.includes(s)) return 'PAC-DEM';
   return 'PAC';
+}
+
+function stateCell(st) {
+  if (!st) return '<span style="color:var(--muted);font-size:11px">—</span>';
+  const isLA = st.toUpperCase() === 'LA';
+  const cls  = isLA ? 'state-badge-la' : 'state-badge-oos';
+  return `<span class="state-badge ${cls}" title="${isLA ? 'In-state (Louisiana)' : 'Out of state'}">${st.toUpperCase()}</span>`;
 }
 
 function partyBadgeHtml(d) {

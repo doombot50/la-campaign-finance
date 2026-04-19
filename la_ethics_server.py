@@ -71,6 +71,49 @@ def get_csv_key(year):
     if y >= 2004: return '2004-2007'
     return '2000-2003'
 
+# ── ZIP-code prefix → US state abbreviation ──────────────────────────────────
+# Keys are the first 3 digits of a ZIP code (string).  Coverage: all 50 states
+# + DC, PR, VI, GU, and military APO/FPO codes.
+_ZIP3_STATE: dict = {}
+def _build_zip3_state():
+    """Populate _ZIP3_STATE from compact range specs."""
+    global _ZIP3_STATE
+    # Each entry: (start_prefix, end_prefix_inclusive, state_abbr)
+    ranges = [
+        (6,9,'PR'),(10,27,'MA'),(28,29,'RI'),(30,38,'NH'),(39,49,'ME'),
+        (50,59,'VT'),(60,69,'CT'),(70,89,'NJ'),(90,98,'AE'),(99,99,'AE'),
+        (100,149,'NY'),(150,196,'PA'),(197,199,'DE'),
+        (200,205,'DC'),(206,206,'MD'),(207,212,'MD'),(214,219,'MD'),
+        (201,201,'VA'),(220,246,'VA'),(247,268,'WV'),
+        (270,289,'NC'),(290,299,'SC'),(300,319,'GA'),
+        (320,339,'FL'),(340,340,'AA'),(341,349,'FL'),
+        (350,368,'AL'),(369,369,'AL'),
+        (370,385,'TN'),(386,397,'MS'),(398,399,'GA'),
+        (400,427,'KY'),(430,458,'OH'),(460,479,'IN'),(480,499,'MI'),
+        (500,528,'IA'),(530,549,'WI'),(550,567,'MN'),
+        (570,577,'SD'),(580,588,'ND'),(590,599,'MT'),
+        (600,629,'IL'),(630,658,'MO'),(660,679,'KS'),(680,693,'NE'),
+        (700,708,'LA'),(710,714,'LA'),
+        (716,729,'AR'),(730,749,'OK'),(750,799,'TX'),(885,885,'TX'),
+        (800,816,'CO'),(820,831,'WY'),(832,838,'ID'),(840,847,'UT'),
+        (850,865,'AZ'),(870,884,'NM'),
+        (889,898,'NV'),
+        (900,961,'CA'),(962,964,'AP'),(965,965,'GU'),(966,966,'GU'),
+        (967,968,'HI'),(969,969,'GU'),
+        (970,979,'OR'),(980,994,'WA'),(995,999,'AK'),
+    ]
+    for lo, hi, st in ranges:
+        for n in range(lo, hi + 1):
+            _ZIP3_STATE[f'{n:03d}'] = st
+_build_zip3_state()
+
+def _zip_to_state(zip_code: str) -> str:
+    """Return a 2-letter state abbreviation for a ZIP code, or '' if unknown."""
+    z = (zip_code or '').strip().replace('-', '')
+    if len(z) >= 3 and z[:3].isdigit():
+        return _ZIP3_STATE.get(z[:3], '')
+    return ''
+
 # ── City → Parish lookup ──────────────────────────────────────────────────────
 CITY_TO_PARISH = {
     'NEW ORLEANS': 'Orleans', 'BATON ROUGE': 'East Baton Rouge',
@@ -296,8 +339,9 @@ def _parse_contribution_row(row):
         'type':               contrib_type,
         'filerNumber':        (row.get('FilerNumber') or '').strip(),
         'contributorAddress': (row.get('ContributorAddress') or '').strip(),
-        'contributorState':   (row.get('ContributorState')   or '').strip(),
         'contributorZip':     (row.get('ContributorZip')     or '').strip(),
+        'contributorState':   (row.get('ContributorState')   or '').strip()
+                              or _zip_to_state(row.get('ContributorZip') or ''),
         'employer':           (row.get('ContributorEmployer') or row.get('Employer') or '').strip(),
         'occupation':         (row.get('ContributorOccupation') or row.get('Occupation') or '').strip(),
         'electionYear':       (row.get('ElectionYear')       or '').strip(),
