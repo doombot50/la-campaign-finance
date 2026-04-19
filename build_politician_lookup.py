@@ -306,6 +306,47 @@ CURATED = [
     ('PHILLIP',    'DEVILLIER',    'REP', 'State Representative',     [2016, 2020, 2024]),
     ('WILFORD',    'CARTER',       'DEM', 'State Representative',     [2008, 2012, 2016, 2020, 2024]),
     ('RAYMOND',    'GAROFALO',     'REP', 'State Representative',     [2012, 2016, 2020, 2024]),
+    # ── Formal-name / nickname aliases ────────────────────────────────────────────
+    # These cover cases where the Ethics report uses a formal first name that
+    # differs from the "known as" name stored above (e.g. William vs Billy).
+    # The enhanced lookup_party logic handles middle initials automatically, so
+    # only true nickname↔formal-name mismatches need explicit entries here.
+    ('ELIZABETH',   'MURRILL',       'REP', 'Attorney General',          [2023]),          # Liz
+    ('WILLIAM',     'NUNGESSER',     'REP', 'Lt. Governor',              [2016, 2020, 2023]),  # Billy
+    ('MICHAEL',     'REESE',         'REP', 'State Senator',             [2016, 2020]),    # Mike
+    ('WILLIAM',     'WHEAT',         'REP', 'State Senator',             [2024]),          # Bill
+    ('ROBERT',      'OWEN',          'REP', 'State Senator',             [2024]),          # Bob
+    ('CRAIG',       'HENSGENS',      'REP', 'State Senator',             [2016, 2020, 2024]),  # Bob (middle)
+    ('JOHN',        'MORRIS',        'REP', 'State Senator',             [2016, 2020, 2024]),  # Jay (middle)
+    ('PATRICK',     'CORTEZ',        'REP', 'State Senate President',    [2020, 2024]),    # Page (middle)
+    ('LAWRENCE',    'BAGLEY',        'REP', 'State Senator',             [2012, 2016, 2020, 2024]),  # Larry
+    ('EDWARD',      'JAMES',         'DEM', 'State Representative',      [2012, 2016, 2020]),  # Ted
+    ('MICHAEL',     'STRAIN',        'REP', 'Agriculture Commissioner',  [2008, 2012, 2016, 2020, 2023]),  # Mike
+    ('JAMES',       'DONELON',       'REP', 'Insurance Commissioner',    [2010, 2016, 2020, 2023]),  # Jim
+    ('WENDELL',     'LUNEAU',        'DEM', 'State Senator',             [2016, 2020, 2024]),  # Jay (middle)
+    ('JOE',         'STAGNI',        'REP', 'State Representative',      [2016, 2020, 2024]),  # Joseph
+    ('ANTHONY',     'BACALA',        'REP', 'State Representative',      [2016, 2020]),    # Tony
+    ('PAULETTE',    'THOMAS',        'REP', 'State Representative',      [2012, 2016, 2020, 2024]),  # Polly
+    ('MACK',        'WHITE',         'REP', 'State Senator',             [2010, 2016, 2020]),  # Bodi (nickname)
+    ('JESSE',       'BASS',          'REP', 'State Senator',             [2024]),          # Adam (middle)
+    ('JEFFREY',     'WILEY',         'REP', 'State Representative',      [2020, 2024]),    # Jeff
+    ('RICHARD',     'WARD',          'REP', 'State Senator',             [2016, 2020]),    # Rick
+    ('VINCENT',     'ST BLANC',      'REP', 'State Representative',      [2016, 2020, 2024]),  # Vinney (nickname)
+    ('MICHAEL',     'FESI',          'REP', 'State Representative',      [2016, 2020]),    # Mike
+    ('ROBERT',      'ARDOIN',        'REP', 'Secretary of State',        [2018, 2019, 2023]),  # Kyle (middle)
+    # ── Additional current/recent legislators not previously listed ────────────
+    ('HELENA',      'MORENO',        'DEM', 'State Senator',             [2020, 2024]),
+    ('JOHN',        'STEFANSKI',     'REP', 'State Representative',      [2016, 2020, 2024]),
+    ('JEAN PAUL',   'COUSSAN',       'REP', 'State Senator',             [2020, 2024]),
+    ('TANNER',      'MAGEE',         'REP', 'State Representative',      [2012, 2016, 2020, 2024]),
+    ('MACK',        'CORMIER',       'DEM', 'State Representative',      [2016, 2020, 2024]),
+    ('CLEO',        'FIELDS',        'DEM', 'State Senator',             [2000, 2004, 2008, 2012, 2016, 2020, 2024]),
+    ('TIMOTHY',     'TEMPLE',        'REP', 'Agriculture Commissioner',  [2023]),
+    ('JOHN',        'MILKOVICH',     'DEM', 'State Senator',             [2016, 2020]),
+    ('RICHARD',     'NELSON',        'REP', 'Commissioner of Administration', [2020, 2023]),
+    ('JASON ROGERS','WILLIAMS',      'DEM', 'Orleans DA / State Rep',    [2014, 2016, 2020]),
+    ('STUART',      'BISHOP',        'REP', 'State Representative',      [2012, 2016, 2020, 2024]),
+    ('SCHUYLER',    'MARVIN',        'REP', 'State Representative',      [2004, 2008, 2012, 2016, 2020, 2024]),
     # Parish/local level notable politicians
     ('LATOYA',     'CANTRELL',     'DEM', 'Mayor (New Orleans)',      [2018, 2022]),
     ('MITCH',      'LANDRIEU',     'DEM', 'Mayor (New Orleans)',      [2010, 2014]),

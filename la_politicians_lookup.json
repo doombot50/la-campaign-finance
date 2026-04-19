@@ -3929,6 +3929,567 @@
     ],
     "source": "curated"
   },
+  "ELIZABETH MURRILL": {
+    "party": "REP",
+    "first": "ELIZABETH",
+    "last": "MURRILL",
+    "office": "Attorney General",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "WILLIAM NUNGESSER": {
+    "party": "REP",
+    "first": "WILLIAM",
+    "last": "NUNGESSER",
+    "office": "Lt. Governor",
+    "election_years": [
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "MICHAEL REESE": {
+    "party": "REP",
+    "first": "MICHAEL",
+    "last": "REESE",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "WILLIAM WHEAT": {
+    "party": "REP",
+    "first": "WILLIAM",
+    "last": "WHEAT",
+    "office": "State Senator",
+    "election_years": [
+      2024
+    ],
+    "source": "curated"
+  },
+  "ROBERT OWEN": {
+    "party": "REP",
+    "first": "ROBERT",
+    "last": "OWEN",
+    "office": "State Senator",
+    "election_years": [
+      2024
+    ],
+    "source": "curated"
+  },
+  "CRAIG HENSGENS": {
+    "party": "REP",
+    "first": "CRAIG",
+    "last": "HENSGENS",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "JOHN MORRIS": {
+    "party": "REP",
+    "first": "JOHN",
+    "last": "MORRIS",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "PATRICK CORTEZ": {
+    "party": "REP",
+    "first": "PATRICK",
+    "last": "CORTEZ",
+    "office": "State Senate President",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "LAWRENCE BAGLEY": {
+    "party": "REP",
+    "first": "LAWRENCE",
+    "last": "BAGLEY",
+    "office": "State Senator",
+    "election_years": [
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "EDWARD JAMES": {
+    "party": "DEM",
+    "first": "EDWARD",
+    "last": "JAMES",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "MICHAEL STRAIN": {
+    "party": "REP",
+    "first": "MICHAEL",
+    "last": "STRAIN",
+    "office": "Agriculture Commissioner",
+    "election_years": [
+      2008,
+      2012,
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "JAMES DONELON": {
+    "party": "REP",
+    "first": "JAMES",
+    "last": "DONELON",
+    "office": "Insurance Commissioner",
+    "election_years": [
+      2010,
+      2016,
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "WENDELL LUNEAU": {
+    "party": "DEM",
+    "first": "WENDELL",
+    "last": "LUNEAU",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "JOE STAGNI": {
+    "party": "REP",
+    "first": "JOE",
+    "last": "STAGNI",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "ANTHONY BACALA": {
+    "party": "REP",
+    "first": "ANTHONY",
+    "last": "BACALA",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "PAULETTE THOMAS": {
+    "party": "REP",
+    "first": "PAULETTE",
+    "last": "THOMAS",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "MACK WHITE": {
+    "party": "REP",
+    "first": "MACK",
+    "last": "WHITE",
+    "office": "State Senator",
+    "election_years": [
+      2010,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "JESSE BASS": {
+    "party": "REP",
+    "first": "JESSE",
+    "last": "BASS",
+    "office": "State Senator",
+    "election_years": [
+      2024
+    ],
+    "source": "curated"
+  },
+  "JEFFREY WILEY": {
+    "party": "REP",
+    "first": "JEFFREY",
+    "last": "WILEY",
+    "office": "State Representative",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "RICHARD WARD": {
+    "party": "REP",
+    "first": "RICHARD",
+    "last": "WARD",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "VINCENT ST BLANC": {
+    "party": "REP",
+    "first": "VINCENT",
+    "last": "ST BLANC",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "MICHAEL FESI": {
+    "party": "REP",
+    "first": "MICHAEL",
+    "last": "FESI",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "ROBERT ARDOIN": {
+    "party": "REP",
+    "first": "ROBERT",
+    "last": "ARDOIN",
+    "office": "Secretary of State",
+    "election_years": [
+      2018,
+      2019,
+      2023
+    ],
+    "source": "curated"
+  },
+  "HELENA MORENO": {
+    "party": "DEM",
+    "first": "HELENA",
+    "last": "MORENO",
+    "office": "State Senator",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "MORENO": {
+    "party": "DEM",
+    "first": "HELENA",
+    "last": "MORENO",
+    "office": "State Senator",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "JOHN STEFANSKI": {
+    "party": "REP",
+    "first": "JOHN",
+    "last": "STEFANSKI",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "STEFANSKI": {
+    "party": "REP",
+    "first": "JOHN",
+    "last": "STEFANSKI",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "JEAN PAUL COUSSAN": {
+    "party": "REP",
+    "first": "JEAN PAUL",
+    "last": "COUSSAN",
+    "office": "State Senator",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "COUSSAN": {
+    "party": "REP",
+    "first": "JEAN PAUL",
+    "last": "COUSSAN",
+    "office": "State Senator",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "TANNER MAGEE": {
+    "party": "REP",
+    "first": "TANNER",
+    "last": "MAGEE",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "MAGEE": {
+    "party": "REP",
+    "first": "TANNER",
+    "last": "MAGEE",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "MACK CORMIER": {
+    "party": "DEM",
+    "first": "MACK",
+    "last": "CORMIER",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "CORMIER": {
+    "party": "DEM",
+    "first": "MACK",
+    "last": "CORMIER",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "CLEO FIELDS": {
+    "party": "DEM",
+    "first": "CLEO",
+    "last": "FIELDS",
+    "office": "State Senator",
+    "election_years": [
+      2000,
+      2004,
+      2008,
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "FIELDS": {
+    "party": "DEM",
+    "first": "CLEO",
+    "last": "FIELDS",
+    "office": "State Senator",
+    "election_years": [
+      2000,
+      2004,
+      2008,
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "TIMOTHY TEMPLE": {
+    "party": "REP",
+    "first": "TIMOTHY",
+    "last": "TEMPLE",
+    "office": "Agriculture Commissioner",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "TEMPLE": {
+    "party": "REP",
+    "first": "TIMOTHY",
+    "last": "TEMPLE",
+    "office": "Agriculture Commissioner",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "JOHN MILKOVICH": {
+    "party": "DEM",
+    "first": "JOHN",
+    "last": "MILKOVICH",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "MILKOVICH": {
+    "party": "DEM",
+    "first": "JOHN",
+    "last": "MILKOVICH",
+    "office": "State Senator",
+    "election_years": [
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "RICHARD NELSON": {
+    "party": "REP",
+    "first": "RICHARD",
+    "last": "NELSON",
+    "office": "Commissioner of Administration",
+    "election_years": [
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "NELSON": {
+    "party": "REP",
+    "first": "RICHARD",
+    "last": "NELSON",
+    "office": "Commissioner of Administration",
+    "election_years": [
+      2020,
+      2023
+    ],
+    "source": "curated"
+  },
+  "JASON ROGERS WILLIAMS": {
+    "party": "DEM",
+    "first": "JASON ROGERS",
+    "last": "WILLIAMS",
+    "office": "Orleans DA / State Rep",
+    "election_years": [
+      2014,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "WILLIAMS": {
+    "party": "DEM",
+    "first": "JASON ROGERS",
+    "last": "WILLIAMS",
+    "office": "Orleans DA / State Rep",
+    "election_years": [
+      2014,
+      2016,
+      2020
+    ],
+    "source": "curated"
+  },
+  "STUART BISHOP": {
+    "party": "REP",
+    "first": "STUART",
+    "last": "BISHOP",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "BISHOP": {
+    "party": "REP",
+    "first": "STUART",
+    "last": "BISHOP",
+    "office": "State Representative",
+    "election_years": [
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "SCHUYLER MARVIN": {
+    "party": "REP",
+    "first": "SCHUYLER",
+    "last": "MARVIN",
+    "office": "State Representative",
+    "election_years": [
+      2004,
+      2008,
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "MARVIN": {
+    "party": "REP",
+    "first": "SCHUYLER",
+    "last": "MARVIN",
+    "office": "State Representative",
+    "election_years": [
+      2004,
+      2008,
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
   "LATOYA CANTRELL": {
     "party": "DEM",
     "first": "LATOYA",

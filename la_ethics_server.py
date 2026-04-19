@@ -231,32 +231,70 @@ def _bust_stale_caches():
 def lookup_party(name: str) -> str:
     """Return DEM/REP/OTH for a filer name using the politician lookup.
 
-    Matching strategy (full-name only — avoids false positives from common surnames):
-      1. Exact normalized full-name match  ("STEVE SCALISE")
-      2. Reversed "LAST, FIRST" format     ("SCALISE, STEVE" -> "STEVE SCALISE")
-         Comma check runs on the RAW name before normalization strips punctuation.
+    Matching strategy (requires >= 2 tokens to avoid false positives):
+      0. Comma-swap "LAST, FIRST [suffix]"  ("Kerner, Jr." handled gracefully)
+      1. Exact normalized full-name match   ("STEVE SCALISE")
+      2. First token + last token           ("AIMEE ADATTO FREEMAN" → "AIMEE FREEMAN")
+      3. Skip leading single-letter token   ("J CAMERON HENRY" → "CAMERON HENRY")
+      4. Strip single-letter middle tokens  ("ALAN T SEABAUGH" → "ALAN SEABAUGH")
     """
     if not name or name == 'Unknown':
         return 'OTH'
 
-    # 2. Handle "LASTNAME, FIRSTNAME" on raw string before normalization strips commas
+    # 0. Handle "LASTNAME, FIRSTNAME [suffix]" — try swapped form first
     if ',' in name:
         raw_parts = name.split(',', 1)
         swapped = f'{raw_parts[1].strip()} {raw_parts[0].strip()}'
         norm_swapped = _normalize_name(swapped)
-        entry = _POLITICIAN_LOOKUP.get(norm_swapped)
-        if entry:
-            return entry.get('party', 'OTH')
+        if len(norm_swapped.split()) >= 2:
+            entry = _POLITICIAN_LOOKUP.get(norm_swapped)
+            if entry:
+                return entry.get('party', 'OTH')
 
-    # 1. Exact normalized full-name match (require at least 2 tokens to avoid
-    #    accidentally hitting last-name-only shortcut keys in the JSON)
+    # Normalize the full name (strips honorifics, punctuation, collapses whitespace)
     norm = _normalize_name(name)
     if not norm:
         return 'OTH'
-    if len(norm.split()) >= 2:
+    tokens = norm.split()
+
+    # 1. Exact normalized full-name match
+    if len(tokens) >= 2:
         entry = _POLITICIAN_LOOKUP.get(norm)
         if entry:
             return entry.get('party', 'OTH')
+
+    # Extended matching for names with middle names / initials / nicknames
+    if len(tokens) >= 3:
+        # 2. First token + last token only
+        #    e.g. "AIMEE ADATTO FREEMAN" → "AIMEE FREEMAN"
+        #    e.g. "THOMAS ALEXANDER PRESSLY" → "THOMAS PRESSLY"
+        first_last = f'{tokens[0]} {tokens[-1]}'
+        entry = _POLITICIAN_LOOKUP.get(first_last)
+        if entry:
+            return entry.get('party', 'OTH')
+
+        # 3. Skip leading single-letter initial ("J CAMERON HENRY" → "CAMERON HENRY")
+        if len(tokens[0]) == 1:
+            rest = ' '.join(tokens[1:])
+            entry = _POLITICIAN_LOOKUP.get(rest)
+            if entry:
+                return entry.get('party', 'OTH')
+            # Also try first+last of remaining tokens ("M KIRK TALBOT" → "KIRK TALBOT")
+            fl_rest = f'{tokens[1]} {tokens[-1]}'
+            if fl_rest != rest:
+                entry = _POLITICIAN_LOOKUP.get(fl_rest)
+                if entry:
+                    return entry.get('party', 'OTH')
+
+        # 4. Strip single-letter middle tokens, keep all multi-letter tokens
+        #    e.g. "ALAN T SEABAUGH" → "ALAN SEABAUGH"
+        #    e.g. "TIMOTHY P KERNER" → "TIMOTHY KERNER"
+        stripped = [tokens[0]] + [t for t in tokens[1:-1] if len(t) > 1] + [tokens[-1]]
+        if len(stripped) < len(tokens) and len(stripped) >= 2:
+            key = ' '.join(stripped)
+            entry = _POLITICIAN_LOOKUP.get(key)
+            if entry:
+                return entry.get('party', 'OTH')
 
     return 'OTH'
 
