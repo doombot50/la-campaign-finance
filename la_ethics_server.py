@@ -488,10 +488,13 @@ class Handler(BaseHTTPRequestHandler):
         csv_key = get_csv_key(cycle)
         status_key = f'{report_type}_{csv_key}'
 
-        # If the needed years aren't cached yet, start download and ask browser to poll back
+        # Gate on the PRIMARY year only.
+        # The previous year (y-1) may live in a different 4-year CSV bundle; its absence
+        # must not block serving current-year data.  It will be included automatically
+        # once that bundle is eventually cached.
         y = int(cycle)
-        years_needed = [y - 1, y]
-        if not all(_year_is_fresh(yr, report_type) for yr in years_needed):
+        years_wanted = [y - 1, y]   # ideal two-year window
+        if not _year_is_fresh(y, report_type):
             st = get_status(status_key)
             if st['status'] != 'downloading':
                 prefetch_background(csv_key, report_type)
@@ -508,9 +511,10 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
-        # Stream the response directly from gzip files — O(1) memory regardless of dataset size
+        # Stream only the years that are actually on disk — skip any that aren't cached yet
+        years_to_serve = [yr for yr in years_wanted if _year_is_fresh(yr, report_type)]
         try:
-            self._stream_years_json(years_needed, report_type)
+            self._stream_years_json(years_to_serve, report_type)
         except Exception as e:
             import traceback
             traceback.print_exc()
