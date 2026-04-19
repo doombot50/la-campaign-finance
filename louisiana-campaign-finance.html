@@ -170,13 +170,15 @@
   }
   .chart-wrap { position: relative; height: 220px; }
   .top-parishes-list { }
-  .top-parish-sort { display: flex; gap: 4px; margin-bottom: 10px; }
-  .tp-sort-btn {
+  .top-parish-sort { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+  .tp-sort-btn, .tp-view-btn {
     padding: 3px 9px; border-radius: 4px; font-size: 11px; cursor: pointer;
     border: 1px solid var(--border); background: transparent; color: var(--muted);
     transition: all 0.2s;
   }
   .tp-sort-btn.active { background: rgba(200,169,81,0.15); color: var(--gold); border-color: var(--gold); }
+  .tp-view-btn.active { background: rgba(200,169,81,0.25); color: var(--gold); border-color: var(--gold); font-weight: 700; }
+  .tp-view-sep { width: 1px; background: var(--border); margin: 0 2px; align-self: stretch; }
   .top-parish-item {
     display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
   }
@@ -616,8 +618,10 @@
       </div>
       <div class="panel-card">
         <div class="panel-card-title">
-          Top 10 Parishes
+          <span id="tp-panel-title">Top 10 Parishes</span>
           <div class="top-parish-sort">
+            <button class="tp-view-btn active" data-tpview="parishes">Parishes</button>
+            <button class="tp-view-btn" data-tpview="states">States</button>
             <button class="tp-sort-btn active" data-tpsort="total">Total</button>
             <button class="tp-sort-btn" data-tpsort="count">Count</button>
             <button class="tp-sort-btn" data-tpsort="avg">Avg</button>
@@ -889,6 +893,7 @@ const PAGE_SIZE = 20;
 let sortCol = 'date';
 let sortDir = 'desc';
 let topParishSort = 'total';
+let topParishView = 'parishes';  // 'parishes' | 'states'
 let mapMode = 'bubbles';
 let partyChart = null;
 let donorTypeChart = null;
@@ -982,6 +987,17 @@ document.querySelectorAll('.tp-sort-btn').forEach(btn => {
     document.querySelectorAll('.tp-sort-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     topParishSort = btn.dataset.tpsort;
+    renderTopParishes();
+  });
+});
+
+document.querySelectorAll('.tp-view-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tp-view-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    topParishView = btn.dataset.tpview;
+    document.getElementById('tp-panel-title').textContent =
+      topParishView === 'states' ? 'Top 10 States' : 'Top 10 Parishes';
     renderTopParishes();
   });
 });
@@ -1554,9 +1570,11 @@ function renderDonorTypeChart() {
 }
 
 // ============================================================
-// TOP PARISHES
+// TOP PARISHES / STATES
 // ============================================================
 function renderTopParishes() {
+  if (topParishView === 'states') { renderTopStates(); return; }
+
   const stats = getParishStats();
   let entries = Object.entries(stats).filter(([,s])=>s.total>0).map(([name,s])=>({
     name, total:s.total, count:s.count, avg: s.count ? s.total/s.count : 0
@@ -1582,6 +1600,49 @@ function renderTopParishes() {
       <span class="tp-rank">${i+1}</span>
       <span class="tp-name" title="${e.name}">${e.name}</span>
       <div class="tp-bar-wrap"><div class="tp-bar" style="width:${pct}%"></div></div>
+      <span class="tp-val">${displayVal}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderTopStates() {
+  // Aggregate by contributorState across all filtered records (including LA)
+  const byState = {};
+  filteredData.forEach(d => {
+    const st = (d.contributorState || '').toUpperCase() || 'Unknown';
+    if (!byState[st]) byState[st] = { total:0, count:0 };
+    byState[st].total += d.amount;
+    byState[st].count++;
+  });
+
+  let entries = Object.entries(byState).map(([name, s]) => ({
+    name: STATE_NAMES[name] || name,
+    code: name,
+    total: s.total, count: s.count,
+    avg: s.count ? s.total / s.count : 0,
+  }));
+
+  if (topParishSort === 'total') entries.sort((a,b)=>b.total-a.total);
+  else if (topParishSort === 'count') entries.sort((a,b)=>b.count-a.count);
+  else entries.sort((a,b)=>b.avg-a.avg);
+
+  entries = entries.slice(0, 10);
+  const maxVal = entries.length ? (topParishSort==='total'?entries[0].total:topParishSort==='count'?entries[0].count:entries[0].avg) : 1;
+
+  const list = document.getElementById('top-parishes-list');
+  if (!entries.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px;">No data</div>';
+    return;
+  }
+  list.innerHTML = entries.map((e,i) => {
+    const val = topParishSort==='total'?e.total:topParishSort==='count'?e.count:e.avg;
+    const displayVal = topParishSort==='count'?e.count.toLocaleString():formatMoney(val);
+    const pct = maxVal ? (val/maxVal)*100 : 0;
+    const isLA = e.code === 'LA';
+    return `<div class="top-parish-item">
+      <span class="tp-rank">${i+1}</span>
+      <span class="tp-name" title="${e.name}" style="${isLA ? 'color:var(--gold);font-weight:600' : ''}">${e.name}${isLA ? ' ★' : ''}</span>
+      <div class="tp-bar-wrap"><div class="tp-bar" style="width:${pct}%;${isLA ? 'background:var(--gold)' : ''}"></div></div>
       <span class="tp-val">${displayVal}</span>
     </div>`;
   }).join('');
