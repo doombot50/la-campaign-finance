@@ -378,7 +378,7 @@ def download_and_cache(csv_key, report_type='contributions'):
                         year = int(rec['date'][:4])
                         if year not in year_writers:
                             tmp = _year_cache_path(year, report_type) + tmp_suffix
-                            year_writers[year] = gzip.open(tmp, 'wt', encoding='utf-8')
+                            year_writers[year] = gzip.open(tmp, 'wt', encoding='utf-8', compresslevel=1)
                             year_counts[year]  = 0
                         # Write one JSON line per record — constant memory cost
                         year_writers[year].write(json.dumps(rec, separators=(',', ':')) + '\n')
@@ -434,6 +434,7 @@ def prefetch_background(csv_key, report_type='contributions'):
 
 # ── HTTP Handler ──────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
+    protocol_version = 'HTTP/1.1'   # required for chunked transfer-encoding
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -507,32 +508,55 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
+        # Stream the response directly from gzip files — O(1) memory regardless of dataset size
         try:
-            # Load only the two years we need — much lower RAM than loading the full 4-year range
-            filtered = _load_years(years_needed, report_type)
-            gc.collect()
-
-            data    = json.dumps(filtered, separators=(',', ':'))
-            encoded = data.encode('utf-8')
-            del filtered
-            gc.collect()
-
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Content-Length', str(len(encoded)))
-            self._cors_headers()
-            self.end_headers()
-            self.wfile.write(encoded)
-
+            self._stream_years_json(years_needed, report_type)
         except Exception as e:
             import traceback
             traceback.print_exc()
-            err = json.dumps({'error': str(e)}).encode('utf-8')
-            self.send_response(500)
-            self.send_header('Content-Type', 'application/json')
-            self._cors_headers()
-            self.end_headers()
-            self.wfile.write(err)
+            print(f'  Streaming error for {report_type} cycle={cycle}: {e}')
+
+    def _stream_years_json(self, years, report_type):
+        """Stream per-year NDJSON cache files as a JSON array via chunked transfer-encoding.
+
+        Peak RAM = O(1) per record.  No in-memory list, no json.dumps of the full dataset.
+        All modern browsers reassemble chunked responses transparently before calling .json().
+        """
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Transfer-Encoding', 'chunked')
+        self.send_header('Connection', 'close')
+        self._cors_headers()
+        self.end_headers()
+
+        def wc(data: bytes):
+            """Write one HTTP chunk."""
+            if not data:
+                return
+            self.wfile.write(f'{len(data):x}\r\n'.encode('ascii'))
+            self.wfile.write(data)
+            self.wfile.write(b'\r\n')
+
+        try:
+            wc(b'[')
+            first = True
+            for year in years:
+                p = _year_cache_path(year, report_type)
+                if not os.path.exists(p):
+                    continue
+                with gzip.open(p, 'rt', encoding='utf-8') as gf:
+                    for raw in gf:
+                        raw = raw.strip()
+                        if not raw:
+                            continue
+                        wc((b'' if first else b',') + raw.encode('utf-8'))
+                        first = False
+            wc(b']')
+            # Terminating chunk signals end of chunked body
+            self.wfile.write(b'0\r\n\r\n')
+            self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            pass   # client disconnected mid-stream
 
     def _cors_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -567,7 +591,8 @@ if __name__ == '__main__':
     # Warm the cache sequentially in one background thread — never two downloads at once
     print('  Pre-fetching recent contribution data in background (sequential)...')
     def _sequential_prefetch():
-        for csv_key in ['2024-2027', '2020-2023']:
+        # Only warm the most-recent range on startup; older ranges load on demand.
+        for csv_key in ['2024-2027']:
             if not is_cached_fresh(csv_key, 'contributions'):
                 try:
                     download_and_cache(csv_key, 'contributions')
