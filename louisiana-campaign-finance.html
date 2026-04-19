@@ -2096,6 +2096,13 @@ function buildDetailPanel(d) {
 
   return `<div class="detail-panel">
     ${ffAlert}
+    <div style="padding:0 0 10px 0">
+      <button class="btn-secondary" style="font-size:12px;padding:4px 12px"
+        data-contributor="${escHtml(d.contributor)}"
+        onclick="event.stopPropagation();showContributorProfile(this.dataset.contributor)">
+        👤 View all contributions by ${escHtml(d.contributor)} →
+      </button>
+    </div>
     <div class="detail-grid">
 
       <div class="detail-section">
@@ -2155,41 +2162,59 @@ function escHtml(str) {
 // CONTRIBUTOR PROFILE MODAL
 // ============================================================
 function showContributorProfile(name) {
-  // Use allData so we show the full cycle history even if other filters are active
-  const cycle    = parseInt(document.getElementById('cycle-select').value);
+  // allData: ignore other active filters so the full cycle picture is shown
+  const cycle      = parseInt(document.getElementById('cycle-select').value);
   const cycleStart = cycle - 1;
-  const contribs = allData.filter(d => {
+  const contribs   = allData.filter(d => {
     if (d.contributor !== name) return false;
     const yr = new Date(d.date).getFullYear();
     return yr >= cycleStart && yr <= cycle;
   }).sort((a, b) => b.date.localeCompare(a.date));
 
-  if (!contribs.length) return;
+  if (!contribs.length) {
+    alert(`No contributions found for "${name}" in the ${cycleStart}–${cycle} cycle.`);
+    return;
+  }
 
-  const total      = contribs.reduce((s, d) => s + d.amount, 0);
-  const count      = contribs.length;
-  const avg        = total / count;
-  const committees = [...new Set(contribs.map(d => d.candidate).filter(Boolean))];
-  const first      = contribs[0];
+  const total = contribs.reduce((s, d) => s + d.amount, 0);
+  const count = contribs.length;
+  const avg   = total / count;
+  const first = contribs[0];
 
-  // Header
+  // ── Header ─────────────────────────────────────────────────
   document.getElementById('cp-name').textContent = name;
   const locParts = [first.city, first.contributorState, first.contributorZip].filter(Boolean);
   document.getElementById('cp-meta').textContent =
-    `${cycle - 1}–${cycle} Election Cycle` + (locParts.length ? '  ·  ' + locParts.join(', ') : '');
+    `${cycleStart}–${cycle} Election Cycle` +
+    (locParts.length ? '  ·  ' + locParts.join(', ') : '');
 
-  // Stats
+  // ── Summary stats ──────────────────────────────────────────
+  // Build committee totals for the count badge
+  const byCommittee = {};
+  contribs.forEach(d => {
+    const c = d.candidate || 'Unknown';
+    if (!byCommittee[c]) byCommittee[c] = { total:0, count:0, party: d.party };
+    byCommittee[c].total += d.amount;
+    byCommittee[c].count++;
+  });
+  const committeeList = Object.entries(byCommittee)
+    .sort((a, b) => b[1].total - a[1].total);
+
   document.getElementById('cp-total').textContent      = formatMoney(total);
   document.getElementById('cp-count').textContent      = count.toLocaleString();
   document.getElementById('cp-avg').textContent        = formatMoney(avg);
-  document.getElementById('cp-committees').textContent = committees.length;
+  document.getElementById('cp-committees').textContent = committeeList.length;
 
-  // Detail chips (employer / occupation / state)
+  // ── Donor details ──────────────────────────────────────────
   const details = [
-    ['Employer',    first.employer],
-    ['Occupation',  first.occupation],
-    ['State',       first.contributorState ? (STATE_NAMES[first.contributorState] || first.contributorState) : null],
-    ['Address',     [first.contributorAddress, first.city, first.contributorState, first.contributorZip].filter(Boolean).join(', ')],
+    ['Employer',   first.employer],
+    ['Occupation', first.occupation],
+    ['State',      first.contributorState
+                    ? (STATE_NAMES[first.contributorState] || first.contributorState)
+                    : null],
+    ['Address',    [first.contributorAddress, first.city,
+                    first.contributorState, first.contributorZip]
+                    .filter(Boolean).join(', ')],
   ].filter(([, v]) => v);
   document.getElementById('cp-details').innerHTML = details.map(([l, v]) => `
     <div class="cp-detail-item">
@@ -2197,12 +2222,33 @@ function showContributorProfile(name) {
       <span class="cp-detail-val">${escHtml(v)}</span>
     </div>`).join('');
 
-  // Contribution rows
-  document.getElementById('cp-tbody').innerHTML = contribs.map(d => {
+  // ── Committee breakdown table ──────────────────────────────
+  // Injected into cp-tbody in two sections: summary rows then a divider then individual gifts
+  const summaryRows = committeeList.map(([committee, s]) => {
+    const dummyD = { party: s.party };
+    return `<tr style="background:rgba(200,169,81,0.05)">
+      <td style="color:var(--muted);font-size:11px;font-style:italic" colspan="2">
+        ${s.count} gift${s.count!==1?'s':''}
+      </td>
+      <td>${partyBadgeHtml(dummyD)}</td>
+      <td colspan="2" style="font-weight:600">${escHtml(committee)}</td>
+      <td class="cp-amount">${formatMoney(s.total)}</td>
+    </tr>`;
+  }).join('');
+
+  const dividerRow = `<tr>
+    <td colspan="6" style="padding:6px 10px;background:var(--bg)">
+      <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted)">
+        Individual Contributions
+      </span>
+    </td>
+  </tr>`;
+
+  const giftRows = contribs.map(d => {
     const ffWarn = d.isFilingFee
-      ? `<span class="party-badge filing-fee" style="font-size:10px">⚠ Filing Fee</span> ` : '';
+      ? `<span class="party-badge filing-fee" style="font-size:10px">⚠ Fee</span> ` : '';
     return `<tr>
-      <td style="color:var(--muted)">${d.date}</td>
+      <td style="color:var(--muted);white-space:nowrap">${d.date}</td>
       <td>${escHtml(d.candidate || '—')}</td>
       <td>${partyBadgeHtml(d)}</td>
       <td style="color:var(--muted);font-size:12px">${escHtml(d.type || '—')}</td>
@@ -2210,6 +2256,17 @@ function showContributorProfile(name) {
       <td style="color:var(--muted);font-size:12px">${ffWarn}${escHtml(d.notes || '')}</td>
     </tr>`;
   }).join('');
+
+  // Update table header to match 6 columns
+  document.querySelector('#cp-modal thead tr').innerHTML = `
+    <th>Date</th>
+    <th>Committee</th>
+    <th>Party</th>
+    <th>Type</th>
+    <th>Amount</th>
+    <th>Notes</th>
+  `;
+  document.getElementById('cp-tbody').innerHTML = summaryRows + dividerRow + giftRows;
 
   document.getElementById('cp-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
