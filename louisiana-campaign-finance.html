@@ -1752,18 +1752,25 @@ function escHtml(str) {
   allData = [...LA_SAMPLE_DATA];
   document.getElementById('la-status').textContent = `${LA_SAMPLE_DATA.length} sample records`;
 
-  // Check if the local proxy is running
-  try {
-    const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(1500) });
-    if (r.ok) {
-      proxyAvailable = true;
-      document.getElementById('proxy-banner').style.display = 'none';
-      document.getElementById('proxy-live-badge').style.display = 'inline-flex';
+  if (API_BASE === '') {
+    // Page is being served directly by the Python server — proxy is always available.
+    proxyAvailable = true;
+    document.getElementById('proxy-banner').style.display = 'none';
+    document.getElementById('proxy-live-badge').style.display = 'inline-flex';
+  } else {
+    // Running as a local file:// — check whether the proxy is running on localhost.
+    try {
+      const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+      if (r.ok) {
+        proxyAvailable = true;
+        document.getElementById('proxy-banner').style.display = 'none';
+        document.getElementById('proxy-live-badge').style.display = 'inline-flex';
+      }
+    } catch(e) {
+      proxyAvailable = false;
+      document.getElementById('proxy-banner').style.display = 'flex';
+      document.getElementById('proxy-live-badge').style.display = 'none';
     }
-  } catch(e) {
-    proxyAvailable = false;
-    document.getElementById('proxy-banner').style.display = 'flex';
-    document.getElementById('proxy-live-badge').style.display = 'none';
   }
 
   loadData();
