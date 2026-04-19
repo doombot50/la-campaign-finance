@@ -167,18 +167,23 @@ def _load_politician_lookup():
         print(f'  Politician lookup: using built-in fallback ({len(_FALLBACK_LOOKUP)} entries)')
 
 def _bust_stale_caches():
-    """Delete cache files that pre-date the current lookup file (stale party data)."""
-    if not os.path.exists(LOOKUP_FILE):
-        return
-    lookup_mtime = os.path.getmtime(LOOKUP_FILE)
+    """Delete old-format or stale cache files so they are rebuilt in NDJSON format."""
     busted = 0
+    lookup_mtime = os.path.getmtime(LOOKUP_FILE) if os.path.exists(LOOKUP_FILE) else 0
     for fname in os.listdir(CACHE_DIR):
         fpath = os.path.join(CACHE_DIR, fname)
-        if fname.endswith('.json.gz') and os.path.getmtime(fpath) < lookup_mtime:
-            os.remove(fpath)
-            busted += 1
+        if not fname.endswith('.json.gz'):
+            continue
+        is_old_format = '_yr' not in fname
+        is_stale = lookup_mtime and os.path.getmtime(fpath) < lookup_mtime
+        if is_old_format or is_stale:
+            try:
+                os.remove(fpath)
+                busted += 1
+            except OSError:
+                pass
     if busted:
-        print(f'  Cache: removed {busted} stale file(s) (lookup updated — will re-parse on next request)')
+        print(f'  Cache: removed {busted} old/stale file(s) - will re-download as needed')
 
 def lookup_party(name: str) -> str:
     """Return DEM/REP/OTH for a filer name using the politician lookup.
@@ -251,13 +256,19 @@ def is_cached_fresh(csv_key, report_type='contributions'):
     return all(_year_is_fresh(y, report_type) for y in _key_years(csv_key))
 
 def _load_years(years, report_type):
-    """Load and merge records from per-year cache files for the given years only."""
+    """Load records from per-year NDJSON-gzip cache files (one JSON object per line)."""
     records = []
     for year in years:
         p = _year_cache_path(year, report_type)
         if os.path.exists(p):
             with gzip.open(p, 'rt', encoding='utf-8') as f:
-                records.extend(json.load(f))
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            records.append(json.loads(line))
+                        except Exception:
+                            continue
     return records
 
 def _parse_contribution_row(row):
@@ -323,16 +334,15 @@ def _parse_expenditure_row(row):
     }
 
 def download_and_cache(csv_key, report_type='contributions'):
-    """Stream-parse the CSV and write one gzip file per calendar year.
+    """Stream-parse the CSV and write one NDJSON-gzip file per calendar year.
 
-    Streaming avoids loading the full 62 MB CSV as a Python string — peak
-    memory is just the accumulated per-year record dicts, not string + dicts.
+    Records are written to disk one line at a time as they are parsed, so peak
+    memory during the download phase is essentially zero — no in-memory accumulation.
     """
     status_key = f'{report_type}_{csv_key}'
     lock_key   = f'{report_type}_{csv_key}_download'
 
     with get_lock(lock_key):
-        # Re-check inside the lock — another thread may have finished while we waited
         if is_cached_fresh(csv_key, report_type):
             set_status(status_key, 'ready', 'cached')
             return
@@ -342,46 +352,54 @@ def download_and_cache(csv_key, report_type='contributions'):
         if not url:
             raise ValueError(f'No URL for {report_type}/{csv_key}')
 
-        set_status(status_key, 'downloading', f'Downloading {csv_key} from ethics.la.gov…')
+        set_status(status_key, 'downloading', f'Downloading {csv_key} from ethics.la.gov...')
         print(f'  Streaming {url}')
 
         parse_row = _parse_contribution_row if report_type == 'contributions' else _parse_expenditure_row
 
-        by_year: dict = {}
-        total = 0
+        # Open per-year gzip writers lazily as years are encountered
+        year_writers = {}   # {year: open gzip file handle}
+        year_counts  = {}
+        tmp_suffix   = '.tmp'
+
         req = urllib.request.Request(url, headers={
             'User-Agent': 'Mozilla/5.0 LACampaignFinanceDashboard/1.0',
-            'Accept-Encoding': 'identity',   # avoid server-side gzip so we can stream plaintext
+            'Accept-Encoding': 'identity',
         })
-        # Stream directly into csv.DictReader — never materialise the full CSV string
-        with urllib.request.urlopen(req, timeout=300) as resp:
-            text_stream = io.TextIOWrapper(resp, encoding='utf-8-sig', errors='replace')
-            reader = csv.DictReader(text_stream)
-            for row in reader:
-                try:
-                    rec = parse_row(row)
-                    if rec is None:
+        try:
+            with urllib.request.urlopen(req, timeout=300) as resp:
+                text_stream = io.TextIOWrapper(resp, encoding='utf-8-sig', errors='replace')
+                reader = csv.DictReader(text_stream)
+                for row in reader:
+                    try:
+                        rec = parse_row(row)
+                        if rec is None:
+                            continue
+                        year = int(rec['date'][:4])
+                        if year not in year_writers:
+                            tmp = _year_cache_path(year, report_type) + tmp_suffix
+                            year_writers[year] = gzip.open(tmp, 'wt', encoding='utf-8')
+                            year_counts[year]  = 0
+                        # Write one JSON line per record — constant memory cost
+                        year_writers[year].write(json.dumps(rec, separators=(',', ':')) + '\n')
+                        year_counts[year] += 1
+                    except Exception:
                         continue
-                    year = int(rec['date'][:4])
-                    by_year.setdefault(year, []).append(rec)
-                    total += 1
-                except Exception:
-                    continue
+        finally:
+            # Always close writers; on success rename .tmp -> final path
+            for year, fh in year_writers.items():
+                fh.close()
+            if year_counts:  # only rename if we got data (not an error mid-stream)
+                for year in year_writers:
+                    tmp  = _year_cache_path(year, report_type) + tmp_suffix
+                    dest = _year_cache_path(year, report_type)
+                    if os.path.exists(tmp):
+                        os.replace(tmp, dest)
 
-        print(f'  Parsed {total:,} records across {sorted(by_year.keys())}. Writing per-year cache…')
-
-        for year, recs in by_year.items():
-            p = _year_cache_path(year, report_type)
-            with gzip.open(p, 'wt', encoding='utf-8') as f:
-                json.dump(recs, f, separators=(',', ':'))
-            print(f'    Wrote {len(recs):,} records → {os.path.basename(p)}')
-
-        # Free the large dict before returning
-        del by_year
+        total = sum(year_counts.values())
+        print(f'  Wrote {total:,} records for years {sorted(year_counts.keys())}')
         gc.collect()
-
         set_status(status_key, 'ready', f'{total:,} records cached')
-        print(f'  Cache complete: {csv_key}')
 
 
 def fetch_for_cycle(cycle, report_type='contributions'):
@@ -546,10 +564,17 @@ if __name__ == '__main__':
     _bust_stale_caches()
     print()
 
-    # Warm the cache for the two most-requested ranges before any user hits the server
-    print('  Pre-fetching recent contribution data in background...')
-    prefetch_background('2024-2027', 'contributions')
-    prefetch_background('2020-2023', 'contributions')
+    # Warm the cache sequentially in one background thread — never two downloads at once
+    print('  Pre-fetching recent contribution data in background (sequential)...')
+    def _sequential_prefetch():
+        for csv_key in ['2024-2027', '2020-2023']:
+            if not is_cached_fresh(csv_key, 'contributions'):
+                try:
+                    download_and_cache(csv_key, 'contributions')
+                except Exception as e:
+                    print(f'  Prefetch failed {csv_key}: {e}')
+            gc.collect()
+    threading.Thread(target=_sequential_prefetch, daemon=True).start()
 
     print()
     print('  Endpoints:')
