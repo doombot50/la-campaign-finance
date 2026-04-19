@@ -399,11 +399,6 @@ def fetch_for_cycle(cycle, report_type='contributions'):
     return records
 
 
-def is_cached_fresh(csv_key, report_type='contributions'):
-    """True when every year in the range has a fresh per-year cache file."""
-    return all(_year_is_fresh(y, report_type) for y in _key_years(csv_key))
-
-
 def prefetch_background(csv_key, report_type='contributions'):
     """Kick off a background thread to warm the per-year cache."""
     status_key = f'{report_type}_{csv_key}'
