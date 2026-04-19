@@ -510,6 +510,11 @@
       <div class="stat-value" id="stat-top-parish" style="font-size:20px;">—</div>
       <div class="stat-sub" id="stat-top-parish-sub">by total raised</div>
     </div>
+    <div class="stat-card">
+      <div class="stat-label">Out-of-State</div>
+      <div class="stat-value" id="stat-oos-total">—</div>
+      <div class="stat-sub" id="stat-oos-sub">of total raised</div>
+    </div>
   </div>
 
   <!-- MAP + RIGHT PANEL -->
@@ -858,6 +863,10 @@ PARISHES.forEach(p => {
   opt.value = p.name; opt.textContent = p.name;
   parishSel.appendChild(opt);
 });
+// "Out of State" as a selectable parish option
+const oosOpt = document.createElement('option');
+oosOpt.value = 'Out of State'; oosOpt.textContent = 'Out of State';
+parishSel.appendChild(oosOpt);
 
 // ============================================================
 // FILTERS & EVENTS
@@ -1066,9 +1075,13 @@ function renderStats() {
 
   const parishTotals = {};
   filteredData.forEach(d => {
+    if (d.parish === 'Out of State') return;   // exclude from LA-parish stats
     parishTotals[d.parish] = (parishTotals[d.parish]||0) + d.amount;
   });
   const topParish = Object.entries(parishTotals).sort((a,b)=>b[1]-a[1])[0];
+
+  const oosTotal = filteredData.filter(d => d.parish === 'Out of State').reduce((s,d) => s+d.amount, 0);
+  const oosPct   = total ? ((oosTotal / total) * 100).toFixed(1) : '0.0';
 
   document.getElementById('stat-total').textContent = formatMoney(total);
   document.getElementById('stat-total-sub').textContent = `from ${count} records`;
@@ -1076,6 +1089,8 @@ function renderStats() {
   document.getElementById('stat-avg').textContent = formatMoney(avg);
   document.getElementById('stat-top-parish').textContent = topParish ? topParish[0] : '—';
   document.getElementById('stat-top-parish-sub').textContent = topParish ? formatMoney(topParish[1]) : 'No data';
+  document.getElementById('stat-oos-total').textContent = formatMoney(oosTotal);
+  document.getElementById('stat-oos-sub').textContent = `${oosPct}% of total raised`;
 }
 
 // ============================================================
@@ -1586,7 +1601,9 @@ function handleCSVUpload(e) {
         if (vals.length < 4) continue;
         const row = {};
         headers.forEach((h,j) => { row[h] = (vals[j]||'').replace(/['"]/g,'').trim(); });
-        const parish = row.parish || CITY_TO_PARISH[(row.city||'').toUpperCase()] || 'East Baton Rouge';
+        const st = (row.state || row.contributorstate || '').toUpperCase();
+        const parish = row.parish ||
+          ((!st || st === 'LA') ? (CITY_TO_PARISH[(row.city||'').toUpperCase()] || 'East Baton Rouge') : 'Out of State');
         rows.push({
           contributor: row.contributor || row.contributor_name || 'Unknown',
           city: row.city || '',

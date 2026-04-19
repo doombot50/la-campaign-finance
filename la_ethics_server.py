@@ -318,8 +318,30 @@ def _parse_contribution_row(row):
     amt = float((row.get('ContributionAmt') or '').strip() or 0)
     if amt <= 0:
         return None
-    city = (row.get('ContributorCity') or '').upper().strip()
-    parish = CITY_TO_PARISH.get(city, 'East Baton Rouge')
+
+    city     = (row.get('ContributorCity')    or '').strip()
+    addr_raw = (row.get('ContributorAddress') or '').strip()
+    zip_raw  = (row.get('ContributorZip')     or '').strip()
+
+    # If the dedicated ZIP field is blank, try to extract it from the address string.
+    # Addresses sometimes arrive as "123 Main St, Alexandria, VA 22301".
+    if not zip_raw:
+        _zm = re.search(r'\b(\d{5})(?:-\d{4})?\b', addr_raw)
+        if _zm:
+            zip_raw = _zm.group(1)
+
+    # Resolve contributor state: CSV field first, then ZIP-prefix lookup.
+    state_csv        = (row.get('ContributorState') or '').strip().upper()
+    contributor_state = state_csv or _zip_to_state(zip_raw)
+
+    # Only map to a Louisiana parish when the contributor is actually from Louisiana.
+    # Out-of-state contributors get parish='Out of State' so "Alexandria, VA" is never
+    # mistaken for Alexandria in Rapides Parish, and the LA map stays accurate.
+    if not contributor_state or contributor_state == 'LA':
+        parish = CITY_TO_PARISH.get(city.upper(), 'East Baton Rouge')
+    else:
+        parish = 'Out of State'
+
     first = (row.get('FilerFirstName') or '').strip().rstrip(',').strip()
     last  = (row.get('FilerLastName')  or '').strip().rstrip(',').strip()
     filer = ' '.join(x for x in [first, last] if x)
@@ -329,7 +351,7 @@ def _parse_contribution_row(row):
     ff_text = f'{contrib_type} {notes_raw}'.upper()
     return {
         'contributor':        (row.get('ContributorName') or 'Unknown').strip(),
-        'city':               (row.get('ContributorCity') or '').strip(),
+        'city':               city,
         'parish':             parish,
         'amount':             round(amt, 2),
         'date':               parse_date(row.get('ContributionDate', '')),
@@ -338,10 +360,9 @@ def _parse_contribution_row(row):
         'source':             'LA Ethics',
         'type':               contrib_type,
         'filerNumber':        (row.get('FilerNumber') or '').strip(),
-        'contributorAddress': (row.get('ContributorAddress') or '').strip(),
-        'contributorZip':     (row.get('ContributorZip')     or '').strip(),
-        'contributorState':   (row.get('ContributorState')   or '').strip()
-                              or _zip_to_state(row.get('ContributorZip') or ''),
+        'contributorAddress': addr_raw,
+        'contributorZip':     zip_raw,
+        'contributorState':   contributor_state,
         'employer':           (row.get('ContributorEmployer') or row.get('Employer') or '').strip(),
         'occupation':         (row.get('ContributorOccupation') or row.get('Occupation') or '').strip(),
         'electionYear':       (row.get('ElectionYear')       or '').strip(),
