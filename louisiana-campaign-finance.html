@@ -1815,7 +1815,7 @@ function renderTable() {
       <tr class="data-row${d.isFilingFee ? ' filing-fee-row' : ''}" onclick="toggleDetail('${rid}')">
         <td class="expand-cell"><span class="expand-icon">▶</span></td>
         <td>${d.date}</td>
-        <td>${ffBadge}<span class="contributor-link" onclick="event.stopPropagation();showContributorProfile(${JSON.stringify(d.contributor)})">${escHtml(d.contributor)}</span></td>
+        <td>${ffBadge}<span class="contributor-link" data-contributor="${escHtml(d.contributor)}" onclick="event.stopPropagation();showContributorProfile(this.dataset.contributor)">${escHtml(d.contributor)}</span></td>
         <td>${stateCell(d.contributorState)}</td>
         <td>${escHtml(d.parish)}</td>
         <td>${escHtml(d.candidate)}</td>
