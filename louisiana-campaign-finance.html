@@ -336,6 +336,72 @@
   .status-text { font-size: 12px; color: var(--muted); }
   .status-text span { color: var(--text); font-weight: 600; }
 
+  /* CONTRIBUTOR PROFILE MODAL */
+  .cp-overlay {
+    display: none; position: fixed; inset: 0; z-index: 2000;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(3px);
+    align-items: flex-start; justify-content: center;
+    padding: 32px 16px; overflow-y: auto;
+  }
+  .cp-overlay.open { display: flex; }
+  .cp-modal {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; width: 100%; max-width: 860px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    animation: cpFadeIn 0.18s ease;
+  }
+  @keyframes cpFadeIn { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
+  .cp-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .cp-name { font-size: 20px; font-weight: 700; color: var(--gold); }
+  .cp-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .cp-close {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; width: 28px; height: 28px; cursor: pointer;
+    font-size: 16px; line-height: 1; flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .cp-close:hover { border-color: var(--gold); color: var(--gold); }
+  .cp-stats {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border);
+  }
+  .cp-stat {
+    flex: 1; padding: 14px 20px; border-right: 1px solid var(--border);
+    text-align: center;
+  }
+  .cp-stat:last-child { border-right: none; }
+  .cp-stat-val { font-size: 22px; font-weight: 700; color: var(--text); }
+  .cp-stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .cp-details {
+    display: flex; gap: 24px; padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; font-size: 12px;
+  }
+  .cp-detail-item { display: flex; flex-direction: column; gap: 2px; }
+  .cp-detail-lbl { color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+  .cp-detail-val { color: var(--text); font-weight: 600; }
+  .cp-table-wrap { padding: 16px 24px 24px; overflow-x: auto; }
+  .cp-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  .cp-table th {
+    text-align: left; padding: 7px 10px; font-size: 11px;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .cp-table td { padding: 8px 10px; border-bottom: 1px solid rgba(48,54,61,0.5); vertical-align: top; }
+  .cp-table tr:last-child td { border-bottom: none; }
+  .cp-table tr:hover td { background: rgba(200,169,81,0.04); }
+  .cp-amount { font-weight: 700; color: var(--gold); white-space: nowrap; }
+  .contributor-link {
+    color: var(--text); cursor: pointer; border-bottom: 1px dotted var(--muted);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .contributor-link:hover { color: var(--gold); border-bottom-color: var(--gold); }
+
   /* FOOTER */
   footer {
     background: var(--card); border-top: 1px solid var(--border);
@@ -1749,7 +1815,7 @@ function renderTable() {
       <tr class="data-row${d.isFilingFee ? ' filing-fee-row' : ''}" onclick="toggleDetail('${rid}')">
         <td class="expand-cell"><span class="expand-icon">▶</span></td>
         <td>${d.date}</td>
-        <td>${ffBadge}${escHtml(d.contributor)}</td>
+        <td>${ffBadge}<span class="contributor-link" onclick="event.stopPropagation();showContributorProfile(${JSON.stringify(d.contributor)})">${escHtml(d.contributor)}</span></td>
         <td>${stateCell(d.contributorState)}</td>
         <td>${escHtml(d.parish)}</td>
         <td>${escHtml(d.candidate)}</td>
@@ -2086,6 +2152,83 @@ function escHtml(str) {
 }
 
 // ============================================================
+// CONTRIBUTOR PROFILE MODAL
+// ============================================================
+function showContributorProfile(name) {
+  // Use allData so we show the full cycle history even if other filters are active
+  const cycle    = parseInt(document.getElementById('cycle-select').value);
+  const cycleStart = cycle - 1;
+  const contribs = allData.filter(d => {
+    if (d.contributor !== name) return false;
+    const yr = new Date(d.date).getFullYear();
+    return yr >= cycleStart && yr <= cycle;
+  }).sort((a, b) => b.date.localeCompare(a.date));
+
+  if (!contribs.length) return;
+
+  const total      = contribs.reduce((s, d) => s + d.amount, 0);
+  const count      = contribs.length;
+  const avg        = total / count;
+  const committees = [...new Set(contribs.map(d => d.candidate).filter(Boolean))];
+  const first      = contribs[0];
+
+  // Header
+  document.getElementById('cp-name').textContent = name;
+  const locParts = [first.city, first.contributorState, first.contributorZip].filter(Boolean);
+  document.getElementById('cp-meta').textContent =
+    `${cycle - 1}–${cycle} Election Cycle` + (locParts.length ? '  ·  ' + locParts.join(', ') : '');
+
+  // Stats
+  document.getElementById('cp-total').textContent      = formatMoney(total);
+  document.getElementById('cp-count').textContent      = count.toLocaleString();
+  document.getElementById('cp-avg').textContent        = formatMoney(avg);
+  document.getElementById('cp-committees').textContent = committees.length;
+
+  // Detail chips (employer / occupation / state)
+  const details = [
+    ['Employer',    first.employer],
+    ['Occupation',  first.occupation],
+    ['State',       first.contributorState ? (STATE_NAMES[first.contributorState] || first.contributorState) : null],
+    ['Address',     [first.contributorAddress, first.city, first.contributorState, first.contributorZip].filter(Boolean).join(', ')],
+  ].filter(([, v]) => v);
+  document.getElementById('cp-details').innerHTML = details.map(([l, v]) => `
+    <div class="cp-detail-item">
+      <span class="cp-detail-lbl">${l}</span>
+      <span class="cp-detail-val">${escHtml(v)}</span>
+    </div>`).join('');
+
+  // Contribution rows
+  document.getElementById('cp-tbody').innerHTML = contribs.map(d => {
+    const ffWarn = d.isFilingFee
+      ? `<span class="party-badge filing-fee" style="font-size:10px">⚠ Filing Fee</span> ` : '';
+    return `<tr>
+      <td style="color:var(--muted)">${d.date}</td>
+      <td>${escHtml(d.candidate || '—')}</td>
+      <td>${partyBadgeHtml(d)}</td>
+      <td style="color:var(--muted);font-size:12px">${escHtml(d.type || '—')}</td>
+      <td class="cp-amount">${formatMoney(d.amount)}</td>
+      <td style="color:var(--muted);font-size:12px">${ffWarn}${escHtml(d.notes || '')}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('cp-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeContributorProfile() {
+  document.getElementById('cp-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleCPOverlayClick(e) {
+  if (e.target === document.getElementById('cp-overlay')) closeContributorProfile();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeContributorProfile();
+});
+
+// ============================================================
 // INIT
 // ============================================================
 (async function init() {
@@ -2116,5 +2259,40 @@ function escHtml(str) {
   loadData();
 })();
 </script>
+<!-- CONTRIBUTOR PROFILE MODAL -->
+<div class="cp-overlay" id="cp-overlay" onclick="handleCPOverlayClick(event)">
+  <div class="cp-modal" id="cp-modal">
+    <div class="cp-header">
+      <div>
+        <div class="cp-name" id="cp-name">—</div>
+        <div class="cp-meta" id="cp-meta"></div>
+      </div>
+      <button class="cp-close" onclick="closeContributorProfile()">✕</button>
+    </div>
+    <div class="cp-stats">
+      <div class="cp-stat"><div class="cp-stat-val" id="cp-total">—</div><div class="cp-stat-lbl">Total Contributed</div></div>
+      <div class="cp-stat"><div class="cp-stat-val" id="cp-count">—</div><div class="cp-stat-lbl">Donations</div></div>
+      <div class="cp-stat"><div class="cp-stat-val" id="cp-avg">—</div><div class="cp-stat-lbl">Avg Donation</div></div>
+      <div class="cp-stat"><div class="cp-stat-val" id="cp-committees">—</div><div class="cp-stat-lbl">Committees</div></div>
+    </div>
+    <div class="cp-details" id="cp-details"></div>
+    <div class="cp-table-wrap">
+      <table class="cp-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Committee</th>
+            <th>Party</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="cp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
