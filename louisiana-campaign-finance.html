@@ -621,6 +621,7 @@
     <a href="https://ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank">Louisiana Ethics Administration Campaign Finance</a>
   </p>
   <p>This dashboard is for informational and research purposes. Sample LA Ethics data is illustrative.</p>
+  <p style="margin-top:8px;">Built with <a href="https://claude.ai" target="_blank">Claude</a> by Charlie Stephens</p>
 </footer>
 
 <script>
@@ -1522,12 +1523,12 @@ function renderTopParishes() {
 // TREND CHART
 // ============================================================
 function renderTrendChart() {
-  const now = new Date();
-  const months = [];
-  for (let i = 23; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
-  }
+  // Show all 12 months of the selected cycle year (Jan–Dec), not a rolling window from today.
+  const cycleYear = parseInt(document.getElementById('cycle-select').value) || new Date().getFullYear();
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = MONTH_NAMES.map((_,i) =>
+    `${cycleYear}-${String(i+1).padStart(2,'0')}`
+  );
 
   const demByMonth = {}, repByMonth = {}, othByMonth = {};
   months.forEach(m => { demByMonth[m]=0; repByMonth[m]=0; othByMonth[m]=0; });
@@ -1540,10 +1541,7 @@ function renderTrendChart() {
     else othByMonth[m]=(othByMonth[m]||0)+d.amount;
   });
 
-  const labels = months.map(m => {
-    const [y,mo] = m.split('-');
-    return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1]} ${y.slice(2)}`;
-  });
+  const labels = MONTH_NAMES;   // Jan … Dec — year shown in chart title
 
   if (trendChart) { trendChart.destroy(); trendChart = null; }
   const ctx = document.getElementById('trend-chart').getContext('2d');
@@ -1566,7 +1564,8 @@ function renderTrendChart() {
       },
       plugins: {
         legend:{labels:{color:'#8b949e',font:{size:12},boxWidth:12}},
-        tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${formatMoney(ctx.raw)}`}}
+        tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${formatMoney(ctx.raw)}`}},
+        title:{display:true,text:`Monthly Contributions — ${cycleYear}`,color:'#8b949e',font:{size:12},padding:{bottom:8}}
       }
     }
   });
