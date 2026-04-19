@@ -17,7 +17,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 import urllib.request
-import json, csv, io, os, re, time, gzip, threading, sys
+import json, csv, io, os, re, time, gzip, threading, gc, sys
 
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle each HTTP request in its own thread so a slow download never blocks the server."""
@@ -221,7 +221,10 @@ def parse_date(s):
         return f'{y}-{m.zfill(2)}-{d.zfill(2)}'
     return s[:10]
 
-# ── Download + parse ──────────────────────────────────────────────────────────
+# ── Per-year cache helpers ────────────────────────────────────────────────────
+# Cache one gzip file per calendar year instead of one file per 4-year CSV range.
+# Loading a 2-year request window uses ~50% of the RAM compared to the old approach.
+
 _locks = {}
 _locks_lock = threading.Lock()
 
@@ -231,27 +234,108 @@ def get_lock(key):
             _locks[key] = threading.Lock()
         return _locks[key]
 
+def _year_cache_path(year, report_type):
+    return os.path.join(CACHE_DIR, f'{report_type}_yr{year}.json.gz')
+
+def _year_is_fresh(year, report_type):
+    p = _year_cache_path(year, report_type)
+    return os.path.exists(p) and (time.time() - os.path.getmtime(p)) < CACHE_TTL
+
+def _key_years(csv_key):
+    """'2020-2023' -> [2020, 2021, 2022, 2023]"""
+    parts = csv_key.split('-')
+    return list(range(int(parts[0]), int(parts[-1]) + 1))
+
 def is_cached_fresh(csv_key, report_type='contributions'):
-    """Return True if a fresh cache file exists for this key."""
-    cache_file = os.path.join(CACHE_DIR, f'{report_type}_{csv_key.replace("-","_")}.json.gz')
-    if os.path.exists(cache_file):
-        return (time.time() - os.path.getmtime(cache_file)) < CACHE_TTL
-    return False
+    """True when every year in the range has a fresh per-year cache file."""
+    return all(_year_is_fresh(y, report_type) for y in _key_years(csv_key))
 
-def fetch_and_cache(csv_key, report_type='contributions'):
-    """Download, parse, gzip-cache a CSV. Returns list of records."""
-    cache_file = os.path.join(CACHE_DIR, f'{report_type}_{csv_key.replace("-","_")}.json.gz')
+def _load_years(years, report_type):
+    """Load and merge records from per-year cache files for the given years only."""
+    records = []
+    for year in years:
+        p = _year_cache_path(year, report_type)
+        if os.path.exists(p):
+            with gzip.open(p, 'rt', encoding='utf-8') as f:
+                records.extend(json.load(f))
+    return records
+
+def _parse_contribution_row(row):
+    amt = float((row.get('ContributionAmt') or '').strip() or 0)
+    if amt <= 0:
+        return None
+    city = (row.get('ContributorCity') or '').upper().strip()
+    parish = CITY_TO_PARISH.get(city, 'East Baton Rouge')
+    first = (row.get('FilerFirstName') or '').strip().rstrip(',').strip()
+    last  = (row.get('FilerLastName')  or '').strip().rstrip(',').strip()
+    filer = ' '.join(x for x in [first, last] if x)
+    contrib_type = (row.get('ContributionType') or '').strip()
+    notes_raw = (row.get('Notes') or row.get('Description') or
+                 row.get('ContributionDescription') or row.get('Memo') or '').strip()
+    ff_text = f'{contrib_type} {notes_raw}'.upper()
+    return {
+        'contributor':        (row.get('ContributorName') or 'Unknown').strip(),
+        'city':               (row.get('ContributorCity') or '').strip(),
+        'parish':             parish,
+        'amount':             round(amt, 2),
+        'date':               parse_date(row.get('ContributionDate', '')),
+        'candidate':          filer or 'Unknown',
+        'party':              lookup_party(filer),
+        'source':             'LA Ethics',
+        'type':               contrib_type,
+        'filerNumber':        (row.get('FilerNumber') or '').strip(),
+        'contributorAddress': (row.get('ContributorAddress') or '').strip(),
+        'contributorState':   (row.get('ContributorState')   or '').strip(),
+        'contributorZip':     (row.get('ContributorZip')     or '').strip(),
+        'employer':           (row.get('ContributorEmployer') or row.get('Employer') or '').strip(),
+        'occupation':         (row.get('ContributorOccupation') or row.get('Occupation') or '').strip(),
+        'electionYear':       (row.get('ElectionYear')       or '').strip(),
+        'officeDescription':  (row.get('OfficeDescription')  or row.get('Office') or '').strip(),
+        'filerType':          (row.get('FilerType')          or '').strip(),
+        'scheduleType':       (row.get('ScheduleDescription') or row.get('Schedule') or
+                               row.get('ScheduleType') or '').strip(),
+        'reportCode':         (row.get('ReportCode')         or '').strip(),
+        'notes':              notes_raw,
+        'isFilingFee':        any(p in ff_text for p in [
+                                  'FILING FEE', 'QUALIFYING FEE',
+                                  'QUALIFICATION FEE', 'FILING/QUALIFYING']),
+    }
+
+def _parse_expenditure_row(row):
+    amt = float((row.get('ExpenditureAmt') or '').strip() or 0)
+    if amt <= 0:
+        return None
+    city = (row.get('RecipientCity') or '').upper().strip()
+    first = (row.get('FilerFirstName') or '').strip().rstrip(',').strip()
+    last  = (row.get('FilerLastName')  or '').strip().rstrip(',').strip()
+    filer = ' '.join(x for x in [first, last] if x)
+    return {
+        'contributor': (row.get('RecipientName') or 'Unknown').strip(),
+        'city':        (row.get('RecipientCity') or '').strip(),
+        'parish':      CITY_TO_PARISH.get(city, 'East Baton Rouge'),
+        'amount':      round(amt, 2),
+        'date':        parse_date(row.get('ExpenditureDate', '')),
+        'candidate':   filer or 'Unknown',
+        'party':       lookup_party(filer),
+        'source':      'LA Ethics (Expenditure)',
+        'description': (row.get('ExpenditureDescription') or '').strip(),
+        'filerNumber': (row.get('FilerNumber') or '').strip(),
+    }
+
+def download_and_cache(csv_key, report_type='contributions'):
+    """Stream-parse the CSV and write one gzip file per calendar year.
+
+    Streaming avoids loading the full 62 MB CSV as a Python string — peak
+    memory is just the accumulated per-year record dicts, not string + dicts.
+    """
     status_key = f'{report_type}_{csv_key}'
+    lock_key   = f'{report_type}_{csv_key}_download'
 
-    with get_lock(cache_file):
-        # Return cached if fresh
-        if os.path.exists(cache_file):
-            age = time.time() - os.path.getmtime(cache_file)
-            if age < CACHE_TTL:
-                print(f'  Cache hit: {os.path.basename(cache_file)}')
-                set_status(status_key, 'ready')
-                with gzip.open(cache_file, 'rt', encoding='utf-8') as f:
-                    return json.load(f)
+    with get_lock(lock_key):
+        # Re-check inside the lock — another thread may have finished while we waited
+        if is_cached_fresh(csv_key, report_type):
+            set_status(status_key, 'ready', 'cached')
+            return
 
         url_map = CSV_URLS if report_type == 'contributions' else EXPENDITURE_URLS
         url = url_map.get(csv_key)
@@ -259,111 +343,81 @@ def fetch_and_cache(csv_key, report_type='contributions'):
             raise ValueError(f'No URL for {report_type}/{csv_key}')
 
         set_status(status_key, 'downloading', f'Downloading {csv_key} from ethics.la.gov…')
-        print(f'  Downloading {url}')
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 LACampaignFinanceDashboard/1.0'})
+        print(f'  Streaming {url}')
+
+        parse_row = _parse_contribution_row if report_type == 'contributions' else _parse_expenditure_row
+
+        by_year: dict = {}
+        total = 0
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 LACampaignFinanceDashboard/1.0',
+            'Accept-Encoding': 'identity',   # avoid server-side gzip so we can stream plaintext
+        })
+        # Stream directly into csv.DictReader — never materialise the full CSV string
         with urllib.request.urlopen(req, timeout=300) as resp:
-            raw = resp.read().decode('utf-8-sig')
-
-        size_mb = len(raw) / 1_048_576
-        print(f'  Downloaded {size_mb:.1f} MB. Parsing...')
-
-        records = []
-        reader = csv.DictReader(io.StringIO(raw))
-
-        if report_type == 'contributions':
+            text_stream = io.TextIOWrapper(resp, encoding='utf-8-sig', errors='replace')
+            reader = csv.DictReader(text_stream)
             for row in reader:
                 try:
-                    amt = float((row.get('ContributionAmt') or '').strip() or 0)
-                    if amt <= 0:
+                    rec = parse_row(row)
+                    if rec is None:
                         continue
-                    city = (row.get('ContributorCity') or '').upper().strip()
-                    parish = CITY_TO_PARISH.get(city, 'East Baton Rouge')
-                    first = (row.get('FilerFirstName') or '').strip().rstrip(',').strip()
-                    last  = (row.get('FilerLastName')  or '').strip().rstrip(',').strip()
-                    filer = ' '.join(x for x in [first, last] if x)
-                    contrib_type = (row.get('ContributionType') or '').strip()
-                    notes_raw = (row.get('Notes') or row.get('Description') or
-                                 row.get('ContributionDescription') or row.get('Memo') or '').strip()
-                    ff_text = f'{contrib_type} {notes_raw}'.upper()
-                    is_filing_fee = any(p in ff_text for p in [
-                        'FILING FEE', 'QUALIFYING FEE', 'QUALIFICATION FEE', 'FILING/QUALIFYING'])
-                    records.append({
-                        'contributor':        (row.get('ContributorName') or 'Unknown').strip(),
-                        'city':               (row.get('ContributorCity') or '').strip(),
-                        'parish':             parish,
-                        'amount':             round(amt, 2),
-                        'date':               parse_date(row.get('ContributionDate', '')),
-                        'candidate':          filer or 'Unknown',
-                        'party':              lookup_party(filer),
-                        'source':             'LA Ethics',
-                        'type':               contrib_type,
-                        'filerNumber':        (row.get('FilerNumber') or '').strip(),
-                        # Extended detail fields
-                        'contributorAddress': (row.get('ContributorAddress') or '').strip(),
-                        'contributorState':   (row.get('ContributorState')   or '').strip(),
-                        'contributorZip':     (row.get('ContributorZip')     or '').strip(),
-                        'employer':           (row.get('ContributorEmployer') or row.get('Employer') or '').strip(),
-                        'occupation':         (row.get('ContributorOccupation') or row.get('Occupation') or '').strip(),
-                        'electionYear':       (row.get('ElectionYear')       or '').strip(),
-                        'officeDescription':  (row.get('OfficeDescription')  or row.get('Office') or '').strip(),
-                        'filerType':          (row.get('FilerType')          or '').strip(),
-                        'scheduleType':       (row.get('ScheduleDescription') or row.get('Schedule') or
-                                               row.get('ScheduleType') or '').strip(),
-                        'reportCode':         (row.get('ReportCode')         or '').strip(),
-                        'notes':              notes_raw,
-                        'isFilingFee':        is_filing_fee,
-                    })
-                except Exception:
-                    continue
-        else:  # expenditures
-            for row in reader:
-                try:
-                    amt = float((row.get('ExpenditureAmt') or '').strip() or 0)
-                    if amt <= 0:
-                        continue
-                    city = (row.get('RecipientCity') or '').upper().strip()
-                    parish = CITY_TO_PARISH.get(city, 'East Baton Rouge')
-                    first = (row.get('FilerFirstName') or '').strip().rstrip(',').strip()
-                    last  = (row.get('FilerLastName')  or '').strip().rstrip(',').strip()
-                    filer = ' '.join(x for x in [first, last] if x)
-                    records.append({
-                        'contributor': (row.get('RecipientName') or 'Unknown').strip(),
-                        'city':        (row.get('RecipientCity') or '').strip(),
-                        'parish':      parish,
-                        'amount':      round(amt, 2),
-                        'date':        parse_date(row.get('ExpenditureDate', '')),
-                        'candidate':   filer or 'Unknown',
-                        'party':       lookup_party(filer),
-                        'source':      'LA Ethics (Expenditure)',
-                        'description': (row.get('ExpenditureDescription') or '').strip(),
-                        'filerNumber': (row.get('FilerNumber') or '').strip(),
-                    })
+                    year = int(rec['date'][:4])
+                    by_year.setdefault(year, []).append(rec)
+                    total += 1
                 except Exception:
                     continue
 
-        print(f'  Parsed {len(records):,} records. Caching to {os.path.basename(cache_file)}')
-        with gzip.open(cache_file, 'wt', encoding='utf-8') as f:
-            json.dump(records, f, separators=(',', ':'))
+        print(f'  Parsed {total:,} records across {sorted(by_year.keys())}. Writing per-year cache…')
 
-        set_status(status_key, 'ready', f'{len(records):,} records cached')
-        return records
+        for year, recs in by_year.items():
+            p = _year_cache_path(year, report_type)
+            with gzip.open(p, 'wt', encoding='utf-8') as f:
+                json.dump(recs, f, separators=(',', ':'))
+            print(f'    Wrote {len(recs):,} records → {os.path.basename(p)}')
+
+        # Free the large dict before returning
+        del by_year
+        gc.collect()
+
+        set_status(status_key, 'ready', f'{total:,} records cached')
+        print(f'  Cache complete: {csv_key}')
+
+
+def fetch_for_cycle(cycle, report_type='contributions'):
+    """Return records for the two-year window [cycle-1, cycle], loading only those years."""
+    y = int(cycle)
+    years_needed = [y - 1, y]
+    csv_key = get_csv_key(cycle)
+
+    # Download if either year is missing
+    if not all(_year_is_fresh(yr, report_type) for yr in years_needed):
+        download_and_cache(csv_key, report_type)
+
+    records = _load_years(years_needed, report_type)
+    gc.collect()
+    return records
+
+
+def is_cached_fresh(csv_key, report_type='contributions'):
+    """True when every year in the range has a fresh per-year cache file."""
+    return all(_year_is_fresh(y, report_type) for y in _key_years(csv_key))
 
 
 def prefetch_background(csv_key, report_type='contributions'):
-    """Kick off a background thread to warm the cache for a given CSV key."""
+    """Kick off a background thread to warm the per-year cache."""
     status_key = f'{report_type}_{csv_key}'
     if is_cached_fresh(csv_key, report_type):
         set_status(status_key, 'ready', 'cached')
         return
     def _run():
         try:
-            fetch_and_cache(csv_key, report_type)
+            download_and_cache(csv_key, report_type)
             print(f'  Background prefetch done: {csv_key}')
         except Exception as e:
             set_status(status_key, 'error', str(e))
             print(f'  Background prefetch error for {csv_key}: {e}')
-    t = threading.Thread(target=_run, daemon=True)
-    t.start()
+    threading.Thread(target=_run, daemon=True).start()
 
 # ── HTTP Handler ──────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
@@ -420,8 +474,10 @@ class Handler(BaseHTTPRequestHandler):
         csv_key = get_csv_key(cycle)
         status_key = f'{report_type}_{csv_key}'
 
-        # If not yet cached, start a background download and tell the browser to poll back
-        if not is_cached_fresh(csv_key, report_type):
+        # If the needed years aren't cached yet, start download and ask browser to poll back
+        y = int(cycle)
+        years_needed = [y - 1, y]
+        if not all(_year_is_fresh(yr, report_type) for yr in years_needed):
             st = get_status(status_key)
             if st['status'] != 'downloading':
                 prefetch_background(csv_key, report_type)
@@ -439,17 +495,14 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         try:
-            records = fetch_and_cache(csv_key, report_type)
-
-            # Show the year before through the selected year (covers full campaign finance cycle)
-            y = int(cycle)
-            yr_from = y - 1
-            yr_to   = y
-            filtered = [r for r in records
-                        if yr_from <= int(r['date'][:4]) <= yr_to]
+            # Load only the two years we need — much lower RAM than loading the full 4-year range
+            filtered = _load_years(years_needed, report_type)
+            gc.collect()
 
             data    = json.dumps(filtered, separators=(',', ':'))
             encoded = data.encode('utf-8')
+            del filtered
+            gc.collect()
 
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
