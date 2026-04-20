@@ -556,6 +556,17 @@
   <span class="dot"></span> LA Ethics proxy connected — real data active
 </div>
 
+<!-- DATA LOAD NOTICE -->
+<div id="data-notice" style="
+  background: rgba(200,169,81,0.08); border-bottom: 1px solid rgba(200,169,81,0.2);
+  padding: 7px 24px; font-size: 12px; color: var(--muted);
+  display: flex; align-items: center; gap: 8px; justify-content: space-between;
+">
+  <span>⏳ <strong style="color:var(--gold)">Heads up:</strong> selecting a new year downloads data directly from ethics.la.gov — the first load may take 20–60 seconds.</span>
+  <button onclick="document.getElementById('data-notice').style.display='none'"
+    style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">✕</button>
+</div>
+
 <!-- CONTROLS -->
 <div class="controls-bar">
   <div class="controls-inner">
