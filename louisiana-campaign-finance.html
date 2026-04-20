@@ -1249,11 +1249,13 @@ function applyFiltersAndRender() {
   const zipSearch   = document.getElementById('zip-search').value.trim();
   const origin = document.getElementById('origin-select').value;
   const exclFilingFees = document.getElementById('btn-excl-ff').classList.contains('active');
-  const cycleStart = parseInt(cycle) - 1;
+  const cycleYear = parseInt(cycle);
 
   filteredData = allData.filter(d => {
-    const yr = new Date(d.date).getFullYear();
-    if (yr < cycleStart || yr > parseInt(cycle)) return false;
+    if (!d.date) return false;
+    const dt = new Date(d.date);
+    const yr = dt.getFullYear();
+    if (yr !== cycleYear) return false;
     if (party !== 'ALL') {
       if (party === 'PAC') { if (d.donorType !== 'PAC') return false; }
       else if (party === 'PAC-DEM') { if (d.donorType !== 'PAC' || detectPACParty(d.contributor) !== 'PAC-DEM') return false; }
@@ -2361,15 +2363,14 @@ function escHtml(str) {
 function showContributorProfile(name) {
   // allData: ignore other active filters so the full cycle picture is shown
   const cycle      = parseInt(document.getElementById('cycle-select').value);
-  const cycleStart = cycle - 1;
   const contribs   = allData.filter(d => {
     if (d.contributor !== name) return false;
     const yr = new Date(d.date).getFullYear();
-    return yr >= cycleStart && yr <= cycle;
+    return yr === cycle;
   }).sort((a, b) => b.date.localeCompare(a.date));
 
   if (!contribs.length) {
-    alert(`No contributions found for "${name}" in the ${cycleStart}–${cycle} cycle.`);
+    alert(`No contributions found for "${name}" in ${cycle}.`);
     return;
   }
 
@@ -2382,7 +2383,7 @@ function showContributorProfile(name) {
   document.getElementById('cp-name').textContent = name;
   const locParts = [first.city, first.contributorState, first.contributorZip].filter(Boolean);
   document.getElementById('cp-meta').textContent =
-    `${cycleStart}–${cycle} Election Cycle` +
+    `${cycle} Calendar Year` +
     (locParts.length ? '  ·  ' + locParts.join(', ') : '');
 
   // ── Summary stats ──────────────────────────────────────────

@@ -241,6 +241,28 @@ def lookup_party(name: str) -> str:
     if not name or name == 'Unknown':
         return 'OTH'
 
+    # ── Party-committee fast path ──────────────────────────────────────────────
+    # Filers that ARE a party org (not an individual) can be classified directly
+    # from their name without touching the politician lookup.
+    _up = name.upper()
+    _REP_SIGNALS = [
+        'REPUBLICAN PARTY', 'REPUBLICAN SENATE', 'REPUBLICAN HOUSE',
+        'REPUBLICAN CAUCUS', 'REPUBLICAN LEADERSHIP', 'GOP ',
+        'NRCC', 'NRSC', 'RSLC', 'RNCC', 'RNC',
+        'LOUISIANA REPUBLICAN', 'LA REPUBLICAN',
+    ]
+    _DEM_SIGNALS = [
+        'DEMOCRATIC PARTY', 'DEMOCRATIC SENATE', 'DEMOCRATIC HOUSE',
+        'DEMOCRATIC CAUCUS', 'DEMOCRATIC LEADERSHIP', 'DEMOPAC',
+        'DCCC', 'DSCC', 'DLCC', 'NRDC', 'DNC',
+        'LOUISIANA DEMOCRATIC', 'LA DEMOCRATIC', 'LA DEMOCRATS',
+        'LOUISIANA DEMOCRATS',
+    ]
+    if any(s in _up for s in _REP_SIGNALS):
+        return 'REP'
+    if any(s in _up for s in _DEM_SIGNALS):
+        return 'DEM'
+
     # 0. Handle "LASTNAME, FIRSTNAME [suffix]" — try swapped form first
     if ',' in name:
         raw_parts = name.split(',', 1)
