@@ -196,6 +196,37 @@
   .trend-title { font-size: 13px; font-weight: 600; color: var(--gold); margin-bottom: 14px; }
   .trend-wrap { position: relative; height: 200px; }
 
+  /* TOP CONTRIBUTORS */
+  .top-contributors-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 20px;
+  }
+  .top-contributors-card .table-title { margin-bottom: 14px; }
+  .tc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tc-table th {
+    text-align: left; font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .04em;
+    padding: 0 10px 8px; border-bottom: 1px solid var(--border);
+  }
+  .tc-table th.num { text-align: right; }
+  .tc-table td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+  .tc-table tr:last-child td { border-bottom: none; }
+  .tc-table tr:hover td { background: rgba(255,255,255,.03); }
+  .tc-rank { font-size: 11px; font-weight: 700; color: var(--muted); width: 24px; text-align: center; }
+  .tc-name-btn {
+    background: none; border: none; color: var(--gold); font-size: 13px;
+    cursor: pointer; padding: 0; text-align: left; font-family: inherit;
+    text-decoration: underline; text-underline-offset: 2px;
+  }
+  .tc-name-btn:hover { color: #fff; }
+  .tc-bar-cell { width: 140px; }
+  .tc-bar-wrap { background: rgba(255,255,255,.07); border-radius: 3px; height: 6px; overflow: hidden; }
+  .tc-bar-fill { height: 100%; border-radius: 3px; background: var(--gold); }
+  .tc-amount { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tc-count  { text-align: right; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .tc-type   { font-size: 11px; padding: 1px 6px; border-radius: 10px; white-space: nowrap;
+               background: rgba(255,255,255,.08); color: var(--muted); }
+
   /* DATA TABLE */
   .table-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
@@ -708,6 +739,27 @@
     <div class="trend-wrap">
       <canvas id="trend-chart"></canvas>
     </div>
+  </div>
+
+  <!-- TOP CONTRIBUTORS -->
+  <div class="top-contributors-card" id="top-contributors-card">
+    <div class="table-header-row">
+      <div class="table-title">Top 10 Contributors</div>
+    </div>
+    <table class="tc-table">
+      <thead>
+        <tr>
+          <th style="width:28px"></th>
+          <th>Contributor</th>
+          <th>Type</th>
+          <th class="num">Gifts</th>
+          <th class="tc-bar-cell"></th>
+          <th class="num">Total</th>
+        </tr>
+      </thead>
+      <tbody id="tc-tbody"></tbody>
+    </table>
+    <div id="tc-empty" style="display:none;text-align:center;padding:24px;color:var(--muted);font-size:13px">No data</div>
   </div>
 
   <!-- DATA TABLE -->
@@ -1232,6 +1284,7 @@ function renderAll() {
   renderDonorTypeChart();
   renderTopParishes();
   renderTrendChart();
+  renderTopContributors();
   renderTable();
   updateStatusBar();
 }
@@ -1777,6 +1830,67 @@ function renderTrendChart() {
 }
 
 // ============================================================
+// TOP CONTRIBUTORS
+// ============================================================
+function renderTopContributors() {
+  const tbody  = document.getElementById('tc-tbody');
+  const empty  = document.getElementById('tc-empty');
+
+  if (!filteredData.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // Aggregate by contributor name
+  const agg = {};
+  filteredData.forEach(d => {
+    const key = d.contributor || 'Unknown';
+    if (!agg[key]) agg[key] = { name: key, total: 0, count: 0, donorType: d.donorType || 'OTH' };
+    agg[key].total += d.amount;
+    agg[key].count += 1;
+  });
+
+  const top10 = Object.values(agg)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10);
+
+  if (!top10.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  const maxTotal = top10[0].total;
+
+  const typeLabel = { IND: 'Individual', PAC: 'PAC', BUS: 'Business',
+                      UNION: 'Union', ORG: 'Organization', OTH: 'Other' };
+  const typeColor = { IND: '#50b478', PAC: '#9966ff', BUS: '#8c8c8c',
+                      UNION: '#4682b4', ORG: '#ffa500', OTH: '#5a5a5a' };
+
+  tbody.innerHTML = top10.map((c, i) => {
+    const pct  = maxTotal > 0 ? (c.total / maxTotal * 100).toFixed(1) : 0;
+    const type = c.donorType || 'OTH';
+    const color = typeColor[type] || '#5a5a5a';
+    const label = typeLabel[type] || type;
+    return `<tr>
+      <td class="tc-rank">${i + 1}</td>
+      <td>
+        <button class="tc-name-btn" onclick="showContributorProfile(${JSON.stringify(c.name)})">${escHtml(c.name)}</button>
+      </td>
+      <td><span class="tc-type">${escHtml(label)}</span></td>
+      <td class="tc-count">${c.count.toLocaleString()}</td>
+      <td class="tc-bar-cell">
+        <div class="tc-bar-wrap">
+          <div class="tc-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+      </td>
+      <td class="tc-amount">$${c.total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
+    </tr>`;
+  }).join('');
+}
+
 // TABLE
 // ============================================================
 function renderTable() {
