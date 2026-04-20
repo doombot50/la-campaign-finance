@@ -744,7 +744,7 @@
   <!-- TOP CONTRIBUTORS -->
   <div class="top-contributors-card" id="top-contributors-card">
     <div class="table-header-row">
-      <div class="table-title">Top 10 Contributors</div>
+      <div class="table-title">Top Contributors</div>
     </div>
     <table class="tc-table">
       <thead>
@@ -1854,7 +1854,7 @@ function renderTopContributors() {
 
   const top10 = Object.values(agg)
     .sort((a, b) => b.total - a.total)
-    .slice(0, 10);
+    .slice(0, 50);
 
   if (!top10.length) {
     tbody.innerHTML = '';
