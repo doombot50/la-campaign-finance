@@ -347,6 +347,17 @@ CURATED = [
     ('JASON ROGERS','WILLIAMS',      'DEM', 'Orleans DA / State Rep',    [2014, 2016, 2020]),
     ('STUART',      'BISHOP',        'REP', 'State Representative',      [2012, 2016, 2020, 2024]),
     ('SCHUYLER',    'MARVIN',        'REP', 'State Representative',      [2004, 2008, 2012, 2016, 2020, 2024]),
+    # ── Nickname / alternate-name aliases for local officials ──────────────────
+    # Ethics reports use formal names; SoS stored a different form for these.
+    ('TIMOTHY',    'SOIGNET',      'REP', 'Sheriff (Terrebonne)',      [2016, 2020]),  # SoS: TIM SOIGNET
+    ('JERRY',      'TURLICH',      'REP', 'Sheriff (Jefferson)',       [2016, 2020]),  # SoS: GERALD JERRY TURLICH
+    ('JOSEPH',     'WAITZ',        'REP', 'District Attorney',         [2016, 2020]),  # SoS: JOE WAITZ
+    ('THOMAS',     'ARCENEAUX',    'REP', 'State Representative',      [2008, 2012]),  # SoS: TOM ARCENEAUX
+    ('TOM',        'ARCENEAUX',    'REP', 'State Representative',      [2008, 2012]),
+    ('JEAN PAUL',  'MORRELL',      'DEM', 'State Senator',             [2008, 2012, 2016, 2020]),  # SoS: J P MORRELL
+    ('OLIVER',     'THOMAS',       'DEM', 'New Orleans City Council',  [2004, 2006]),  # not in SoS
+    ('GARY',       'GUILLORY',     'REP', 'State Representative',      [2008, 2012, 2016]),  # "Stitch"
+    ('JULIOUS',    'SIMS',         'DEM', 'State Representative',      [2008, 2012, 2016, 2020]),  # Julious Collin Sims
     # Parish/local level notable politicians
     ('LATOYA',     'CANTRELL',     'DEM', 'Mayor (New Orleans)',      [2018, 2022]),
     ('MITCH',      'LANDRIEU',     'DEM', 'Mayor (New Orleans)',      [2010, 2014]),
@@ -379,6 +390,179 @@ CURATED = [
     ('RICHARD',    'BAKER',        'REP', 'House',                   []),
 ]
 
+# ── Louisiana Secretary of State election candidate fetch ──────────────────────
+SOS_BASE = 'https://voterportal.sos.la.gov/ElectionResults/ElectionResults/Data'
+SOS_KEEP_PARTIES = {'REP', 'DEM'}
+
+def _sos_fetch(blob: str):
+    """GET a blob from the SoS results API; return parsed JSON or None."""
+    url = f'{SOS_BASE}?blob={blob}'
+    req = urllib.request.Request(url, headers={'User-Agent': 'la-campaign-finance-lookup/1.0'})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.load(r)
+    except Exception as e:
+        print(f'    SoS fetch error ({blob}): {e}')
+        return None
+
+def _parse_sos_desc(desc: str):
+    """'Full Name (PARTY)' -> (clean_name, party) or (None, None).
+
+    Handles quotation-mark nicknames in three positions:
+      leading  : '"Jeff" Landry'         -> 'Jeff Landry'
+      middle   : 'Patrick "Dat" Barthel' -> 'Patrick Barthel'
+      suffix   : 'Charles "Chuck" Jones' -> 'Charles Jones'
+
+    Only returns entries whose party is REP or DEM.
+    """
+    m = re.match(r'^(.*)\s+\(([A-Z]+)\)$', desc.strip())
+    if not m:
+        return None, None
+    party = m.group(2)
+    if party not in SOS_KEEP_PARTIES:
+        return None, None
+    name_raw = m.group(1).strip()
+    # Strip surrounding double-quote nicknames but keep the content for
+    # leading position ("Jeff" Landry → Jeff Landry) and drop entirely
+    # for middle position where they duplicate a word that follows.
+    # Strategy: replace any "word(s)" group with its contents, then collapse spaces.
+    name_clean = re.sub(r'"([^"]+)"', r'\1', name_raw)
+    name_clean = ' '.join(name_clean.split())
+    return name_clean, party
+
+def _extract_races(data: dict) -> list:
+    """Pull the Race list out of a RacesCandidates response (handles dict/list)."""
+    races = data.get('Races', {}).get('Race', [])
+    if isinstance(races, dict):
+        races = [races]
+    return races or []
+
+
+def _ingest_races(races: list, raw: dict, elec_date: str) -> None:
+    """Add every REP/DEM candidate from *races* into the *raw* accumulator.
+    Most-recent election date wins on conflicts.
+    """
+    for race in races:
+        office = (race.get('SpecificTitle') or race.get('GeneralTitle') or '').strip()
+        choices = race.get('Choice', [])
+        if isinstance(choices, dict):
+            choices = [choices]
+        for choice in choices:
+            name_raw, party = _parse_sos_desc(choice.get('Desc', ''))
+            if not name_raw or not party:
+                continue
+            norm = normalize(name_raw)
+            if len(norm.split()) < 2:
+                continue
+            existing = raw.get(norm)
+            if not existing or elec_date > existing['date']:
+                raw[norm] = {'party': party, 'office': office, 'date': elec_date}
+
+
+def fetch_sos_candidates(min_year: int = 2010) -> dict:
+    """Scrape every REP/DEM candidate from the SoS graphical results portal
+    for all elections since *min_year*.
+
+    Two-pass strategy:
+      Pass 1 — multiparish file for every election (statewide offices, all
+               105 state House seats, all 39 state Senate seats, district
+               judges, BESE, constitutional amendments).
+      Pass 2 — parish-level files (64 parishes) for "major" 4-year elections,
+               i.e. any election whose multiparish data includes at least one
+               state legislative race (Level 200/205).  This captures sheriffs,
+               assessors, coroners, parish presidents, clerks of court, etc.
+
+    Most-recent election date wins when the same name appears multiple times
+    (handles party switches gracefully).
+    """
+    election_data = _sos_fetch('ElectionDates.htm')
+    if not election_data:
+        print('  SoS: could not fetch election list — skipping')
+        return {}
+
+    elections = [
+        e for e in election_data['Dates']['Date']
+        if int(e['ElectionDate'][-4:]) >= min_year
+    ]
+    print(f'  SoS: {len(elections)} elections since {min_year}')
+
+    raw: dict = {}               # norm_name -> {party, office, date}
+    major_election_blobs = []    # (blob_date, elec_date) for pass 2
+
+    # ── Pass 1: multiparish (statewide + legislature) ─────────────────────────
+    print('  Pass 1: multiparish races …')
+    for i, elec in enumerate(elections):
+        mm, dd, yyyy = elec['ElectionDate'].split('/')
+        blob_date = f'{yyyy}{mm}{dd}'
+        data = _sos_fetch(f'{blob_date}/RacesCandidates_Multiparish.htm')
+        if not data:
+            continue
+
+        races = _extract_races(data)
+        _ingest_races(races, raw, elec['ElectionDate'])
+
+        # Detect major 4-year elections: have state legislative races (level 200/205)
+        LEGIS_LEVELS = {'200', '205'}
+        if any(r.get('OfficeLevel', '') in LEGIS_LEVELS for r in races):
+            major_election_blobs.append((blob_date, elec['ElectionDate']))
+
+        if (i + 1) % 25 == 0 or (i + 1) == len(elections):
+            print(f'    … {i + 1}/{len(elections)} done')
+        time.sleep(0.15)
+
+    print(f'  Pass 1 complete: {len(raw)} candidates from multiparish races')
+    print(f'  {len(major_election_blobs)} major 4-year elections detected for parish-level pass')
+
+    # ── Pass 2: parish-level races for major elections ─────────────────────────
+    # Covers sheriffs, assessors, coroners, parish presidents, clerks of court,
+    # city council, school board, etc.
+    if major_election_blobs:
+        print('  Pass 2: parish-level races (64 parishes × major elections) …')
+        total_parish_requests = 0
+        for blob_date, elec_date in major_election_blobs:
+            # Get the parish list for this election (IDs are zero-padded 01–64)
+            parishes_data = _sos_fetch(f'{blob_date}/ParishesInElection.htm')
+            if not parishes_data:
+                parish_ids = [f'{p:02d}' for p in range(1, 65)]
+            else:
+                parishes = parishes_data.get('ParishesInElection', {}).get('Parish', [])
+                if isinstance(parishes, dict):   # single-parish election
+                    parishes = [parishes]
+                parish_ids = [p['ParishValue'] for p in parishes]
+
+            for pid in parish_ids:
+                blob = f'{blob_date}/RacesCandidates/ByParish_{pid}.htm'
+                data = _sos_fetch(blob)
+                if data:
+                    _ingest_races(_extract_races(data), raw, elec_date)
+                total_parish_requests += 1
+                time.sleep(0.10)
+
+            print(f'    … {elec_date} done ({len(parish_ids)} parishes)')
+
+        print(f'  Pass 2 complete: {total_parish_requests} parish requests, '
+              f'{len(raw)} total candidates')
+
+    # ── Build final lookup dict ────────────────────────────────────────────────
+    lookup: dict = {}
+    for norm_name, info in raw.items():
+        entry = {
+            'party':         info['party'],
+            'source':        'SoS',
+            'office':        info['office'],
+            'election_date': info['date'],
+        }
+        lookup[norm_name] = entry
+        last = norm_name.split()[-1]
+        if last not in lookup:
+            lookup[last] = entry
+
+    n_rep = sum(1 for v in raw.values() if v['party'] == 'REP')
+    n_dem = sum(1 for v in raw.values() if v['party'] == 'DEM')
+    print(f'  SoS total: {len(raw)} unique candidates  (REP={n_rep}, DEM={n_dem})')
+    return lookup
+
+
 def curated_to_lookup() -> dict:
     lookup = {}
     for first, last, party, office, years in CURATED:
@@ -403,13 +587,16 @@ def curated_to_lookup() -> dict:
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
     ap = argparse.ArgumentParser(description='Build Louisiana politician party lookup')
-    ap.add_argument('--api-key', default=DEFAULT_KEY, help='FEC API key')
-    ap.add_argument('--skip-fec', action='store_true', help='Skip FEC fetch (offline mode)')
+    ap.add_argument('--api-key',  default=DEFAULT_KEY, help='FEC API key')
+    ap.add_argument('--skip-fec', action='store_true',  help='Skip FEC fetch (offline mode)')
+    ap.add_argument('--skip-sos', action='store_true',  help='Skip SoS election fetch')
+    ap.add_argument('--min-year', type=int, default=2010,
+                    help='Earliest election year to pull from SoS (default: 2010)')
     args = ap.parse_args()
 
     lookup = {}
 
-    # 1. Curated state politicians (base layer)
+    # 1. Curated state politicians (base layer — hand-verified entries)
     print('Loading curated state politicians …')
     curated = curated_to_lookup()
     lookup.update(curated)
@@ -419,11 +606,23 @@ def main():
     if not args.skip_fec:
         fec_records = fetch_fec_candidates(args.api_key)
         fec_lookup = fec_to_lookup(fec_records)
-        # FEC is authoritative — overwrite curated entries
         lookup.update(fec_lookup)
         print(f'  {len([k for k in fec_lookup if " " in k])} FEC entries merged')
 
-    # 3. Summary
+    # 3. Louisiana SoS election results — every REP/DEM candidate since min_year.
+    #    This is the broadest layer: covers state legislature, statewide offices,
+    #    local races (sheriffs, assessors, judges, parish presidents, etc.) and
+    #    all losing candidates — all the names that actually appear in Ethics filings.
+    #    SoS is last so it wins on conflicts (it is the authoritative LA source).
+    if not args.skip_sos:
+        print(f'\nFetching Louisiana SoS candidate data (since {args.min_year}) …')
+        sos_lookup = fetch_sos_candidates(min_year=args.min_year)
+        n_new = sum(1 for k in sos_lookup if ' ' in k and k not in lookup)
+        n_upd = sum(1 for k in sos_lookup if ' ' in k and k in lookup)
+        lookup.update(sos_lookup)
+        print(f'  {n_new} new entries added, {n_upd} existing entries updated from SoS')
+
+    # 4. Summary
     full_name_entries = {k: v for k, v in lookup.items() if ' ' in k}
     dem = sum(1 for v in full_name_entries.values() if v['party'] == 'DEM')
     rep = sum(1 for v in full_name_entries.values() if v['party'] == 'REP')
