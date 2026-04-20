@@ -816,8 +816,6 @@
       <div class="table-title">Contribution Records</div>
       <div class="table-actions">
         <button class="upload-btn" onclick="downloadCSV()">⬇ Download CSV</button>
-        <button class="upload-btn" id="upload-csv-btn">⬆ Upload LA Ethics CSV</button>
-        <input type="file" id="csv-upload" accept=".csv">
       </div>
     </div>
     <table id="data-table">
@@ -1222,10 +1220,6 @@ document.querySelectorAll('thead th[data-col]').forEach(th => {
   });
 });
 
-document.getElementById('upload-csv-btn').addEventListener('click', () => {
-  document.getElementById('csv-upload').click();
-});
-document.getElementById('csv-upload').addEventListener('change', handleCSVUpload);
 
 document.getElementById('sp-close').addEventListener('click', () => {
   document.getElementById('selected-panel').style.display = 'none';
