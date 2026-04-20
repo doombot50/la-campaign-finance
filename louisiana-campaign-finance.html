@@ -2008,20 +2008,36 @@ function showMapSpinner(show) {
 // ============================================================
 function detectDonorType(name) {
   const n = (name || '').toUpperCase();
+  // Unions — checked FIRST so union PAC/political funds are classified as UNION,
+  // not PAC (e.g. "Plumbers Local 60 PAC Fund", "Carpenters Local 1098 CAR-PIC Fund")
+  if (// Named union acronyms
+      n.includes('AFL-CIO') || n.includes('SEIU')  || n.includes('IBEW')  ||
+      n.includes('UAW')     || n.includes('UFCW')  || n.includes('LIUNA') ||
+      n.includes('AFSCME')  || n.includes('IATSE') || n.includes('APWU')  ||
+      n.includes('NALC')    || n.includes('IUOE')  || n.includes('UNITE HERE') ||
+      n.includes('CWA')     || n.includes('AFT')   || n.includes('NEA')   ||
+      n.includes('TEAMSTERS') ||
+      // "Union" or "Local NNN" appearing anywhere in the name
+      n.includes('UNION') || /\bLOCAL\s+\d+\b/.test(n) ||
+      // Trade/craft union names
+      n.includes('BROTHERHOOD')       || n.includes('FRATERNAL ORDER')  ||
+      n.includes('LABORERS')          || n.includes('CARPENTERS')       ||
+      n.includes('PIPEFITTERS')       || n.includes('IRONWORKERS')      ||
+      n.includes('SHEET METAL')       || n.includes('PLUMBERS')         ||
+      n.includes('OPERATING ENGINEERS')|| n.includes('BOILERMAKERS')   ||
+      n.includes('STEELWORKERS')      || n.includes('MACHINISTS')       ||
+      n.includes('ELECTRICIANS')      || n.includes('PAINTERS')         ||
+      n.includes('ROOFERS')           || n.includes('BRICKLAYERS')      ||
+      n.includes('PLASTERERS')        || n.includes('GLAZIERS')         ||
+      // Public-sector / service unions
+      n.includes('FIREFIGHTERS')      || n.includes('POLICE ASSOCIATION') ||
+      n.includes('TEACHERS')          || n.includes('NURSES')           ||
+      n.includes('TRANSIT WORKERS')   || n.includes('POSTAL WORKERS')   ||
+      n.includes('GOVERNMENT EMPLOYEES') ||
+      // Union political fund naming conventions (COPE, PIC, VOICE, etc.)
+      n.includes('POLITICAL ISSUES COMMITTEE') || /\bCOPE\b/.test(n)) return 'UNION';
   if (n.includes('PAC') || n.includes('POLITICAL ACTION') || n.includes('ACTION COMMITTEE') ||
       n.includes('LEADERSHIP FUND') || n.includes('SUPER PAC') || n.includes('ACTION FUND')) return 'PAC';
-  // Unions — checked before generic ORG
-  if (n.includes('AFL-CIO') || n.includes('SEIU') || n.includes('IBEW') ||
-      n.includes('UAW') || n.includes('TEAMSTERS') || n.includes('UFCW') ||
-      n.includes('CWA ') || n.includes(' AFT') || n.includes('LIUNA') ||
-      n.includes(' UNION') || n.includes('UNION ') ||
-      n.includes('BROTHERHOOD') || n.includes('FRATERNAL ORDER') ||
-      n.includes('LABORERS') || n.includes('CARPENTERS') ||
-      n.includes('PIPEFITTERS') || n.includes('IRONWORKERS') ||
-      n.includes('SHEET METAL WORKERS') || n.includes('PLUMBERS') ||
-      n.includes('OPERATING ENGINEERS') || n.includes('PAINTERS ') ||
-      n.includes('FIREFIGHTERS') || n.includes('TEACHERS ') ||
-      n.includes('NURSES ') || /\bLOCAL\s+\d+\b/.test(n)) return 'UNION';
   if (/\b(LLC|INC|CORP|LTD|CO\.|L\.L\.C|LP\b|LLP\b|COMPANY|CORPORATION|INDUSTRIES|SERVICES|GROUP|HOLDINGS|ENTERPRISES)\b/.test(n)) return 'BUS';
   if (/^[A-Z]+,\s+[A-Z]/.test(n)) return 'IND';
   return 'OTH';
