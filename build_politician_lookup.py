@@ -358,6 +358,21 @@ CURATED = [
     ('OLIVER',     'THOMAS',       'DEM', 'New Orleans City Council',  [2004, 2006]),  # not in SoS
     ('GARY',       'GUILLORY',     'REP', 'State Representative',      [2008, 2012, 2016]),  # "Stitch"
     ('JULIOUS',    'SIMS',         'DEM', 'State Representative',      [2008, 2012, 2016, 2020]),  # Julious Collin Sims
+    # ── New Orleans City Council (current + recent) ──────────────────────────────
+    # All NOCC seats are effectively Democrat; SoS often classifies them as NP
+    ('AIMEE',      'MCCARRON',     'DEM', 'New Orleans City Council',  [2022, 2024]),
+    ('LESLI',      'HARRIS',       'DEM', 'New Orleans City Council',  [2022, 2024]),
+    ('FREDDIE',    'KING',         'DEM', 'New Orleans City Council',  [2022, 2024]),
+    ('JARED',      'BROSSETT',     'DEM', 'New Orleans City Council',  [2018, 2022]),
+    ('JOE',        'GIARRUSSO',    'DEM', 'New Orleans City Council',  [2018, 2022]),
+    ('JOSEPH',     'GIARRUSSO',    'DEM', 'New Orleans City Council',  [2018, 2022]),
+    ('KRISTIN',    'GISLESON PALMER', 'DEM', 'New Orleans City Council', [2010, 2014, 2018]),
+    ('STACY',      'HEAD',         'DEM', 'New Orleans City Council',  [2006, 2010, 2014]),
+    ('SUSAN',      'GUIDRY',       'DEM', 'New Orleans City Council',  [2010, 2014]),
+    ('CYNTHIA',    'HEDGE-MORRELL','DEM', 'New Orleans City Council',  [2006, 2010]),
+    ('JACKIE',     'CLARKSON',     'DEM', 'New Orleans City Council',  [2010, 2014]),
+    ('JAMES',      'GRAY',         'DEM', 'New Orleans City Council',  [2010, 2014]),
+    ('WILLIE',     'CARTER',       'DEM', 'New Orleans City Council',  [2018, 2022]),
     # Parish/local level notable politicians
     ('LATOYA',     'CANTRELL',     'DEM', 'Mayor (New Orleans)',      [2018, 2022]),
     ('MITCH',      'LANDRIEU',     'DEM', 'Mayor (New Orleans)',      [2010, 2014]),

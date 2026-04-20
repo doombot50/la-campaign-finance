@@ -2910,6 +2910,195 @@
     "office": "District Attorney -- 22nd Judicial District Court",
     "election_date": "03/23/2024"
   },
+  "AIMEE MCCARRON": {
+    "party": "DEM",
+    "first": "AIMEE",
+    "last": "MCCARRON",
+    "office": "New Orleans City Council",
+    "election_years": [
+      2022,
+      2024
+    ],
+    "source": "curated"
+  },
+  "MCCARRON": {
+    "party": "DEM",
+    "first": "AIMEE",
+    "last": "MCCARRON",
+    "office": "New Orleans City Council",
+    "election_years": [
+      2022,
+      2024
+    ],
+    "source": "curated"
+  },
+  "LESLI HARRIS": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilmember -- District B",
+    "election_date": "11/13/2021"
+  },
+  "FREDDIE KING": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilmember -- District C",
+    "election_date": "11/13/2021"
+  },
+  "KING": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 1st Congressional District",
+    "election_date": "11/06/2012"
+  },
+  "JARED BROSSETT": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilmember at Large -- Division 2",
+    "election_date": "11/13/2021"
+  },
+  "BROSSETT": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilmember at Large -- Division 2",
+    "election_date": "11/13/2021"
+  },
+  "JOE GIARRUSSO": {
+    "party": "DEM",
+    "first": "JOE",
+    "last": "GIARRUSSO",
+    "office": "New Orleans City Council",
+    "election_years": [
+      2018,
+      2022
+    ],
+    "source": "curated"
+  },
+  "GIARRUSSO": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Judge -- Civil District Court, Division G",
+    "election_date": "11/03/2020"
+  },
+  "JOSEPH GIARRUSSO": {
+    "party": "DEM",
+    "first": "JOSEPH",
+    "last": "GIARRUSSO",
+    "office": "New Orleans City Council",
+    "election_years": [
+      2018,
+      2022
+    ],
+    "source": "curated"
+  },
+  "KRISTIN GISLESON PALMER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilmember at Large -- Division 2",
+    "election_date": "11/13/2021"
+  },
+  "GISLESON PALMER": {
+    "party": "DEM",
+    "first": "KRISTIN",
+    "last": "GISLESON PALMER",
+    "office": "New Orleans City Council",
+    "election_years": [
+      2010,
+      2014,
+      2018
+    ],
+    "source": "curated"
+  },
+  "STACY HEAD": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "DPEC Member(s) -- District B",
+    "election_date": "07/11/2020"
+  },
+  "HEAD": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "DPEC Member(s) -- District B",
+    "election_date": "07/11/2020"
+  },
+  "SUSAN GUIDRY": {
+    "party": "DEM",
+    "first": "SUSAN",
+    "last": "GUIDRY",
+    "office": "New Orleans City Council",
+    "election_years": [
+      2010,
+      2014
+    ],
+    "source": "curated"
+  },
+  "GUIDRY": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Council Member -- District 8",
+    "election_date": "11/19/2011"
+  },
+  "CYNTHIA HEDGE MORRELL": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "DSCC Member --  97th Representative District, Office \"A\"",
+    "election_date": "03/05/2016"
+  },
+  "HEDGE MORRELL": {
+    "party": "DEM",
+    "first": "CYNTHIA",
+    "last": "HEDGE MORRELL",
+    "office": "New Orleans City Council",
+    "election_years": [
+      2006,
+      2010
+    ],
+    "source": "curated"
+  },
+  "JACKIE CLARKSON": {
+    "party": "DEM",
+    "first": "JACKIE",
+    "last": "CLARKSON",
+    "office": "New Orleans City Council",
+    "election_years": [
+      2010,
+      2014
+    ],
+    "source": "curated"
+  },
+  "CLARKSON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilmember(s) at Large",
+    "election_date": "02/06/2010"
+  },
+  "JAMES GRAY": {
+    "party": "DEM",
+    "first": "JAMES",
+    "last": "GRAY",
+    "office": "New Orleans City Council",
+    "election_years": [
+      2010,
+      2014
+    ],
+    "source": "curated"
+  },
+  "GRAY": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Police Juror -- District  9",
+    "election_date": "10/24/2015"
+  },
+  "WILLIE CARTER": {
+    "party": "DEM",
+    "first": "WILLIE",
+    "last": "CARTER",
+    "office": "New Orleans City Council",
+    "election_years": [
+      2018,
+      2022
+    ],
+    "source": "curated"
+  },
   "LATOYA CANTRELL": {
     "party": "DEM",
     "source": "SoS",
@@ -8811,12 +9000,6 @@
     "office": "Council Member -- District 8",
     "election_date": "11/19/2011"
   },
-  "GUIDRY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Council Member -- District 8",
-    "election_date": "11/19/2011"
-  },
   "CHAUNA BANKS": {
     "party": "DEM",
     "source": "SoS",
@@ -14109,12 +14292,6 @@
     "office": "Judge -- Civil District Court, Division G",
     "election_date": "11/03/2020"
   },
-  "GIARRUSSO": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Judge -- Civil District Court, Division G",
-    "election_date": "11/03/2020"
-  },
   "SCHALYECE HARRISON": {
     "party": "DEM",
     "source": "SoS",
@@ -15764,18 +15941,6 @@
     "source": "SoS",
     "office": "DSCC Member --  97th Representative District, Office \"A\"",
     "election_date": "07/11/2020"
-  },
-  "JARED BROSSETT": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilmember at Large -- Division 2",
-    "election_date": "11/13/2021"
-  },
-  "BROSSETT": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilmember at Large -- Division 2",
-    "election_date": "11/13/2021"
   },
   "ROBERT BOB CROWLEY": {
     "party": "DEM",
@@ -20419,12 +20584,6 @@
     "party": "DEM",
     "source": "SoS",
     "office": "DSCC Member --  94th Representative District, Office \"B\"",
-    "election_date": "03/05/2016"
-  },
-  "CYNTHIA HEDGE MORRELL": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "DSCC Member --  97th Representative District, Office \"A\"",
     "election_date": "03/05/2016"
   },
   "DEMETRIC M MERCADEL": {
@@ -25102,12 +25261,6 @@
     "election_date": "12/08/2012"
   },
   "GARY KING": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 1st Congressional District",
-    "election_date": "11/06/2012"
-  },
-  "KING": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 1st Congressional District",
@@ -31594,12 +31747,6 @@
     "election_date": "10/14/2023"
   },
   "CHARLES L GRAY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Police Juror -- District  9",
-    "election_date": "10/24/2015"
-  },
-  "GRAY": {
     "party": "DEM",
     "source": "SoS",
     "office": "Police Juror -- District  9",
@@ -50541,12 +50688,6 @@
     "office": "Mayor -- City of New Orleans",
     "election_date": "11/13/2021"
   },
-  "KRISTIN GISLESON PALMER": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilmember at Large -- Division 2",
-    "election_date": "11/13/2021"
-  },
   "PALMER": {
     "party": "DEM",
     "source": "SoS",
@@ -50583,12 +50724,6 @@
     "office": "Councilmember -- District B",
     "election_date": "11/18/2017"
   },
-  "LESLI HARRIS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilmember -- District B",
-    "election_date": "11/13/2021"
-  },
   "RELLA ZAPLETAL": {
     "party": "DEM",
     "source": "SoS",
@@ -50599,12 +50734,6 @@
     "party": "DEM",
     "source": "SoS",
     "office": "Councilmember -- District B",
-    "election_date": "11/13/2021"
-  },
-  "FREDDIE KING": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilmember -- District C",
     "election_date": "11/13/2021"
   },
   "FRANK PEREZ": {
@@ -54106,18 +54235,6 @@
     "election_date": "07/11/2020"
   },
   "CHRISTINE HARVEY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "DPEC Member(s) -- District B",
-    "election_date": "07/11/2020"
-  },
-  "STACY HEAD": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "DPEC Member(s) -- District B",
-    "election_date": "07/11/2020"
-  },
-  "HEAD": {
     "party": "DEM",
     "source": "SoS",
     "office": "DPEC Member(s) -- District B",
@@ -92752,12 +92869,6 @@
     "election_date": "02/06/2010"
   },
   "JACQUELYN BRECHTEL CLARKSON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilmember(s) at Large",
-    "election_date": "02/06/2010"
-  },
-  "CLARKSON": {
     "party": "DEM",
     "source": "SoS",
     "office": "Councilmember(s) at Large",
