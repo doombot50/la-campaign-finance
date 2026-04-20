@@ -378,7 +378,7 @@ def _parse_contribution_row(row):
     # a campaign committee (i.e. the actual clerk's office, not "Jane Doe for CoC").
     contributor_name_upper = (row.get('ContributorName') or '').upper()
     is_la_clerk = (
-        'CLERK OF COURT' in contributor_name_upper
+        bool(re.search(r'\bCLERK\b.*\bCOURT\b', contributor_name_upper))
         and not re.search(r'\bFOR\b.*\bCLERK\b', contributor_name_upper)
     )
     if is_la_clerk:
@@ -433,7 +433,7 @@ def _parse_contribution_row(row):
                                   # (e.g. "Jane Doe for Clerk of Court") — those are ordinary
                                   # contributor-to-candidate contributions, not filing fees.
                                   or (
-                                      'CLERK OF COURT' in (row.get('ContributorName') or '').upper()
+                                      bool(re.search(r'\bCLERK\b.*\bCOURT\b', (row.get('ContributorName') or '').upper()))
                                       and not re.search(r'\bFOR\b.*\bCLERK\b', (row.get('ContributorName') or '').upper())
                                   )
                               ),
