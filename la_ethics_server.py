@@ -166,6 +166,20 @@ CITY_TO_PARISH = {
     'LUTCHER': 'St. James', 'PAULINA': 'St. James',
     'GRAY': 'Terrebonne', 'BAYOU CANE': 'Terrebonne', 'SCHRIEVER': 'Terrebonne',
     'THIBODAUX': 'Lafourche', 'NAPOLEONVILLE': 'Assumption', 'BELLE ROSE': 'Assumption',
+    # ── Previously unmapped parishes ─────────────────────────────────────────
+    # West Carroll
+    'OAK GROVE': 'West Carroll',
+    # East Carroll
+    'LAKE PROVIDENCE': 'East Carroll',
+    # Allen
+    'OBERLIN': 'Allen', 'KINDER': 'Allen', 'OAKDALE': 'Allen',
+    # Grant
+    'COLFAX': 'Grant', 'POLLOCK': 'Grant', 'DRY PRONG': 'Grant',
+    # Tensas
+    'ST. JOSEPH': 'Tensas', 'SAINT JOSEPH': 'Tensas', 'NEWELLTON': 'Tensas',
+    # Cameron
+    'CAMERON': 'Cameron', 'HACKBERRY': 'Cameron', 'GRAND CHENIER': 'Cameron',
+    'GRAND LAKE': 'Cameron', 'JOHNSON BAYOU': 'Cameron',
 }
 
 # ── Politician party lookup (loaded from la_politicians_lookup.json) ───────────
