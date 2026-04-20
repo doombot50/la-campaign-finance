@@ -1086,11 +1086,16 @@ function applyTheme(theme) {
     attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd', maxZoom: 19
   }).addTo(map);
-  // Update Chart.js default text colour to match theme
+  // Update Chart.js default text colour and re-render charts only
+  // (CSS variables handle all other element colours automatically)
   const textColor = theme === 'light' ? '#57606a' : '#8b949e';
-  if (window.Chart) Chart.defaults.color = textColor;
-  // Re-render charts so axis/legend colours update
-  if (typeof renderAll === 'function') renderAll();
+  if (window.Chart) {
+    Chart.defaults.color = textColor;
+    // Only re-render charts if they've already been initialised
+    if (typeof renderPartyChart   === 'function') renderPartyChart();
+    if (typeof renderDonorTypeChart === 'function') renderDonorTypeChart();
+    if (typeof renderTrendChart   === 'function') renderTrendChart();
+  }
 }
 
 function toggleTheme() {
