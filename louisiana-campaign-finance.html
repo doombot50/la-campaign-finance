@@ -2007,7 +2007,7 @@ function showMapSpinner(show) {
 // ============================================================
 function detectDonorType(name) {
   const n = (name || '').toUpperCase();
-  if (/\bPAC\b/.test(n) || n.includes('POLITICAL ACTION') || n.includes('ACTION COMMITTEE') ||
+  if (n.includes('PAC') || n.includes('POLITICAL ACTION') || n.includes('ACTION COMMITTEE') ||
       n.includes('LEADERSHIP FUND') || n.includes('SUPER PAC') || n.includes('ACTION FUND')) return 'PAC';
   if (n.includes('AFL-CIO') || n.includes(' UNION') || n.includes('WORKERS ') ||
       n.includes('SEIU') || n.includes('IBEW') || n.includes('UAW') || n.includes('TEAMSTERS')) return 'ORG';
