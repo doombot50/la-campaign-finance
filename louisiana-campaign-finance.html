@@ -760,6 +760,7 @@
       <tbody id="tc-tbody"></tbody>
     </table>
     <div id="tc-empty" style="display:none;text-align:center;padding:24px;color:var(--muted);font-size:13px">No data</div>
+    <div class="pagination" id="tc-pagination"></div>
   </div>
 
   <!-- DATA TABLE -->
@@ -1012,6 +1013,9 @@ const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8765' 
 let proxyAvailable = false;
 let currentPage = 1;
 const PAGE_SIZE = 20;
+let tcPage = 1;
+const TC_PAGE_SIZE = 10;
+const TC_MAX = 50;
 let sortCol = 'date';
 let sortDir = 'desc';
 let topParishSort = 'total';
@@ -1271,6 +1275,7 @@ function applyFiltersAndRender() {
   });
 
   currentPage = 1;
+  tcPage = 1;
   renderAll();
 }
 
@@ -1832,12 +1837,16 @@ function renderTrendChart() {
 // ============================================================
 // TOP CONTRIBUTORS
 // ============================================================
+let _tcSorted = [];   // cached sorted list, rebuilt when filters change
+
 function renderTopContributors() {
-  const tbody  = document.getElementById('tc-tbody');
-  const empty  = document.getElementById('tc-empty');
+  const tbody = document.getElementById('tc-tbody');
+  const empty = document.getElementById('tc-empty');
+  const pag   = document.getElementById('tc-pagination');
 
   if (!filteredData.length) {
     tbody.innerHTML = '';
+    pag.innerHTML   = '';
     empty.style.display = 'block';
     return;
   }
@@ -1852,32 +1861,48 @@ function renderTopContributors() {
     agg[key].count += 1;
   });
 
-  const top10 = Object.values(agg)
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 50);
+  _tcSorted = Object.values(agg).sort((a, b) => b.total - a.total).slice(0, TC_MAX);
 
-  if (!top10.length) {
+  if (!_tcSorted.length) {
     tbody.innerHTML = '';
+    pag.innerHTML   = '';
     empty.style.display = 'block';
     return;
   }
 
-  const maxTotal = top10[0].total;
+  // Clamp page in case filter just reduced the result set
+  const totalPages = Math.ceil(_tcSorted.length / TC_PAGE_SIZE);
+  if (tcPage > totalPages) tcPage = totalPages;
+
+  _renderTCPage();
+}
+
+function _renderTCPage() {
+  const tbody = document.getElementById('tc-tbody');
+  const pag   = document.getElementById('tc-pagination');
+  const totalPages = Math.ceil(_tcSorted.length / TC_PAGE_SIZE);
+  const maxTotal   = _tcSorted[0].total;
 
   const typeLabel = { IND: 'Individual', PAC: 'PAC', BUS: 'Business',
                       UNION: 'Union', ORG: 'Organization', OTH: 'Other' };
   const typeColor = { IND: '#50b478', PAC: '#9966ff', BUS: '#8c8c8c',
                       UNION: '#4682b4', ORG: '#ffa500', OTH: '#5a5a5a' };
 
-  tbody.innerHTML = top10.map((c, i) => {
-    const pct  = maxTotal > 0 ? (c.total / maxTotal * 100).toFixed(1) : 0;
-    const type = c.donorType || 'OTH';
+  const start = (tcPage - 1) * TC_PAGE_SIZE;
+  const page  = _tcSorted.slice(start, start + TC_PAGE_SIZE);
+
+  tbody.innerHTML = page.map((c, i) => {
+    const rank  = start + i + 1;
+    const pct   = maxTotal > 0 ? (c.total / maxTotal * 100).toFixed(1) : 0;
+    const type  = c.donorType || 'OTH';
     const color = typeColor[type] || '#5a5a5a';
     const label = typeLabel[type] || type;
     return `<tr>
-      <td class="tc-rank">${i + 1}</td>
+      <td class="tc-rank">${rank}</td>
       <td>
-        <button class="tc-name-btn" onclick="showContributorProfile(${JSON.stringify(c.name)})">${escHtml(c.name)}</button>
+        <button class="tc-name-btn"
+          data-contributor="${escHtml(c.name)}"
+          onclick="showContributorProfile(this.dataset.contributor)">${escHtml(c.name)}</button>
       </td>
       <td><span class="tc-type">${escHtml(label)}</span></td>
       <td class="tc-count">${c.count.toLocaleString()}</td>
@@ -1889,6 +1914,18 @@ function renderTopContributors() {
       <td class="tc-amount">$${c.total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
     </tr>`;
   }).join('');
+
+  // Pagination controls
+  if (totalPages <= 1) { pag.innerHTML = ''; return; }
+  pag.innerHTML =
+    `<button class="page-btn" onclick="tcGoPage(${tcPage - 1})" ${tcPage === 1 ? 'disabled' : ''}>‹ Prev</button>` +
+    `<span class="page-info">${start + 1}–${Math.min(start + TC_PAGE_SIZE, _tcSorted.length)} of ${_tcSorted.length}</span>` +
+    `<button class="page-btn" onclick="tcGoPage(${tcPage + 1})" ${tcPage === totalPages ? 'disabled' : ''}>Next ›</button>`;
+}
+
+function tcGoPage(p) {
+  tcPage = p;
+  _renderTCPage();
 }
 
 // TABLE
