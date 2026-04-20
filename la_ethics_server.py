@@ -372,6 +372,18 @@ def _parse_contribution_row(row):
     state_csv        = (row.get('ContributorState') or '').strip().upper()
     contributor_state = state_csv or _zip_to_state(zip_raw)
 
+    # Louisiana Clerks of Court are always in-state, but the Ethics source data
+    # sometimes has a wrong state code (e.g. "AR") for these entries.
+    # Override to LA whenever the contributor is a Clerk of Court that is NOT
+    # a campaign committee (i.e. the actual clerk's office, not "Jane Doe for CoC").
+    contributor_name_upper = (row.get('ContributorName') or '').upper()
+    is_la_clerk = (
+        'CLERK OF COURT' in contributor_name_upper
+        and not re.search(r'\bFOR\b.*\bCLERK\b', contributor_name_upper)
+    )
+    if is_la_clerk:
+        contributor_state = 'LA'
+
     # Only map to a Louisiana parish when the contributor is actually from Louisiana.
     # Out-of-state contributors get parish='Out of State' so "Alexandria, VA" is never
     # mistaken for Alexandria in Rapides Parish, and the LA map stays accurate.
