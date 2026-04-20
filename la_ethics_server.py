@@ -417,7 +417,13 @@ def _parse_contribution_row(row):
                                   # Payments from any parish Clerk of Court to a party
                                   # committee are qualifying/filing fees forwarded by the
                                   # clerk — flag them even when notes are blank.
-                                  or 'CLERK OF COURT' in (row.get('ContributorName') or '').upper()
+                                  # Exclude campaign committees running FOR clerk of court
+                                  # (e.g. "Jane Doe for Clerk of Court") — those are ordinary
+                                  # contributor-to-candidate contributions, not filing fees.
+                                  or (
+                                      'CLERK OF COURT' in (row.get('ContributorName') or '').upper()
+                                      and not re.search(r'\bFOR\b.*\bCLERK\b', (row.get('ContributorName') or '').upper())
+                                  )
                               ),
     }
 
