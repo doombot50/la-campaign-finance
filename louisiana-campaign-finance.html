@@ -20,6 +20,38 @@
     --text: #e6edf3;
     --muted: #8b949e;
     --purple: #7b5ea7;
+    /* Derived tokens used for specific elements */
+    --surface: #0f1319;
+    --tooltip-bg: rgba(22,27,34,0.97);
+    --btn-active-text: #000;
+    --badge-dem-text: #9fc8ff;   --badge-dem-bg: rgba(33,102,172,0.18);
+    --badge-rep-text: #ff8888;   --badge-rep-bg: rgba(215,48,39,0.18);
+    --badge-oth-text: #80e040;   --badge-oth-bg: rgba(77,172,38,0.18);
+    --badge-pac-text: #bf9fff;   --badge-pac-bg: rgba(153,102,255,0.18);
+    --badge-org-text: #ffcc66;   --badge-org-bg: rgba(255,165,0,0.15);
+    --badge-bus-text: #aaaaaa;   --badge-bus-bg: rgba(100,100,100,0.18);
+    --badge-ind-text: #80c8a0;   --badge-ind-bg: rgba(80,180,120,0.15);
+    --amount-color: #4caf7d;
+    --tile-url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  }
+  [data-theme="light"] {
+    --bg: #f6f8fa;
+    --card: #ffffff;
+    --gold: #a07820;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --muted: #57606a;
+    --surface: #edf0f3;
+    --tooltip-bg: rgba(255,255,255,0.97);
+    --btn-active-text: #fff;
+    --badge-dem-text: #1565c0;   --badge-dem-bg: rgba(33,102,172,0.12);
+    --badge-rep-text: #b71c1c;   --badge-rep-bg: rgba(215,48,39,0.12);
+    --badge-oth-text: #2e7d32;   --badge-oth-bg: rgba(77,172,38,0.12);
+    --badge-pac-text: #6a1b9a;   --badge-pac-bg: rgba(153,102,255,0.12);
+    --badge-org-text: #e65100;   --badge-org-bg: rgba(255,165,0,0.12);
+    --badge-bus-text: #424242;   --badge-bus-bg: rgba(100,100,100,0.12);
+    --badge-ind-text: #1b5e20;   --badge-ind-bg: rgba(80,180,120,0.12);
+    --amount-color: #1a7a45;
   }
   html { scroll-behavior: smooth; }
   body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; }
@@ -66,7 +98,7 @@
   .ctrl-input.amount { width: 90px; }
   .ctrl-input.search { width: 180px; }
   .btn-load {
-    background: var(--gold); color: #000; border: none; padding: 7px 20px;
+    background: var(--gold); color: var(--btn-active-text); border: none; padding: 7px 20px;
     border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px;
     transition: opacity 0.2s; white-space: nowrap;
   }
@@ -133,7 +165,7 @@
     border: 1px solid var(--border); background: transparent; color: var(--muted);
     transition: all 0.2s;
   }
-  .map-toggle-btn.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 600; }
+  .map-toggle-btn.active { background: var(--gold); color: var(--btn-active-text); border-color: var(--gold); font-weight: 600; }
   #map { height: 100%; min-height: 480px; padding-top: 44px; }
   .map-spinner {
     display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
@@ -149,7 +181,7 @@
   /* SELECTED PARISH PANEL */
   #selected-panel {
     display: none; position: absolute; bottom: 40px; left: 10px; z-index: 500;
-    background: rgba(22,27,34,0.95); border: 1px solid var(--gold); border-radius: 8px;
+    background: var(--tooltip-bg); border: 1px solid var(--gold); border-radius: 8px;
     padding: 12px 16px; min-width: 200px; backdrop-filter: blur(4px);
   }
   #selected-panel h4 { color: var(--gold); margin-bottom: 8px; font-size: 14px; }
@@ -262,19 +294,19 @@
   }
   .party-badge.dem { background: rgba(33,102,172,0.25); color: #64b0ff; border: 1px solid rgba(33,102,172,0.4); }
   .party-badge.rep { background: rgba(215,48,39,0.25); color: #ff7070; border: 1px solid rgba(215,48,39,0.4); }
-  .party-badge.oth { background: rgba(77,172,38,0.25); color: #80e040; border: 1px solid rgba(77,172,38,0.4); }
-  .party-badge.pac     { background: rgba(153,102,255,0.2); color: #bf9fff; border: 1px solid rgba(153,102,255,0.4); }
-  .party-badge.pac-dem { background: rgba(33,102,172,0.15); color: #9fc8ff; border: 1px solid rgba(0,100,200,0.5); }
-  .party-badge.pac-rep { background: rgba(215,48,39,0.15);  color: #ffaaaa; border: 1px solid rgba(200,0,0,0.5); }
-  .party-badge.org     { background: rgba(255,165,0,0.15);  color: #ffcc66; border: 1px solid rgba(255,165,0,0.4); }
-  .party-badge.bus     { background: rgba(100,100,100,0.2); color: #aaaaaa; border: 1px solid rgba(120,120,120,0.4); }
-  .party-badge.ind     { background: rgba(80,180,120,0.15); color: #80c8a0; border: 1px solid rgba(80,180,120,0.3); }
+  .party-badge.oth     { background: var(--badge-oth-bg); color: var(--badge-oth-text); border: 1px solid var(--badge-oth-bg); }
+  .party-badge.pac     { background: var(--badge-pac-bg); color: var(--badge-pac-text); border: 1px solid var(--badge-pac-bg); }
+  .party-badge.pac-dem { background: var(--badge-dem-bg); color: var(--badge-dem-text); border: 1px solid var(--badge-dem-bg); }
+  .party-badge.pac-rep { background: var(--badge-rep-bg); color: var(--badge-rep-text); border: 1px solid var(--badge-rep-bg); }
+  .party-badge.org     { background: var(--badge-org-bg); color: var(--badge-org-text); border: 1px solid var(--badge-org-bg); }
+  .party-badge.bus     { background: var(--badge-bus-bg); color: var(--badge-bus-text); border: 1px solid var(--badge-bus-bg); }
+  .party-badge.ind     { background: var(--badge-ind-bg); color: var(--badge-ind-text); border: 1px solid var(--badge-ind-bg); }
   .source-badge {
     display: inline-block; padding: 2px 7px; border-radius: 4px;
     font-size: 11px; font-weight: 700;
   }
   .source-badge.la { background: rgba(200,169,81,0.2); color: var(--gold); border: 1px solid rgba(200,169,81,0.4); }
-  .amount-cell { color: #4caf7d; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .amount-cell { color: var(--amount-color); font-weight: 600; font-variant-numeric: tabular-nums; }
   .empty-state {
     text-align: center; padding: 48px 20px; color: var(--muted);
   }
@@ -289,7 +321,7 @@
     transition: all 0.2s;
   }
   .page-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
-  .page-btn.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
+  .page-btn.active { background: var(--gold); color: var(--btn-active-text); border-color: var(--gold); font-weight: 700; }
   .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
   .page-info { font-size: 12px; color: var(--muted); }
 
@@ -305,7 +337,7 @@
   tr.detail-row.filing-fee-row td { border-left: 3px solid #e0782a; }
   .detail-panel {
     padding: 14px 16px 16px 36px;
-    background: #0f1319;
+    background: var(--surface);
     animation: slideDown 0.15s ease-out;
   }
   @keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
@@ -360,7 +392,7 @@
     display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
   }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .status-dot.ok { background: #4caf7d; box-shadow: 0 0 6px #4caf7d; }
+  .status-dot.ok { background: var(--amount-color); box-shadow: 0 0 6px var(--amount-color); }
   .status-dot.err { background: #d73027; box-shadow: 0 0 6px #d73027; }
   .status-dot.loading { background: var(--gold); animation: pulse 1s ease-in-out infinite; }
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
@@ -423,7 +455,7 @@
     color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
     border-bottom: 1px solid var(--border); white-space: nowrap;
   }
-  .cp-table td { padding: 8px 10px; border-bottom: 1px solid rgba(48,54,61,0.5); vertical-align: top; }
+  .cp-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
   .cp-table tr:last-child td { border-bottom: none; }
   .cp-table tr:hover td { background: rgba(200,169,81,0.04); }
   .cp-amount { font-weight: 700; color: var(--gold); white-space: nowrap; }
@@ -441,14 +473,14 @@
   footer p { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
 
   /* LEAFLET OVERRIDES */
-  .leaflet-container { background: #0d1117 !important; }
+  .leaflet-container { background: var(--bg) !important; }
   .leaflet-control-zoom a { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
-  .leaflet-control-zoom a:hover { background: var(--gold) !important; color: #000 !important; }
+  .leaflet-control-zoom a:hover { background: var(--gold) !important; color: var(--btn-active-text) !important; }
   .leaflet-popup-content-wrapper { background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); }
   .leaflet-popup-tip { background: var(--card); }
   /* Override Leaflet's default white tooltip with dark theme */
   .leaflet-tooltip {
-    background: rgba(22,27,34,0.97) !important;
+    background: var(--tooltip-bg) !important;
     border: 1px solid var(--border) !important;
     border-radius: 7px !important;
     color: var(--text) !important;
@@ -468,7 +500,7 @@
 
   /* LEGEND */
   .map-legend {
-    background: rgba(22,27,34,0.92); border: 1px solid var(--border);
+    background: var(--tooltip-bg); border: 1px solid var(--border);
     border-radius: 8px; padding: 10px 12px; font-size: 11px; line-height: 1.8;
     backdrop-filter: blur(4px);
   }
@@ -507,6 +539,10 @@
       <div class="header-title">Louisiana Campaign Finance Dashboard</div>
       <div class="header-subtitle">Louisiana State Ethics campaign finance data</div>
     </div>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode"
+      style="margin-left:auto;background:transparent;border:1px solid var(--border);
+             color:var(--muted);border-radius:6px;padding:5px 10px;cursor:pointer;
+             font-size:16px;line-height:1;transition:all 0.2s;flex-shrink:0">🌙</button>
   </div>
 </header>
 
@@ -1033,13 +1069,42 @@ let cpCurrentContribs = [];
 let cpCurrentName = '';
 
 // ============================================================
+// ============================================================
+// THEME TOGGLE
+// ============================================================
+const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+let tileLayer = null;
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('theme-toggle').textContent = theme === 'light' ? '🌙' : '☀️';
+  localStorage.setItem('cf-theme', theme);
+  // Swap map tiles
+  if (tileLayer) map.removeLayer(tileLayer);
+  tileLayer = L.tileLayer(theme === 'light' ? TILE_LIGHT : TILE_DARK, {
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(map);
+  // Update Chart.js default text colour to match theme
+  const textColor = theme === 'light' ? '#57606a' : '#8b949e';
+  if (window.Chart) Chart.defaults.color = textColor;
+  // Re-render charts so axis/legend colours update
+  if (typeof renderAll === 'function') renderAll();
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// ============================================================
 // INIT MAP
 // ============================================================
 const map = L.map('map', {zoomControl: true}).setView([31.0, -91.8], 7);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-  subdomains: 'abcd', maxZoom: 19
-}).addTo(map);
+// Tile layer initialised by applyTheme() below
+let _savedTheme = localStorage.getItem('cf-theme') || 'dark';
+applyTheme(_savedTheme);
 
 // Legend
 const legend = L.control({position:'bottomright'});
