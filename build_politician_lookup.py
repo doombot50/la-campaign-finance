@@ -334,6 +334,14 @@ CURATED = [
     ('VINCENT',     'ST BLANC',      'REP', 'State Representative',      [2016, 2020, 2024]),  # Vinney (nickname)
     ('MICHAEL',     'FESI',          'REP', 'State Representative',      [2016, 2020]),    # Mike
     ('ROBERT',      'ARDOIN',        'REP', 'Secretary of State',        [2018, 2019, 2023]),  # Kyle (middle)
+    # ── Quoted-nickname aliases (Ethics uses "Sid", "Stitch", "Tom" forms) ────────
+    # The normalizer strips quotes so "Emile Sid Edwards" is the key to match.
+    ('EMILE',      'EDWARDS',       'REP', 'Local Official',            [2020, 2024]),  # "Sid"
+    ('SID',        'EDWARDS',       'REP', 'Local Official',            [2020, 2024]),  # Emile "Sid"
+    ('STITCH',     'GUILLORY',      'REP', 'State Representative',      [2008, 2012, 2016]),  # Gary "Stitch"
+    ('TOM',        'ARCENEAUX',     'REP', 'State Representative',      [2008, 2012]),  # already exists but confirm
+    ('MICHAEL',    'COOPER',        'REP', 'Local Official',            [2020, 2024]),  # Michael (Mike) Cooper
+    ('MIKE',       'COOPER',        'REP', 'Local Official',            [2020, 2024]),
     # ── Additional current/recent legislators not previously listed ────────────
     ('HELENA',      'MORENO',        'DEM', 'State Senator',             [2020, 2024]),
     ('JOHN',        'STEFANSKI',     'REP', 'State Representative',      [2016, 2020, 2024]),
@@ -381,6 +389,21 @@ CURATED = [
     ('SHARON',     'BROOME',       'DEM', 'Mayor-President (EBR)',    [2016, 2020]),
     ('JEFF',       'JEFF',         'DEM', 'Mayor-President (EBR)',    []),  # placeholder
     ('MIKE',       'MICHOT',       'REP', 'State Senator',           [2004, 2008]),
+    # Sheriffs / DAs / local executives
+    ('JASON',      'ARD',          'REP', 'Sheriff (Livingston)',     [2016, 2020, 2024]),
+    ('HILLAR',     'MOORE',        'DEM', 'District Attorney (EBR)', [2008, 2012, 2016, 2020, 2024]),
+    ('EDWIN',      'SHORTY',       'DEM', 'Parish President (St. John)', [2016, 2020, 2024]),
+    ('CADE',       'COLE',         'REP', 'State Representative',    [2020, 2024]),
+    ('MONIQUE',    'BOULET',       'DEM', 'Gubernatorial Candidate', [2023]),
+    ('MICHELLE',   'WOODFORK',     'DEM', 'New Orleans Candidate',   [2022, 2024]),
+    ('RANDALL',    'DELATTE',      'REP', 'State Representative',    [2016, 2020, 2024]),
+    ('GERALD',     'STICKER',      'DEM', 'Local Official',          [2020, 2024]),
+    ('BECKET',     'BREAUX',       'DEM', 'Local Official',          [2020, 2024]),
+    ('HOLLY',      'FRIEDMAN',     'DEM', 'New Orleans Candidate',   [2018, 2022]),
+    ('RICKY',      'TEMPLET',      'REP', 'Local Official',          [2020, 2024]),
+    ('DUSTIN',     'YATES',        'REP', 'Local Official',          [2020, 2024]),
+    ('BLAIR',      'EDWARDS',      'DEM', 'Local Official',          [2020, 2024]),
+    ('CALVIN',     'DUNCAN',       'DEM', 'Local Official',          [2020, 2024]),
     # Additional US House members
     ('CEDRIC',     'RICHMOND',     'DEM', 'House',                   [2010, 2012, 2014, 2016, 2018, 2020]),
     ('BILL',       'JEFFERSON',    'DEM', 'House',                   []),
@@ -501,8 +524,8 @@ def fetch_sos_candidates(min_year: int = 2010) -> dict:
     ]
     print(f'  SoS: {len(elections)} elections since {min_year}')
 
-    raw: dict = {}               # norm_name -> {party, office, date}
-    major_election_blobs = []    # (blob_date, elec_date) for pass 2
+    raw: dict = {}          # norm_name -> {party, office, date}
+    all_election_blobs = [] # (blob_date, elec_date) — every election for pass 2
 
     # ── Pass 1: multiparish (statewide + legislature) ─────────────────────────
     print('  Pass 1: multiparish races …')
@@ -516,25 +539,28 @@ def fetch_sos_candidates(min_year: int = 2010) -> dict:
         races = _extract_races(data)
         _ingest_races(races, raw, elec['ElectionDate'])
 
-        # Detect major 4-year elections: have state legislative races (level 200/205)
-        LEGIS_LEVELS = {'200', '205'}
-        if any(r.get('OfficeLevel', '') in LEGIS_LEVELS for r in races):
-            major_election_blobs.append((blob_date, elec['ElectionDate']))
+        # Queue every election for Pass 2, not just major 4-year ones.
+        # Municipal elections (New Orleans mayor, city council, etc.) run on
+        # separate schedules with no legislative races, so they only appear in
+        # parish-level data.  Special elections to fill vacancies are the same.
+        all_election_blobs.append((blob_date, elec['ElectionDate']))
 
         if (i + 1) % 25 == 0 or (i + 1) == len(elections):
             print(f'    … {i + 1}/{len(elections)} done')
         time.sleep(0.15)
 
     print(f'  Pass 1 complete: {len(raw)} candidates from multiparish races')
-    print(f'  {len(major_election_blobs)} major 4-year elections detected for parish-level pass')
+    print(f'  {len(all_election_blobs)} elections queued for parish-level pass')
 
-    # ── Pass 2: parish-level races for major elections ─────────────────────────
+    # ── Pass 2: parish-level races for ALL elections ───────────────────────────
     # Covers sheriffs, assessors, coroners, parish presidents, clerks of court,
-    # city council, school board, etc.
-    if major_election_blobs:
-        print('  Pass 2: parish-level races (64 parishes × major elections) …')
+    # city council, school board, mayors, and special elections.
+    # ParishesInElection.htm limits requests to only the parishes actually
+    # involved — a one-parish special election costs just 1 request, not 64.
+    if all_election_blobs:
+        print('  Pass 2: parish-level races (all elections) …')
         total_parish_requests = 0
-        for blob_date, elec_date in major_election_blobs:
+        for blob_date, elec_date in all_election_blobs:
             # Get the parish list for this election (IDs are zero-padded 01–64)
             parishes_data = _sos_fetch(f'{blob_date}/ParishesInElection.htm')
             if not parishes_data:
@@ -555,8 +581,8 @@ def fetch_sos_candidates(min_year: int = 2010) -> dict:
 
             print(f'    … {elec_date} done ({len(parish_ids)} parishes)')
 
-        print(f'  Pass 2 complete: {total_parish_requests} parish requests, '
-              f'{len(raw)} total candidates')
+        print(f'  Pass 2 complete: {total_parish_requests} parish requests across '
+              f'{len(all_election_blobs)} elections, {len(raw)} total candidates')
 
     # ── Build final lookup dict ────────────────────────────────────────────────
     lookup: dict = {}

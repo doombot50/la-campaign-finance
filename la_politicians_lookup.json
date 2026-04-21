@@ -2578,6 +2578,86 @@
     ],
     "source": "curated"
   },
+  "EMILE EDWARDS": {
+    "party": "REP",
+    "first": "EMILE",
+    "last": "EDWARDS",
+    "office": "Local Official",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "SID EDWARDS": {
+    "party": "REP",
+    "first": "SID",
+    "last": "EDWARDS",
+    "office": "Local Official",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "STITCH GUILLORY": {
+    "party": "REP",
+    "first": "STITCH",
+    "last": "GUILLORY",
+    "office": "State Representative",
+    "election_years": [
+      2008,
+      2012,
+      2016
+    ],
+    "source": "curated"
+  },
+  "GUILLORY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "TOM ARCENEAUX": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Mayor -- City of Shreveport",
+    "election_date": "12/10/2022"
+  },
+  "ARCENEAUX": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Mayor -- City of Shreveport",
+    "election_date": "12/10/2022"
+  },
+  "MICHAEL COOPER": {
+    "party": "REP",
+    "first": "MICHAEL",
+    "last": "COOPER",
+    "office": "Local Official",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "COOPER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "PSC -- District 1 - Republican Party",
+    "election_date": "05/16/2026"
+  },
+  "MIKE COOPER": {
+    "party": "REP",
+    "first": "MIKE",
+    "last": "COOPER",
+    "office": "Local Official",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
   "HELENA MORENO": {
     "party": "DEM",
     "source": "SoS",
@@ -2794,18 +2874,6 @@
     ],
     "source": "curated"
   },
-  "ARCENEAUX": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Mayor -- City of Shreveport",
-    "election_date": "12/10/2022"
-  },
-  "TOM ARCENEAUX": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Mayor -- City of Shreveport",
-    "election_date": "12/10/2022"
-  },
   "JEAN PAUL MORRELL": {
     "party": "DEM",
     "first": "JEAN PAUL",
@@ -2842,12 +2910,6 @@
       2016
     ],
     "source": "curated"
-  },
-  "GUILLORY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/08/2016"
   },
   "JULIOUS SIMS": {
     "party": "DEM",
@@ -3142,6 +3204,195 @@
     ],
     "source": "curated"
   },
+  "JASON ARD": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Sheriff",
+    "election_date": "10/24/2015"
+  },
+  "ARD": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "RSCC Member -- 13th Senatorial District, Division C",
+    "election_date": "12/05/2020"
+  },
+  "HILLAR MOORE": {
+    "party": "DEM",
+    "first": "HILLAR",
+    "last": "MOORE",
+    "office": "District Attorney (EBR)",
+    "election_years": [
+      2008,
+      2012,
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "EDWIN SHORTY": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Constable -- 2nd City Court",
+    "election_date": "11/06/2012"
+  },
+  "SHORTY": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Sheriff",
+    "election_date": "10/11/2025"
+  },
+  "CADE COLE": {
+    "party": "REP",
+    "first": "CADE",
+    "last": "COLE",
+    "office": "State Representative",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "COLE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Governor",
+    "election_date": "10/14/2023"
+  },
+  "MONIQUE BOULET": {
+    "party": "DEM",
+    "first": "MONIQUE",
+    "last": "BOULET",
+    "office": "Gubernatorial Candidate",
+    "election_years": [
+      2023
+    ],
+    "source": "curated"
+  },
+  "BOULET": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "City-Parish Mayor-President",
+    "election_date": "11/18/2023"
+  },
+  "MICHELLE WOODFORK": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Sheriff",
+    "election_date": "10/11/2025"
+  },
+  "WOODFORK": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Sheriff",
+    "election_date": "10/11/2025"
+  },
+  "RANDALL DELATTE": {
+    "party": "REP",
+    "first": "RANDALL",
+    "last": "DELATTE",
+    "office": "State Representative",
+    "election_years": [
+      2016,
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "DELATTE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Parish President",
+    "election_date": "10/14/2023"
+  },
+  "GERALD STICKER": {
+    "party": "DEM",
+    "first": "GERALD",
+    "last": "STICKER",
+    "office": "Local Official",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "STICKER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Sheriff",
+    "election_date": "11/18/2023"
+  },
+  "BECKET BREAUX": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Sheriff",
+    "election_date": "10/12/2019"
+  },
+  "BREAUX": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "RPEC Member(s) -- at Large",
+    "election_date": "07/11/2020"
+  },
+  "HOLLY FRIEDMAN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilmember -- District A",
+    "election_date": "11/15/2025"
+  },
+  "FRIEDMAN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "State Representative -- 105th Representative District",
+    "election_date": "10/22/2011"
+  },
+  "RICKY TEMPLET": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Councilman -- District 1",
+    "election_date": "10/22/2011"
+  },
+  "TEMPLET": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Councilman -- District 1",
+    "election_date": "10/22/2011"
+  },
+  "DUSTIN YATES": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Mayor -- City of St. George",
+    "election_date": "03/29/2025"
+  },
+  "YATES": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Mayor -- City of St. George",
+    "election_date": "03/29/2025"
+  },
+  "BLAIR EDWARDS": {
+    "party": "DEM",
+    "first": "BLAIR",
+    "last": "EDWARDS",
+    "office": "Local Official",
+    "election_years": [
+      2020,
+      2024
+    ],
+    "source": "curated"
+  },
+  "CALVIN DUNCAN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Clerk -- Criminal District Court",
+    "election_date": "11/15/2025"
+  },
+  "DUNCAN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Senator -- 12th Senatorial District",
+    "election_date": "10/24/2015"
+  },
   "CEDRIC RICHMOND": {
     "party": "DEM",
     "source": "SoS",
@@ -3348,12 +3599,6 @@
     "office": "Member of School Board -- District D",
     "election_date": "11/06/2018"
   },
-  "BREAUX": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "RPEC Member(s) -- at Large",
-    "election_date": "07/11/2020"
-  },
   "BOB LIVINGSTON": {
     "party": "REP",
     "first": "BOB",
@@ -3382,422 +3627,17 @@
     "office": "Aldermen -- Town of Haughton",
     "election_date": "11/08/2016"
   },
-  "MURIEL WAYNE ABLES": {
-    "party": "DEM",
-    "first": "MURIEL WAYNE",
-    "last": "ABLES",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "ABLES": {
+  "NICHOLAS NICK ALBARES": {
     "party": "DEM",
     "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/04/2014"
-  },
-  "RALPH LEE ABRAHAM": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "12/06/2014"
-  },
-  "QUENTIN ANTHONY ANDERSON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "ANDERSON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "ROBERT JON ANDERSON": {
-    "party": "DEM",
-    "first": "ROBERT JON",
-    "last": "ANDERSON",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2018,
-      2020
-    ],
-    "source": "FEC"
-  },
-  "SCOTT ANGELLE": {
-    "party": "REP",
-    "first": "SCOTT",
-    "last": "ANGELLE",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "ANGELLE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "12/10/2016"
-  },
-  "ANJANITA MONIQUE APPEANING": {
-    "party": "REP",
-    "first": "ANJANITA MONIQUE",
-    "last": "APPEANING",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "APPEANING": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Representative --  66th Representative District",
-    "election_date": "10/14/2023"
-  },
-  "CHELSEA ARDOIN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Councilmember -- District D",
-    "election_date": "11/13/2021"
-  },
-  "RANDALL STEVEN ARRINGTON": {
-    "party": "REP",
-    "first": "RANDALL STEVEN",
-    "last": "ARRINGTON",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "ARRINGTON": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 1st Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "RALPH W BAUCUM": {
-    "party": "REP",
-    "first": "RALPH W",
-    "last": "BAUCUM",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "BAUCUM": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "BRIAN T BELZER": {
-    "party": "REP",
-    "first": "BRIAN T",
-    "last": "BELZER",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "BELZER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "CLASTON BERNARD": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Council Member -- Division D, City of Gonzales",
-    "election_date": "11/06/2012"
-  },
-  "BERNARD": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Council Member -- Division D, City of Gonzales",
-    "election_date": "11/06/2012"
-  },
-  "JAQUELINE YVONNE BLANEY": {
-    "party": "DEM",
-    "first": "JAQUELINE YVONNE",
-    "last": "BLANEY",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "BLANEY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Member of School Board -- District  2",
-    "election_date": "11/08/2022"
-  },
-  "CHARLES W BOUSTANY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "12/08/2012"
-  },
-  "HARRIS BROWN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/04/2014"
-  },
-  "BROWN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "RSCC Member --  8th Senatorial District, Division B",
-    "election_date": "12/05/2020"
-  },
-  "TRACIE BURKE": {
-    "party": "DEM",
-    "first": "TRACIE",
-    "last": "BURKE",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "BURKE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "RSCC Member --  1st Senatorial District, Division D",
-    "election_date": "12/05/2020"
-  },
-  "CONRAD ROBERTS CABLE": {
-    "party": "DEM",
-    "first": "CONRAD ROBERTS",
-    "last": "CABLE",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "CABLE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District - Democratic Party",
+    "office": "U. S. Senator -- Democratic Party",
     "election_date": "05/16/2026"
   },
-  "FOSTER LONNNIE CAMPBELL": {
-    "party": "DEM",
-    "first": "FOSTER LONNNIE",
-    "last": "CAMPBELL",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "CAMPBELL": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "RSCC Member -- District 23B",
-    "election_date": "03/23/2024"
-  },
-  "JOSEPH CAO": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Judge, Court of Appeal -- 4th Circuit at Large",
-    "election_date": "11/08/2022"
-  },
-  "CAO": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Judge, Court of Appeal -- 4th Circuit at Large",
-    "election_date": "11/08/2022"
-  },
-  "TROY A CARTER": {
+  "ALBARES": {
     "party": "DEM",
     "source": "SoS",
-    "office": "U. S. Representative -- 2nd Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "WILLIAM M CASSIDY": {
-    "party": "REP",
-    "first": "WILLIAM M",
-    "last": "CASSIDY",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2014,
-      2020,
-      2026
-    ],
-    "source": "FEC"
-  },
-  "SANDRA CHRISTOPHE": {
-    "party": "DEM",
-    "first": "SANDRA",
-    "last": "CHRISTOPHE",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2020,
-      2021
-    ],
-    "source": "FEC"
-  },
-  "CHRISTOPHE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "DANIEL A CLAITOR": {
-    "party": "REP",
-    "first": "DANIEL A",
-    "last": "CLAITOR",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "CLAITOR": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/04/2014"
-  },
-  "NORMAN NORM LEE CLARK": {
-    "party": "REP",
-    "first": "NORMAN NORM LEE",
-    "last": "CLARK",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "CLARK": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Member of Parish Council -- District 4",
-    "election_date": "11/08/2022"
-  },
-  "THOMAS PATRICK CLEMENTS": {
-    "party": "REP",
-    "first": "THOMAS PATRICK",
-    "last": "CLEMENTS",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2014,
-      2016
-    ],
-    "source": "FEC"
-  },
-  "CLEMENTS": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/04/2014"
-  },
-  "CHAD CONERLY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "03/20/2021"
-  },
-  "CONERLY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "03/20/2021"
-  },
-  "PHILLIP CONNER": {
-    "party": "DEM",
-    "first": "PHILLIP",
-    "last": "CONNER",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2018
-    ],
-    "source": "FEC"
-  },
-  "CONNER": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Justice of the Peace -- Justice of the Peace District 1",
-    "election_date": "11/08/2016"
-  },
-  "MISTI SMITH CORDELL": {
-    "party": "REP",
-    "first": "MISTI SMITH",
-    "last": "CORDELL",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "CORDELL": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "RPEC Member -- District C",
-    "election_date": "07/11/2020"
-  },
-  "MARKEDA ANN COTTONHAM": {
-    "party": "REP",
-    "first": "MARKEDA ANN",
-    "last": "COTTONHAM",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "COTTONHAM": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilman -- Metro District 10",
-    "election_date": "11/03/2020"
-  },
-  "DONALD L CRAWFORD": {
-    "party": "REP",
-    "first": "DONALD L",
-    "last": "CRAWFORD",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "CRAWFORD": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2016"
+    "office": "U. S. Senator -- Democratic Party",
+    "election_date": "05/16/2026"
   },
   "GARY CROCKETT": {
     "party": "DEM",
@@ -3811,1967 +3651,13 @@
     "office": "U. S. Senator -- Democratic Party",
     "election_date": "05/16/2026"
   },
-  "KATIE DARLING DARLING": {
-    "party": "DEM",
-    "first": "KATIE DARLING",
-    "last": "DARLING",
-    "office": "House",
-    "district": "01",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "DARLING": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 1st Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "ZACH DASHER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/04/2014"
-  },
-  "DASHER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/04/2014"
-  },
-  "DEVIN CHARLES DAVIS": {
-    "party": "DEM",
-    "first": "DEVIN CHARLES",
-    "last": "DAVIS",
-    "office": "House",
-    "district": "02",
-    "election_years": [
-      2024
-    ],
-    "source": "FEC"
-  },
-  "DAVIS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator -- Democratic Party",
-    "election_date": "05/16/2026"
-  },
   "JAMIE DAVIS": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Senator -- Democratic Party",
     "election_date": "05/16/2026"
   },
-  "LARRY DAVIS": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District - Republican Party",
-    "election_date": "05/16/2026"
-  },
-  "JOHN DAVID DAY": {
-    "party": "DEM",
-    "first": "JOHN DAVID",
-    "last": "DAY",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "DAY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District - Democratic Party",
-    "election_date": "05/16/2026"
-  },
-  "TRACY COLLENE DENDY": {
-    "party": "REP",
-    "first": "TRACY COLLENE",
-    "last": "DENDY",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "DENDY": {
-    "party": "REP",
-    "first": "TRACY COLLENE",
-    "last": "DENDY",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "JUSTIN DEWITT": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/06/2018"
-  },
-  "PAUL DIETZEL": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/04/2014"
-  },
-  "DIETZEL": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/04/2014"
-  },
-  "HUNTINGTON B DOWNER": {
-    "party": "REP",
-    "first": "HUNTINGTON B",
-    "last": "DOWNER",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2010
-    ],
-    "source": "FEC"
-  },
-  "DOWNER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District-Republican Party",
-    "election_date": "10/02/2010"
-  },
-  "LEE ANN DUGAS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 1st Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "DUGAS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 1st Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "MICHAEL CHARLES ECHOLS": {
-    "party": "REP",
-    "first": "MICHAEL CHARLES",
-    "last": "ECHOLS",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "DERRICK EDWARDS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Treasurer",
-    "election_date": "11/18/2017"
-  },
-  "EDWIN WASHINGTON EDWARDS": {
-    "party": "DEM",
-    "first": "EDWIN WASHINGTON",
-    "last": "EDWARDS",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "ULOMA EKPETE KAMA": {
-    "party": "DEM",
-    "first": "ULOMA",
-    "last": "EKPETE KAMA",
-    "office": "House",
-    "district": "02",
-    "election_years": [
-      2024
-    ],
-    "source": "FEC"
-  },
-  "EKPETE KAMA": {
-    "party": "DEM",
-    "first": "ULOMA",
-    "last": "EKPETE KAMA",
-    "office": "House",
-    "district": "02",
-    "election_years": [
-      2024
-    ],
-    "source": "FEC"
-  },
-  "GREGORY W LT COL ELLISON": {
-    "party": "REP",
-    "first": "GREGORY W LT COL",
-    "last": "ELLISON",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "ELLISON": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "JULIE CATHRYN EMERSON": {
-    "party": "REP",
-    "first": "JULIE CATHRYN",
-    "last": "EMERSON",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "EMERSON": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Representative --  39th Representative District",
-    "election_date": "10/24/2015"
-  },
-  "DANIL FAUST": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "State Representative --  93rd Representative District",
-    "election_date": "03/24/2018"
-  },
-  "FAUST": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "State Representative --  93rd Representative District",
-    "election_date": "03/24/2018"
-  },
-  "CATHRYN CAROLINE FAYARD": {
-    "party": "DEM",
-    "first": "CATHRYN CAROLINE",
-    "last": "FAYARD",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "FAYARD": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2016"
-  },
-  "CASSIE ERIN FELDER": {
-    "party": "REP",
-    "first": "CASSIE ERIN",
-    "last": "FELDER",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "FELDER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Justice of the Peace -- Justice of the Peace Ward 3",
-    "election_date": "03/24/2012"
-  },
-  "JESSEE CARLTON FLEENOR": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/06/2018"
-  },
-  "FLEENOR": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District - Democratic Party",
-    "election_date": "05/16/2026"
-  },
-  "JOHN C FLEMING": {
-    "party": "REP",
-    "first": "JOHN C",
-    "last": "FLEMING",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2016,
-      2026
-    ],
-    "source": "FEC"
-  },
-  "FLEMING": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Treasurer",
-    "election_date": "11/18/2023"
-  },
-  "LARRY W FOY": {
-    "party": "DEM",
-    "first": "LARRY W",
-    "last": "FOY",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "FOY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District - Democratic Party",
-    "election_date": "05/16/2026"
-  },
-  "JIM FRANCIS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 1st Congressional District",
-    "election_date": "11/06/2018"
-  },
-  "FRANCIS": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "PSC -- District 4",
-    "election_date": "11/08/2022"
-  },
-  "LINDSAY GARCIA": {
-    "party": "DEM",
-    "first": "LINDSAY",
-    "last": "GARCIA",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "GARCIA": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District - Democratic Party",
-    "election_date": "05/16/2026"
-  },
-  "STEVEN JUDE GAVI": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District-Democratic Party",
-    "election_date": "08/28/2010"
-  },
-  "GAVI": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District-Democratic Party",
-    "election_date": "08/28/2010"
-  },
-  "BRETT F GEYMANN": {
-    "party": "REP",
-    "first": "BRETT F",
-    "last": "GEYMANN",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "GEYMANN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "BEN GIBSON": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "GIBSON": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "PRISCILLA GONZALEZ": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "GONZALEZ": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "MILTON C GORDON": {
-    "party": "REP",
-    "first": "MILTON C",
-    "last": "GORDON",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2010
-    ],
-    "source": "FEC"
-  },
-  "GORDON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "DSCC Member --  69th Representative District, Office \"B\"",
-    "election_date": "07/11/2020"
-  },
-  "DUSTIN GRANGER": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Treasurer",
-    "election_date": "11/18/2023"
-  },
-  "GRANGER": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Treasurer",
-    "election_date": "11/18/2023"
-  },
-  "EUGENE J GREEN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "DSCC Member --  97th Representative District, Office \"B\"",
-    "election_date": "03/23/2024"
-  },
-  "MATTHEW GROMLICH": {
-    "party": "DEM",
-    "first": "MATTHEW",
-    "last": "GROMLICH",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "GROMLICH": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District - Democratic Party",
-    "election_date": "05/16/2026"
-  },
-  "JEFFREY D GUERRIERO": {
-    "party": "REP",
-    "first": "JEFFREY D",
-    "last": "GUERRIERO",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "GUERRIERO": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Senator -- 35th Senatorial District",
-    "election_date": "10/22/2011"
-  },
-  "ELBERT GUILLORY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "ELBERT LEE GUILLORY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "State Senator -- 24th Senatorial District",
-    "election_date": "11/19/2011"
-  },
-  "JOSHUA S GUILLORY": {
-    "party": "REP",
-    "first": "JOSHUA S",
-    "last": "GUILLORY",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2018,
-      2022
-    ],
-    "source": "FEC"
-  },
-  "BRAYLON HARRIS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "JOHN LANCE HARRIS": {
-    "party": "REP",
-    "first": "JOHN LANCE",
-    "last": "HARRIS",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2020
-    ],
-    "source": "FEC"
-  },
-  "MATTHEW HASTY": {
-    "party": "REP",
-    "first": "MATTHEW",
-    "last": "HASTY",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2020
-    ],
-    "source": "FEC"
-  },
-  "HASTY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "JACOB DORIAN PHIBIAN HEBERT": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "CLAY CAPTAIN HIGGINS": {
-    "party": "REP",
-    "first": "CLAY CAPTAIN",
-    "last": "HIGGINS",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2016,
-      2018,
-      2020,
-      2022,
-      2024,
-      2026
-    ],
-    "source": "FEC"
-  },
-  "HOLDEN HOGGATT": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "HOGGATT": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "MELVIN KIP HOLDEN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Mayor-President -- Metro Council, City of Baton Rouge",
-    "election_date": "11/06/2012"
-  },
-  "HOLDEN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "DSCC Member --  67th Representative District, Office \"A\"",
-    "election_date": "03/23/2024"
-  },
-  "CHRISTOPHER LEE HOLDER": {
-    "party": "REP",
-    "first": "CHRISTOPHER LEE",
-    "last": "HOLDER",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "HOLDER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Constable -- Justice of the Peace District  2",
-    "election_date": "11/04/2014"
-  },
-  "PAUL B HOLLIS": {
-    "party": "REP",
-    "first": "PAUL B",
-    "last": "HOLLIS",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "HOLLIS": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "BESE -- District 1 - Republican Party",
-    "election_date": "05/16/2026"
-  },
-  "KENNY HOUSTON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "HOUSTON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "WALTER EARL HUFF": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "HUFF": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "MARCUS LAMAR HUNTER": {
-    "party": "DEM",
-    "first": "MARCUS LAMAR",
-    "last": "HUNTER",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2013
-    ],
-    "source": "FEC"
-  },
-  "HUNTER": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "District Judge --  4th Judicial District Court, ES 1, Div. G",
-    "election_date": "11/06/2018"
-  },
-  "OLIVER LTCOL JENKINS": {
-    "party": "REP",
-    "first": "OLIVER LTCOL",
-    "last": "JENKINS",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "LAUREN JEWETT": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Member of School Board -- District 6",
-    "election_date": "12/10/2022"
-  },
-  "JEWETT": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Member of School Board -- District 6",
-    "election_date": "12/10/2022"
-  },
-  "HAROLD JOHN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 2nd Congressional District",
-    "election_date": "03/20/2021"
-  },
-  "JOHN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "RICHARD MICHAEL JOHN": {
-    "party": "REP",
-    "first": "RICHARD MICHAEL",
-    "last": "JOHN",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "CHRISTIAN RASHAD JOHNSON": {
-    "party": "REP",
-    "first": "CHRISTIAN RASHAD",
-    "last": "JOHNSON",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "GARY JOHNSON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilman -- District 2, City of Alexandria",
-    "election_date": "12/10/2022"
-  },
-  "JAMES MICHAEL JOHNSON": {
-    "party": "REP",
-    "first": "JAMES MICHAEL",
-    "last": "JOHNSON",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2016,
-      2018,
-      2020,
-      2022,
-      2024,
-      2026
-    ],
-    "source": "FEC"
-  },
-  "JORDAN JOHNSON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Member of School Board -- District  7",
-    "election_date": "11/08/2022"
-  },
-  "ROBERT ALLEN JOHNSON": {
-    "party": "DEM",
-    "first": "ROBERT ALLEN",
-    "last": "JOHNSON",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2013
-    ],
-    "source": "FEC"
-  },
-  "XAN JOHN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "J MARSHALL JONES": {
-    "party": "DEM",
-    "first": "J MARSHALL",
-    "last": "JONES",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "MYRON B KATZ": {
-    "party": "DEM",
-    "first": "MYRON B",
-    "last": "KATZ",
-    "office": "House",
-    "district": "01",
-    "election_years": [
-      2010
-    ],
-    "source": "FEC"
-  },
-  "KATZ": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "RSCC Member -- District  2B",
-    "election_date": "03/23/2024"
-  },
-  "GARY W KING": {
-    "party": "REP",
-    "first": "GARY W",
-    "last": "KING",
-    "office": "House",
-    "district": "01",
-    "election_years": [
-      2012
-    ],
-    "source": "FEC"
-  },
-  "DANY OHANNES KITISHIAN": {
-    "party": "REP",
-    "first": "DANY OHANNES",
-    "last": "KITISHIAN",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2024
-    ],
-    "source": "FEC"
-  },
-  "KITISHIAN": {
-    "party": "REP",
-    "first": "DANY OHANNES",
-    "last": "KITISHIAN",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2024
-    ],
-    "source": "FEC"
-  },
-  "ERICK KNEZEK": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "BESE -- District 7",
-    "election_date": "11/18/2023"
-  },
-  "KNEZEK": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "BESE -- District 7",
-    "election_date": "11/18/2023"
-  },
-  "ALBERT KYDER": {
-    "party": "REP",
-    "first": "ALBERT",
-    "last": "KYDER",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "KYDER": {
-    "party": "REP",
-    "first": "ALBERT",
-    "last": "KYDER",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "JESSE P LAGARDE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "LAGARDE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "GARY C LANDRIEU": {
-    "party": "DEM",
-    "first": "GARY C",
-    "last": "LANDRIEU",
-    "office": "House",
-    "district": "02",
-    "election_years": [
-      2012,
-      2014
-    ],
-    "source": "FEC"
-  },
-  "ROBERT KENT LANSDEN": {
-    "party": "REP",
-    "first": "ROBERT KENT",
-    "last": "LANSDEN",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2021
-    ],
-    "source": "FEC"
-  },
-  "LANSDEN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "03/20/2021"
-  },
-  "JOSUE LAROSE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 2nd Congressional District",
-    "election_date": "11/06/2012"
-  },
-  "LAROSE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 2nd Congressional District",
-    "election_date": "11/06/2012"
-  },
-  "TIA MARIE LEBRUN": {
-    "party": "DEM",
-    "first": "TIA MARIE",
-    "last": "LEBRUN",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2022,
-      2026
-    ],
-    "source": "FEC"
-  },
-  "LEBRUN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "MARTIN LEMELLE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "LEMELLE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "CHRIS LEOPOLD": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Representative -- 105th Representative District",
-    "election_date": "11/19/2011"
-  },
-  "LEOPOLD": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "State Representative -- 105th Representative District",
-    "election_date": "10/14/2023"
-  },
-  "LUKE JOSHUA LETLOW": {
-    "party": "REP",
-    "first": "LUKE JOSHUA",
-    "last": "LETLOW",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2020
-    ],
-    "source": "FEC"
-  },
-  "RICHARD LIEBERMAN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "LIEBERMAN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "GREGORY LIRETTE": {
-    "party": "REP",
-    "first": "GREGORY",
-    "last": "LIRETTE",
-    "office": "House",
-    "district": "02",
-    "election_years": [
-      2021
-    ],
-    "source": "FEC"
-  },
-  "LIRETTE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 2nd Congressional District",
-    "election_date": "03/20/2021"
-  },
-  "DANIEL ANTHONY LUX": {
-    "party": "REP",
-    "first": "DANIEL ANTHONY",
-    "last": "LUX",
-    "office": "House",
-    "district": "02",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "LUX": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 2nd Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "CHRISTY LYNCH": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 2nd Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "LYNCH": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 2nd Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "AUSTIN MAGEE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District - Republican Party",
-    "election_date": "05/16/2026"
-  },
-  "DONNA FAYE MAJOR": {
-    "party": "DEM",
-    "first": "DONNA FAYE",
-    "last": "MAJOR",
-    "office": "House",
-    "district": "01",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "MAJOR": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Aldermen -- Village of Rosedale",
-    "election_date": "11/05/2024"
-  },
-  "ROBERT L COL RET MANESS": {
-    "party": "REP",
-    "first": "ROBERT L COL RET",
-    "last": "MANESS",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2014,
-      2016
-    ],
-    "source": "FEC"
-  },
-  "MANESS": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Representative --  77th Representative District",
-    "election_date": "11/18/2017"
-  },
-  "MEL INARI MANUEL": {
-    "party": "DEM",
-    "first": "MEL INARI",
-    "last": "MANUEL",
-    "office": "House",
-    "district": "01",
-    "election_years": [
-      2024
-    ],
-    "source": "FEC"
-  },
-  "MANUEL": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 1st Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "CHARLES MARSALA": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2016"
-  },
-  "MARSALA": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Representative --  94th Representative District",
-    "election_date": "10/14/2023"
-  },
-  "JAMIE MAYO": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "12/06/2014"
-  },
-  "MAYO": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "12/06/2014"
-  },
-  "VANCE MICHAEL MCALLISTER": {
-    "party": "REP",
-    "first": "VANCE MICHAEL",
-    "last": "MCALLISTER",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "MCALLISTER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Senator -- 33rd Senatorial District",
-    "election_date": "10/24/2015"
-  },
-  "CRAIG MCCULLOCH": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/04/2014"
-  },
-  "MCCULLOCH": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilman -- District  A, City of Shreveport",
-    "election_date": "12/08/2018"
-  },
-  "DAN MCKAY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "City Judge -- City Court, City of Bunkie",
-    "election_date": "11/04/2014"
-  },
-  "MCKAY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "City Judge -- City Court, City of Bunkie",
-    "election_date": "11/04/2014"
-  },
-  "MICHAEL EDWARD MEBRUER": {
-    "party": "REP",
-    "first": "MICHAEL EDWARD",
-    "last": "MEBRUER",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "MEBRUER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District - Republican Party",
-    "election_date": "05/16/2026"
-  },
-  "DAVID ROLAND MELVILLE": {
-    "party": "DEM",
-    "first": "DAVID ROLAND",
-    "last": "MELVILLE",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2010
-    ],
-    "source": "FEC"
-  },
-  "MELVILLE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/02/2010"
-  },
-  "MANLIO VINICIO MENDOZA": {
-    "party": "DEM",
-    "first": "MANLIO VINICIO",
-    "last": "MENDOZA",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "MENDOZA": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 1st Congressional District",
-    "election_date": "11/06/2012"
-  },
-  "CHARLES DAVID METCALF": {
-    "party": "DEM",
-    "first": "CHARLES DAVID",
-    "last": "METCALF",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2018
-    ],
-    "source": "FEC"
-  },
-  "METCALF": {
-    "party": "DEM",
-    "first": "CHARLES DAVID",
-    "last": "METCALF",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2018
-    ],
-    "source": "FEC"
-  },
-  "MIMI METHVIN": {
-    "party": "DEM",
-    "first": "MIMI",
-    "last": "METHVIN",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2018
-    ],
-    "source": "FEC"
-  },
-  "METHVIN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/06/2018"
-  },
-  "JOSEPH KYLE MILLER": {
-    "party": "REP",
-    "first": "JOSEPH KYLE",
-    "last": "MILLER",
-    "office": "House",
-    "district": "07",
-    "election_years": [
-      2020
-    ],
-    "source": "FEC"
-  },
-  "LUKE MIXON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2022"
-  },
-  "MIXON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2022"
-  },
-  "JOSHUA MOROTT": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "MOROTT": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "JOHN CLYDE MORRIS": {
-    "party": "REP",
-    "first": "JOHN CLYDE",
-    "last": "MORRIS",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2013
-    ],
-    "source": "FEC"
-  },
-  "DUSTIN MURPHY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/03/2020"
-  },
-  "MURPHY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/03/2020"
-  },
-  "MICHAEL NICHOLS": {
-    "party": "REP",
-    "first": "MICHAEL",
-    "last": "NICHOLS",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "NICHOLS": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District - Republican Party",
-    "election_date": "05/16/2026"
-  },
-  "TANIA NYMAN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilman -- Metro District 12",
-    "election_date": "12/05/2020"
-  },
-  "NYMAN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilman -- Metro District 12",
-    "election_date": "12/05/2020"
-  },
-  "DESIREE ONTIVEROS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 2nd Congressional District",
-    "election_date": "03/20/2021"
-  },
-  "ONTIVEROS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 2nd Congressional District",
-    "election_date": "03/20/2021"
-  },
-  "CANDIDA PEARLL PAGEL": {
-    "party": "DEM",
-    "first": "CANDIDA PEARLL",
-    "last": "PAGEL",
-    "office": "House",
-    "district": "01",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "PAGEL": {
-    "party": "DEM",
-    "first": "CANDIDA PEARLL",
-    "last": "PAGEL",
-    "office": "House",
-    "district": "01",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "ABHAY PATEL": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2016"
-  },
-  "PATEL": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2016"
-  },
-  "THOMAS LANE PAYNE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "PAYNE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "JOSHUA A PELLERIN": {
-    "party": "DEM",
-    "first": "JOSHUA A",
-    "last": "PELLERIN",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "PELLERIN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2016"
-  },
-  "ADRIAN PERKINS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Mayor -- City of Shreveport",
-    "election_date": "12/08/2018"
-  },
-  "PERKINS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Mayor -- City of Shreveport",
-    "election_date": "12/08/2018"
-  },
-  "KAREN CARTER PETERSON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "State Senator --  5th Senatorial District",
-    "election_date": "10/12/2019"
-  },
-  "PETERSON": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "State Senator --  5th Senatorial District",
-    "election_date": "10/12/2019"
-  },
-  "ANTOINE PIERCE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilman -- Metro District  8",
-    "election_date": "11/08/2016"
-  },
-  "PIERCE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilman -- Metro District  8",
-    "election_date": "11/08/2016"
-  },
-  "BRODY PIERROTTIE": {
-    "party": "DEM",
-    "first": "BRODY",
-    "last": "PIERROTTIE",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2020
-    ],
-    "source": "FEC"
-  },
-  "PIERROTTIE": {
-    "party": "DEM",
-    "first": "BRODY",
-    "last": "PIERROTTIE",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2020
-    ],
-    "source": "FEC"
-  },
-  "HUNTER I PULLEN": {
-    "party": "REP",
-    "first": "HUNTER I",
-    "last": "PULLEN",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "PULLEN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/08/2022"
-  },
-  "LARRY RADER": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "RADER": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "AUGUST J RANTZ": {
-    "party": "REP",
-    "first": "AUGUST J",
-    "last": "RANTZ",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "RANTZ": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Representative --  31st Representative District",
-    "election_date": "11/16/2019"
-  },
-  "GROVER JOSEPH REES": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "REES": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "RON RICHARD": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "City Judge -- City Court, Division B, City of Lake Charles",
-    "election_date": "12/06/2014"
-  },
-  "RICHARD": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "DSCC Member --  29th Representative District, Office \"B\"",
-    "election_date": "03/23/2024"
-  },
-  "HARTWELL NEIL RISER": {
-    "party": "REP",
-    "first": "HARTWELL NEIL",
-    "last": "RISER",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2013
-    ],
-    "source": "FEC"
-  },
-  "RANDALL SCOTT ROBINSON": {
-    "party": "REP",
-    "first": "RANDALL SCOTT",
-    "last": "ROBINSON",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2020
-    ],
-    "source": "FEC"
-  },
-  "ROBINSON": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Representative --  15th Representative District",
-    "election_date": "10/14/2023"
-  },
-  "WELDON RUSSELL": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "10/19/2013"
-  },
-  "RUSSELL": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "District Attorney -- 17th Judicial District Court",
-    "election_date": "11/03/2020"
-  },
-  "ANDIE SAIZAN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/06/2018"
-  },
-  "SAIZAN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 6th Congressional District",
-    "election_date": "11/06/2018"
-  },
-  "BRANDON SANDAGE": {
-    "party": "REP",
-    "first": "BRANDON",
-    "last": "SANDAGE",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "SANDAGE": {
-    "party": "REP",
-    "first": "BRANDON",
-    "last": "SANDAGE",
-    "office": "House",
-    "district": "04",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "TAMMY MARIE SAVOIE": {
-    "party": "DEM",
-    "first": "TAMMY MARIE",
-    "last": "SAVOIE",
-    "office": "House",
-    "district": "01",
-    "election_years": [
-      2018
-    ],
-    "source": "FEC"
-  },
-  "SAVOIE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "State Representative --  23rd Representative District",
-    "election_date": "11/18/2023"
-  },
-  "KATHY W SEIDEN": {
-    "party": "REP",
-    "first": "KATHY W",
-    "last": "SEIDEN",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "SEIDEN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Council Member -- District  4",
-    "election_date": "11/18/2023"
-  },
-  "JACOB LEWIS SHAHEEN": {
-    "party": "REP",
-    "first": "JACOB LEWIS",
-    "last": "SHAHEEN",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2022
-    ],
-    "source": "FEC"
-  },
-  "SHAHEEN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Senator -- 27th Senatorial District",
-    "election_date": "11/13/2021"
-  },
-  "ERIC SKRMETTA": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "PSC -- District 1",
-    "election_date": "12/06/2014"
-  },
-  "SKRMETTA": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "PSC -- District 1",
-    "election_date": "12/06/2014"
-  },
-  "CARL RAY SMITH": {
-    "party": "REP",
-    "first": "CARL RAY",
-    "last": "SMITH",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "SANCHA SMITH": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "03/20/2021"
-  },
-  "PHILLIP SNOWDEN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "SNOWDEN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/03/2020"
-  },
-  "SCOTT RYAN SONNIER": {
-    "party": "REP",
-    "first": "SCOTT RYAN",
-    "last": "SONNIER",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2024
-    ],
-    "source": "FEC"
-  },
-  "SONNIER": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Mayor -- Town of Basile",
-    "election_date": "11/04/2014"
-  },
-  "MARK SPENCER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Senator -- Republican Party",
-    "election_date": "05/16/2026"
-  },
-  "SPENCER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Senator -- Republican Party",
-    "election_date": "05/16/2026"
-  },
-  "SYRITA STEIB": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2022"
-  },
-  "STEIB": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2022"
-  },
-  "SADI SUMMERLIN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "SUMMERLIN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "JOSEPH C SWIDER": {
-    "party": "DEM",
-    "first": "JOSEPH C",
-    "last": "SWIDER",
-    "office": "House",
-    "district": "01",
-    "election_years": [
-      2016
-    ],
-    "source": "FEC"
-  },
-  "SWIDER": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 1st Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "EDWARD L TARPLEY": {
-    "party": "REP",
-    "first": "EDWARD L",
-    "last": "TARPLEY",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "TARPLEY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "RSCC Member -- District 32H",
-    "election_date": "03/23/2024"
-  },
-  "CHARLES TREY THOMAS": {
-    "party": "REP",
-    "first": "CHARLES TREY",
-    "last": "THOMAS",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "VERONE A THOMAS": {
-    "party": "DEM",
-    "first": "VERONE A",
-    "last": "THOMAS",
-    "office": "House",
-    "district": "03",
-    "election_years": [
-      2018,
-      2020
-    ],
-    "source": "FEC"
-  },
-  "CHET D TRAYLOR": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Senator -- Republican Party",
-    "election_date": "08/28/2010"
-  },
-  "TRAYLOR": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "DSCC Member --  16th Representative District, Office \"B\"",
-    "election_date": "03/05/2016"
-  },
-  "RYAN TRUNDLE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/06/2018"
-  },
-  "TRUNDLE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 4th Congressional District",
-    "election_date": "11/06/2018"
-  },
-  "MICHAEL VALLIEN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "VALLIEN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "11/05/2024"
-  },
-  "HERMAN L VIDRINE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District",
-    "election_date": "11/08/2016"
-  },
-  "VIDRINE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "RSCC Member -- 14th Senatorial District, Division C",
-    "election_date": "12/05/2020"
-  },
-  "SHELDON CHARLES H LA VINCENT": {
-    "party": "REP",
-    "first": "SHELDON CHARLES H LA",
-    "last": "VINCENT",
-    "office": "House",
-    "district": "02",
-    "election_years": [
-      2021
-    ],
-    "source": "FEC"
-  },
-  "VINCENT": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Councilmen at Large -- City of DeRidder",
-    "election_date": "05/16/2026"
-  },
-  "JABARIE WALKER": {
-    "party": "DEM",
-    "first": "JABARIE",
-    "last": "WALKER",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "WALKER": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Representative -- 3rd Congressional District - Democratic Party",
-    "election_date": "05/16/2026"
-  },
-  "RICHARD J WARD": {
-    "party": "REP",
-    "first": "RICHARD J",
-    "last": "WARD",
-    "office": "House",
-    "district": "06",
-    "election_years": [
-      2014
-    ],
-    "source": "FEC"
-  },
-  "PHILLIP BLAKE WEATHERLY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "10/19/2013"
-  },
-  "WEATHERLY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District",
-    "election_date": "10/19/2013"
-  },
-  "PETER WENSTRUP": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/03/2020"
-  },
-  "WENSTRUP": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/03/2020"
-  },
-  "LENAR WHITNEY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Representative --  53rd Representative District",
-    "election_date": "11/21/2015"
-  },
-  "WHITNEY": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Representative --  53rd Representative District",
-    "election_date": "11/21/2015"
-  },
-  "DARTANYON A WILLIAMS": {
-    "party": "DEM",
-    "first": "DARTANYON A",
-    "last": "WILLIAMS",
-    "office": "Senate",
-    "district": "00",
-    "election_years": [
-      2020
-    ],
-    "source": "FEC"
-  },
-  "PETER WILLIAMS": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator",
-    "election_date": "11/08/2016"
-  },
-  "SAMUEL LEE WYATT": {
-    "party": "REP",
-    "first": "SAMUEL LEE",
-    "last": "WYATT",
-    "office": "House",
-    "district": "05",
-    "election_years": [
-      2026
-    ],
-    "source": "FEC"
-  },
-  "WYATT": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "U. S. Representative -- 5th Congressional District - Republican Party",
-    "election_date": "05/16/2026"
-  },
-  "NICHOLAS NICK ALBARES": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "U. S. Senator -- Democratic Party",
-    "election_date": "05/16/2026"
-  },
-  "ALBARES": {
+  "DAVIS": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Senator -- Democratic Party",
@@ -5795,7 +3681,19 @@
     "office": "U. S. Representative -- 3rd Congressional District - Democratic Party",
     "election_date": "05/16/2026"
   },
+  "DAY": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District - Democratic Party",
+    "election_date": "05/16/2026"
+  },
   "TIA LEBRUN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2022"
+  },
+  "LEBRUN": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 3rd Congressional District",
@@ -5807,7 +3705,19 @@
     "office": "U. S. Representative -- 3rd Congressional District - Democratic Party",
     "election_date": "05/16/2026"
   },
+  "WALKER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District - Democratic Party",
+    "election_date": "05/16/2026"
+  },
   "CONRAD CABLE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District - Democratic Party",
+    "election_date": "05/16/2026"
+  },
+  "CABLE": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 4th Congressional District - Democratic Party",
@@ -5819,7 +3729,19 @@
     "office": "U. S. Representative -- 4th Congressional District - Democratic Party",
     "election_date": "05/16/2026"
   },
+  "GROMLICH": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District - Democratic Party",
+    "election_date": "05/16/2026"
+  },
   "JESSEE FLEENOR": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District - Democratic Party",
+    "election_date": "05/16/2026"
+  },
+  "FLEENOR": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 5th Congressional District - Democratic Party",
@@ -5831,11 +3753,47 @@
     "office": "U. S. Representative -- 5th Congressional District - Democratic Party",
     "election_date": "05/16/2026"
   },
+  "FOY": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District - Democratic Party",
+    "election_date": "05/16/2026"
+  },
   "LINDSAY RUBIA GARCIA": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 5th Congressional District - Democratic Party",
     "election_date": "05/16/2026"
+  },
+  "GARCIA": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District - Democratic Party",
+    "election_date": "05/16/2026"
+  },
+  "DAN MCKAY": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "City Judge -- City Court, City of Bunkie",
+    "election_date": "11/04/2014"
+  },
+  "MCKAY": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "City Judge -- City Court, City of Bunkie",
+    "election_date": "11/04/2014"
+  },
+  "TANIA NYMAN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilman -- Metro District 12",
+    "election_date": "12/05/2020"
+  },
+  "NYMAN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilman -- Metro District 12",
+    "election_date": "12/05/2020"
   },
   "JAMES EDWARD GREEN": {
     "party": "DEM",
@@ -5861,13 +3819,55 @@
     "office": "Treasurer",
     "election_date": "11/18/2023"
   },
+  "FLEMING": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Treasurer",
+    "election_date": "11/18/2023"
+  },
+  "MARK SPENCER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Senator -- Republican Party",
+    "election_date": "05/16/2026"
+  },
+  "SPENCER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Senator -- Republican Party",
+    "election_date": "05/16/2026"
+  },
   "RANDALL ARRINGTON": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 1st Congressional District",
     "election_date": "11/05/2024"
   },
+  "ARRINGTON": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 1st Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "JOSHUA MOROTT": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "MOROTT": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/05/2024"
+  },
   "MIKE NICHOLS": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District - Republican Party",
+    "election_date": "05/16/2026"
+  },
+  "NICHOLS": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 4th Congressional District - Republican Party",
@@ -5879,7 +3879,25 @@
     "office": "RPEC Member -- District C",
     "election_date": "07/11/2020"
   },
+  "CORDELL": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "RPEC Member -- District C",
+    "election_date": "07/11/2020"
+  },
+  "AUSTIN MAGEE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District - Republican Party",
+    "election_date": "05/16/2026"
+  },
   "MICHAEL MEBRUER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District - Republican Party",
+    "election_date": "05/16/2026"
+  },
+  "MEBRUER": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 5th Congressional District - Republican Party",
@@ -5891,17 +3909,41 @@
     "office": "U. S. Representative -- 5th Congressional District - Republican Party",
     "election_date": "05/16/2026"
   },
+  "WYATT": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District - Republican Party",
+    "election_date": "05/16/2026"
+  },
   "MONIQUE APPEANING": {
     "party": "REP",
     "source": "SoS",
     "office": "State Representative --  66th Representative District",
     "election_date": "10/14/2023"
   },
+  "APPEANING": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Representative --  66th Representative District",
+    "election_date": "10/14/2023"
+  },
+  "LARRY DAVIS": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District - Republican Party",
+    "election_date": "05/16/2026"
+  },
   "CHRISTIAN CHRIS JOHNSON": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 6th Congressional District - Republican Party",
     "election_date": "05/16/2026"
+  },
+  "PETER WILLIAMS": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2016"
   },
   "WILLIAM BILLY BURRIS": {
     "party": "REP",
@@ -5922,12 +3964,6 @@
     "election_date": "05/16/2026"
   },
   "WALLACE WAYNE COOPER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "PSC -- District 1 - Republican Party",
-    "election_date": "05/16/2026"
-  },
-  "COOPER": {
     "party": "REP",
     "source": "SoS",
     "office": "PSC -- District 1 - Republican Party",
@@ -5975,7 +4011,25 @@
     "office": "PSC -- District 5 - Republican Party",
     "election_date": "05/16/2026"
   },
+  "JOSEPH CAO": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Judge, Court of Appeal -- 4th Circuit at Large",
+    "election_date": "11/08/2022"
+  },
+  "CAO": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Judge, Court of Appeal -- 4th Circuit at Large",
+    "election_date": "11/08/2022"
+  },
   "MICHAEL HOLLIS": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "BESE -- District 1 - Republican Party",
+    "election_date": "05/16/2026"
+  },
+  "HOLLIS": {
     "party": "REP",
     "source": "SoS",
     "office": "BESE -- District 1 - Republican Party",
@@ -6114,6 +4168,12 @@
     "election_date": "11/16/2019"
   },
   "CLOTIS CLO VINCENT": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Councilmen at Large -- City of DeRidder",
+    "election_date": "05/16/2026"
+  },
+  "VINCENT": {
     "party": "REP",
     "source": "SoS",
     "office": "Councilmen at Large -- City of DeRidder",
@@ -6461,6 +4521,18 @@
     "office": "District Judge -- 21st Judicial District Court, Division I",
     "election_date": "03/29/2025"
   },
+  "QUENTIN ANTHONY ANDERSON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "ANDERSON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/05/2024"
+  },
   "CAROLYN HILL": {
     "party": "DEM",
     "source": "SoS",
@@ -6491,6 +4563,12 @@
     "office": "U. S. Representative -- 1st Congressional District",
     "election_date": "11/05/2024"
   },
+  "MANUEL": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 1st Congressional District",
+    "election_date": "11/05/2024"
+  },
   "ROSS SHALES": {
     "party": "REP",
     "source": "SoS",
@@ -6502,6 +4580,12 @@
     "source": "SoS",
     "office": "U. S. Representative -- 1st Congressional District",
     "election_date": "11/05/2024"
+  },
+  "TROY A CARTER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 2nd Congressional District",
+    "election_date": "11/08/2022"
   },
   "DEVIN DAVIS": {
     "party": "DEM",
@@ -6515,6 +4599,18 @@
     "office": "U. S. Senator",
     "election_date": "11/08/2022"
   },
+  "CHRISTY LYNCH": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 2nd Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "LYNCH": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 2nd Congressional District",
+    "election_date": "11/05/2024"
+  },
   "SHONDRELL PERRILLOUX": {
     "party": "REP",
     "source": "SoS",
@@ -6527,11 +4623,71 @@
     "office": "Member of School Board -- District 11",
     "election_date": "11/08/2022"
   },
+  "PRISCILLA GONZALEZ": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "GONZALEZ": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "XAN JOHN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "JOHN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "SADI SUMMERLIN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "SUMMERLIN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/05/2024"
+  },
   "M V VINNY MENDOZA": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 1st Congressional District",
     "election_date": "11/06/2012"
+  },
+  "MENDOZA": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 1st Congressional District",
+    "election_date": "11/06/2012"
+  },
+  "MICHAEL VALLIEN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "VALLIEN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/05/2024"
+  },
+  "ELBERT GUILLORY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/08/2016"
   },
   "WILKEN JONES": {
     "party": "DEM",
@@ -7181,6 +5337,12 @@
     "office": "Justice of the Peace -- Justice of the Peace District 1",
     "election_date": "11/08/2016"
   },
+  "CONNER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Justice of the Peace -- Justice of the Peace District 1",
+    "election_date": "11/08/2016"
+  },
   "JAMES JAMIE DAVIS": {
     "party": "DEM",
     "source": "SoS",
@@ -7368,6 +5530,12 @@
     "election_date": "12/08/2018"
   },
   "CHRISTOPHER RICHARD": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "DSCC Member --  29th Representative District, Office \"B\"",
+    "election_date": "03/23/2024"
+  },
+  "RICHARD": {
     "party": "DEM",
     "source": "SoS",
     "office": "DSCC Member --  29th Representative District, Office \"B\"",
@@ -7889,6 +6057,12 @@
     "office": "DSCC Member --  67th Representative District, Office \"A\"",
     "election_date": "03/23/2024"
   },
+  "HOLDEN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "DSCC Member --  67th Representative District, Office \"A\"",
+    "election_date": "03/23/2024"
+  },
   "PRESTON CASTILLE": {
     "party": "DEM",
     "source": "SoS",
@@ -8231,6 +6405,12 @@
     "office": "DPEC Member(s) -- District 1",
     "election_date": "07/11/2020"
   },
+  "JESSEE CARLTON FLEENOR": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/06/2018"
+  },
   "MARSHALL TREY MUSE": {
     "party": "DEM",
     "source": "SoS",
@@ -8447,6 +6627,12 @@
     "office": "State Representative --  23rd Representative District",
     "election_date": "11/18/2023"
   },
+  "SAVOIE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "State Representative --  23rd Representative District",
+    "election_date": "11/18/2023"
+  },
   "SARAH PIERRE": {
     "party": "DEM",
     "source": "SoS",
@@ -8507,6 +6693,12 @@
     "office": "DSCC Member --  97th Representative District, Office \"A\"",
     "election_date": "03/23/2024"
   },
+  "EUGENE J GREEN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "DSCC Member --  97th Representative District, Office \"B\"",
+    "election_date": "03/23/2024"
+  },
   "ARTHUR A MORRELL": {
     "party": "DEM",
     "source": "SoS",
@@ -8526,6 +6718,12 @@
     "election_date": "03/23/2024"
   },
   "CAROLINE FAYARD": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2016"
+  },
+  "FAYARD": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Senator",
@@ -8849,6 +7047,18 @@
     "office": "State Senator --  1st Senatorial District",
     "election_date": "10/14/2023"
   },
+  "CLASTON BERNARD": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Council Member -- Division D, City of Gonzales",
+    "election_date": "11/06/2012"
+  },
+  "BERNARD": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Council Member -- Division D, City of Gonzales",
+    "election_date": "11/06/2012"
+  },
   "BERT CALLAIS": {
     "party": "REP",
     "source": "SoS",
@@ -8874,6 +7084,12 @@
     "election_date": "03/23/2024"
   },
   "BRANDON KATZ": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "RSCC Member -- District  2B",
+    "election_date": "03/23/2024"
+  },
+  "KATZ": {
     "party": "REP",
     "source": "SoS",
     "office": "RSCC Member -- District  2B",
@@ -9258,6 +7474,12 @@
     "election_date": "11/08/2022"
   },
   "DAVID R CLARK": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Member of Parish Council -- District 4",
+    "election_date": "11/08/2022"
+  },
+  "CLARK": {
     "party": "REP",
     "source": "SoS",
     "office": "Member of Parish Council -- District 4",
@@ -10031,6 +8253,18 @@
     "office": "Parish President",
     "election_date": "11/18/2023"
   },
+  "LENAR WHITNEY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Representative --  53rd Representative District",
+    "election_date": "11/21/2015"
+  },
+  "WHITNEY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Representative --  53rd Representative District",
+    "election_date": "11/21/2015"
+  },
   "BLAISE M LECOMPTE": {
     "party": "REP",
     "source": "SoS",
@@ -10193,6 +8427,12 @@
     "office": "RSCC Member -- District 23B",
     "election_date": "03/23/2024"
   },
+  "CAMPBELL": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "RSCC Member -- District 23B",
+    "election_date": "03/23/2024"
+  },
   "DANIEL TODD ESCALONA": {
     "party": "REP",
     "source": "SoS",
@@ -10306,6 +8546,18 @@
     "source": "SoS",
     "office": "Parish Council Member -- District 1",
     "election_date": "10/12/2019"
+  },
+  "GROVER JOSEPH REES": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "REES": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2016"
   },
   "JANICE HARTIENS": {
     "party": "REP",
@@ -10488,6 +8740,12 @@
     "election_date": "07/11/2020"
   },
   "MEGAN TARPLEY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "RSCC Member -- District 32H",
+    "election_date": "03/23/2024"
+  },
+  "TARPLEY": {
     "party": "REP",
     "source": "SoS",
     "office": "RSCC Member -- District 32H",
@@ -10817,6 +9075,18 @@
     "office": "Attorney General",
     "election_date": "11/18/2023"
   },
+  "DUSTIN GRANGER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Treasurer",
+    "election_date": "11/18/2023"
+  },
+  "GRANGER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Treasurer",
+    "election_date": "11/18/2023"
+  },
   "STACEY MELERINE": {
     "party": "REP",
     "source": "SoS",
@@ -10842,6 +9112,18 @@
     "election_date": "11/18/2023"
   },
   "BERKEN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "BESE -- District 7",
+    "election_date": "11/18/2023"
+  },
+  "ERICK KNEZEK": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "BESE -- District 7",
+    "election_date": "11/18/2023"
+  },
+  "KNEZEK": {
     "party": "REP",
     "source": "SoS",
     "office": "BESE -- District 7",
@@ -11033,12 +9315,6 @@
     "office": "Governor",
     "election_date": "10/14/2023"
   },
-  "COLE": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Governor",
-    "election_date": "10/14/2023"
-  },
   "XAVIER ELLIS": {
     "party": "REP",
     "source": "SoS",
@@ -11076,6 +9352,12 @@
     "election_date": "10/14/2023"
   },
   "MIKE FRANCIS": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "PSC -- District 4",
+    "election_date": "11/08/2022"
+  },
+  "FRANCIS": {
     "party": "REP",
     "source": "SoS",
     "office": "PSC -- District 4",
@@ -11134,6 +9416,18 @@
     "source": "SoS",
     "office": "State Representative -- 104th Representative District",
     "election_date": "10/22/2011"
+  },
+  "LAUREN JEWETT": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Member of School Board -- District 6",
+    "election_date": "12/10/2022"
+  },
+  "JEWETT": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Member of School Board -- District 6",
+    "election_date": "12/10/2022"
   },
   "PAIGE HOFFPAUIR": {
     "party": "REP",
@@ -11471,6 +9765,12 @@
     "office": "State Representative --  15th Representative District",
     "election_date": "10/14/2023"
   },
+  "ROBINSON": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Representative --  15th Representative District",
+    "election_date": "10/14/2023"
+  },
   "KEVIN BATES": {
     "party": "REP",
     "source": "SoS",
@@ -11598,6 +9898,12 @@
     "election_date": "10/14/2023"
   },
   "JULIE EMERSON": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Representative --  39th Representative District",
+    "election_date": "10/24/2015"
+  },
+  "EMERSON": {
     "party": "REP",
     "source": "SoS",
     "office": "State Representative --  39th Representative District",
@@ -12059,6 +10365,12 @@
     "office": "State Representative --  94th Representative District",
     "election_date": "10/14/2023"
   },
+  "MARSALA": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Representative --  94th Representative District",
+    "election_date": "10/14/2023"
+  },
   "AARON ELLIS": {
     "party": "REP",
     "source": "SoS",
@@ -12066,6 +10378,12 @@
     "election_date": "10/14/2023"
   },
   "JOANNA CAPPIELLO LEOPOLD": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "State Representative -- 105th Representative District",
+    "election_date": "10/14/2023"
+  },
+  "LEOPOLD": {
     "party": "DEM",
     "source": "SoS",
     "office": "State Representative -- 105th Representative District",
@@ -12497,6 +10815,18 @@
     "office": "U. S. Senator",
     "election_date": "11/08/2022"
   },
+  "LUKE MIXON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2022"
+  },
+  "MIXON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2022"
+  },
   "SALVADOR P RODRIGUEZ": {
     "party": "DEM",
     "source": "SoS",
@@ -12509,7 +10839,25 @@
     "office": "U. S. Senator",
     "election_date": "11/08/2022"
   },
+  "SYRITA STEIB": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2022"
+  },
+  "STEIB": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2022"
+  },
   "KATIE DARLING": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 1st Congressional District",
+    "election_date": "11/08/2022"
+  },
+  "DARLING": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 1st Congressional District",
@@ -12521,13 +10869,49 @@
     "office": "U. S. Representative -- 2nd Congressional District",
     "election_date": "11/08/2022"
   },
+  "LUX": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 2nd Congressional District",
+    "election_date": "11/08/2022"
+  },
+  "HOLDEN HOGGATT": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2022"
+  },
+  "HOGGATT": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2022"
+  },
   "LESSIE OLIVIA LEBLANC": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 3rd Congressional District",
     "election_date": "11/08/2022"
   },
+  "THOMAS LANE PAYNE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2022"
+  },
+  "PAYNE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2022"
+  },
   "JACOB JAKE SHAHEEN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Senator -- 27th Senatorial District",
+    "election_date": "11/13/2021"
+  },
+  "SHAHEEN": {
     "party": "REP",
     "source": "SoS",
     "office": "State Senator -- 27th Senatorial District",
@@ -12545,13 +10929,37 @@
     "office": "U. S. Representative -- 5th Congressional District",
     "election_date": "11/08/2022"
   },
+  "WALTER EARL HUFF": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/08/2022"
+  },
+  "HUFF": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/08/2022"
+  },
   "HUNTER PULLEN": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 5th Congressional District",
     "election_date": "11/08/2022"
   },
+  "PULLEN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/08/2022"
+  },
   "BRIAN BELZER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/08/2022"
+  },
+  "BELZER": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 6th Congressional District",
@@ -12748,6 +11156,18 @@
     "source": "SoS",
     "office": "Mayor -- City of Shreveport",
     "election_date": "11/08/2022"
+  },
+  "ADRIAN PERKINS": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Mayor -- City of Shreveport",
+    "election_date": "12/08/2018"
+  },
+  "PERKINS": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Mayor -- City of Shreveport",
+    "election_date": "12/08/2018"
   },
   "MELVIN G E SLACK": {
     "party": "REP",
@@ -13379,7 +11799,25 @@
     "office": "State Senator --  7th Senatorial District",
     "election_date": "06/12/2021"
   },
+  "KAREN CARTER PETERSON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "State Senator --  5th Senatorial District",
+    "election_date": "10/12/2019"
+  },
+  "PETERSON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "State Senator --  5th Senatorial District",
+    "election_date": "10/12/2019"
+  },
   "MARCUS L HUNTER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "District Judge --  4th Judicial District Court, ES 1, Div. G",
+    "election_date": "11/06/2018"
+  },
+  "HUNTER": {
     "party": "DEM",
     "source": "SoS",
     "office": "District Judge --  4th Judicial District Court, ES 1, Div. G",
@@ -13403,6 +11841,18 @@
     "office": "State Representative --  82nd Representative District",
     "election_date": "04/24/2021"
   },
+  "CHELSEA ARDOIN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Councilmember -- District D",
+    "election_date": "11/13/2021"
+  },
+  "HAROLD JOHN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 2nd Congressional District",
+    "election_date": "03/20/2021"
+  },
   "J CHRISTOPHER JOHNSON": {
     "party": "DEM",
     "source": "SoS",
@@ -13417,6 +11867,24 @@
   },
   "GREG LIRETTE": {
     "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 2nd Congressional District",
+    "election_date": "03/20/2021"
+  },
+  "LIRETTE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 2nd Congressional District",
+    "election_date": "03/20/2021"
+  },
+  "DESIREE ONTIVEROS": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 2nd Congressional District",
+    "election_date": "03/20/2021"
+  },
+  "ONTIVEROS": {
+    "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 2nd Congressional District",
     "election_date": "03/20/2021"
@@ -13445,7 +11913,31 @@
     "office": "U. S. Representative -- 5th Congressional District",
     "election_date": "11/03/2020"
   },
+  "CHRISTOPHE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "CHAD CONERLY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "03/20/2021"
+  },
+  "CONERLY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "03/20/2021"
+  },
   "ROBERT LANSDEN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "03/20/2021"
+  },
+  "LANSDEN": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 5th Congressional District",
@@ -13482,6 +11974,12 @@
     "election_date": "03/20/2021"
   },
   "PANNELL": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "03/20/2021"
+  },
+  "SANCHA SMITH": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 5th Congressional District",
@@ -13560,6 +12058,12 @@
     "election_date": "12/05/2020"
   },
   "PATRICK PAT BURKE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "RSCC Member --  1st Senatorial District, Division D",
+    "election_date": "12/05/2020"
+  },
+  "BURKE": {
     "party": "REP",
     "source": "SoS",
     "office": "RSCC Member --  1st Senatorial District, Division D",
@@ -13704,6 +12208,12 @@
     "election_date": "12/05/2020"
   },
   "FRITZ BROWN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "RSCC Member --  8th Senatorial District, Division B",
+    "election_date": "12/05/2020"
+  },
+  "BROWN": {
     "party": "REP",
     "source": "SoS",
     "office": "RSCC Member --  8th Senatorial District, Division B",
@@ -14021,12 +12531,6 @@
     "office": "RSCC Member -- 13th Senatorial District, Division C",
     "election_date": "12/05/2020"
   },
-  "ARD": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "RSCC Member -- 13th Senatorial District, Division C",
-    "election_date": "12/05/2020"
-  },
   "GORDON ATWELL": {
     "party": "REP",
     "source": "SoS",
@@ -14040,6 +12544,12 @@
     "election_date": "12/05/2020"
   },
   "PEGGY J VIDRINE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "RSCC Member -- 14th Senatorial District, Division C",
+    "election_date": "12/05/2020"
+  },
+  "VIDRINE": {
     "party": "REP",
     "source": "SoS",
     "office": "RSCC Member -- 14th Senatorial District, Division C",
@@ -14765,6 +13275,18 @@
     "office": "PSC -- District 1",
     "election_date": "12/05/2020"
   },
+  "ERIC SKRMETTA": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "PSC -- District 1",
+    "election_date": "12/06/2014"
+  },
+  "SKRMETTA": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "PSC -- District 1",
+    "election_date": "12/06/2014"
+  },
   "TRAVIS BROUSSARD": {
     "party": "DEM",
     "source": "SoS",
@@ -14975,6 +13497,54 @@
     "office": "U. S. Senator",
     "election_date": "11/03/2020"
   },
+  "DUSTIN MURPHY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/03/2020"
+  },
+  "MURPHY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/03/2020"
+  },
+  "ANTOINE PIERCE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilman -- Metro District  8",
+    "election_date": "11/08/2016"
+  },
+  "PIERCE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilman -- Metro District  8",
+    "election_date": "11/08/2016"
+  },
+  "PETER WENSTRUP": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/03/2020"
+  },
+  "WENSTRUP": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/03/2020"
+  },
+  "LEE ANN DUGAS": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 1st Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "DUGAS": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 1st Congressional District",
+    "election_date": "11/08/2016"
+  },
   "GLENN ADRAIN HARRIS": {
     "party": "DEM",
     "source": "SoS",
@@ -15005,14 +13575,98 @@
     "office": "U. S. Representative -- 3rd Congressional District",
     "election_date": "11/06/2018"
   },
+  "BRAYLON HARRIS": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "BEN GIBSON": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "GIBSON": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "KENNY HOUSTON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "HOUSTON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "RYAN TRUNDLE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/06/2018"
+  },
+  "TRUNDLE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/06/2018"
+  },
   "MATT HASTY": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 5th Congressional District",
     "election_date": "11/03/2020"
   },
+  "HASTY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "JESSE P LAGARDE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "LAGARDE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "MARTIN LEMELLE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "LEMELLE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/03/2020"
+  },
   "SCOTTY ROBINSON": {
     "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "PHILLIP SNOWDEN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/03/2020"
+  },
+  "SNOWDEN": {
+    "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 5th Congressional District",
     "election_date": "11/03/2020"
@@ -16163,6 +14817,12 @@
     "office": "District Attorney -- 17th Judicial District Court",
     "election_date": "11/03/2020"
   },
+  "RUSSELL": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "District Attorney -- 17th Judicial District Court",
+    "election_date": "11/03/2020"
+  },
   "WARREN MONTGOMERY": {
     "party": "REP",
     "source": "SoS",
@@ -17039,6 +15699,12 @@
     "office": "DSCC Member --  67th Representative District, Office \"B\"",
     "election_date": "07/11/2020"
   },
+  "JUSTIN DEWITT": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/06/2018"
+  },
   "JOSHUA FINI HAJIAKBARIFINI": {
     "party": "DEM",
     "source": "SoS",
@@ -17076,6 +15742,12 @@
     "election_date": "07/11/2020"
   },
   "BRAD GORDON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "DSCC Member --  69th Representative District, Office \"B\"",
+    "election_date": "07/11/2020"
+  },
+  "GORDON": {
     "party": "DEM",
     "source": "SoS",
     "office": "DSCC Member --  69th Representative District, Office \"B\"",
@@ -17897,6 +16569,12 @@
     "office": "State Representative --  31st Representative District",
     "election_date": "11/16/2019"
   },
+  "RANTZ": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Representative --  31st Representative District",
+    "election_date": "11/16/2019"
+  },
   "TROY D ROMERO": {
     "party": "REP",
     "source": "SoS",
@@ -18100,6 +16778,12 @@
     "source": "SoS",
     "office": "Attorney General",
     "election_date": "10/12/2019"
+  },
+  "DERRICK EDWARDS": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Treasurer",
+    "election_date": "11/18/2017"
   },
   "JOHN M SCHRODER": {
     "party": "REP",
@@ -18516,6 +17200,12 @@
     "election_date": "10/22/2011"
   },
   "BRETT GEYMANN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "GEYMANN": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 3rd Congressional District",
@@ -19787,6 +18477,12 @@
     "office": "Councilman -- District  A, City of Shreveport",
     "election_date": "12/08/2018"
   },
+  "MCCULLOCH": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilman -- District  A, City of Shreveport",
+    "election_date": "12/08/2018"
+  },
   "WENDY VANCE": {
     "party": "REP",
     "source": "SoS",
@@ -19871,6 +18567,12 @@
     "office": "Secretary of State",
     "election_date": "11/06/2018"
   },
+  "JIM FRANCIS": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 1st Congressional District",
+    "election_date": "11/06/2018"
+  },
   "JOSH GUILLORY": {
     "party": "REP",
     "source": "SoS",
@@ -19883,10 +18585,40 @@
     "office": "U. S. Representative -- 3rd Congressional District",
     "election_date": "11/06/2018"
   },
+  "METHVIN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/06/2018"
+  },
+  "LARRY RADER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "RADER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2016"
+  },
   "VERONE THOMAS": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/06/2018"
+  },
+  "ANDIE SAIZAN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/06/2018"
+  },
+  "SAIZAN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
     "election_date": "11/06/2018"
   },
   "WALTER WALT LANIER": {
@@ -20405,6 +19137,18 @@
     "office": "State Representative --  93rd Representative District",
     "election_date": "03/24/2018"
   },
+  "DANIL FAUST": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "State Representative --  93rd Representative District",
+    "election_date": "03/24/2018"
+  },
+  "FAUST": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "State Representative --  93rd Representative District",
+    "election_date": "03/24/2018"
+  },
   "THOMAS W TOM ACOSTA": {
     "party": "REP",
     "source": "SoS",
@@ -20508,6 +19252,12 @@
     "election_date": "02/17/2018"
   },
   "ROB MANESS": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Representative --  77th Representative District",
+    "election_date": "11/18/2017"
+  },
+  "MANESS": {
     "party": "REP",
     "source": "SoS",
     "office": "State Representative --  77th Representative District",
@@ -20915,6 +19665,12 @@
     "office": "U. S. Representative -- 3rd Congressional District",
     "election_date": "12/10/2016"
   },
+  "ANGELLE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "12/10/2016"
+  },
   "MARSHALL JONES": {
     "party": "DEM",
     "source": "SoS",
@@ -20969,6 +19725,12 @@
     "office": "U. S. Senator",
     "election_date": "11/08/2016"
   },
+  "CRAWFORD": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2016"
+  },
   "DAVID DUKE": {
     "party": "REP",
     "source": "SoS",
@@ -20987,7 +19749,31 @@
     "office": "U. S. Senator",
     "election_date": "11/08/2016"
   },
+  "CHARLES MARSALA": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2016"
+  },
+  "ABHAY PATEL": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2016"
+  },
+  "PATEL": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2016"
+  },
   "JOSHUA PELLERIN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/08/2016"
+  },
+  "PELLERIN": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Senator",
@@ -21000,6 +19786,12 @@
     "election_date": "11/08/2016"
   },
   "JOSEPH JOE SWIDER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 1st Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "SWIDER": {
     "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 1st Congressional District",
@@ -21041,7 +19833,31 @@
     "office": "U. S. Representative -- 3rd Congressional District",
     "election_date": "11/08/2016"
   },
+  "ELLISON": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "JACOB DORIAN PHIBIAN HEBERT": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "HERMAN L VIDRINE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "11/08/2016"
+  },
   "RALPH TREY BAUCUM": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "BAUCUM": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 4th Congressional District",
@@ -21073,6 +19889,18 @@
   },
   "ROBERT LAMAR BOB BELL": {
     "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "RICHARD LIEBERMAN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/08/2016"
+  },
+  "LIEBERMAN": {
+    "party": "DEM",
     "source": "SoS",
     "office": "U. S. Representative -- 6th Congressional District",
     "election_date": "11/08/2016"
@@ -21438,6 +20266,12 @@
     "election_date": "03/24/2012"
   },
   "RONNIE L TRAYLOR": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "DSCC Member --  16th Representative District, Office \"B\"",
+    "election_date": "03/05/2016"
+  },
+  "TRAYLOR": {
     "party": "DEM",
     "source": "SoS",
     "office": "DSCC Member --  16th Representative District, Office \"B\"",
@@ -23507,6 +22341,12 @@
     "office": "Governor",
     "election_date": "10/24/2015"
   },
+  "ELBERT LEE GUILLORY": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "State Senator -- 24th Senatorial District",
+    "election_date": "11/19/2011"
+  },
   "CHRIS TYSON": {
     "party": "DEM",
     "source": "SoS",
@@ -23717,12 +22557,6 @@
     "office": "State Senator -- 12th Senatorial District",
     "election_date": "10/24/2015"
   },
-  "DUNCAN": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "State Senator -- 12th Senatorial District",
-    "election_date": "10/24/2015"
-  },
   "DALE ERDEY": {
     "party": "REP",
     "source": "SoS",
@@ -23742,6 +22576,12 @@
     "election_date": "11/04/2014"
   },
   "DAN CLAITOR": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/04/2014"
+  },
+  "CLAITOR": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 6th Congressional District",
@@ -23796,6 +22636,12 @@
     "election_date": "10/24/2015"
   },
   "VANCE MCALLISTER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Senator -- 33rd Senatorial District",
+    "election_date": "10/24/2015"
+  },
+  "MCALLISTER": {
     "party": "REP",
     "source": "SoS",
     "office": "State Senator -- 33rd Senatorial District",
@@ -24575,6 +23421,24 @@
     "office": "U. S. Senator",
     "election_date": "12/06/2014"
   },
+  "RALPH LEE ABRAHAM": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "12/06/2014"
+  },
+  "JAMIE MAYO": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "12/06/2014"
+  },
+  "MAYO": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "12/06/2014"
+  },
   "EDWIN EDWARDS": {
     "party": "DEM",
     "source": "SoS",
@@ -24995,7 +23859,19 @@
     "office": "U. S. Senator",
     "election_date": "11/04/2014"
   },
+  "ABLES": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/04/2014"
+  },
   "THOMAS CLEMENTS": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Senator",
+    "election_date": "11/04/2014"
+  },
+  "CLEMENTS": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Senator",
@@ -25025,6 +23901,30 @@
     "office": "U. S. Representative -- 1st Congressional District",
     "election_date": "11/04/2014"
   },
+  "CHARLES W BOUSTANY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District",
+    "election_date": "12/08/2012"
+  },
+  "HARRIS BROWN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/04/2014"
+  },
+  "ZACH DASHER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/04/2014"
+  },
+  "DASHER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "11/04/2014"
+  },
   "CLYDE C HOLLOWAY": {
     "party": "REP",
     "source": "SoS",
@@ -25044,6 +23944,24 @@
     "election_date": "11/04/2014"
   },
   "NORMAN NORM CLARK": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/04/2014"
+  },
+  "PAUL DIETZEL": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/04/2014"
+  },
+  "DIETZEL": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 6th Congressional District",
+    "election_date": "11/04/2014"
+  },
+  "CRAIG MCCULLOCH": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 6th Congressional District",
@@ -26015,6 +24933,12 @@
     "office": "Mayor -- Town of Basile",
     "election_date": "11/04/2014"
   },
+  "SONNIER": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Mayor -- Town of Basile",
+    "election_date": "11/04/2014"
+  },
   "SHANE BLASINGAME": {
     "party": "DEM",
     "source": "SoS",
@@ -26309,6 +25233,24 @@
     "office": "U. S. Representative -- 5th Congressional District",
     "election_date": "10/19/2013"
   },
+  "WELDON RUSSELL": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "10/19/2013"
+  },
+  "PHILLIP BLAKE WEATHERLY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "10/19/2013"
+  },
+  "WEATHERLY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 5th Congressional District",
+    "election_date": "10/19/2013"
+  },
   "MIKE MILLER": {
     "party": "REP",
     "source": "SoS",
@@ -26488,6 +25430,24 @@
     "source": "SoS",
     "office": "U. S. Representative -- 2nd Congressional District",
     "election_date": "11/06/2012"
+  },
+  "JOSUE LAROSE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 2nd Congressional District",
+    "election_date": "11/06/2012"
+  },
+  "LAROSE": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 2nd Congressional District",
+    "election_date": "11/06/2012"
+  },
+  "RON RICHARD": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "City Judge -- City Court, Division B, City of Lake Charles",
+    "election_date": "12/06/2014"
   },
   "WILLIAM BILL CASSIDY": {
     "party": "REP",
@@ -28685,6 +27645,12 @@
     "office": "State Representative -- 105th Representative District",
     "election_date": "11/19/2011"
   },
+  "CHRIS LEOPOLD": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Representative -- 105th Representative District",
+    "election_date": "11/19/2011"
+  },
   "CLARE JUPITER": {
     "party": "DEM",
     "source": "SoS",
@@ -29028,6 +27994,12 @@
     "election_date": "10/22/2011"
   },
   "JEFF GUERRIERO": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "State Senator -- 35th Senatorial District",
+    "election_date": "10/22/2011"
+  },
+  "GUERRIERO": {
     "party": "REP",
     "source": "SoS",
     "office": "State Senator -- 35th Senatorial District",
@@ -29687,12 +28659,6 @@
     "office": "State Representative -- 105th Representative District",
     "election_date": "10/22/2011"
   },
-  "FRIEDMAN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "State Representative -- 105th Representative District",
-    "election_date": "10/22/2011"
-  },
   "MARK MAGEE": {
     "party": "REP",
     "source": "SoS",
@@ -29879,6 +28845,12 @@
     "office": "U. S. Representative -- 4th Congressional District",
     "election_date": "11/02/2010"
   },
+  "MELVILLE": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District",
+    "election_date": "11/02/2010"
+  },
   "MERRITT E MCDONALD": {
     "party": "DEM",
     "source": "SoS",
@@ -30036,6 +29008,12 @@
     "election_date": "10/02/2010"
   },
   "HUNT DOWNER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Representative -- 3rd Congressional District-Republican Party",
+    "election_date": "10/02/2010"
+  },
+  "DOWNER": {
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 3rd Congressional District-Republican Party",
@@ -30473,6 +29451,18 @@
     "office": "U. S. Senator -- Republican Party",
     "election_date": "08/28/2010"
   },
+  "CHET D TRAYLOR": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "U. S. Senator -- Republican Party",
+    "election_date": "08/28/2010"
+  },
+  "GARY JOHNSON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilman -- District 2, City of Alexandria",
+    "election_date": "12/10/2022"
+  },
   "JUAN LAFONTA": {
     "party": "DEM",
     "source": "SoS",
@@ -30495,6 +29485,18 @@
     "party": "REP",
     "source": "SoS",
     "office": "U. S. Representative -- 3rd Congressional District-Republican Party",
+    "election_date": "08/28/2010"
+  },
+  "STEVEN JUDE GAVI": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District-Democratic Party",
+    "election_date": "08/28/2010"
+  },
+  "GAVI": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "U. S. Representative -- 4th Congressional District-Democratic Party",
     "election_date": "08/28/2010"
   },
   "TODD SLAVANT": {
@@ -32291,18 +31293,6 @@
     "office": "Council Member -- District 5, City of Winnfield",
     "election_date": "05/16/2026"
   },
-  "CALVIN DUNCAN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Clerk -- Criminal District Court",
-    "election_date": "11/15/2025"
-  },
-  "HOLLY FRIEDMAN": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Councilmember -- District A",
-    "election_date": "11/15/2025"
-  },
   "CYNDI NGUYEN": {
     "party": "DEM",
     "source": "SoS",
@@ -32550,24 +31540,6 @@
     "election_date": "10/11/2025"
   },
   "EDWIN MARK SHORTY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Sheriff",
-    "election_date": "10/11/2025"
-  },
-  "SHORTY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Sheriff",
-    "election_date": "10/11/2025"
-  },
-  "MICHELLE WOODFORK": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Sheriff",
-    "election_date": "10/11/2025"
-  },
-  "WOODFORK": {
     "party": "DEM",
     "source": "SoS",
     "office": "Sheriff",
@@ -33149,18 +32121,6 @@
     "office": "Mayor -- City of St. George",
     "election_date": "03/29/2025"
   },
-  "DUSTIN YATES": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Mayor -- City of St. George",
-    "election_date": "03/29/2025"
-  },
-  "YATES": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Mayor -- City of St. George",
-    "election_date": "03/29/2025"
-  },
   "DAVID DELLUCCI": {
     "party": "REP",
     "source": "SoS",
@@ -33202,18 +32162,6 @@
     "source": "SoS",
     "office": "Council Member -- District 4, City of St. George",
     "election_date": "03/29/2025"
-  },
-  "RICKY TEMPLET": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Councilman -- District 1",
-    "election_date": "10/22/2011"
-  },
-  "TEMPLET": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Councilman -- District 1",
-    "election_date": "10/22/2011"
   },
   "MAGGIE MAY CAMPBELL": {
     "party": "DEM",
@@ -35178,6 +34126,12 @@
     "election_date": "11/06/2012"
   },
   "RITA LYNN MAJOR": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Aldermen -- Village of Rosedale",
+    "election_date": "11/05/2024"
+  },
+  "MAJOR": {
     "party": "DEM",
     "source": "SoS",
     "office": "Aldermen -- Village of Rosedale",
@@ -39287,12 +38241,6 @@
     "office": "DPEC Member(s) -- District C",
     "election_date": "03/23/2024"
   },
-  "EDWIN SHORTY": {
-    "party": "DEM",
-    "source": "SoS",
-    "office": "Constable -- 2nd City Court",
-    "election_date": "11/06/2012"
-  },
   "CARLOS JAMES WILLIAMS": {
     "party": "DEM",
     "source": "SoS",
@@ -41111,12 +40059,6 @@
     "office": "City-Parish Mayor-President",
     "election_date": "11/18/2023"
   },
-  "BOULET": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "City-Parish Mayor-President",
-    "election_date": "11/18/2023"
-  },
   "ELROY BROUSSARD": {
     "party": "DEM",
     "source": "SoS",
@@ -41699,6 +40641,12 @@
     "office": "Council Member -- District  4",
     "election_date": "11/18/2023"
   },
+  "SEIDEN": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Council Member -- District  4",
+    "election_date": "11/18/2023"
+  },
   "DOUGLAS DOUG FERRER": {
     "party": "REP",
     "source": "SoS",
@@ -41736,12 +40684,6 @@
     "election_date": "11/18/2023"
   },
   "GERALD D STICKER": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Sheriff",
-    "election_date": "11/18/2023"
-  },
-  "STICKER": {
     "party": "REP",
     "source": "SoS",
     "office": "Sheriff",
@@ -44801,12 +43743,6 @@
     "office": "Police Juror -- District 11",
     "election_date": "10/14/2023"
   },
-  "JASON ARD": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Sheriff",
-    "election_date": "10/24/2015"
-  },
   "BRETT MCMASTERS": {
     "party": "REP",
     "source": "SoS",
@@ -44814,12 +43750,6 @@
     "election_date": "10/14/2023"
   },
   "RANDY DELATTE": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Parish President",
-    "election_date": "10/14/2023"
-  },
-  "DELATTE": {
     "party": "REP",
     "source": "SoS",
     "office": "Parish President",
@@ -51077,6 +50007,12 @@
     "office": "Member of School Board -- District  2",
     "election_date": "11/08/2022"
   },
+  "BLANEY": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Member of School Board -- District  2",
+    "election_date": "11/08/2022"
+  },
   "BETTY MARCIE LITTLE": {
     "party": "REP",
     "source": "SoS",
@@ -57287,6 +56223,12 @@
     "office": "Member of School Board -- District  6",
     "election_date": "11/08/2022"
   },
+  "JORDAN JOHNSON": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Member of School Board -- District  7",
+    "election_date": "11/08/2022"
+  },
   "ISABELLE MOORE": {
     "party": "REP",
     "source": "SoS",
@@ -63077,6 +62019,12 @@
     "office": "Constable -- Justice of the Peace District  2",
     "election_date": "11/04/2014"
   },
+  "HOLDER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Constable -- Justice of the Peace District  2",
+    "election_date": "11/04/2014"
+  },
   "JUDGE CORDRAY": {
     "party": "DEM",
     "source": "SoS",
@@ -63282,6 +62230,12 @@
     "election_date": "11/03/2020"
   },
   "MARKEDA COTTONHAM": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Councilman -- Metro District 10",
+    "election_date": "11/03/2020"
+  },
+  "COTTONHAM": {
     "party": "DEM",
     "source": "SoS",
     "office": "Councilman -- Metro District 10",
@@ -74199,12 +73153,6 @@
     "party": "DEM",
     "source": "SoS",
     "office": "Council Member -- District 10",
-    "election_date": "10/12/2019"
-  },
-  "BECKET BREAUX": {
-    "party": "REP",
-    "source": "SoS",
-    "office": "Sheriff",
     "election_date": "10/12/2019"
   },
   "BRIAN DOUGLAS THERIOT": {
@@ -106517,6 +105465,12 @@
     "office": "Council Member(s) -- Town of Logansport",
     "election_date": "11/06/2012"
   },
+  "MELVIN KIP HOLDEN": {
+    "party": "DEM",
+    "source": "SoS",
+    "office": "Mayor-President -- Metro Council, City of Baton Rouge",
+    "election_date": "11/06/2012"
+  },
   "J MICHAEL MIKE WALKER": {
     "party": "REP",
     "source": "SoS",
@@ -110208,6 +109162,12 @@
     "election_date": "03/24/2012"
   },
   "JOSEPH FELDER": {
+    "party": "REP",
+    "source": "SoS",
+    "office": "Justice of the Peace -- Justice of the Peace Ward 3",
+    "election_date": "03/24/2012"
+  },
+  "FELDER": {
     "party": "REP",
     "source": "SoS",
     "office": "Justice of the Peace -- Justice of the Peace Ward 3",
