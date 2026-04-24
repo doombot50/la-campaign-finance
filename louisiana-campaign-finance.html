@@ -593,6 +593,9 @@
         <option value="2012">2011–2012 — LA Governor / Presidential</option>
         <option value="2010">2009–2010 — Federal / Local</option>
         <option value="2008">2007–2008 — LA Governor / Presidential</option>
+        <option value="2006">2005–2006 — Federal / Local</option>
+        <option value="2004">2003–2004 — LA Governor / Presidential</option>
+        <option value="2002">2001–2002 — Federal / Local</option>
       </select>
     </div>
     <div class="ctrl-group">
@@ -712,6 +715,7 @@
 <div class="section-tabs">
   <button class="section-tab active" id="tab-contributions" onclick="switchTab('contributions')">💰 Contributions</button>
   <button class="section-tab" id="tab-expenditures" onclick="switchTab('expenditures')">💸 Expenditures</button>
+  <button class="section-tab" id="tab-loans" onclick="switchTab('loans')">🏦 Loans</button>
 </div>
 
 <div id="contributions-view">
@@ -1012,6 +1016,107 @@
   </div>
 </div><!-- /expenditures-view -->
 
+<!-- ══════════════════════════════════════════════════════════════
+     LOANS VIEW
+     ══════════════════════════════════════════════════════════════ -->
+<div id="loans-view" style="display:none">
+  <div class="content-inner" style="padding:24px">
+
+    <!-- Stats row -->
+    <div class="stats-row" style="margin-bottom:20px">
+      <div class="stat-card"><div class="stat-value" id="loan-stat-total">—</div><div class="stat-label">Total Borrowed</div><div class="stat-sub" id="loan-stat-total-sub">—</div></div>
+      <div class="stat-card"><div class="stat-value" id="loan-stat-count">—</div><div class="stat-label"># of Loans</div><div class="stat-sub" id="loan-stat-count-sub">—</div></div>
+      <div class="stat-card"><div class="stat-value" id="loan-stat-avg">—</div><div class="stat-label">Avg Loan</div><div class="stat-sub" id="loan-stat-avg-sub">—</div></div>
+      <div class="stat-card"><div class="stat-value" id="loan-stat-self-pct">—</div><div class="stat-label">Self-Loans</div><div class="stat-sub" id="loan-stat-self-sub">candidate financing own race</div></div>
+      <div class="stat-card"><div class="stat-value" id="loan-stat-top">—</div><div class="stat-label">Top Borrower</div><div class="stat-sub" id="loan-stat-top-sub">—</div></div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="exp-charts-row" style="margin-bottom:20px">
+      <div class="chart-card" style="flex:1.4">
+        <div class="chart-title">Top Campaigns by Total Loans</div>
+        <div style="position:relative;height:260px"><canvas id="loan-campaign-chart"></canvas></div>
+      </div>
+      <div class="chart-card" style="flex:1">
+        <div class="chart-title">In-State vs Out-of-State Lenders</div>
+        <div style="position:relative;height:260px"><canvas id="loan-origin-chart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Top lenders -->
+    <div class="top-contributors-card" style="margin-bottom:20px">
+      <div class="table-header-row">
+        <div class="table-title">Top Lenders</div>
+        <div class="table-actions" id="loan-lenders-pagination"></div>
+      </div>
+      <table class="tc-table">
+        <thead><tr>
+          <th style="width:28px"></th>
+          <th>Lender</th>
+          <th>State</th>
+          <th class="num">Loans</th>
+          <th class="tc-bar-cell"></th>
+          <th class="num">Total</th>
+        </tr></thead>
+        <tbody id="loan-lenders-tbody"></tbody>
+      </table>
+      <div id="loan-lenders-empty" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:13px">No data</div>
+    </div>
+
+    <!-- Loading / unavailable messages -->
+    <div id="loan-loading-msg" style="display:none;text-align:center;padding:40px;color:var(--muted)">
+      <div class="spinner-ring" style="margin:0 auto 12px"></div>
+      Downloading loan data from ethics.la.gov…
+    </div>
+    <div id="loan-unavailable-msg" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">
+      No loan data available for this cycle.
+    </div>
+
+    <!-- Filters -->
+    <div class="exp-controls-bar" style="margin-bottom:12px">
+      <div class="ctrl-group">
+        <label>Campaign</label>
+        <select class="ctrl-select" id="loan-campaign-select" style="min-width:200px">
+          <option value="ALL">All Campaigns</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Lender State</label>
+        <select class="ctrl-select" id="loan-state-select">
+          <option value="ALL">All States</option>
+          <option value="LA">In-State (LA)</option>
+          <option value="OOS">Out of State</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Min $</label>
+        <input class="ctrl-input" id="loan-amt-min" type="number" min="0" placeholder="0" style="width:90px">
+      </div>
+      <div class="ctrl-group">
+        <label>Max $</label>
+        <input class="ctrl-input" id="loan-amt-max" type="number" min="0" placeholder="∞" style="width:90px">
+      </div>
+      <button class="ctrl-btn" onclick="downloadLoanCSV()">⬇ CSV</button>
+    </div>
+
+    <!-- Loans table -->
+    <table class="data-table" id="loan-table" style="width:100%">
+      <thead><tr>
+        <th>Date</th>
+        <th>Campaign</th>
+        <th>Lender</th>
+        <th>State</th>
+        <th>Parish</th>
+        <th class="num">Rate %</th>
+        <th class="num">Amount</th>
+      </tr></thead>
+      <tbody id="loan-tbody"></tbody>
+    </table>
+    <div class="pagination" id="loan-pagination"></div>
+
+  </div>
+</div><!-- /loans-view -->
+
 <!-- STATUS BAR -->
 <div class="status-bar">
   <div class="status-inner">
@@ -1212,8 +1317,10 @@ parishSel.appendChild(oosOpt);
 // ============================================================
 document.getElementById('btn-load').addEventListener('click', () => {
   expData = []; expFiltered = [];
+  loanData = []; loanFiltered = [];
   loadData();
   if (document.getElementById('expenditures-view').style.display !== 'none') loadExpData();
+  if (document.getElementById('loans-view').style.display !== 'none') loadLoanData();
 });
 
 document.getElementById('btn-bubbles').addEventListener('click', () => {
@@ -2539,8 +2646,10 @@ let _allCycleOpts = null;
 function switchTab(tab) {
   document.getElementById('contributions-view').style.display = tab === 'contributions' ? '' : 'none';
   document.getElementById('expenditures-view').style.display  = tab === 'expenditures'  ? '' : 'none';
+  document.getElementById('loans-view').style.display         = tab === 'loans'         ? '' : 'none';
   document.getElementById('tab-contributions').classList.toggle('active', tab === 'contributions');
   document.getElementById('tab-expenditures').classList.toggle('active', tab === 'expenditures');
+  document.getElementById('tab-loans').classList.toggle('active', tab === 'loans');
 
   const sel = document.getElementById('cycle-select');
 
@@ -2554,13 +2663,13 @@ function switchTab(tab) {
     const cur = sel.value;
     sel.innerHTML = '';
     _allCycleOpts
-      .filter(o => parseInt(o.value) >= 2018)
+      .filter(o => parseInt(o.value) >= 2002)
       .forEach(o => sel.add(new Option(o.text, o.value)));
     // Preserve selection if still valid, otherwise jump to newest available
     if (sel.querySelector(`option[value="${cur}"]`)) {
       sel.value = cur;
     } else {
-      sel.value = _allCycleOpts.find(o => parseInt(o.value) >= 2018)?.value || '2026';
+      sel.value = _allCycleOpts.find(o => parseInt(o.value) >= 2002)?.value || '2026';
       expData = []; expFiltered = [];
     }
   } else {
@@ -2572,12 +2681,13 @@ function switchTab(tab) {
   }
 
   if (tab === 'expenditures' && expData.length === 0) loadExpData();
+  if (tab === 'loans'        && loanData.length === 0) loadLoanData();
 }
 
 // ── Fetch expenditure data ────────────────────────────────────────
 async function loadExpData() {
   const cycle = document.getElementById('cycle-select').value;
-  if (parseInt(cycle) < 2018) {
+  if (parseInt(cycle) < 2002) {
     document.getElementById('exp-unavailable-msg').style.display = '';
     document.getElementById('exp-table').style.display = 'none';
     document.getElementById('exp-loading-msg').style.display = 'none';
@@ -2877,6 +2987,259 @@ document.getElementById('exp-category-select').addEventListener('change', render
 document.getElementById('exp-recipient-search').addEventListener('input',  renderExpAll);
 document.getElementById('exp-amt-min').addEventListener('input', renderExpAll);
 document.getElementById('exp-amt-max').addEventListener('input', renderExpAll);
+
+// ═══════════════════════════════════════════════════════════════
+// LOANS TAB
+// ═══════════════════════════════════════════════════════════════
+
+let loanData     = [];
+let loanFiltered = [];
+let loanPage     = 1;
+const LOAN_PAGE_SIZE = 50;
+let loanCampaignChart = null;
+let loanOriginChart   = null;
+let loanLenderPage    = 1;
+const LOAN_LENDER_PAGE_SIZE = 10;
+const LOAN_LENDER_TOTAL     = 50;
+let _loanLenderSorted = [];
+
+// ── Fetch loan data ───────────────────────────────────────────
+async function loadLoanData() {
+  const cycle = document.getElementById('cycle-select').value;
+  document.getElementById('loan-loading-msg').style.display = '';
+  document.getElementById('loan-unavailable-msg').style.display = 'none';
+  document.getElementById('loan-table').style.display = '';
+
+  if (!proxyAvailable) {
+    document.getElementById('loan-loading-msg').style.display = 'none';
+    return;
+  }
+
+  const poll = async () => {
+    try {
+      const url = `${API_BASE}/api/la-loans?cycle=${encodeURIComponent(cycle)}`;
+      const r = await fetch(url);
+      if (r.status === 202) { setTimeout(poll, 3000); return; }
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const raw = await r.json();
+      loanData = raw.map(d => {
+        // detect self-loan: lender name closely matches candidate name
+        const lender = (d.contributor || '').toUpperCase();
+        const cand   = (d.candidate   || '').toUpperCase();
+        const parts  = cand.split(' ');
+        d._isSelf = parts.some(p => p.length > 2 && lender.includes(p));
+        return d;
+      });
+      document.getElementById('loan-loading-msg').style.display = 'none';
+      populateLoanCampaignDropdown();
+      renderLoanAll();
+    } catch (e) {
+      document.getElementById('loan-loading-msg').textContent = 'Error loading loan data.';
+    }
+  };
+  poll();
+}
+
+function populateLoanCampaignDropdown() {
+  const sel = document.getElementById('loan-campaign-select');
+  const campaigns = [...new Set(loanData.map(r => r.candidate).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="ALL">All Campaigns</option>';
+  campaigns.forEach(c => { const o = new Option(c, c); sel.appendChild(o); });
+}
+
+// ── Filter ────────────────────────────────────────────────────
+function filterLoanData() {
+  const campaign = document.getElementById('loan-campaign-select').value;
+  const state    = document.getElementById('loan-state-select').value;
+  const amtMin   = parseFloat(document.getElementById('loan-amt-min').value) || 0;
+  const amtMax   = parseFloat(document.getElementById('loan-amt-max').value) || Infinity;
+
+  loanFiltered = loanData.filter(r => {
+    if (campaign !== 'ALL' && r.candidate !== campaign) return false;
+    if (state === 'LA'  && r.lenderState !== 'LA') return false;
+    if (state === 'OOS' && r.lenderState === 'LA') return false;
+    if (r.amount < amtMin || r.amount > amtMax) return false;
+    return true;
+  });
+  loanPage = 1; loanLenderPage = 1;
+}
+
+// ── Render all ────────────────────────────────────────────────
+function renderLoanAll() {
+  filterLoanData();
+  renderLoanStats();
+  renderLoanCampaignChart();
+  renderLoanOriginChart();
+  renderLoanLenders();
+  renderLoanTable();
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+function renderLoanStats() {
+  const fmt = n => '$' + Math.round(n).toLocaleString();
+  const total = loanFiltered.reduce((s, r) => s + r.amount, 0);
+  const count = loanFiltered.length;
+  const selfTotal = loanFiltered.filter(r => r._isSelf).reduce((s, r) => s + r.amount, 0);
+  document.getElementById('loan-stat-total').textContent = fmt(total);
+  document.getElementById('loan-stat-total-sub').textContent = `${count.toLocaleString()} loans`;
+  document.getElementById('loan-stat-count').textContent = count.toLocaleString();
+  document.getElementById('loan-stat-count-sub').textContent = `${loanFiltered.filter(r => r._isSelf).length} self-loans`;
+  document.getElementById('loan-stat-avg').textContent = count ? fmt(total / count) : '—';
+  document.getElementById('loan-stat-avg-sub').textContent = '';
+  document.getElementById('loan-stat-self-pct').textContent = total ? Math.round(100 * selfTotal / total) + '%' : '—';
+
+  const byCampaign = {};
+  loanFiltered.forEach(r => { byCampaign[r.candidate || 'Unknown'] = (byCampaign[r.candidate || 'Unknown'] || 0) + r.amount; });
+  const top = Object.entries(byCampaign).sort((a,b) => b[1]-a[1])[0];
+  if (top) {
+    document.getElementById('loan-stat-top').textContent = top[0].split(' ').slice(-1)[0];
+    document.getElementById('loan-stat-top-sub').textContent = top[0] + ' · ' + fmt(top[1]);
+  }
+}
+
+// ── Campaign chart ────────────────────────────────────────────
+function renderLoanCampaignChart() {
+  const byCampaign = {};
+  loanFiltered.forEach(r => { byCampaign[r.candidate || 'Unknown'] = (byCampaign[r.candidate || 'Unknown'] || 0) + r.amount; });
+  const sorted = Object.entries(byCampaign).sort((a,b) => b[1]-a[1]).slice(0, 12);
+  const ctx = document.getElementById('loan-campaign-chart').getContext('2d');
+  if (loanCampaignChart) loanCampaignChart.destroy();
+  loanCampaignChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(([k]) => k.length > 22 ? k.slice(0,20)+'…' : k),
+      datasets: [{
+        label: 'Total Loans',
+        data: sorted.map(([,v]) => v),
+        backgroundColor: sorted.map(([k]) => {
+          const p = (loanData.find(r => r.candidate === k) || {}).party;
+          return p === 'REP' ? 'rgba(220,53,69,0.7)' : p === 'DEM' ? 'rgba(30,120,200,0.7)' : 'rgba(200,169,81,0.7)';
+        }),
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '$' + Math.round(ctx.raw).toLocaleString() } } },
+      scales: { x: { ticks: { callback: v => '$' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v) } } }
+    }
+  });
+}
+
+// ── Origin chart ──────────────────────────────────────────────
+function renderLoanOriginChart() {
+  const inState  = loanFiltered.filter(r => r.lenderState === 'LA').reduce((s, r) => s + r.amount, 0);
+  const outState = loanFiltered.filter(r => r.lenderState && r.lenderState !== 'LA').reduce((s, r) => s + r.amount, 0);
+  const unknown  = loanFiltered.filter(r => !r.lenderState).reduce((s, r) => s + r.amount, 0);
+  const ctx = document.getElementById('loan-origin-chart').getContext('2d');
+  if (loanOriginChart) loanOriginChart.destroy();
+  loanOriginChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['In-State (LA)', 'Out of State', 'Unknown'],
+      datasets: [{ data: [inState, outState, unknown], backgroundColor: ['#c8a951','#3b82f6','#6b7280'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#8b949e', font: { size: 12 } } },
+        tooltip: { callbacks: { label: ctx => ctx.label + ': $' + Math.round(ctx.raw).toLocaleString() } }
+      }
+    }
+  });
+}
+
+// ── Top lenders ───────────────────────────────────────────────
+function renderLoanLenders() {
+  const byLender = {};
+  loanFiltered.forEach(r => {
+    const name = r.contributor || 'Unknown';
+    if (!byLender[name]) byLender[name] = { amount: 0, count: 0, state: r.lenderState };
+    byLender[name].amount += r.amount;
+    byLender[name].count++;
+  });
+  _loanLenderSorted = Object.entries(byLender).sort((a,b) => b[1].amount - a[1].amount).slice(0, LOAN_LENDER_TOTAL);
+  loanLenderPage = 1;
+  _renderLoanLenderPage();
+}
+
+function _renderLoanLenderPage() {
+  const tbody = document.getElementById('loan-lenders-tbody');
+  const empty = document.getElementById('loan-lenders-empty');
+  const pg    = document.getElementById('loan-lenders-pagination');
+  if (!_loanLenderSorted.length) { tbody.innerHTML = ''; empty.style.display = ''; pg.innerHTML = ''; return; }
+  empty.style.display = 'none';
+  const maxAmt   = _loanLenderSorted[0][1].amount;
+  const start    = (loanLenderPage - 1) * LOAN_LENDER_PAGE_SIZE;
+  const pageRows = _loanLenderSorted.slice(start, start + LOAN_LENDER_PAGE_SIZE);
+  tbody.innerHTML = pageRows.map(([name, v], i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:12px;width:28px">${start + i + 1}</td>
+      <td><strong>${escHtml(name)}</strong></td>
+      <td style="color:var(--muted);font-size:12px">${v.state || '—'}</td>
+      <td class="num">${v.count.toLocaleString()}</td>
+      <td class="tc-bar-cell"><div class="tc-bar" style="width:${Math.round(100*v.amount/maxAmt)}%"></div></td>
+      <td class="num"><strong>$${Math.round(v.amount).toLocaleString()}</strong></td>
+    </tr>
+  `).join('');
+  const totalPages = Math.ceil(_loanLenderSorted.length / LOAN_LENDER_PAGE_SIZE);
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  let btns = '';
+  if (loanLenderPage > 1) btns += `<button class="page-btn" onclick="loanLenderGoPage(${loanLenderPage-1})">‹</button>`;
+  const lo = Math.max(1, loanLenderPage-2), hi = Math.min(totalPages, loanLenderPage+2);
+  for (let p = lo; p <= hi; p++) btns += `<button class="page-btn${p===loanLenderPage?' active':''}" onclick="loanLenderGoPage(${p})">${p}</button>`;
+  if (loanLenderPage < totalPages) btns += `<button class="page-btn" onclick="loanLenderGoPage(${loanLenderPage+1})">›</button>`;
+  btns += `<span style="margin-left:8px;color:var(--muted);font-size:12px">top ${_loanLenderSorted.length}</span>`;
+  pg.innerHTML = btns;
+}
+function loanLenderGoPage(p) { loanLenderPage = p; _renderLoanLenderPage(); }
+
+// ── Loans table ───────────────────────────────────────────────
+function renderLoanTable() {
+  const start = (loanPage - 1) * LOAN_PAGE_SIZE;
+  const page  = loanFiltered.slice(start, start + LOAN_PAGE_SIZE);
+  const tbody = document.getElementById('loan-tbody');
+  tbody.innerHTML = page.map(r => `
+    <tr>
+      <td>${r.date || '—'}</td>
+      <td>${escHtml(r.candidate || '—')}</td>
+      <td>${escHtml(r.contributor || '—')}${r._isSelf ? ' <span style="font-size:10px;color:var(--gold);font-weight:600">SELF</span>' : ''}</td>
+      <td>${r.lenderState || '—'}</td>
+      <td>${r.parish === 'Out of State' ? '<span style="color:var(--muted);font-size:11px">Out of State</span>' : (r.parish || '—')}</td>
+      <td class="num">${r.rate ? r.rate.toFixed(2) + '%' : '0%'}</td>
+      <td class="num">$${Math.round(r.amount).toLocaleString()}</td>
+    </tr>
+  `).join('');
+  const totalPages = Math.ceil(loanFiltered.length / LOAN_PAGE_SIZE);
+  const pg = document.getElementById('loan-pagination');
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  let btns = '';
+  if (loanPage > 1) btns += `<button class="page-btn" onclick="loanGoPage(${loanPage-1})">‹</button>`;
+  const lo = Math.max(1, loanPage-2), hi = Math.min(totalPages, loanPage+2);
+  for (let p = lo; p <= hi; p++) btns += `<button class="page-btn${p===loanPage?' active':''}" onclick="loanGoPage(${p})">${p}</button>`;
+  if (loanPage < totalPages) btns += `<button class="page-btn" onclick="loanGoPage(${loanPage+1})">›</button>`;
+  btns += `<span style="margin-left:8px;color:var(--muted);font-size:12px">${loanFiltered.length.toLocaleString()} records</span>`;
+  pg.innerHTML = btns;
+}
+function loanGoPage(p) { loanPage = p; renderLoanTable(); window.scrollTo(0,0); }
+
+// ── CSV export ────────────────────────────────────────────────
+function downloadLoanCSV() {
+  const headers = ['Date','Campaign','Lender','State','Parish','Rate','Amount'];
+  const rows = loanFiltered.map(r => [
+    r.date, r.candidate, r.contributor, r.lenderState, r.parish, r.rate, r.amount
+  ].map(v => `"${v||''}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `la_loans_${document.getElementById('cycle-select').value}.csv`;
+  a.click();
+}
+
+// ── Wire up loan controls ──────────────────────────────────────
+document.getElementById('loan-campaign-select').addEventListener('change', renderLoanAll);
+document.getElementById('loan-state-select').addEventListener('change', renderLoanAll);
+document.getElementById('loan-amt-min').addEventListener('input', renderLoanAll);
+document.getElementById('loan-amt-max').addEventListener('input', renderLoanAll);
 
 // ============================================================
 // CONTRIBUTOR PROFILE MODAL

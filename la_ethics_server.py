@@ -59,6 +59,20 @@ EXPENDITURE_URLS = {
     '2024-2027': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/ExpenditureReports/Expenditures_2024_to_2027.csv',
     '2020-2023': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/ExpenditureReports/Expenditures_2020_to_2023.csv',
     '2016-2019': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/ExpenditureReports/Expenditures_2016_to_2019.csv',
+    '2012-2015': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/ExpenditureReports/Expenditures_2012_to_2015.csv',
+    '2008-2011': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/ExpenditureReports/Expenditures_2008_to_2011.csv',
+    '2004-2007': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/ExpenditureReports/Expenditures_2004_to_2007.csv',
+    '2000-2003': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/ExpenditureReports/Expenditures_2000_to_2003.csv',
+}
+
+LOAN_URLS = {
+    '2024-2027': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/LoanReports/Loans_2024_to_2027.csv',
+    '2020-2023': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/LoanReports/Loans_2020_to_2023.csv',
+    '2016-2019': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/LoanReports/Loans_2016_to_2019.csv',
+    '2012-2015': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/LoanReports/Loans_2012_to_2015.csv',
+    '2008-2011': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/LoanReports/Loans_2008_to_2011.csv',
+    '2004-2007': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/LoanReports/Loans_2004_to_2007.csv',
+    '2000-2003': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/LoanReports/Loans_2000_to_2003.csv',
 }
 
 def get_csv_key(year):
@@ -789,6 +803,43 @@ def _parse_expenditure_row(row):
         'filerNumber':     (row.get('FilerNumber') or '').strip(),
     }
 
+def _parse_loan_row(row):
+    amt = float((row.get('LoanAmt') or '').strip() or 0)
+    if amt <= 0:
+        return None
+    city      = (row.get('LoanHolderCity')  or '').upper().strip()
+    zip_raw   = (row.get('LoanHolderZip')   or '').strip()
+    state_raw = (row.get('LoanHolderState') or '').strip().upper()
+    first = (row.get('FilerFirstName') or '').strip().rstrip(',').strip()
+    last  = (row.get('FilerLastName')  or '').strip().rstrip(',').strip()
+    filer = ' '.join(x for x in [first, last] if x)
+
+    if state_raw and state_raw != 'LA':
+        parish = 'Out of State'
+    else:
+        parish = (
+            CITY_TO_PARISH.get(city)
+            or _zip_to_parish_fallback(zip_raw)
+            or 'East Baton Rouge'
+        )
+
+    holder = (row.get('LoanHolderName') or 'Unknown').strip()
+    rate   = float((row.get('LoanRate') or '0').strip() or 0)
+
+    return {
+        'contributor':  holder,
+        'city':         (row.get('LoanHolderCity') or '').strip(),
+        'lenderState':  state_raw or _zip_to_state(zip_raw),
+        'parish':       parish,
+        'amount':       round(amt, 2),
+        'rate':         round(rate, 4),
+        'date':         parse_date(row.get('LoanDate', '')),
+        'candidate':    filer or 'Unknown',
+        'party':        lookup_party(filer),
+        'source':       'LA Ethics (Loan)',
+        'filerNumber':  (row.get('FilerNumber') or '').strip(),
+    }
+
 def download_and_cache(csv_key, report_type='contributions'):
     """Stream-parse the CSV and write one NDJSON-gzip file per calendar year.
 
@@ -803,7 +854,9 @@ def download_and_cache(csv_key, report_type='contributions'):
             set_status(status_key, 'ready', 'cached')
             return
 
-        url_map = CSV_URLS if report_type == 'contributions' else EXPENDITURE_URLS
+        url_map = (CSV_URLS          if report_type == 'contributions' else
+                   EXPENDITURE_URLS  if report_type == 'expenditures'  else
+                   LOAN_URLS)
         url = url_map.get(csv_key)
         if not url:
             raise ValueError(f'No URL for {report_type}/{csv_key}')
@@ -811,7 +864,9 @@ def download_and_cache(csv_key, report_type='contributions'):
         set_status(status_key, 'downloading', f'Downloading {csv_key} from ethics.la.gov...')
         print(f'  Streaming {url}')
 
-        parse_row = _parse_contribution_row if report_type == 'contributions' else _parse_expenditure_row
+        parse_row = (_parse_contribution_row if report_type == 'contributions' else
+                     _parse_expenditure_row  if report_type == 'expenditures'  else
+                     _parse_loan_row)
 
         # Open per-year gzip writers lazily as years are encountered
         year_writers = {}   # {year: open gzip file handle}
@@ -955,13 +1010,15 @@ class Handler(BaseHTTPRequestHandler):
             })
             return
 
-        if parsed.path not in ('/api/la-ethics', '/api/la-expenditures'):
+        if parsed.path not in ('/api/la-ethics', '/api/la-expenditures', '/api/la-loans'):
             self.send_response(404)
             self._cors_headers()
             self.end_headers()
             return
 
-        report_type = 'contributions' if parsed.path == '/api/la-ethics' else 'expenditures'
+        report_type = ('contributions' if parsed.path == '/api/la-ethics' else
+                       'expenditures'  if parsed.path == '/api/la-expenditures' else
+                       'loans')
         cycle = params.get('cycle', ['2024'])[0]
         csv_key = get_csv_key(cycle)
         status_key = f'{report_type}_{csv_key}'
