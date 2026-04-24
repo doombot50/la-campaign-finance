@@ -853,6 +853,7 @@
           <th data-col="party">Party</th>
           <th data-col="donorType">Donor Type</th>
           <th data-col="amount">Amount</th>
+          <th data-col="notes">Notes</th>
           <th data-col="source">Source</th>
         </tr>
       </thead>
@@ -917,6 +918,7 @@
         <input type="number" class="ctrl-input amount" id="exp-amt-max" placeholder="Max $" min="0">
       </div>
     </div>
+    <button class="btn-secondary" id="btn-clear-exp-filters" title="Clear all expenditure filters" style="align-self:flex-end">✕ Clear Filters</button>
   </div>
 
   <div class="main">
@@ -1126,6 +1128,7 @@
         <label>Max $</label>
         <input class="ctrl-input" id="loan-amt-max" type="number" min="0" placeholder="∞" style="width:90px">
       </div>
+      <button class="btn-secondary" id="btn-clear-loan-filters" title="Clear all loan filters">✕ Clear Filters</button>
       <button class="ctrl-btn" onclick="downloadLoanCSV()">⬇ CSV</button>
     </div>
 
@@ -1368,6 +1371,34 @@ document.getElementById('btn-clear-filters').addEventListener('click', () => {
   document.getElementById('notes-search').value    = '';
   document.getElementById('btn-excl-ff').classList.remove('active');
   applyFiltersAndRender();
+});
+
+document.getElementById('btn-clear-exp-filters').addEventListener('click', () => {
+  document.getElementById('exp-campaign-select').value  = 'ALL';
+  document.getElementById('exp-category-select').value  = 'ALL';
+  document.getElementById('exp-recipient-search').value = '';
+  document.getElementById('exp-desc-search').value      = '';
+  document.getElementById('exp-parish-select').value    = 'ALL';
+  document.getElementById('exp-amt-min').value          = '';
+  document.getElementById('exp-amt-max').value          = '';
+  renderExpAll();
+});
+
+document.getElementById('btn-clear-loan-filters').addEventListener('click', () => {
+  document.getElementById('loan-campaign-select').value = 'ALL';
+  document.getElementById('loan-state-select').value    = 'ALL';
+  document.getElementById('loan-amt-min').value         = '';
+  document.getElementById('loan-amt-max').value         = '';
+  renderLoanAll();
+});
+
+// Escape key closes any open modal
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const campOverlay = document.getElementById('camp-overlay');
+  if (campOverlay && campOverlay.classList.contains('open')) { closeCampaignProfile(); return; }
+  const cpOverlay = document.getElementById('cp-overlay');
+  if (cpOverlay && cpOverlay.classList.contains('open')) { closeContributorProfile(); return; }
 });
 
 document.getElementById('btn-bubbles').addEventListener('click', () => {
@@ -2337,10 +2368,11 @@ function renderTable() {
         <td>${partyBadgeHtml(d)}</td>
         <td>${donorTypeBadgeHtml(d)}</td>
         <td class="amount-cell">${formatMoney(d.amount)}</td>
+        <td style="font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(d.notes||'')}">${escHtml((d.notes||'').slice(0,60))}</td>
         <td><span class="source-badge la">LA Ethics</span></td>
       </tr>
       <tr class="detail-row${d.isFilingFee ? ' filing-fee-row' : ''}" id="${rid}" style="display:none">
-        <td colspan="10">${buildDetailPanel(d)}</td>
+        <td colspan="11">${buildDetailPanel(d)}</td>
       </tr>`;
     }).join('');
   }
@@ -2788,6 +2820,24 @@ async function loadExpData() {
   document.getElementById('exp-unavailable-msg').style.display = 'none';
   document.getElementById('exp-table').style.display = '';
 
+  // ── sessionStorage cache check ────────────────────────────────
+  const expCacheKey = `la_exp_${cycle}`;
+  const expCached = sessionStorage.getItem(expCacheKey);
+  if (expCached) {
+    try {
+      expData = JSON.parse(expCached);
+      document.getElementById('exp-loading-msg').style.display = 'none';
+      populateExpCampaignDropdown();
+      renderExpAll();
+      // Refresh open campaign profile modal if it's for this data
+      if (document.getElementById('camp-overlay').classList.contains('open')) {
+        _campExps = expData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        if (_campTab === 'exps') campSwitchTab('exps');
+      }
+      return;
+    } catch(e) { /* fall through to network fetch */ }
+  }
+
   if (!proxyAvailable) {
     document.getElementById('exp-loading-msg').style.display = 'none';
     return;
@@ -2805,9 +2855,15 @@ async function loadExpData() {
       expData = await r.json();
       // Tag each record with category
       expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
+      try { sessionStorage.setItem(expCacheKey, JSON.stringify(expData)); } catch(e) {}
       document.getElementById('exp-loading-msg').style.display = 'none';
       populateExpCampaignDropdown();
       renderExpAll();
+      // Refresh open campaign profile modal
+      if (document.getElementById('camp-overlay').classList.contains('open')) {
+        _campExps = expData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        if (_campTab === 'exps') campSwitchTab('exps');
+      }
     } catch(e) {
       console.error('Expenditure fetch error:', e);
       document.getElementById('exp-loading-msg').style.display = 'none';
@@ -2924,9 +2980,17 @@ function renderExpCampaignChart() {
       scales: {
         x: { ticks: { callback: v => '$' + (v>=1e6 ? (v/1e6).toFixed(1)+'M' : v>=1e3 ? (v/1e3).toFixed(0)+'K' : v), color: Chart.defaults.color }, grid: { color: 'rgba(255,255,255,0.05)' } },
         y: { ticks: { color: Chart.defaults.color, font: { size: 11 } }, grid: { display: false } }
+      },
+      onClick: (evt, elements) => {
+        if (elements.length > 0) {
+          const name = sorted[elements[0].index]?.[0];
+          if (name && name !== 'Unknown') showCampaignProfile(name);
+        }
       }
     }
   });
+  // Cursor pointer on hover
+  ctx.canvas.style.cursor = 'pointer';
 }
 
 // ── Category chart ────────────────────────────────────────────────
@@ -3200,6 +3264,24 @@ async function loadLoanData() {
   document.getElementById('loan-unavailable-msg').style.display = 'none';
   document.getElementById('loan-table').style.display = '';
 
+  // ── sessionStorage cache check ────────────────────────────────
+  const loanCacheKey = `la_loan_${cycle}`;
+  const loanCached = sessionStorage.getItem(loanCacheKey);
+  if (loanCached) {
+    try {
+      loanData = JSON.parse(loanCached);
+      document.getElementById('loan-loading-msg').style.display = 'none';
+      populateLoanCampaignDropdown();
+      renderLoanAll();
+      // Refresh open campaign profile modal
+      if (document.getElementById('camp-overlay').classList.contains('open')) {
+        _campLoans = loanData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        if (_campTab === 'loans') campSwitchTab('loans');
+      }
+      return;
+    } catch(e) { /* fall through to network fetch */ }
+  }
+
   if (!proxyAvailable) {
     document.getElementById('loan-loading-msg').style.display = 'none';
     return;
@@ -3220,9 +3302,15 @@ async function loadLoanData() {
         d._isSelf = parts.some(p => p.length > 2 && lender.includes(p));
         return d;
       });
+      try { sessionStorage.setItem(loanCacheKey, JSON.stringify(loanData)); } catch(e) {}
       document.getElementById('loan-loading-msg').style.display = 'none';
       populateLoanCampaignDropdown();
       renderLoanAll();
+      // Refresh open campaign profile modal
+      if (document.getElementById('camp-overlay').classList.contains('open')) {
+        _campLoans = loanData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        if (_campTab === 'loans') campSwitchTab('loans');
+      }
     } catch (e) {
       document.getElementById('loan-loading-msg').textContent = 'Error loading loan data.';
     }
@@ -3310,9 +3398,16 @@ function renderLoanCampaignChart() {
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '$' + Math.round(ctx.raw).toLocaleString() } } },
-      scales: { x: { ticks: { callback: v => '$' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v) } } }
+      scales: { x: { ticks: { callback: v => '$' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v) } } },
+      onClick: (evt, elements) => {
+        if (elements.length > 0) {
+          const name = sorted[elements[0].index]?.[0];
+          if (name && name !== 'Unknown') showCampaignProfile(name);
+        }
+      }
     }
   });
+  ctx.canvas.style.cursor = 'pointer';
 }
 
 // ── Origin chart ──────────────────────────────────────────────
@@ -3701,17 +3796,32 @@ function campSwitchTab(tab) {
         <td style="font-size:11px;color:var(--muted);max-width:180px">${escHtml((d.notes||'').slice(0,80))}</td>
       </tr>`).join('');
   } else if (tab === 'exps') {
-    empty.style.display = _campExps.length ? 'none' : '';
-    document.getElementById('camp-tbody-exps').innerHTML = _campExps.map(d => `
-      <tr>
-        <td>${d.date||'—'}</td>
-        <td>${escHtml(d.contributor||'—')}</td>
-        <td>${d.recipientState||'—'}</td>
-        <td style="font-size:11px;color:var(--muted)">${escHtml(d._cat||'')}</td>
-        <td class="num">$${Math.round(d.amount).toLocaleString()}</td>
-        <td style="font-size:11px;color:var(--muted);max-width:200px">${escHtml((d.description||'').slice(0,100))}</td>
-      </tr>`).join('');
+    // If expenditure data hasn't been loaded yet, trigger a load and show a message
+    if (expData.length === 0) {
+      empty.style.display = 'none';
+      document.getElementById('camp-tbody-exps').innerHTML =
+        '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">⏳ Loading expenditure data…</td></tr>';
+      loadExpData();  // will refresh the modal tab once complete
+    } else {
+      empty.style.display = _campExps.length ? 'none' : '';
+      document.getElementById('camp-tbody-exps').innerHTML = _campExps.map(d => `
+        <tr>
+          <td>${d.date||'—'}</td>
+          <td>${escHtml(d.contributor||'—')}</td>
+          <td>${d.recipientState||'—'}</td>
+          <td style="font-size:11px;color:var(--muted)">${escHtml(d._cat||'')}</td>
+          <td class="num">$${Math.round(d.amount).toLocaleString()}</td>
+          <td style="font-size:11px;color:var(--muted);max-width:200px">${escHtml((d.description||'').slice(0,100))}</td>
+        </tr>`).join('');
+    }
   } else {
+    // Loans tab
+    if (loanData.length === 0) {
+      empty.style.display = 'none';
+      document.getElementById('camp-tbody-loans').innerHTML =
+        '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">⏳ Loading loan data…</td></tr>';
+      loadLoanData();  // will refresh the modal tab once complete
+    } else {
     empty.style.display = _campLoans.length ? 'none' : '';
     document.getElementById('camp-tbody-loans').innerHTML = _campLoans.map(d => `
       <tr>
@@ -3722,6 +3832,7 @@ function campSwitchTab(tab) {
         <td class="num">${d.rate?d.rate.toFixed(2)+'%':'0%'}</td>
         <td class="num">$${Math.round(d.amount).toLocaleString()}</td>
       </tr>`).join('');
+    }  // end else (loanData loaded)
   }
 }
 
