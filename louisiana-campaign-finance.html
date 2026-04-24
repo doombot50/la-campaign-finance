@@ -2554,13 +2554,13 @@ function switchTab(tab) {
     const cur = sel.value;
     sel.innerHTML = '';
     _allCycleOpts
-      .filter(o => parseInt(o.value) >= 2016)
+      .filter(o => parseInt(o.value) >= 2018)
       .forEach(o => sel.add(new Option(o.text, o.value)));
     // Preserve selection if still valid, otherwise jump to newest available
     if (sel.querySelector(`option[value="${cur}"]`)) {
       sel.value = cur;
     } else {
-      sel.value = _allCycleOpts.find(o => parseInt(o.value) >= 2016)?.value || '2026';
+      sel.value = _allCycleOpts.find(o => parseInt(o.value) >= 2018)?.value || '2026';
       expData = []; expFiltered = [];
     }
   } else {
@@ -2577,7 +2577,7 @@ function switchTab(tab) {
 // ── Fetch expenditure data ────────────────────────────────────────
 async function loadExpData() {
   const cycle = document.getElementById('cycle-select').value;
-  if (parseInt(cycle) < 2016) {
+  if (parseInt(cycle) < 2018) {
     document.getElementById('exp-unavailable-msg').style.display = '';
     document.getElementById('exp-table').style.display = 'none';
     document.getElementById('exp-loading-msg').style.display = 'none';
