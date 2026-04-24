@@ -1964,7 +1964,11 @@ function renderTrendChart() {
     else othByMonth[m]=(othByMonth[m]||0)+d.amount;
   });
 
-  const labels = MONTH_NAMES;   // Jan … Dec — year shown in chart title
+  // 24 labels: "Jan '25", "Feb '25", … "Dec '26"
+  const labels = months.map(m => {
+    const [yr, mo] = m.split('-');
+    return `${MONTH_NAMES[parseInt(mo,10)-1]} '${yr.slice(2)}`;
+  });
 
   if (trendChart) { trendChart.destroy(); trendChart = null; }
   const ctx = document.getElementById('trend-chart').getContext('2d');
