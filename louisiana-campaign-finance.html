@@ -637,6 +637,10 @@
       <input type="text" class="ctrl-input search" id="zip-search" placeholder="e.g. 70801" maxlength="10" style="width:110px">
     </div>
     <div class="ctrl-group">
+      <label>Notes</label>
+      <input type="text" class="ctrl-input search" id="notes-search" placeholder="Search notes..." style="width:150px">
+    </div>
+    <div class="ctrl-group">
       <label>Donor Origin</label>
       <select class="ctrl-select" id="origin-select">
         <option value="ALL">All States</option>
@@ -892,6 +896,10 @@
     <div class="ctrl-group">
       <label>Recipient</label>
       <input type="text" class="ctrl-input search" id="exp-recipient-search" placeholder="Search recipient...">
+    </div>
+    <div class="ctrl-group">
+      <label>Description</label>
+      <input type="text" class="ctrl-input search" id="exp-desc-search" placeholder="Search description..." style="width:160px">
     </div>
     <div class="ctrl-group">
       <label>Amount Range</label>
@@ -1356,6 +1364,7 @@ document.getElementById('btn-us-states').addEventListener('click', () => {
 document.getElementById('candidate-search').addEventListener('input', debounceFilter);
 document.getElementById('donor-search').addEventListener('input', debounceFilter);
 document.getElementById('zip-search').addEventListener('input', debounceFilter);
+document.getElementById('notes-search').addEventListener('input', debounceFilter);
 document.getElementById('btn-excl-ff').addEventListener('click', function() {
   this.classList.toggle('active');
   applyFiltersAndRender();
@@ -1493,6 +1502,7 @@ function applyFiltersAndRender() {
   const search = document.getElementById('candidate-search').value.toLowerCase().trim();
   const donorSearch = document.getElementById('donor-search').value.toLowerCase().trim();
   const zipSearch   = document.getElementById('zip-search').value.trim();
+  const notesSearch = document.getElementById('notes-search').value.toLowerCase().trim();
   const origin = document.getElementById('origin-select').value;
   const exclFilingFees = document.getElementById('btn-excl-ff').classList.contains('active');
   const cycleYear = parseInt(cycle);  // even year; show full 2-year cycle [cycleYear-1, cycleYear]
@@ -1514,6 +1524,7 @@ function applyFiltersAndRender() {
     if (search && !d.candidate.toLowerCase().includes(search)) return false;
     if (donorSearch && !d.contributor.toLowerCase().includes(donorSearch)) return false;
     if (zipSearch && !(d.contributorZip || '').startsWith(zipSearch)) return false;
+    if (notesSearch && !(d.notes || '').toLowerCase().includes(notesSearch)) return false;
     if (origin !== 'ALL' && origin !== 'OOS') {
       if ((d.contributorState || '').toUpperCase() !== origin) return false;
     } else if (origin === 'OOS') {
@@ -2742,13 +2753,15 @@ function filterExpData() {
   const campaign  = document.getElementById('exp-campaign-select').value;
   const category  = document.getElementById('exp-category-select').value;
   const recipient = (document.getElementById('exp-recipient-search').value || '').toLowerCase();
+  const descSearch = (document.getElementById('exp-desc-search').value || '').toLowerCase();
   const amtMin    = parseFloat(document.getElementById('exp-amt-min').value) || 0;
   const amtMax    = parseFloat(document.getElementById('exp-amt-max').value) || Infinity;
 
   expFiltered = expData.filter(r => {
     if (campaign !== 'ALL' && r.candidate !== campaign) return false;
     if (category !== 'ALL' && r._cat !== category) return false;
-    if (recipient && !(r.contributor || '').toLowerCase().includes(recipient)) return false;
+    if (recipient   && !(r.contributor  || '').toLowerCase().includes(recipient))  return false;
+    if (descSearch  && !(r.description  || '').toLowerCase().includes(descSearch)) return false;
     if (r.amount < amtMin || r.amount > amtMax) return false;
     return true;
   });
@@ -2984,7 +2997,8 @@ function downloadExpCSV() {
 // ── Wire up expenditure controls ──────────────────────────────────
 document.getElementById('exp-campaign-select').addEventListener('change', renderExpAll);
 document.getElementById('exp-category-select').addEventListener('change', renderExpAll);
-document.getElementById('exp-recipient-search').addEventListener('input',  renderExpAll);
+document.getElementById('exp-recipient-search').addEventListener('input', renderExpAll);
+document.getElementById('exp-desc-search').addEventListener('input',      renderExpAll);
 document.getElementById('exp-amt-min').addEventListener('input', renderExpAll);
 document.getElementById('exp-amt-max').addEventListener('input', renderExpAll);
 
