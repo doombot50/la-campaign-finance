@@ -2832,6 +2832,7 @@ async function loadExpData() {
       // Refresh open campaign profile modal if it's for this data
       if (document.getElementById('camp-overlay').classList.contains('open')) {
         _campExps = expData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        _refreshCampStats();
         if (_campTab === 'exps') campSwitchTab('exps');
       }
       return;
@@ -2862,6 +2863,7 @@ async function loadExpData() {
       // Refresh open campaign profile modal
       if (document.getElementById('camp-overlay').classList.contains('open')) {
         _campExps = expData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        _refreshCampStats();
         if (_campTab === 'exps') campSwitchTab('exps');
       }
     } catch(e) {
@@ -3276,6 +3278,7 @@ async function loadLoanData() {
       // Refresh open campaign profile modal
       if (document.getElementById('camp-overlay').classList.contains('open')) {
         _campLoans = loanData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        _refreshCampStats();
         if (_campTab === 'loans') campSwitchTab('loans');
       }
       return;
@@ -3309,6 +3312,7 @@ async function loadLoanData() {
       // Refresh open campaign profile modal
       if (document.getElementById('camp-overlay').classList.contains('open')) {
         _campLoans = loanData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        _refreshCampStats();
         if (_campTab === 'loans') campSwitchTab('loans');
       }
     } catch (e) {
@@ -3748,6 +3752,14 @@ function showCampaignProfile(name) {
   _campLoans    = loanData.filter(d => d.candidate === name)
                     .sort((a,b) => (b.date||'').localeCompare(a.date||''));
 
+  document.getElementById('camp-name').textContent = name;
+  _refreshCampStats();
+  campSwitchTab('contribs');
+  document.getElementById('camp-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function _refreshCampStats() {
   const fmt = n => '$' + Math.round(n).toLocaleString();
   const raised   = _campContribs.reduce((s,d) => s + d.amount, 0);
   const spent    = _campExps.reduce((s,d) => s + d.amount, 0);
@@ -3756,7 +3768,6 @@ function showCampaignProfile(name) {
   const party    = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
   const partyLabel = party === 'DEM' ? '🔵 Democrat' : party === 'REP' ? '🔴 Republican' : '⚪ Other';
 
-  document.getElementById('camp-name').textContent = name;
   document.getElementById('camp-meta').textContent =
     `${partyLabel}  ·  ${_campContribs.length} contributions · ${_campExps.length} expenditures · ${_campLoans.length} loans`;
   document.getElementById('camp-raised').textContent   = fmt(raised);
@@ -3764,10 +3775,6 @@ function showCampaignProfile(name) {
   document.getElementById('camp-borrowed').textContent = fmt(borrowed);
   document.getElementById('camp-net').textContent      = fmt(raised - spent);
   document.getElementById('camp-donors').textContent   = donors.toLocaleString();
-
-  campSwitchTab('contribs');
-  document.getElementById('camp-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
 }
 
 function closeCampaignProfile() {
