@@ -758,26 +758,35 @@ def _parse_expenditure_row(row):
     amt = float((row.get('ExpenditureAmt') or '').strip() or 0)
     if amt <= 0:
         return None
-    city    = (row.get('RecipientCity')  or '').upper().strip()
-    zip_raw = (row.get('RecipientZip')   or '').strip()
+    city           = (row.get('RecipientCity')  or '').upper().strip()
+    zip_raw        = (row.get('RecipientZip')   or '').strip()
+    state_raw      = (row.get('RecipientState') or '').strip().upper()
     first = (row.get('FilerFirstName') or '').strip().rstrip(',').strip()
     last  = (row.get('FilerLastName')  or '').strip().rstrip(',').strip()
     filer = ' '.join(x for x in [first, last] if x)
-    return {
-        'contributor': (row.get('RecipientName') or 'Unknown').strip(),
-        'city':        (row.get('RecipientCity') or '').strip(),
-        'parish':      (
+
+    # Resolve parish only for Louisiana recipients; everything else is "Out of State"
+    if state_raw and state_raw != 'LA':
+        parish = 'Out of State'
+    else:
+        parish = (
             CITY_TO_PARISH.get(city)
             or _zip_to_parish_fallback(zip_raw)
             or 'East Baton Rouge'
-        ),
-        'amount':      round(amt, 2),
-        'date':        parse_date(row.get('ExpenditureDate', '')),
-        'candidate':   filer or 'Unknown',
-        'party':       lookup_party(filer),
-        'source':      'LA Ethics (Expenditure)',
-        'description': (row.get('ExpenditureDescription') or '').strip(),
-        'filerNumber': (row.get('FilerNumber') or '').strip(),
+        )
+
+    return {
+        'contributor':     (row.get('RecipientName') or 'Unknown').strip(),
+        'city':            (row.get('RecipientCity') or '').strip(),
+        'recipientState':  state_raw or _zip_to_state(zip_raw),
+        'parish':          parish,
+        'amount':          round(amt, 2),
+        'date':            parse_date(row.get('ExpenditureDate', '')),
+        'candidate':       filer or 'Unknown',
+        'party':           lookup_party(filer),
+        'source':          'LA Ethics (Expenditure)',
+        'description':     (row.get('ExpenditureDescription') or '').strip(),
+        'filerNumber':     (row.get('FilerNumber') or '').strip(),
     }
 
 def download_and_cache(csv_key, report_type='contributions'):
