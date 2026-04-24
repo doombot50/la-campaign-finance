@@ -2821,7 +2821,7 @@ async function loadExpData() {
   document.getElementById('exp-table').style.display = '';
 
   // ── sessionStorage cache check ────────────────────────────────
-  const expCacheKey = `la_exp_${cycle}`;
+  const expCacheKey = `la_exp2_${cycle}`;   // v2: ensures both cycle years are included
   const expCached = sessionStorage.getItem(expCacheKey);
   if (expCached) {
     try {
@@ -3267,7 +3267,7 @@ async function loadLoanData() {
   document.getElementById('loan-table').style.display = '';
 
   // ── sessionStorage cache check ────────────────────────────────
-  const loanCacheKey = `la_loan_${cycle}`;
+  const loanCacheKey = `la_loan2_${cycle}`;   // v2: ensures both cycle years are included
   const loanCached = sessionStorage.getItem(loanCacheKey);
   if (loanCached) {
     try {

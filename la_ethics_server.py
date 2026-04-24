@@ -1046,12 +1046,25 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
-        # If y-1 is in a different bundle and not yet cached, kick it off in background
-        # so it fills in on the next request without blocking the current one.
+        # If y-1 is in a different bundle and not yet cached, we must wait for it —
+        # otherwise we'd return an incomplete dataset and the client would cache it.
+        # Kick off the download and return 202 so the client keeps polling.
         if prev_csv_key != csv_key and not _year_is_fresh(y - 1, report_type):
             prefetch_background(prev_csv_key, report_type)
+            body = json.dumps({
+                'loading': True,
+                'status':  'downloading',
+                'message': f'Downloading {prev_csv_key} data from ethics.la.gov…',
+            }).encode('utf-8')
+            self.send_response(202)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self._cors_headers()
+            self.end_headers()
+            self.wfile.write(body)
+            return
 
-        # Stream only the years that are actually on disk — skip any that aren't cached yet
+        # Both years are on disk — stream them
         years_to_serve = [yr for yr in years_wanted if _year_is_fresh(yr, report_type)]
         try:
             self._stream_years_json(years_to_serve, report_type)
