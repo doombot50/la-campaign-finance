@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1105,122 +1105,13 @@ const CITY_TO_PARISH = {
 };
 
 // ============================================================
-// LOUISIANA ETHICS SAMPLE DATA (100 records)
-// ============================================================
-const LA_SAMPLE_DATA = [
-  {contributor:"Entergy Louisiana LLC",city:"Baton Rouge",parish:"East Baton Rouge",amount:50000,date:"2024-03-15",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Association of Business & Industry",city:"Baton Rouge",parish:"East Baton Rouge",amount:25000,date:"2024-02-10",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Ochsner Health System",city:"New Orleans",parish:"Orleans",amount:15000,date:"2024-01-22",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
-  {contributor:"Turner Industries Group",city:"Baton Rouge",parish:"East Baton Rouge",amount:10000,date:"2024-03-01",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Taylor Energy Company",city:"New Orleans",parish:"Orleans",amount:75000,date:"2023-11-05",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana AFL-CIO",city:"Baton Rouge",parish:"East Baton Rouge",amount:20000,date:"2024-01-15",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"Breazeale Sachse & Wilson LLP",city:"Baton Rouge",parish:"East Baton Rouge",amount:8500,date:"2023-09-20",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Cox Communications Louisiana",city:"New Orleans",parish:"Orleans",amount:12000,date:"2024-02-28",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
-  {contributor:"Acadian Ambulance Service",city:"Lafayette",parish:"Lafayette",amount:7500,date:"2023-10-12",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"New Orleans Saints LLC",city:"New Orleans",parish:"Orleans",amount:30000,date:"2023-12-01",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
-  {contributor:"Chevron Phillips Chemical",city:"Lake Charles",parish:"Calcasieu",amount:45000,date:"2024-01-08",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Bankers Association PAC",city:"Baton Rouge",parish:"East Baton Rouge",amount:18000,date:"2023-08-15",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
-  {contributor:"Danos & Curole Marine Contractors",city:"Houma",parish:"Terrebonne",amount:9000,date:"2024-03-10",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
-  {contributor:"LSU Foundation",city:"Baton Rouge",parish:"East Baton Rouge",amount:5000,date:"2023-07-20",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"McDermott International",city:"New Orleans",parish:"Orleans",amount:22000,date:"2024-02-05",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
-  {contributor:"Peoples Health Network",city:"Metairie",parish:"Jefferson",amount:14000,date:"2023-11-18",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Medical Association PAC",city:"New Orleans",parish:"Orleans",amount:35000,date:"2024-01-30",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
-  {contributor:"CLECO Corporation",city:"Alexandria",parish:"Rapides",amount:28000,date:"2023-10-05",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
-  {contributor:"Waste Connections Inc.",city:"Shreveport",parish:"Caddo",amount:11000,date:"2024-02-20",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
-  {contributor:"New Orleans Business Alliance",city:"New Orleans",parish:"Orleans",amount:16000,date:"2023-12-15",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
-  {contributor:"Louisiana Chemical Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:40000,date:"2024-03-20",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Adams and Reese LLP",city:"New Orleans",parish:"Orleans",amount:7000,date:"2023-09-10",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
-  {contributor:"Cajun Industries",city:"Baton Rouge",parish:"East Baton Rouge",amount:12500,date:"2024-01-25",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Shaw Group Inc.",city:"Baton Rouge",parish:"East Baton Rouge",amount:55000,date:"2023-11-22",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
-  {contributor:"Greater New Orleans Inc.",city:"New Orleans",parish:"Orleans",amount:8000,date:"2024-02-12",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"ExxonMobil Chemical Plant",city:"Baton Rouge",parish:"East Baton Rouge",amount:100000,date:"2023-08-01",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
-  {contributor:"Gilchrist Construction Co.",city:"Alexandria",parish:"Rapides",amount:6500,date:"2024-03-05",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Realtors PAC",city:"Baton Rouge",parish:"East Baton Rouge",amount:22500,date:"2023-10-25",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
-  {contributor:"BorgWarner Thermal Systems",city:"Shreveport",parish:"Caddo",amount:9500,date:"2024-01-18",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Hospital Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:32000,date:"2023-12-08",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
-  {contributor:"Port of New Orleans",city:"New Orleans",parish:"Orleans",amount:5000,date:"2024-02-22",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
-  {contributor:"Lamar Advertising Company",city:"Baton Rouge",parish:"East Baton Rouge",amount:18500,date:"2023-11-30",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Pinnacle Entertainment Inc.",city:"Harvey",parish:"Jefferson",amount:27000,date:"2024-01-10",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Farm Bureau PAC",city:"Baton Rouge",parish:"East Baton Rouge",amount:15000,date:"2023-09-15",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
-  {contributor:"Tulane University",city:"New Orleans",parish:"Orleans",amount:4000,date:"2024-03-12",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"W-H Energy Services",city:"Broussard",parish:"Lafayette",amount:8000,date:"2023-10-18",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Gordon Arata Montgomery Barnett",city:"New Orleans",parish:"Orleans",amount:6000,date:"2024-02-08",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Association of Educators",city:"Baton Rouge",parish:"East Baton Rouge",amount:25000,date:"2023-12-20",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"Berry Dunn McNeil & Parker",city:"Baton Rouge",parish:"East Baton Rouge",amount:7500,date:"2024-01-05",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
-  {contributor:"Jacobs Engineering Group",city:"Baton Rouge",parish:"East Baton Rouge",amount:33000,date:"2023-08-28",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
-  {contributor:"Basin Street Properties",city:"New Orleans",parish:"Orleans",amount:10000,date:"2024-03-08",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
-  {contributor:"LHC Group Inc.",city:"Lafayette",parish:"Lafayette",amount:19000,date:"2023-11-10",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"New Orleans Pelicans LLC",city:"New Orleans",parish:"Orleans",amount:20000,date:"2024-01-28",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
-  {contributor:"Stone Energy Corporation",city:"Lafayette",parish:"Lafayette",amount:13500,date:"2023-09-25",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Baton Rouge Area Chamber",city:"Baton Rouge",parish:"East Baton Rouge",amount:9000,date:"2024-02-15",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Petroleum Council",city:"Baton Rouge",parish:"East Baton Rouge",amount:60000,date:"2023-07-15",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
-  {contributor:"Syngenta Crop Protection",city:"Shreveport",parish:"Caddo",amount:8500,date:"2024-03-18",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
-  {contributor:"Hess Corporation",city:"New Orleans",parish:"Orleans",amount:42000,date:"2023-10-30",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Trial Lawyers Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:30000,date:"2024-01-20",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"Entergy Gulf States Louisiana",city:"Lake Charles",parish:"Calcasieu",amount:37000,date:"2023-12-05",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
-  {contributor:"LABI Political Action Committee",city:"Baton Rouge",parish:"East Baton Rouge",amount:48000,date:"2024-02-25",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Slidell Memorial Hospital",city:"Slidell",parish:"St. Tammany",amount:6000,date:"2023-11-14",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
-  {contributor:"Folger Coffee Company",city:"New Orleans",parish:"Orleans",amount:14500,date:"2024-01-12",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
-  {contributor:"Cargill Inc.",city:"Memphis",parish:"Ouachita",amount:17000,date:"2023-08-20",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
-  {contributor:"Blue Cross Blue Shield of Louisiana",city:"Baton Rouge",parish:"East Baton Rouge",amount:52000,date:"2024-03-02",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
-  {contributor:"BancorpSouth Inc.",city:"Monroe",parish:"Ouachita",amount:11500,date:"2023-10-08",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
-  {contributor:"Thibodaux Regional Medical Center",city:"Thibodaux",parish:"Lafourche",amount:7000,date:"2024-02-18",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
-  {contributor:"Raising Cane's Restaurants",city:"Baton Rouge",parish:"East Baton Rouge",amount:25000,date:"2023-12-12",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Freeport-McMoRan Oil & Gas",city:"New Orleans",parish:"Orleans",amount:38000,date:"2024-01-15",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
-  {contributor:"Southern University System",city:"Baton Rouge",parish:"East Baton Rouge",amount:3000,date:"2023-09-05",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"Marathon Oil Louisiana LLC",city:"Gretna",parish:"Jefferson",amount:46000,date:"2024-03-25",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
-  {contributor:"Hibernia Corporation",city:"Lafayette",parish:"Lafayette",amount:16000,date:"2023-11-20",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Popeyes Louisiana Kitchen",city:"Atlanta",parish:"East Baton Rouge",amount:12000,date:"2024-01-22",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Vermilion Parish Police Jury",city:"Abbeville",parish:"Vermilion",amount:4500,date:"2023-10-15",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Capitol Federal Savings",city:"Baton Rouge",parish:"East Baton Rouge",amount:8000,date:"2024-02-05",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
-  {contributor:"TOPS PAC Louisiana",city:"New Orleans",parish:"Orleans",amount:21000,date:"2023-12-22",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
-  {contributor:"Louisiana Sugarcane League",city:"New Roads",parish:"Pointe Coupee",amount:9500,date:"2024-03-14",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
-  {contributor:"Ochsner Clinic Foundation",city:"Mandeville",parish:"St. Tammany",amount:18000,date:"2023-08-10",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
-  {contributor:"Superior Energy Services",city:"Harvey",parish:"Jefferson",amount:29000,date:"2024-01-30",candidate:"Steve Scalise",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Association of Realtors",city:"Baton Rouge",parish:"East Baton Rouge",amount:14000,date:"2023-11-25",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Pelican State Credit Union",city:"Baton Rouge",parish:"East Baton Rouge",amount:6500,date:"2024-02-28",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"New Orleans Advocate LLC",city:"New Orleans",parish:"Orleans",amount:3500,date:"2023-09-18",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"Gulf South Pipeline",city:"Houston",parish:"Calcasieu",amount:34000,date:"2024-01-08",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
-  {contributor:"Union Tank Car Company",city:"Shreveport",parish:"Caddo",amount:11000,date:"2023-10-22",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Physical Therapy Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:5500,date:"2024-03-20",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
-  {contributor:"Dynamic Industries Inc.",city:"New Iberia",parish:"Iberia",amount:8500,date:"2023-12-18",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Associated Builders & Contractors LA",city:"Baton Rouge",parish:"East Baton Rouge",amount:22000,date:"2024-02-10",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Capital One Financial Corp",city:"Glen Allen",parish:"East Baton Rouge",amount:58000,date:"2023-07-28",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
-  {contributor:"Covington City Council PAC",city:"Covington",parish:"St. Tammany",amount:7500,date:"2024-01-16",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
-  {contributor:"New Orleans Chamber of Commerce",city:"New Orleans",parish:"Orleans",amount:13000,date:"2023-11-08",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
-  {contributor:"Southwestern Electric Power Co.",city:"Shreveport",parish:"Caddo",amount:26000,date:"2024-03-08",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Homebuilders Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:17500,date:"2023-10-02",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Offshore Logistics Inc.",city:"Lafayette",parish:"Lafayette",amount:20000,date:"2024-02-20",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
-  {contributor:"Calcasieu Parish Police Jury",city:"Lake Charles",parish:"Calcasieu",amount:5000,date:"2023-12-28",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Nurses Association",city:"Baton Rouge",parish:"East Baton Rouge",amount:8000,date:"2024-01-25",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"BHP Billiton Petroleum",city:"Houston",parish:"St. Tammany",amount:43000,date:"2023-08-22",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
-  {contributor:"Centurion Medical Products",city:"Garner",parish:"Caddo",amount:9500,date:"2024-03-15",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
-  {contributor:"Bossier City Chamber PAC",city:"Bossier City",parish:"Bossier",amount:6000,date:"2023-11-12",candidate:"Mike Johnson",party:"REP",source:"LA Ethics"},
-  {contributor:"Tensas Parish Council",city:"Tallulah",parish:"Madison",amount:2500,date:"2024-02-02",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
-  {contributor:"Rapides Foundation",city:"Alexandria",parish:"Rapides",amount:11000,date:"2023-09-28",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
-  {contributor:"IBERIABANK Corporation",city:"Lafayette",parish:"Lafayette",amount:36000,date:"2024-01-20",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Tangipahoa Parish Economic Dev.",city:"Hammond",parish:"Tangipahoa",amount:7000,date:"2023-12-10",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Citizens for Excellence",city:"Baton Rouge",parish:"East Baton Rouge",amount:19500,date:"2024-03-22",candidate:"Jeff Landry",party:"REP",source:"LA Ethics"},
-  {contributor:"Dow Chemical Louisiana",city:"Plaquemine",parish:"Iberville",amount:44000,date:"2023-10-14",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
-  {contributor:"Progressive Democrats of Louisiana",city:"New Orleans",parish:"Orleans",amount:15000,date:"2024-02-14",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"Louisiana Land and Exploration",city:"New Orleans",parish:"Orleans",amount:68000,date:"2023-07-10",candidate:"John Kennedy",party:"REP",source:"LA Ethics"},
-  {contributor:"Terrebonne Parish Consolidated Govt",city:"Houma",parish:"Terrebonne",amount:8000,date:"2024-01-05",candidate:"Garret Graves",party:"REP",source:"LA Ethics"},
-  {contributor:"Southern Pacific Transport",city:"Monroe",parish:"Ouachita",amount:12500,date:"2023-11-02",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
-  {contributor:"St. Tammany Parish Chamber",city:"Covington",parish:"St. Tammany",amount:9000,date:"2024-03-28",candidate:"Sharon Hewitt",party:"REP",source:"LA Ethics"},
-  {contributor:"Louisiana Dental Association PAC",city:"Baton Rouge",parish:"East Baton Rouge",amount:14500,date:"2023-08-15",candidate:"Bill Cassidy",party:"REP",source:"LA Ethics"},
-  {contributor:"New Orleans Ernest N. Morial MCCNO",city:"New Orleans",parish:"Orleans",amount:6500,date:"2024-02-06",candidate:"Troy Carter",party:"DEM",source:"LA Ethics"},
-  {contributor:"Clean Energy Capital LLC",city:"Baton Rouge",parish:"East Baton Rouge",amount:500,date:"2020-06-15",candidate:"Shawn Wilson",party:"DEM",source:"LA Ethics"},
-  {contributor:"Rural Louisianians United PAC",city:"Ruston",parish:"Lincoln",amount:3500,date:"2022-09-20",candidate:"Julia Letlow",party:"REP",source:"LA Ethics"},
+const LA_SAMPLE_DATA = [  /* empty — sample data removed */
 ];
-
-LA_SAMPLE_DATA.forEach(d => {
-  d.donorType = detectDonorType(d.contributor);
-});
 
 // ============================================================
 // STATE
 // ============================================================
-let allData = [...LA_SAMPLE_DATA];
+let allData = [];
 let filteredData = [];
 let laEthicsData = [];
 // When served from the Python server itself, use relative URLs.
@@ -1474,14 +1365,14 @@ async function fetchLAEthicsLive(cycle) {
     } catch(err) {
       console.warn('LA Ethics fetch error:', err);
       document.getElementById('la-status').textContent =
-        `${LA_SAMPLE_DATA.length} sample records (${err.message})`;
+        `Error loading data: ${err.message}`;
       return;
     }
   }
 }
 
 function mergeAndRender() {
-  allData = laEthicsData.length > 0 ? [...laEthicsData] : [...LA_SAMPLE_DATA];
+  allData = [...laEthicsData];
   applyFiltersAndRender();
 }
 
@@ -2411,7 +2302,7 @@ function normalizeParty(p) {
 function updateStatusBar() {
   document.getElementById('status-records').textContent = filteredData.length.toLocaleString();
   document.getElementById('status-updated').textContent = new Date().toLocaleTimeString();
-  document.getElementById('la-status').textContent = `${LA_SAMPLE_DATA.length} sample records`;
+  document.getElementById('la-status').textContent = 'No data loaded';
 }
 
 function setStatus(state) {
@@ -3110,8 +3001,7 @@ document.addEventListener('keydown', e => {
 // INIT
 // ============================================================
 (async function init() {
-  allData = [...LA_SAMPLE_DATA];
-  document.getElementById('la-status').textContent = `${LA_SAMPLE_DATA.length} sample records`;
+  document.getElementById('la-status').textContent = 'No data loaded';
 
   if (API_BASE === '') {
     // Page is being served directly by the Python server — proxy is always available.
