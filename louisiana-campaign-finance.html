@@ -527,6 +527,16 @@
     .stats-row { grid-template-columns: 1fr 1fr; }
     .map-panel-row { grid-template-columns: 1fr; }
   }
+  /* ── Section tabs ─────────────────────────────────────────── */
+  .section-tabs { display:flex; gap:0; background:var(--card); border-bottom:2px solid var(--border); padding:0 24px; }
+  .section-tab { padding:11px 28px; background:none; border:none; border-bottom:3px solid transparent; margin-bottom:-2px; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; transition:color .15s,border-color .15s; letter-spacing:.01em; }
+  .section-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+  .section-tab:hover:not(.active) { color:var(--text); }
+  /* ── Expenditure controls bar ─────────────────────────────── */
+  .exp-controls-bar { background:var(--card); border-bottom:1px solid var(--border); padding:10px 24px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+  /* ── Expenditure charts row ───────────────────────────────── */
+  .exp-charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  @media(max-width:900px){ .exp-charts-row { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -701,6 +711,13 @@
   </div>
 </div>
 
+<!-- SECTION TABS -->
+<div class="section-tabs">
+  <button class="section-tab active" id="tab-contributions" onclick="switchTab('contributions')">💰 Contributions</button>
+  <button class="section-tab" id="tab-expenditures" onclick="switchTab('expenditures')">💸 Expenditures</button>
+</div>
+
+<div id="contributions-view">
 <!-- MAIN -->
 <div class="main">
 
@@ -842,6 +859,160 @@
     <div class="pagination" id="pagination"></div>
   </div>
 </div>
+</div><!-- /contributions-view -->
+
+<!-- EXPENDITURES VIEW -->
+<div id="expenditures-view" style="display:none">
+
+  <!-- Expenditure controls -->
+  <div class="exp-controls-bar">
+    <div class="ctrl-group">
+      <label>Campaign / Committee</label>
+      <select class="ctrl-select" id="exp-campaign-select" style="min-width:200px">
+        <option value="ALL">All Campaigns</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Category</label>
+      <select class="ctrl-select" id="exp-category-select">
+        <option value="ALL">All Categories</option>
+        <option>Media & Advertising</option>
+        <option>Printing & Mail</option>
+        <option>Consulting & Strategy</option>
+        <option>Payroll & Staff</option>
+        <option>Events & Fundraising</option>
+        <option>Technology & Data</option>
+        <option>Travel & Transportation</option>
+        <option>Legal & Compliance</option>
+        <option>Office & Operations</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Recipient</label>
+      <input type="text" class="ctrl-input search" id="exp-recipient-search" placeholder="Search recipient...">
+    </div>
+    <div class="ctrl-group">
+      <label>Amount Range</label>
+      <div class="amount-wrap">
+        <input type="number" class="ctrl-input amount" id="exp-amt-min" placeholder="Min $" min="0">
+        <span>–</span>
+        <input type="number" class="ctrl-input amount" id="exp-amt-max" placeholder="Max $" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Expenditure stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Spent</div>
+        <div class="stat-value" id="exp-stat-total">—</div>
+        <div class="stat-sub" id="exp-stat-total-sub">across all campaigns</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label"># Expenditures</div>
+        <div class="stat-value" id="exp-stat-count">—</div>
+        <div class="stat-sub">individual payments</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Payment</div>
+        <div class="stat-value" id="exp-stat-avg">—</div>
+        <div class="stat-sub">per expenditure</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Top Campaign</div>
+        <div class="stat-value" id="exp-stat-top-campaign" style="font-size:16px">—</div>
+        <div class="stat-sub" id="exp-stat-top-campaign-sub">by total spent</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Top Category</div>
+        <div class="stat-value" id="exp-stat-top-cat" style="font-size:16px">—</div>
+        <div class="stat-sub" id="exp-stat-top-cat-sub">by total spent</div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="exp-charts-row">
+      <div class="panel-card">
+        <div class="panel-card-title">Top Campaigns by Spending</div>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="exp-campaign-chart"></canvas>
+        </div>
+      </div>
+      <div class="panel-card">
+        <div class="panel-card-title">Spending by Category</div>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="exp-category-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly trend -->
+    <div class="trend-card">
+      <div class="trend-title">Monthly Expenditure Totals</div>
+      <div class="trend-wrap">
+        <canvas id="exp-trend-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Top recipients -->
+    <div class="top-contributors-card">
+      <div class="table-header-row">
+        <div class="table-title">Top Recipients</div>
+        <div class="table-actions" id="exp-top-recipients-pagination"></div>
+      </div>
+      <table class="tc-table">
+        <thead>
+          <tr>
+            <th style="width:28px"></th>
+            <th>Recipient</th>
+            <th>Category</th>
+            <th class="num">Payments</th>
+            <th class="tc-bar-cell"></th>
+            <th class="num">Total</th>
+          </tr>
+        </thead>
+        <tbody id="exp-tr-tbody"></tbody>
+      </table>
+      <div id="exp-tr-empty" style="display:none;text-align:center;padding:24px;color:var(--muted);font-size:13px">No data</div>
+    </div>
+
+    <!-- Expenditures table -->
+    <div class="table-card">
+      <div class="table-header-row">
+        <div class="table-title">Expenditure Records</div>
+        <div class="table-actions">
+          <button class="upload-btn" onclick="downloadExpCSV()">⬇ Download CSV</button>
+        </div>
+      </div>
+      <div id="exp-loading-msg" style="display:none;text-align:center;padding:40px;color:var(--muted)">
+        <div class="spinner-ring" style="margin:0 auto 12px"></div>
+        Downloading expenditure data from ethics.la.gov…
+      </div>
+      <div id="exp-unavailable-msg" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">
+        Expenditure data is only available from 2016 onward.
+      </div>
+      <table class="data-table" id="exp-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Campaign</th>
+            <th>Recipient</th>
+            <th>Category</th>
+            <th>Parish</th>
+            <th class="num">Amount</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody id="exp-tbody"></tbody>
+      </table>
+      <div class="pagination" id="exp-pagination"></div>
+    </div>
+
+  </div>
+</div><!-- /expenditures-view -->
 
 <!-- STATUS BAR -->
 <div class="status-bar">
@@ -1150,7 +1321,11 @@ parishSel.appendChild(oosOpt);
 // ============================================================
 // FILTERS & EVENTS
 // ============================================================
-document.getElementById('btn-load').addEventListener('click', loadData);
+document.getElementById('btn-load').addEventListener('click', () => {
+  expData = []; expFiltered = [];
+  loadData();
+  if (document.getElementById('expenditures-view').style.display !== 'none') loadExpData();
+});
 
 document.getElementById('btn-bubbles').addEventListener('click', () => {
   mapMode = 'bubbles';
@@ -2431,6 +2606,329 @@ function formatMoneyShort(n) {
 function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ═══════════════════════════════════════════════════════════════
+// EXPENDITURES TAB
+// ═══════════════════════════════════════════════════════════════
+
+let expData     = [];
+let expFiltered = [];
+let expPage     = 1;
+const EXP_PAGE_SIZE = 50;
+let expCampaignChart = null;
+let expCategoryChart = null;
+let expTrendChart    = null;
+let expTRPage        = 1;
+const EXP_TR_PAGE_SIZE = 10;
+
+// ── Category detection ──────────────────────────────────────────
+function detectExpCategory(desc) {
+  const d = (desc || '').toUpperCase();
+  if (/TV|TELEVISION|RADIO|DIGITAL AD|ADVERTIS|FACEBOOK|INSTAGRAM|GOOGLE|MEDIA BUY|BROADCAST|CABLE|STREAMING|YOUTUBE|SOCIAL MEDIA/.test(d)) return 'Media & Advertising';
+  if (/PRINT|MAILER|DIRECT MAIL|POSTAGE|USPS|SIGNAGE|BANNER|YARD SIGN|FLYER|BROCHURE|LITHO/.test(d)) return 'Printing & Mail';
+  if (/CONSULT|STRATEG|POLLING|RESEARCH|SURVEY|ADVISO|CAMPAIGN MANAGE|FIELD ORGAN|CANVASS|PHONE BANK|GOTV|ROBOCALL/.test(d)) return 'Consulting & Strategy';
+  if (/SALARY|PAYROLL|STAFF|WAGE|COMPENS|EMPLOY|CONTRACTOR|WORKER|STIPEND/.test(d)) return 'Payroll & Staff';
+  if (/EVENT|VENUE|CATER|FUNDRAIS|RECEPT|DINNER|LUNCHEON|TICKET|HALL RENT|FACILITY/.test(d)) return 'Events & Fundraising';
+  if (/WEBSITE|SOFTWARE|TECH|DATABASE|CRM|NGP|VAN |APP |DIGITAL TOOL|SUBSCRIPTION|LICENSE/.test(d)) return 'Technology & Data';
+  if (/TRAVEL|MILEAGE|HOTEL|AIRFARE|TRANSPORT|LODGING|FLIGHT|GAS |FUEL|UBER|LYFT|RENTAL CAR/.test(d)) return 'Travel & Transportation';
+  if (/LEGAL|ATTORNEY|COMPLIANCE|FILING FEE|AUDIT|ACCOUNTI|FINANCE REPORT|CPA|LAW FIRM/.test(d)) return 'Legal & Compliance';
+  if (/OFFICE|SUPPLY|SUPPLIES|EQUIPMENT|PHONE|INTERNET|RENT|UTILITIES|STORAGE/.test(d)) return 'Office & Operations';
+  return 'Other';
+}
+
+// ── Tab switching ────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('contributions-view').style.display = tab === 'contributions' ? '' : 'none';
+  document.getElementById('expenditures-view').style.display  = tab === 'expenditures'  ? '' : 'none';
+  document.getElementById('tab-contributions').classList.toggle('active', tab === 'contributions');
+  document.getElementById('tab-expenditures').classList.toggle('active', tab === 'expenditures');
+  if (tab === 'expenditures') {
+    const yr = parseInt(document.getElementById('cycle-select').value);
+    if (yr < 2016) {
+      document.getElementById('exp-unavailable-msg').style.display = '';
+      document.getElementById('exp-table').style.display = 'none';
+      return;
+    }
+    if (expData.length === 0) loadExpData();
+  }
+}
+
+// ── Fetch expenditure data ────────────────────────────────────────
+async function loadExpData() {
+  const cycle = document.getElementById('cycle-select').value;
+  if (parseInt(cycle) < 2016) {
+    document.getElementById('exp-unavailable-msg').style.display = '';
+    document.getElementById('exp-table').style.display = 'none';
+    document.getElementById('exp-loading-msg').style.display = 'none';
+    return;
+  }
+  document.getElementById('exp-loading-msg').style.display = '';
+  document.getElementById('exp-unavailable-msg').style.display = 'none';
+  document.getElementById('exp-table').style.display = '';
+
+  if (!proxyAvailable) {
+    document.getElementById('exp-loading-msg').style.display = 'none';
+    return;
+  }
+
+  const poll = async () => {
+    try {
+      const url = `${API_BASE}/api/la-expenditures?cycle=${encodeURIComponent(cycle)}`;
+      const r = await fetch(url);
+      if (r.status === 202) {
+        setTimeout(poll, 3000);
+        return;
+      }
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      expData = await r.json();
+      // Tag each record with category
+      expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
+      document.getElementById('exp-loading-msg').style.display = 'none';
+      populateExpCampaignDropdown();
+      renderExpAll();
+    } catch(e) {
+      console.error('Expenditure fetch error:', e);
+      document.getElementById('exp-loading-msg').style.display = 'none';
+    }
+  };
+  poll();
+}
+
+// ── Populate campaign dropdown ────────────────────────────────────
+function populateExpCampaignDropdown() {
+  const sel = document.getElementById('exp-campaign-select');
+  const campaigns = [...new Set(expData.map(r => r.candidate).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="ALL">All Campaigns</option>';
+  campaigns.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+}
+
+// ── Filter expenditure data ───────────────────────────────────────
+function filterExpData() {
+  const campaign  = document.getElementById('exp-campaign-select').value;
+  const category  = document.getElementById('exp-category-select').value;
+  const recipient = (document.getElementById('exp-recipient-search').value || '').toLowerCase();
+  const amtMin    = parseFloat(document.getElementById('exp-amt-min').value) || 0;
+  const amtMax    = parseFloat(document.getElementById('exp-amt-max').value) || Infinity;
+
+  expFiltered = expData.filter(r => {
+    if (campaign !== 'ALL' && r.candidate !== campaign) return false;
+    if (category !== 'ALL' && r._cat !== category) return false;
+    if (recipient && !(r.contributor || '').toLowerCase().includes(recipient)) return false;
+    if (r.amount < amtMin || r.amount > amtMax) return false;
+    return true;
+  });
+  expPage   = 1;
+  expTRPage = 1;
+}
+
+// ── Render all expenditure sections ──────────────────────────────
+function renderExpAll() {
+  filterExpData();
+  renderExpStats();
+  renderExpCampaignChart();
+  renderExpCategoryChart();
+  renderExpTrend();
+  renderExpTopRecipients();
+  renderExpTable();
+}
+
+// ── Stats ─────────────────────────────────────────────────────────
+function renderExpStats() {
+  const fmt = n => '$' + Math.round(n).toLocaleString();
+  const total = expFiltered.reduce((s, r) => s + r.amount, 0);
+  const count = expFiltered.length;
+  document.getElementById('exp-stat-total').textContent = fmt(total);
+  document.getElementById('exp-stat-total-sub').textContent = `${count.toLocaleString()} payments`;
+  document.getElementById('exp-stat-count').textContent = count.toLocaleString();
+  document.getElementById('exp-stat-avg').textContent = count ? fmt(total / count) : '—';
+
+  // Top campaign
+  const byCampaign = {};
+  expFiltered.forEach(r => { byCampaign[r.candidate || 'Unknown'] = (byCampaign[r.candidate || 'Unknown'] || 0) + r.amount; });
+  const topCampaign = Object.entries(byCampaign).sort((a,b) => b[1]-a[1])[0];
+  if (topCampaign) {
+    document.getElementById('exp-stat-top-campaign').textContent = topCampaign[0].split(' ').slice(-1)[0]; // last name
+    document.getElementById('exp-stat-top-campaign-sub').textContent = topCampaign[0] + ' · ' + fmt(topCampaign[1]);
+  }
+
+  // Top category
+  const byCat = {};
+  expFiltered.forEach(r => { byCat[r._cat] = (byCat[r._cat] || 0) + r.amount; });
+  const topCat = Object.entries(byCat).sort((a,b) => b[1]-a[1])[0];
+  if (topCat) {
+    document.getElementById('exp-stat-top-cat').textContent = topCat[0].split(' ')[0];
+    document.getElementById('exp-stat-top-cat-sub').textContent = topCat[0] + ' · ' + fmt(topCat[1]);
+  }
+}
+
+// ── Campaign chart ────────────────────────────────────────────────
+function renderExpCampaignChart() {
+  const byCampaign = {};
+  expFiltered.forEach(r => { byCampaign[r.candidate || 'Unknown'] = (byCampaign[r.candidate || 'Unknown'] || 0) + r.amount; });
+  const sorted = Object.entries(byCampaign).sort((a,b) => b[1]-a[1]).slice(0, 12);
+  const labels = sorted.map(([k]) => k.length > 22 ? k.slice(0,20)+'…' : k);
+  const values = sorted.map(([,v]) => v);
+  const colors = sorted.map(([k]) => {
+    const party = (expData.find(r => r.candidate === k) || {}).party;
+    return party === 'REP' ? 'rgba(220,53,69,0.7)' : party === 'DEM' ? 'rgba(30,120,200,0.7)' : 'rgba(200,169,81,0.7)';
+  });
+
+  const ctx = document.getElementById('exp-campaign-chart').getContext('2d');
+  if (expCampaignChart) expCampaignChart.destroy();
+  expCampaignChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 3 }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' $' + Math.round(ctx.raw).toLocaleString() } } },
+      scales: {
+        x: { ticks: { callback: v => '$' + (v>=1e6 ? (v/1e6).toFixed(1)+'M' : v>=1e3 ? (v/1e3).toFixed(0)+'K' : v), color: Chart.defaults.color }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { ticks: { color: Chart.defaults.color, font: { size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Category chart ────────────────────────────────────────────────
+function renderExpCategoryChart() {
+  const byCat = {};
+  expFiltered.forEach(r => { byCat[r._cat] = (byCat[r._cat] || 0) + r.amount; });
+  const sorted = Object.entries(byCat).sort((a,b) => b[1]-a[1]);
+  const palette = ['#c8a951','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899'];
+
+  const ctx = document.getElementById('exp-category-chart').getContext('2d');
+  if (expCategoryChart) expCategoryChart.destroy();
+  expCategoryChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: sorted.map(([k]) => k),
+      datasets: [{ data: sorted.map(([,v]) => v), backgroundColor: palette, borderWidth: 1, borderColor: 'var(--card)' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: Chart.defaults.color, font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ' $' + Math.round(ctx.raw).toLocaleString() } }
+      }
+    }
+  });
+}
+
+// ── Monthly trend ─────────────────────────────────────────────────
+function renderExpTrend() {
+  const byMonth = {};
+  expFiltered.forEach(r => {
+    const mo = (r.date || '').slice(0, 7);
+    if (mo) byMonth[mo] = (byMonth[mo] || 0) + r.amount;
+  });
+  const months = Object.keys(byMonth).sort();
+  const ctx = document.getElementById('exp-trend-chart').getContext('2d');
+  if (expTrendChart) expTrendChart.destroy();
+  expTrendChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months.map(m => { const [y,mo] = m.split('-'); return new Date(+y,+mo-1).toLocaleString('default',{month:'short',year:'2-digit'}); }),
+      datasets: [{ data: months.map(m => byMonth[m]), backgroundColor: 'rgba(200,169,81,0.65)', borderRadius: 3 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' $' + Math.round(ctx.raw).toLocaleString() } } },
+      scales: {
+        x: { ticks: { color: Chart.defaults.color, maxRotation: 45 }, grid: { display: false } },
+        y: { ticks: { callback: v => '$' + (v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v), color: Chart.defaults.color }, grid: { color:'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
+}
+
+// ── Top recipients ────────────────────────────────────────────────
+function renderExpTopRecipients() {
+  const byRec = {};
+  expFiltered.forEach(r => {
+    const name = r.contributor || 'Unknown';
+    if (!byRec[name]) byRec[name] = { amount: 0, count: 0, cat: r._cat };
+    byRec[name].amount += r.amount;
+    byRec[name].count++;
+  });
+  const sorted = Object.entries(byRec).sort((a,b) => b[1].amount - a[1].amount);
+  const maxAmt = sorted[0] ? sorted[0][1].amount : 1;
+  const page = sorted.slice(0, 10); // top 10 always
+
+  const tbody = document.getElementById('exp-tr-tbody');
+  const empty = document.getElementById('exp-tr-empty');
+  if (!page.length) { tbody.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = page.map(([name, v], i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:12px;width:28px">${i+1}</td>
+      <td><strong>${name}</strong></td>
+      <td style="color:var(--muted);font-size:12px">${v.cat}</td>
+      <td class="num">${v.count.toLocaleString()}</td>
+      <td class="tc-bar-cell"><div class="tc-bar" style="width:${Math.round(100*v.amount/maxAmt)}%"></div></td>
+      <td class="num"><strong>$${Math.round(v.amount).toLocaleString()}</strong></td>
+    </tr>
+  `).join('');
+}
+
+// ── Expenditures table ────────────────────────────────────────────
+function renderExpTable() {
+  const start = (expPage - 1) * EXP_PAGE_SIZE;
+  const page  = expFiltered.slice(start, start + EXP_PAGE_SIZE);
+  const tbody = document.getElementById('exp-tbody');
+
+  tbody.innerHTML = page.map(r => `
+    <tr>
+      <td>${r.date || '—'}</td>
+      <td>${escHtml(r.candidate || '—')}</td>
+      <td>${escHtml(r.contributor || '—')}</td>
+      <td><span style="font-size:11px;color:var(--muted)">${r._cat}</span></td>
+      <td>${r.parish || '—'}</td>
+      <td class="num">$${Math.round(r.amount).toLocaleString()}</td>
+      <td style="max-width:260px;font-size:12px;color:var(--muted)">${escHtml((r.description || '').slice(0,120))}</td>
+    </tr>
+  `).join('');
+
+  // Pagination
+  const totalPages = Math.ceil(expFiltered.length / EXP_PAGE_SIZE);
+  const pg = document.getElementById('exp-pagination');
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  let btns = '';
+  if (expPage > 1) btns += `<button class="page-btn" onclick="expGoPage(${expPage-1})">‹</button>`;
+  const lo = Math.max(1, expPage-2), hi = Math.min(totalPages, expPage+2);
+  for (let p = lo; p <= hi; p++) btns += `<button class="page-btn${p===expPage?' active':''}" onclick="expGoPage(${p})">${p}</button>`;
+  if (expPage < totalPages) btns += `<button class="page-btn" onclick="expGoPage(${expPage+1})">›</button>`;
+  btns += `<span style="margin-left:8px;color:var(--muted);font-size:12px">${expFiltered.length.toLocaleString()} records</span>`;
+  pg.innerHTML = btns;
+}
+
+function expGoPage(p) { expPage = p; renderExpTable(); window.scrollTo(0,0); }
+
+// ── CSV export ────────────────────────────────────────────────────
+function downloadExpCSV() {
+  const headers = ['Date','Campaign','Recipient','Category','Parish','Amount','Description'];
+  const rows = expFiltered.map(r => [
+    r.date, r.candidate, r.contributor, r._cat, r.parish,
+    r.amount, (r.description||'').replace(/"/g,'""')
+  ].map(v => `"${v||''}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `la_expenditures_${document.getElementById('cycle-select').value}.csv`;
+  a.click();
+}
+
+// ── Wire up expenditure controls ──────────────────────────────────
+document.getElementById('exp-campaign-select').addEventListener('change', renderExpAll);
+document.getElementById('exp-category-select').addEventListener('change', renderExpAll);
+document.getElementById('exp-recipient-search').addEventListener('input',  renderExpAll);
+document.getElementById('exp-amt-min').addEventListener('input', renderExpAll);
+document.getElementById('exp-amt-max').addEventListener('input', renderExpAll);
 
 // ============================================================
 // CONTRIBUTOR PROFILE MODAL
