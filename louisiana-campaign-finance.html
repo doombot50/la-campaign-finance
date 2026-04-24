@@ -2333,7 +2333,7 @@ function renderTable() {
         <td>${ffBadge}<span class="contributor-link" data-contributor="${escHtml(d.contributor)}" onclick="event.stopPropagation();showContributorProfile(this.dataset.contributor)">${escHtml(d.contributor)}</span></td>
         <td>${stateCell(d.contributorState)}</td>
         <td>${escHtml(d.parish)}</td>
-        <td><span class="contributor-link" onclick="event.stopPropagation();showCampaignProfile(${JSON.stringify(d.candidate)})">${escHtml(d.candidate)}</span></td>
+        <td><span class="contributor-link" data-candidate="${escHtml(d.candidate)}" onclick="event.stopPropagation();showCampaignProfile(this.dataset.candidate)">${escHtml(d.candidate)}</span></td>
         <td>${partyBadgeHtml(d)}</td>
         <td>${donorTypeBadgeHtml(d)}</td>
         <td class="amount-cell">${formatMoney(d.amount)}</td>
@@ -3130,7 +3130,7 @@ function renderExpTable() {
   tbody.innerHTML = page.map(r => `
     <tr>
       <td>${r.date || '—'}</td>
-      <td><span class="contributor-link" onclick="showCampaignProfile(${JSON.stringify(r.candidate||'')})">${escHtml(r.candidate || '—')}</span></td>
+      <td><span class="contributor-link" data-candidate="${escHtml(r.candidate||'')}" onclick="showCampaignProfile(this.dataset.candidate)">${escHtml(r.candidate || '—')}</span></td>
       <td>${escHtml(r.contributor || '—')}</td>
       <td><span style="font-size:11px;color:var(--muted)">${r._cat}</span></td>
       <td>${r.recipientState || '—'}</td>
@@ -3391,7 +3391,7 @@ function renderLoanTable() {
   tbody.innerHTML = page.map(r => `
     <tr>
       <td>${r.date || '—'}</td>
-      <td><span class="contributor-link" onclick="showCampaignProfile(${JSON.stringify(r.candidate||'')})">${escHtml(r.candidate || '—')}</span></td>
+      <td><span class="contributor-link" data-candidate="${escHtml(r.candidate||'')}" onclick="showCampaignProfile(this.dataset.candidate)">${escHtml(r.candidate || '—')}</span></td>
       <td>${escHtml(r.contributor || '—')}${r._isSelf ? ' <span style="font-size:10px;color:var(--gold);font-weight:600">SELF</span>' : ''}</td>
       <td>${r.lenderState || '—'}</td>
       <td>${r.parish === 'Out of State' ? '<span style="color:var(--muted);font-size:11px">Out of State</span>' : (r.parish || '—')}</td>
