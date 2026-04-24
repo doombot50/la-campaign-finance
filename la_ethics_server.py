@@ -1024,11 +1024,11 @@ class Handler(BaseHTTPRequestHandler):
         status_key = f'{report_type}_{csv_key}'
 
         # Gate on the PRIMARY year only.
-        # The previous year (y-1) may live in a different 4-year CSV bundle; its absence
-        # must not block serving current-year data.  It will be included automatically
-        # once that bundle is eventually cached.
+        # The previous year (y-1) may live in a different 4-year CSV bundle; if so,
+        # kick off a background download for that bundle too so it eventually fills in.
         y = int(cycle)
         years_wanted = [y - 1, y]   # ideal two-year window
+        prev_csv_key = get_csv_key(y - 1)
         if not _year_is_fresh(y, report_type):
             st = get_status(status_key)
             if st['status'] != 'downloading':
@@ -1045,6 +1045,11 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
+
+        # If y-1 is in a different bundle and not yet cached, kick it off in background
+        # so it fills in on the next request without blocking the current one.
+        if prev_csv_key != csv_key and not _year_is_fresh(y - 1, report_type):
+            prefetch_background(prev_csv_key, report_type)
 
         # Stream only the years that are actually on disk — skip any that aren't cached yet
         years_to_serve = [yr for yr in years_wanted if _year_is_fresh(yr, report_type)]
@@ -1127,16 +1132,20 @@ if __name__ == '__main__':
     _bust_stale_caches()
     print()
 
-    # Warm the cache sequentially in one background thread — never two downloads at once
-    print('  Pre-fetching recent contribution data in background (sequential)...')
+    # Warm the cache sequentially in one background thread — never two downloads at once.
+    # Pre-warms contributions, expenditures, and loans for the most-recent cycle.
+    print('  Pre-fetching 2024-2027 data (contributions, expenditures, loans) in background...')
     def _sequential_prefetch():
-        # Only warm the most-recent range on startup; older ranges load on demand.
-        for csv_key in ['2024-2027']:
-            if not is_cached_fresh(csv_key, 'contributions'):
+        for report_type, csv_key in [
+            ('contributions', '2024-2027'),
+            ('expenditures',  '2024-2027'),
+            ('loans',         '2024-2027'),
+        ]:
+            if not is_cached_fresh(csv_key, report_type):
                 try:
-                    download_and_cache(csv_key, 'contributions')
+                    download_and_cache(csv_key, report_type)
                 except Exception as e:
-                    print(f'  Prefetch failed {csv_key}: {e}')
+                    print(f'  Prefetch failed {report_type}/{csv_key}: {e}')
             gc.collect()
     threading.Thread(target=_sequential_prefetch, daemon=True).start()
 

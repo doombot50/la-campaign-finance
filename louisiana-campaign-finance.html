@@ -711,6 +711,7 @@
       <label>&nbsp;</label>
       <button class="btn-secondary" id="btn-excl-ff" title="Toggle to hide contributions restricted to filing/qualifying fees">Exclude Filing Fees</button>
     </div>
+    <button class="btn-secondary" id="btn-clear-filters" title="Clear all filters">✕ Clear Filters</button>
     <button class="btn-load" id="btn-load">Load Data</button>
   </div>
 </div>
@@ -902,6 +903,13 @@
       <input type="text" class="ctrl-input search" id="exp-desc-search" placeholder="Search description..." style="width:160px">
     </div>
     <div class="ctrl-group">
+      <label>Parish</label>
+      <select class="ctrl-select" id="exp-parish-select">
+        <option value="ALL">All Parishes</option>
+        <option value="OOS">Out of State</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
       <label>Amount Range</label>
       <div class="amount-wrap">
         <input type="number" class="ctrl-input amount" id="exp-amt-min" placeholder="Min $" min="0">
@@ -943,7 +951,7 @@
     </div>
 
     <!-- Charts row -->
-    <div class="exp-charts-row">
+    <div class="exp-charts-row" style="grid-template-columns:1.4fr 1fr 1fr">
       <div class="panel-card">
         <div class="panel-card-title">Top Campaigns by Spending</div>
         <div class="chart-wrap" style="height:260px">
@@ -956,13 +964,27 @@
           <canvas id="exp-category-chart"></canvas>
         </div>
       </div>
+      <div class="panel-card">
+        <div class="panel-card-title">Spending by Party</div>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="exp-party-chart"></canvas>
+        </div>
+      </div>
     </div>
 
-    <!-- Monthly trend -->
-    <div class="trend-card">
-      <div class="trend-title">Monthly Expenditure Totals</div>
-      <div class="trend-wrap">
-        <canvas id="exp-trend-chart"></canvas>
+    <!-- Combined cash flow + monthly spend trend -->
+    <div class="exp-charts-row" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+      <div class="trend-card" style="margin:0">
+        <div class="trend-title">Monthly Expenditure Totals</div>
+        <div class="trend-wrap">
+          <canvas id="exp-trend-chart"></canvas>
+        </div>
+      </div>
+      <div class="trend-card" style="margin:0">
+        <div class="trend-title">Cash Flow — Contributions In vs. Expenditures Out</div>
+        <div class="trend-wrap">
+          <canvas id="cashflow-chart"></canvas>
+        </div>
       </div>
     </div>
 
@@ -1324,11 +1346,28 @@ parishSel.appendChild(oosOpt);
 // FILTERS & EVENTS
 // ============================================================
 document.getElementById('btn-load').addEventListener('click', () => {
+  allData = []; laEthicsData = []; filteredData = [];
   expData = []; expFiltered = [];
   loanData = []; loanFiltered = [];
+  _loadedCycle = null;
   loadData();
   if (document.getElementById('expenditures-view').style.display !== 'none') loadExpData();
   if (document.getElementById('loans-view').style.display !== 'none') loadLoanData();
+});
+
+document.getElementById('btn-clear-filters').addEventListener('click', () => {
+  // Contributions filters
+  document.getElementById('party-select').value   = 'ALL';
+  document.getElementById('parish-select').value  = 'ALL';
+  document.getElementById('origin-select').value  = 'ALL';
+  document.getElementById('amt-min').value         = '';
+  document.getElementById('amt-max').value         = '';
+  document.getElementById('candidate-search').value = '';
+  document.getElementById('donor-search').value    = '';
+  document.getElementById('zip-search').value      = '';
+  document.getElementById('notes-search').value    = '';
+  document.getElementById('btn-excl-ff').classList.remove('active');
+  applyFiltersAndRender();
 });
 
 document.getElementById('btn-bubbles').addEventListener('click', () => {
@@ -1355,8 +1394,39 @@ document.getElementById('btn-us-states').addEventListener('click', () => {
   renderMap();
 });
 
-['cycle-select','party-select','parish-select','origin-select'].forEach(id => {
+// cycle-select triggers a full reload; other selects just re-filter existing data
+['party-select','parish-select','origin-select'].forEach(id => {
   document.getElementById(id).addEventListener('change', debounceFilter);
+});
+
+let _loadedCycle = null;
+
+function updateLoadBtn() {
+  const btn = document.getElementById('btn-load');
+  const cycle = document.getElementById('cycle-select').value;
+  if (cycle === _loadedCycle && allData.length > 0) {
+    const sel = document.getElementById('cycle-select');
+    // Find the label in _allCycleOpts (the full snapshot) since on exp/loans tab options may be pruned
+    const label = (_allCycleOpts || Array.from(sel.options)).find(o => o.value === cycle)?.text || cycle;
+    btn.textContent = `✓ ${label.split('—')[0].trim()}`;
+  } else {
+    btn.textContent = 'Load Data';
+  }
+}
+
+let _autoLoadTimer = null;
+document.getElementById('cycle-select').addEventListener('change', () => {
+  clearTimeout(_autoLoadTimer);
+  _autoLoadTimer = setTimeout(() => {
+    allData = []; laEthicsData = []; filteredData = [];
+    expData = []; expFiltered = [];
+    loanData = []; loanFiltered = [];
+    _loadedCycle = null;
+    updateLoadBtn();
+    loadData();
+    if (document.getElementById('expenditures-view').style.display !== 'none') loadExpData();
+    if (document.getElementById('loans-view').style.display !== 'none') loadLoanData();
+  }, 400);  // brief delay so fast scrolling through options doesn't fire every step
 });
 ['amt-min','amt-max'].forEach(id => {
   document.getElementById(id).addEventListener('input', debounceFilter);
@@ -1419,6 +1489,9 @@ function debounceFilter() {
 // ============================================================
 async function loadData() {
   const cycle = document.getElementById('cycle-select').value;
+  const btn = document.getElementById('btn-load');
+  btn.textContent = 'Loading…';
+  btn.disabled = true;
 
   setStatus('loading');
   showMapSpinner(true);
@@ -1430,6 +1503,9 @@ async function loadData() {
   mergeAndRender();
   showMapSpinner(false);
   setStatus('ok');
+  _loadedCycle = cycle;
+  btn.disabled = false;
+  updateLoadBtn();
 }
 
 async function fetchLAEthicsLive(cycle) {
@@ -1552,6 +1628,8 @@ function renderAll() {
   renderTopContributors();
   renderTable();
   updateStatusBar();
+  // Refresh cash flow chart if expenditures tab is active
+  if (document.getElementById('expenditures-view').style.display !== 'none') renderCashFlowChart();
 }
 
 // ============================================================
@@ -2631,7 +2709,9 @@ let expPage     = 1;
 const EXP_PAGE_SIZE = 50;
 let expCampaignChart = null;
 let expCategoryChart = null;
+let expPartyChart    = null;
 let expTrendChart    = null;
+let cashFlowChart    = null;
 let expTRPage        = 1;
 const EXP_TR_PAGE_SIZE = 10;
 
@@ -2736,7 +2816,7 @@ async function loadExpData() {
   poll();
 }
 
-// ── Populate campaign dropdown ────────────────────────────────────
+// ── Populate campaign + parish dropdowns ──────────────────────────
 function populateExpCampaignDropdown() {
   const sel = document.getElementById('exp-campaign-select');
   const campaigns = [...new Set(expData.map(r => r.candidate).filter(Boolean))].sort();
@@ -2746,22 +2826,31 @@ function populateExpCampaignDropdown() {
     o.value = c; o.textContent = c;
     sel.appendChild(o);
   });
+
+  // Populate parish dropdown from data (LA parishes only — Out of State already hardcoded)
+  const pSel = document.getElementById('exp-parish-select');
+  const parishes = [...new Set(expData.map(r => r.parish).filter(p => p && p !== 'Out of State'))].sort();
+  pSel.innerHTML = '<option value="ALL">All Parishes</option><option value="OOS">Out of State</option>';
+  parishes.forEach(p => { const o = new Option(p, p); pSel.appendChild(o); });
 }
 
 // ── Filter expenditure data ───────────────────────────────────────
 function filterExpData() {
   const campaign  = document.getElementById('exp-campaign-select').value;
   const category  = document.getElementById('exp-category-select').value;
-  const recipient = (document.getElementById('exp-recipient-search').value || '').toLowerCase();
+  const recipient  = (document.getElementById('exp-recipient-search').value || '').toLowerCase();
   const descSearch = (document.getElementById('exp-desc-search').value || '').toLowerCase();
-  const amtMin    = parseFloat(document.getElementById('exp-amt-min').value) || 0;
-  const amtMax    = parseFloat(document.getElementById('exp-amt-max').value) || Infinity;
+  const expParish  = document.getElementById('exp-parish-select').value;
+  const amtMin     = parseFloat(document.getElementById('exp-amt-min').value) || 0;
+  const amtMax     = parseFloat(document.getElementById('exp-amt-max').value) || Infinity;
 
   expFiltered = expData.filter(r => {
     if (campaign !== 'ALL' && r.candidate !== campaign) return false;
     if (category !== 'ALL' && r._cat !== category) return false;
     if (recipient   && !(r.contributor  || '').toLowerCase().includes(recipient))  return false;
     if (descSearch  && !(r.description  || '').toLowerCase().includes(descSearch)) return false;
+    if (expParish === 'OOS' && r.parish !== 'Out of State') return false;
+    if (expParish !== 'ALL' && expParish !== 'OOS' && r.parish !== expParish) return false;
     if (r.amount < amtMin || r.amount > amtMax) return false;
     return true;
   });
@@ -2775,7 +2864,9 @@ function renderExpAll() {
   renderExpStats();
   renderExpCampaignChart();
   renderExpCategoryChart();
+  renderExpPartyChart();
   renderExpTrend();
+  renderCashFlowChart();
   renderExpTopRecipients();
   renderExpTable();
 }
@@ -2858,6 +2949,90 @@ function renderExpCategoryChart() {
       plugins: {
         legend: { position: 'right', labels: { color: Chart.defaults.color, font: { size: 11 }, boxWidth: 12 } },
         tooltip: { callbacks: { label: ctx => ' $' + Math.round(ctx.raw).toLocaleString() } }
+      }
+    }
+  });
+}
+
+// ── Party breakdown ───────────────────────────────────────────────
+function renderExpPartyChart() {
+  const byParty = { DEM: 0, REP: 0, OTH: 0 };
+  expFiltered.forEach(r => {
+    if (r.party === 'DEM') byParty.DEM += r.amount;
+    else if (r.party === 'REP') byParty.REP += r.amount;
+    else byParty.OTH += r.amount;
+  });
+  const ctx = document.getElementById('exp-party-chart').getContext('2d');
+  if (expPartyChart) expPartyChart.destroy();
+  expPartyChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Democrat', 'Republican', 'Other / PAC'],
+      datasets: [{ data: [byParty.DEM, byParty.REP, byParty.OTH],
+        backgroundColor: ['#2166ac', '#d73027', '#c8a951'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#8b949e', font: { size: 12 } } },
+        tooltip: { callbacks: { label: ctx => ctx.label + ': $' + Math.round(ctx.raw).toLocaleString() } }
+      }
+    }
+  });
+}
+
+// ── Combined cash flow chart ──────────────────────────────────────
+function renderCashFlowChart() {
+  const cycle    = parseInt(document.getElementById('cycle-select').value) || new Date().getFullYear();
+  const prevYear = cycle - 1;
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = [
+    ...MONTH_NAMES.map((_,i) => `${prevYear}-${String(i+1).padStart(2,'0')}`),
+    ...MONTH_NAMES.map((_,i) => `${cycle}-${String(i+1).padStart(2,'0')}`),
+  ];
+  const labels = months.map(m => {
+    const [yr, mo] = m.split('-');
+    return `${MONTH_NAMES[parseInt(mo,10)-1]} '${yr.slice(2)}`;
+  });
+
+  // Contributions in (from filteredData — already cycle-filtered)
+  const contribByMonth = {};
+  months.forEach(m => contribByMonth[m] = 0);
+  filteredData.forEach(d => {
+    const mo = (d.date || '').slice(0, 7);
+    if (mo in contribByMonth) contribByMonth[mo] += d.amount;
+  });
+
+  // Expenditures out (from expFiltered)
+  const expByMonth = {};
+  months.forEach(m => expByMonth[m] = 0);
+  expFiltered.forEach(r => {
+    const mo = (r.date || '').slice(0, 7);
+    if (mo in expByMonth) expByMonth[mo] += r.amount;
+  });
+
+  const ctx = document.getElementById('cashflow-chart').getContext('2d');
+  if (cashFlowChart) cashFlowChart.destroy();
+  cashFlowChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Contributions In', data: months.map(m => contribByMonth[m]),
+          backgroundColor: 'rgba(33,102,172,0.65)', order: 2 },
+        { label: 'Expenditures Out', data: months.map(m => expByMonth[m]),
+          backgroundColor: 'rgba(215,48,39,0.65)', order: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#8b949e', font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: $${Math.round(ctx.raw).toLocaleString()}` } }
+      },
+      scales: {
+        x: { ticks: { color: '#6b7280', font: { size: 9 }, maxRotation: 45 } },
+        y: { ticks: { color: '#6b7280', callback: v => '$' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v) } }
       }
     }
   });
@@ -2997,7 +3172,8 @@ function downloadExpCSV() {
 // ── Wire up expenditure controls ──────────────────────────────────
 document.getElementById('exp-campaign-select').addEventListener('change', renderExpAll);
 document.getElementById('exp-category-select').addEventListener('change', renderExpAll);
-document.getElementById('exp-recipient-search').addEventListener('input', renderExpAll);
+document.getElementById('exp-parish-select').addEventListener('change',   renderExpAll);
+document.getElementById('exp-recipient-search').addEventListener('input',  renderExpAll);
 document.getElementById('exp-desc-search').addEventListener('input',      renderExpAll);
 document.getElementById('exp-amt-min').addEventListener('input', renderExpAll);
 document.getElementById('exp-amt-max').addEventListener('input', renderExpAll);
