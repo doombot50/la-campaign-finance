@@ -2333,7 +2333,7 @@ function renderTable() {
         <td>${ffBadge}<span class="contributor-link" data-contributor="${escHtml(d.contributor)}" onclick="event.stopPropagation();showContributorProfile(this.dataset.contributor)">${escHtml(d.contributor)}</span></td>
         <td>${stateCell(d.contributorState)}</td>
         <td>${escHtml(d.parish)}</td>
-        <td>${escHtml(d.candidate)}</td>
+        <td><span class="contributor-link" onclick="event.stopPropagation();showCampaignProfile(${JSON.stringify(d.candidate)})">${escHtml(d.candidate)}</span></td>
         <td>${partyBadgeHtml(d)}</td>
         <td>${donorTypeBadgeHtml(d)}</td>
         <td class="amount-cell">${formatMoney(d.amount)}</td>
@@ -3130,7 +3130,7 @@ function renderExpTable() {
   tbody.innerHTML = page.map(r => `
     <tr>
       <td>${r.date || '—'}</td>
-      <td>${escHtml(r.candidate || '—')}</td>
+      <td><span class="contributor-link" onclick="showCampaignProfile(${JSON.stringify(r.candidate||'')})">${escHtml(r.candidate || '—')}</span></td>
       <td>${escHtml(r.contributor || '—')}</td>
       <td><span style="font-size:11px;color:var(--muted)">${r._cat}</span></td>
       <td>${r.recipientState || '—'}</td>
@@ -3391,7 +3391,7 @@ function renderLoanTable() {
   tbody.innerHTML = page.map(r => `
     <tr>
       <td>${r.date || '—'}</td>
-      <td>${escHtml(r.candidate || '—')}</td>
+      <td><span class="contributor-link" onclick="showCampaignProfile(${JSON.stringify(r.candidate||'')})">${escHtml(r.candidate || '—')}</span></td>
       <td>${escHtml(r.contributor || '—')}${r._isSelf ? ' <span style="font-size:10px;color:var(--gold);font-weight:600">SELF</span>' : ''}</td>
       <td>${r.lenderState || '—'}</td>
       <td>${r.parish === 'Out of State' ? '<span style="color:var(--muted);font-size:11px">Out of State</span>' : (r.parish || '—')}</td>
@@ -3636,7 +3636,154 @@ document.addEventListener('keydown', e => {
 
   loadData();
 })();
+
+// ============================================================
+// CAMPAIGN PROFILE MODAL
+// ============================================================
+let _campName    = '';
+let _campTab     = 'contribs';
+let _campContribs = [], _campExps = [], _campLoans = [];
+
+function showCampaignProfile(name) {
+  _campName     = name;
+  _campContribs = allData.filter(d => d.candidate === name)
+                    .sort((a,b) => b.date.localeCompare(a.date));
+  _campExps     = expData.filter(d => d.candidate === name)
+                    .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  _campLoans    = loanData.filter(d => d.candidate === name)
+                    .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  const fmt = n => '$' + Math.round(n).toLocaleString();
+  const raised   = _campContribs.reduce((s,d) => s + d.amount, 0);
+  const spent    = _campExps.reduce((s,d) => s + d.amount, 0);
+  const borrowed = _campLoans.reduce((s,d) => s + d.amount, 0);
+  const donors   = new Set(_campContribs.map(d => d.contributor)).size;
+  const party    = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
+  const partyLabel = party === 'DEM' ? '🔵 Democrat' : party === 'REP' ? '🔴 Republican' : '⚪ Other';
+
+  document.getElementById('camp-name').textContent = name;
+  document.getElementById('camp-meta').textContent =
+    `${partyLabel}  ·  ${_campContribs.length} contributions · ${_campExps.length} expenditures · ${_campLoans.length} loans`;
+  document.getElementById('camp-raised').textContent   = fmt(raised);
+  document.getElementById('camp-spent').textContent    = fmt(spent);
+  document.getElementById('camp-borrowed').textContent = fmt(borrowed);
+  document.getElementById('camp-net').textContent      = fmt(raised - spent);
+  document.getElementById('camp-donors').textContent   = donors.toLocaleString();
+
+  campSwitchTab('contribs');
+  document.getElementById('camp-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCampaignProfile() {
+  document.getElementById('camp-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function campSwitchTab(tab) {
+  _campTab = tab;
+  ['contribs','exps','loans'].forEach(t => {
+    document.getElementById(`camp-content-${t}`).style.display = t === tab ? '' : 'none';
+    document.getElementById(`camp-tab-${t}`).classList.toggle('active', t === tab);
+  });
+
+  const empty = document.getElementById('camp-empty');
+  if (tab === 'contribs') {
+    empty.style.display = _campContribs.length ? 'none' : '';
+    document.getElementById('camp-tbody-contribs').innerHTML = _campContribs.map(d => `
+      <tr>
+        <td>${d.date||'—'}</td>
+        <td>${escHtml(d.contributor||'—')}</td>
+        <td>${d.contributorState||'—'}</td>
+        <td>${escHtml(d.parish||'—')}</td>
+        <td style="font-size:11px;color:var(--muted)">${escHtml(d.donorType||'')}</td>
+        <td class="num">$${Math.round(d.amount).toLocaleString()}</td>
+        <td style="font-size:11px;color:var(--muted);max-width:180px">${escHtml((d.notes||'').slice(0,80))}</td>
+      </tr>`).join('');
+  } else if (tab === 'exps') {
+    empty.style.display = _campExps.length ? 'none' : '';
+    document.getElementById('camp-tbody-exps').innerHTML = _campExps.map(d => `
+      <tr>
+        <td>${d.date||'—'}</td>
+        <td>${escHtml(d.contributor||'—')}</td>
+        <td>${d.recipientState||'—'}</td>
+        <td style="font-size:11px;color:var(--muted)">${escHtml(d._cat||'')}</td>
+        <td class="num">$${Math.round(d.amount).toLocaleString()}</td>
+        <td style="font-size:11px;color:var(--muted);max-width:200px">${escHtml((d.description||'').slice(0,100))}</td>
+      </tr>`).join('');
+  } else {
+    empty.style.display = _campLoans.length ? 'none' : '';
+    document.getElementById('camp-tbody-loans').innerHTML = _campLoans.map(d => `
+      <tr>
+        <td>${d.date||'—'}</td>
+        <td>${escHtml(d.contributor||'—')}${d._isSelf?' <span style="font-size:10px;color:var(--gold);font-weight:600">SELF</span>':''}</td>
+        <td>${d.lenderState||'—'}</td>
+        <td>${escHtml(d.parish||'—')}</td>
+        <td class="num">${d.rate?d.rate.toFixed(2)+'%':'0%'}</td>
+        <td class="num">$${Math.round(d.amount).toLocaleString()}</td>
+      </tr>`).join('');
+  }
+}
+
+function exportCampaignCSV() {
+  const rows = [];
+  _campContribs.forEach(d => rows.push(['contribution', d.date, d.contributor, d.contributorState, d.parish, d.amount, d.notes||'']));
+  _campExps.forEach(d    => rows.push(['expenditure',  d.date, d.contributor, d.recipientState||'', d.parish, d.amount, d.description||'']));
+  _campLoans.forEach(d   => rows.push(['loan',         d.date, d.contributor, d.lenderState||'',    d.parish, d.amount, d.rate||0]));
+  const header = 'Type,Date,Counterparty,State,Parish,Amount,Notes/Description';
+  const csv = [header, ...rows.map(r => r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = `campaign_${_campName.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.csv`;
+  a.click();
+}
 </script>
+<!-- CAMPAIGN PROFILE MODAL -->
+<div class="cp-overlay" id="camp-overlay" onclick="if(event.target===this)closeCampaignProfile()">
+  <div class="cp-modal" id="camp-modal" style="max-width:860px">
+    <div class="cp-header">
+      <div>
+        <div class="cp-name" id="camp-name">—</div>
+        <div class="cp-meta" id="camp-meta"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+        <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="exportCampaignCSV()">⬇ CSV</button>
+        <button class="cp-close" onclick="closeCampaignProfile()">✕</button>
+      </div>
+    </div>
+    <!-- Stats -->
+    <div class="cp-stats">
+      <div class="cp-stat"><div class="cp-stat-val" id="camp-raised">—</div><div class="cp-stat-lbl">Raised</div></div>
+      <div class="cp-stat"><div class="cp-stat-val" id="camp-spent">—</div><div class="cp-stat-lbl">Spent</div></div>
+      <div class="cp-stat"><div class="cp-stat-val" id="camp-borrowed">—</div><div class="cp-stat-lbl">Borrowed</div></div>
+      <div class="cp-stat"><div class="cp-stat-val" id="camp-net">—</div><div class="cp-stat-lbl">Net (Raised − Spent)</div></div>
+      <div class="cp-stat"><div class="cp-stat-val" id="camp-donors">—</div><div class="cp-stat-lbl">Unique Donors</div></div>
+    </div>
+    <!-- Sub-tabs -->
+    <div style="display:flex;border-bottom:1px solid var(--border);background:var(--card)">
+      <button class="section-tab active" id="camp-tab-contribs"  onclick="campSwitchTab('contribs')"  style="font-size:13px;padding:9px 20px">💰 Contributions</button>
+      <button class="section-tab"        id="camp-tab-exps"      onclick="campSwitchTab('exps')"      style="font-size:13px;padding:9px 20px">💸 Expenditures</button>
+      <button class="section-tab"        id="camp-tab-loans"     onclick="campSwitchTab('loans')"     style="font-size:13px;padding:9px 20px">🏦 Loans</button>
+    </div>
+    <!-- Content -->
+    <div class="cp-table-wrap">
+      <div id="camp-content-contribs">
+        <table class="cp-table"><thead><tr><th>Date</th><th>Donor</th><th>State</th><th>Parish</th><th>Type</th><th class="num">Amount</th><th>Notes</th></tr></thead>
+        <tbody id="camp-tbody-contribs"></tbody></table>
+      </div>
+      <div id="camp-content-exps" style="display:none">
+        <table class="cp-table"><thead><tr><th>Date</th><th>Recipient</th><th>State</th><th>Category</th><th class="num">Amount</th><th>Description</th></tr></thead>
+        <tbody id="camp-tbody-exps"></tbody></table>
+      </div>
+      <div id="camp-content-loans" style="display:none">
+        <table class="cp-table"><thead><tr><th>Date</th><th>Lender</th><th>State</th><th>Parish</th><th class="num">Rate %</th><th class="num">Amount</th></tr></thead>
+        <tbody id="camp-tbody-loans"></tbody></table>
+      </div>
+      <div id="camp-empty" style="display:none;padding:30px;text-align:center;color:var(--muted);font-size:13px">No data for this section in the loaded cycle.</div>
+    </div>
+  </div>
+</div>
+
 <!-- CONTRIBUTOR PROFILE MODAL -->
 <div class="cp-overlay" id="cp-overlay" onclick="handleCPOverlayClick(event)">
   <div class="cp-modal" id="cp-modal">
