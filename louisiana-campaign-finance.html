@@ -2767,6 +2767,11 @@ function renderExpTrend() {
 }
 
 // ── Top recipients ────────────────────────────────────────────────
+const EXP_TR_TOTAL = 50;  // pool size
+// EXP_TR_PAGE_SIZE = 10 already declared above
+
+let _expTRSorted = [];  // cached sorted list, rebuilt on filter change
+
 function renderExpTopRecipients() {
   const byRec = {};
   expFiltered.forEach(r => {
@@ -2775,26 +2780,47 @@ function renderExpTopRecipients() {
     byRec[name].amount += r.amount;
     byRec[name].count++;
   });
-  const sorted = Object.entries(byRec).sort((a,b) => b[1].amount - a[1].amount);
-  const maxAmt = sorted[0] ? sorted[0][1].amount : 1;
-  const page = sorted.slice(0, 10); // top 10 always
+  _expTRSorted = Object.entries(byRec).sort((a,b) => b[1].amount - a[1].amount).slice(0, EXP_TR_TOTAL);
+  expTRPage = 1;
+  _renderExpTRPage();
+}
 
+function _renderExpTRPage() {
   const tbody = document.getElementById('exp-tr-tbody');
   const empty = document.getElementById('exp-tr-empty');
-  if (!page.length) { tbody.innerHTML=''; empty.style.display=''; return; }
+  const pg    = document.getElementById('exp-top-recipients-pagination');
+
+  if (!_expTRSorted.length) { tbody.innerHTML=''; empty.style.display=''; pg.innerHTML=''; return; }
   empty.style.display = 'none';
 
-  tbody.innerHTML = page.map(([name, v], i) => `
+  const maxAmt   = _expTRSorted[0][1].amount;
+  const start    = (expTRPage - 1) * EXP_TR_PAGE_SIZE;
+  const pageRows = _expTRSorted.slice(start, start + EXP_TR_PAGE_SIZE);
+
+  tbody.innerHTML = pageRows.map(([name, v], i) => `
     <tr>
-      <td style="color:var(--muted);font-size:12px;width:28px">${i+1}</td>
-      <td><strong>${name}</strong></td>
+      <td style="color:var(--muted);font-size:12px;width:28px">${start + i + 1}</td>
+      <td><strong>${escHtml(name)}</strong></td>
       <td style="color:var(--muted);font-size:12px">${v.cat}</td>
       <td class="num">${v.count.toLocaleString()}</td>
       <td class="tc-bar-cell"><div class="tc-bar" style="width:${Math.round(100*v.amount/maxAmt)}%"></div></td>
       <td class="num"><strong>$${Math.round(v.amount).toLocaleString()}</strong></td>
     </tr>
   `).join('');
+
+  // Pagination controls
+  const totalPages = Math.ceil(_expTRSorted.length / EXP_TR_PAGE_SIZE);
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  let btns = '';
+  if (expTRPage > 1) btns += `<button class="page-btn" onclick="expTRGoPage(${expTRPage-1})">‹</button>`;
+  const lo = Math.max(1, expTRPage-2), hi = Math.min(totalPages, expTRPage+2);
+  for (let p = lo; p <= hi; p++) btns += `<button class="page-btn${p===expTRPage?' active':''}" onclick="expTRGoPage(${p})">${p}</button>`;
+  if (expTRPage < totalPages) btns += `<button class="page-btn" onclick="expTRGoPage(${expTRPage+1})">›</button>`;
+  btns += `<span style="margin-left:8px;color:var(--muted);font-size:12px">top ${_expTRSorted.length}</span>`;
+  pg.innerHTML = btns;
 }
+
+function expTRGoPage(p) { expTRPage = p; _renderExpTRPage(); }
 
 // ── Expenditures table ────────────────────────────────────────────
 function renderExpTable() {
