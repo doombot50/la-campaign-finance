@@ -998,6 +998,7 @@
             <th>Campaign</th>
             <th>Recipient</th>
             <th>Category</th>
+            <th>State</th>
             <th>Parish</th>
             <th class="num">Amount</th>
             <th>Description</th>
@@ -2834,7 +2835,8 @@ function renderExpTable() {
       <td>${escHtml(r.candidate || '—')}</td>
       <td>${escHtml(r.contributor || '—')}</td>
       <td><span style="font-size:11px;color:var(--muted)">${r._cat}</span></td>
-      <td>${r.parish || '—'}</td>
+      <td>${r.recipientState || '—'}</td>
+      <td>${r.parish === 'Out of State' ? '<span style="color:var(--muted);font-size:11px">Out of State</span>' : (r.parish || '—')}</td>
       <td class="num">$${Math.round(r.amount).toLocaleString()}</td>
       <td style="max-width:260px;font-size:12px;color:var(--muted)">${escHtml((r.description || '').slice(0,120))}</td>
     </tr>
@@ -2857,9 +2859,9 @@ function expGoPage(p) { expPage = p; renderExpTable(); window.scrollTo(0,0); }
 
 // ── CSV export ────────────────────────────────────────────────────
 function downloadExpCSV() {
-  const headers = ['Date','Campaign','Recipient','Category','Parish','Amount','Description'];
+  const headers = ['Date','Campaign','Recipient','Category','State','Parish','Amount','Description'];
   const rows = expFiltered.map(r => [
-    r.date, r.candidate, r.contributor, r._cat, r.parish,
+    r.date, r.candidate, r.contributor, r._cat, r.recipientState, r.parish,
     r.amount, (r.description||'').replace(/"/g,'""')
   ].map(v => `"${v||''}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
