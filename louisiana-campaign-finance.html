@@ -581,21 +581,18 @@
 <div class="controls-bar">
   <div class="controls-inner">
     <div class="ctrl-group">
-      <label>Election Year</label>
+      <label>Election Cycle</label>
       <select class="ctrl-select" id="cycle-select">
-        <option value="2027">2027 — LA Gov.</option>
-        <option value="2026" selected>2026 — Federal</option>
-        <option value="2025">2025 — LA State</option>
-        <option value="2024">2024 — Federal</option>
-        <option value="2023">2023 — LA Gov.</option>
-        <option value="2022">2022 — Federal</option>
-        <option value="2021">2021 — LA State</option>
-        <option value="2020">2020 — Federal</option>
-        <option value="2019">2019 — LA Gov.</option>
-        <option value="2018">2018 — Federal</option>
-        <option value="2017">2017 — LA State</option>
-        <option value="2016">2016 — Federal</option>
-        <option value="2015">2015 — LA Gov.</option>
+        <option value="2026" selected>2025–2026 — Federal / Local</option>
+        <option value="2024">2023–2024 — LA Governor / Presidential</option>
+        <option value="2022">2021–2022 — Federal / Local</option>
+        <option value="2020">2019–2020 — LA Governor / Presidential</option>
+        <option value="2018">2017–2018 — Federal / Local</option>
+        <option value="2016">2015–2016 — LA Governor / Presidential</option>
+        <option value="2014">2013–2014 — Federal / Local</option>
+        <option value="2012">2011–2012 — LA Governor / Presidential</option>
+        <option value="2010">2009–2010 — Federal / Local</option>
+        <option value="2008">2007–2008 — LA Governor / Presidential</option>
       </select>
     </div>
     <div class="ctrl-group">
@@ -1390,13 +1387,14 @@ function applyFiltersAndRender() {
   const zipSearch   = document.getElementById('zip-search').value.trim();
   const origin = document.getElementById('origin-select').value;
   const exclFilingFees = document.getElementById('btn-excl-ff').classList.contains('active');
-  const cycleYear = parseInt(cycle);
+  const cycleYear = parseInt(cycle);  // even year; show full 2-year cycle [cycleYear-1, cycleYear]
+  const cycleYearPrev = cycleYear - 1;
 
   filteredData = allData.filter(d => {
     if (!d.date) return false;
     const dt = new Date(d.date);
     const yr = dt.getFullYear();
-    if (yr !== cycleYear) return false;
+    if (yr !== cycleYear && yr !== cycleYearPrev) return false;
     if (party !== 'ALL') {
       if (party === 'PAC') { if (d.donorType !== 'PAC') return false; }
       else if (party === 'PAC-DEM') { if (d.donorType !== 'PAC' || detectPACParty(d.contributor) !== 'PAC-DEM') return false; }
@@ -1946,12 +1944,14 @@ function renderTopStates() {
 // TREND CHART
 // ============================================================
 function renderTrendChart() {
-  // Show all 12 months of the selected cycle year (Jan–Dec), not a rolling window from today.
+  // Show all 24 months of the 2-year election cycle.
   const cycleYear = parseInt(document.getElementById('cycle-select').value) || new Date().getFullYear();
+  const prevYear  = cycleYear - 1;
   const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const months = MONTH_NAMES.map((_,i) =>
-    `${cycleYear}-${String(i+1).padStart(2,'0')}`
-  );
+  const months = [
+    ...MONTH_NAMES.map((_,i) => `${prevYear}-${String(i+1).padStart(2,'0')}`),
+    ...MONTH_NAMES.map((_,i) => `${cycleYear}-${String(i+1).padStart(2,'0')}`),
+  ];
 
   const demByMonth = {}, repByMonth = {}, othByMonth = {};
   months.forEach(m => { demByMonth[m]=0; repByMonth[m]=0; othByMonth[m]=0; });
@@ -1988,7 +1988,7 @@ function renderTrendChart() {
       plugins: {
         legend:{labels:{color:'#8b949e',font:{size:12},boxWidth:12}},
         tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${formatMoney(ctx.raw)}`}},
-        title:{display:true,text:`Monthly Contributions — ${cycleYear}`,color:'#8b949e',font:{size:12},padding:{bottom:8}}
+        title:{display:true,text:`Monthly Contributions — ${prevYear}–${cycleYear}`,color:'#8b949e',font:{size:12},padding:{bottom:8}}
       }
     }
   });
@@ -2528,20 +2528,45 @@ function detectExpCategory(desc) {
 }
 
 // ── Tab switching ────────────────────────────────────────────────
+// Snapshot of all cycle options, captured once on first tab switch
+let _allCycleOpts = null;
+
 function switchTab(tab) {
   document.getElementById('contributions-view').style.display = tab === 'contributions' ? '' : 'none';
   document.getElementById('expenditures-view').style.display  = tab === 'expenditures'  ? '' : 'none';
   document.getElementById('tab-contributions').classList.toggle('active', tab === 'contributions');
   document.getElementById('tab-expenditures').classList.toggle('active', tab === 'expenditures');
-  if (tab === 'expenditures') {
-    const yr = parseInt(document.getElementById('cycle-select').value);
-    if (yr < 2016) {
-      document.getElementById('exp-unavailable-msg').style.display = '';
-      document.getElementById('exp-table').style.display = 'none';
-      return;
-    }
-    if (expData.length === 0) loadExpData();
+
+  const sel = document.getElementById('cycle-select');
+
+  // Snapshot all options the first time
+  if (!_allCycleOpts) {
+    _allCycleOpts = Array.from(sel.options).map(o => ({ value: o.value, text: o.text }));
   }
+
+  if (tab === 'expenditures') {
+    // Rebuild dropdown keeping only cycles that have expenditure data (2016+)
+    const cur = sel.value;
+    sel.innerHTML = '';
+    _allCycleOpts
+      .filter(o => parseInt(o.value) >= 2016)
+      .forEach(o => sel.add(new Option(o.text, o.value)));
+    // Preserve selection if still valid, otherwise jump to newest available
+    if (sel.querySelector(`option[value="${cur}"]`)) {
+      sel.value = cur;
+    } else {
+      sel.value = _allCycleOpts.find(o => parseInt(o.value) >= 2016)?.value || '2026';
+      expData = []; expFiltered = [];
+    }
+  } else {
+    // Restore all options
+    const cur = sel.value;
+    sel.innerHTML = '';
+    _allCycleOpts.forEach(o => sel.add(new Option(o.text, o.value)));
+    sel.value = cur;
+  }
+
+  if (tab === 'expenditures' && expData.length === 0) loadExpData();
 }
 
 // ── Fetch expenditure data ────────────────────────────────────────
@@ -2825,12 +2850,12 @@ document.getElementById('exp-amt-max').addEventListener('input', renderExpAll);
 // CONTRIBUTOR PROFILE MODAL
 // ============================================================
 function showContributorProfile(name) {
-  // allData: ignore other active filters so the full cycle picture is shown
+  // allData: ignore other active filters so the full cycle picture is shown (both years of the cycle)
   const cycle      = parseInt(document.getElementById('cycle-select').value);
   const contribs   = allData.filter(d => {
     if (d.contributor !== name) return false;
     const yr = new Date(d.date).getFullYear();
-    return yr === cycle;
+    return yr === cycle || yr === cycle - 1;
   }).sort((a, b) => b.date.localeCompare(a.date));
 
   if (!contribs.length) {
