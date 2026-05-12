@@ -1457,6 +1457,7 @@ document.getElementById('cycle-select').addEventListener('change', () => {
     loadData();
     if (document.getElementById('expenditures-view').style.display !== 'none') loadExpData();
     if (document.getElementById('loans-view').style.display !== 'none') loadLoanData();
+    _saveUrlState();
   }, 400);  // brief delay so fast scrolling through options doesn't fire every step
 });
 ['amt-min','amt-max'].forEach(id => {
@@ -1540,7 +1541,7 @@ async function loadData() {
 }
 
 async function fetchLAEthicsLive(cycle) {
-  const cacheKey = `la_live_${cycle}`;
+  const cacheKey = `la_live2_${cycle}`;   // v2: ensures both cycle years are included
   const cached = sessionStorage.getItem(cacheKey);
   if (cached) {
     try {
@@ -1689,6 +1690,7 @@ function renderStats() {
   document.getElementById('stat-top-parish-sub').textContent = topParish ? formatMoney(topParish[1]) : 'No data';
   document.getElementById('stat-oos-total').textContent = formatMoney(oosTotal);
   document.getElementById('stat-oos-sub').textContent = `${oosPct}% of total raised`;
+  _saveUrlState();
 }
 
 // ============================================================
@@ -2805,6 +2807,7 @@ function switchTab(tab) {
 
   if (tab === 'expenditures' && expData.length === 0) loadExpData();
   if (tab === 'loans'        && loanData.length === 0) loadLoanData();
+  _saveUrlState();
 }
 
 // ── Fetch expenditure data ────────────────────────────────────────
@@ -2884,12 +2887,22 @@ function populateExpCampaignDropdown() {
     o.value = c; o.textContent = c;
     sel.appendChild(o);
   });
+  // Apply pending URL-restored value
+  if (_pendingExpCamp && [...sel.options].some(o => o.value === _pendingExpCamp)) {
+    sel.value = _pendingExpCamp;
+    _pendingExpCamp = null;
+  }
 
   // Populate parish dropdown from data (LA parishes only — Out of State already hardcoded)
   const pSel = document.getElementById('exp-parish-select');
   const parishes = [...new Set(expData.map(r => r.parish).filter(p => p && p !== 'Out of State'))].sort();
   pSel.innerHTML = '<option value="ALL">All Parishes</option><option value="OOS">Out of State</option>';
   parishes.forEach(p => { const o = new Option(p, p); pSel.appendChild(o); });
+  // Apply pending URL-restored value
+  if (_pendingExpParish && [...pSel.options].some(o => o.value === _pendingExpParish)) {
+    pSel.value = _pendingExpParish;
+    _pendingExpParish = null;
+  }
 }
 
 // ── Filter expenditure data ───────────────────────────────────────
@@ -2927,6 +2940,7 @@ function renderExpAll() {
   renderCashFlowChart();
   renderExpTopRecipients();
   renderExpTable();
+  _saveUrlState();
 }
 
 // ── Stats ─────────────────────────────────────────────────────────
@@ -3327,6 +3341,11 @@ function populateLoanCampaignDropdown() {
   const campaigns = [...new Set(loanData.map(r => r.candidate).filter(Boolean))].sort();
   sel.innerHTML = '<option value="ALL">All Campaigns</option>';
   campaigns.forEach(c => { const o = new Option(c, c); sel.appendChild(o); });
+  // Apply pending URL-restored value
+  if (_pendingLoanCamp && [...sel.options].some(o => o.value === _pendingLoanCamp)) {
+    sel.value = _pendingLoanCamp;
+    _pendingLoanCamp = null;
+  }
 }
 
 // ── Filter ────────────────────────────────────────────────────
@@ -3354,6 +3373,7 @@ function renderLoanAll() {
   renderLoanOriginChart();
   renderLoanLenders();
   renderLoanTable();
+  _saveUrlState();
 }
 
 // ── Stats ─────────────────────────────────────────────────────
@@ -3707,6 +3727,151 @@ document.addEventListener('keydown', e => {
 });
 
 // ============================================================
+// URL STATE PERSISTENCE
+// ============================================================
+
+// Pending values for dynamic dropdowns (populated after data loads)
+let _pendingExpCamp   = null;
+let _pendingExpParish = null;
+let _pendingLoanCamp  = null;
+let _urlStateReady    = false;   // gate: don't save until after restore runs
+
+function _saveUrlState() {
+  if (!_urlStateReady) return;
+  const p = new URLSearchParams();
+
+  // Cycle (skip default)
+  const cycle = document.getElementById('cycle-select').value;
+  if (cycle && cycle !== '2026') p.set('cycle', cycle);
+
+  // Active tab
+  const tab = document.getElementById('expenditures-view').style.display !== 'none' ? 'expenditures'
+            : document.getElementById('loans-view').style.display !== 'none'         ? 'loans'
+            : 'contributions';
+  if (tab !== 'contributions') p.set('tab', tab);
+
+  // ── Contribution filters ───────────────────────────────────
+  const party = document.getElementById('party-select').value;
+  if (party && party !== 'ALL') p.set('party', party);
+
+  const parish = document.getElementById('parish-select').value;
+  if (parish && parish !== 'ALL') p.set('parish', parish);
+
+  const origin = document.getElementById('origin-select').value;
+  if (origin && origin !== 'ALL') p.set('origin', origin);
+
+  const amin = document.getElementById('amt-min').value;
+  if (amin) p.set('amin', amin);
+
+  const amax = document.getElementById('amt-max').value;
+  if (amax) p.set('amax', amax);
+
+  const cand = document.getElementById('candidate-search').value.trim();
+  if (cand) p.set('cand', cand);
+
+  const donor = document.getElementById('donor-search').value.trim();
+  if (donor) p.set('donor', donor);
+
+  const zip = document.getElementById('zip-search').value.trim();
+  if (zip) p.set('zip', zip);
+
+  const notes = document.getElementById('notes-search').value.trim();
+  if (notes) p.set('notes', notes);
+
+  if (document.getElementById('btn-excl-ff').classList.contains('active')) p.set('xff', '1');
+
+  // ── Expenditure filters ────────────────────────────────────
+  const ecamp = document.getElementById('exp-campaign-select').value;
+  if (ecamp && ecamp !== 'ALL') p.set('ecamp', ecamp);
+
+  const ecat = document.getElementById('exp-category-select').value;
+  if (ecat && ecat !== 'ALL') p.set('ecat', ecat);
+
+  const erec = document.getElementById('exp-recipient-search').value.trim();
+  if (erec) p.set('erec', erec);
+
+  const edesc = document.getElementById('exp-desc-search').value.trim();
+  if (edesc) p.set('edesc', edesc);
+
+  const eparish = document.getElementById('exp-parish-select').value;
+  if (eparish && eparish !== 'ALL') p.set('eparish', eparish);
+
+  const eamin = document.getElementById('exp-amt-min').value;
+  if (eamin) p.set('eamin', eamin);
+
+  const eamax = document.getElementById('exp-amt-max').value;
+  if (eamax) p.set('eamax', eamax);
+
+  // ── Loan filters ───────────────────────────────────────────
+  const lcamp = document.getElementById('loan-campaign-select').value;
+  if (lcamp && lcamp !== 'ALL') p.set('lcamp', lcamp);
+
+  const lstate = document.getElementById('loan-state-select').value;
+  if (lstate && lstate !== 'ALL') p.set('lstate', lstate);
+
+  const lamin = document.getElementById('loan-amt-min').value;
+  if (lamin) p.set('lamin', lamin);
+
+  const lamax = document.getElementById('loan-amt-max').value;
+  if (lamax) p.set('lamax', lamax);
+
+  const qs = p.toString();
+  history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+}
+
+function _restoreUrlState() {
+  const p = new URLSearchParams(window.location.search);
+  if (!p.toString()) { _urlStateReady = true; return; }
+
+  // ── Cycle ──────────────────────────────────────────────────
+  const cycle = p.get('cycle');
+  if (cycle) {
+    const sel = document.getElementById('cycle-select');
+    if (sel.querySelector(`option[value="${CSS.escape(cycle)}"]`) ||
+        [...sel.options].some(o => o.value === cycle)) {
+      sel.value = cycle;
+    }
+  }
+
+  // ── Contribution filters (static — apply immediately) ──────
+  const party = p.get('party');  if (party) document.getElementById('party-select').value = party;
+  const parish = p.get('parish'); if (parish) document.getElementById('parish-select').value = parish;
+  const origin = p.get('origin'); if (origin) document.getElementById('origin-select').value = origin;
+  const amin = p.get('amin');   if (amin) document.getElementById('amt-min').value = amin;
+  const amax = p.get('amax');   if (amax) document.getElementById('amt-max').value = amax;
+  const cand = p.get('cand');   if (cand) document.getElementById('candidate-search').value = cand;
+  const donor = p.get('donor'); if (donor) document.getElementById('donor-search').value = donor;
+  const zip = p.get('zip');     if (zip) document.getElementById('zip-search').value = zip;
+  const notes = p.get('notes'); if (notes) document.getElementById('notes-search').value = notes;
+  if (p.get('xff') === '1') document.getElementById('btn-excl-ff').classList.add('active');
+
+  // ── Expenditure static filters ─────────────────────────────
+  const ecat = p.get('ecat');   if (ecat) document.getElementById('exp-category-select').value = ecat;
+  const erec = p.get('erec');   if (erec) document.getElementById('exp-recipient-search').value = erec;
+  const edesc = p.get('edesc'); if (edesc) document.getElementById('exp-desc-search').value = edesc;
+  const eamin = p.get('eamin'); if (eamin) document.getElementById('exp-amt-min').value = eamin;
+  const eamax = p.get('eamax'); if (eamax) document.getElementById('exp-amt-max').value = eamax;
+
+  // ── Loan static filters ────────────────────────────────────
+  const lstate = p.get('lstate'); if (lstate) document.getElementById('loan-state-select').value = lstate;
+  const lamin = p.get('lamin');   if (lamin) document.getElementById('loan-amt-min').value = lamin;
+  const lamax = p.get('lamax');   if (lamax) document.getElementById('loan-amt-max').value = lamax;
+
+  // ── Dynamic dropdowns — defer until data populates them ────
+  _pendingExpCamp   = p.get('ecamp')   || null;
+  _pendingExpParish = p.get('eparish') || null;
+  _pendingLoanCamp  = p.get('lcamp')   || null;
+
+  // ── Tab switch — defer one tick so init() can finish first ─
+  const tab = p.get('tab');
+  if (tab && tab !== 'contributions') {
+    setTimeout(() => switchTab(tab), 0);
+  }
+
+  _urlStateReady = true;
+}
+
+// ============================================================
 // INIT
 // ============================================================
 (async function init() {
@@ -3733,6 +3898,7 @@ document.addEventListener('keydown', e => {
     }
   }
 
+  _restoreUrlState();
   loadData();
 })();
 
