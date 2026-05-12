@@ -1118,14 +1118,14 @@
       <table class="data-table" id="exp-table" style="width:100%">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Campaign</th>
-            <th>Recipient</th>
-            <th>Category</th>
-            <th>State</th>
-            <th>Parish</th>
-            <th class="num">Amount</th>
-            <th>Description</th>
+            <th data-col="date">Date</th>
+            <th data-col="candidate">Campaign</th>
+            <th data-col="contributor">Recipient</th>
+            <th data-col="_cat">Category</th>
+            <th data-col="recipientState">State</th>
+            <th data-col="parish">Parish</th>
+            <th data-col="amount" class="num">Amount</th>
+            <th style="cursor:default">Description</th>
           </tr>
         </thead>
         <tbody id="exp-tbody"></tbody>
@@ -1144,11 +1144,36 @@
 
     <!-- Stats row -->
     <div class="stats-row" style="margin-bottom:20px">
-      <div class="stat-card"><div class="stat-value" id="loan-stat-total">—</div><div class="stat-label">Total Borrowed</div><div class="stat-sub" id="loan-stat-total-sub">—</div></div>
-      <div class="stat-card"><div class="stat-value" id="loan-stat-count">—</div><div class="stat-label"># of Loans</div><div class="stat-sub" id="loan-stat-count-sub">—</div></div>
-      <div class="stat-card"><div class="stat-value" id="loan-stat-avg">—</div><div class="stat-label">Avg Loan</div><div class="stat-sub" id="loan-stat-avg-sub">—</div></div>
-      <div class="stat-card"><div class="stat-value" id="loan-stat-self-pct">—</div><div class="stat-label">Self-Loans</div><div class="stat-sub" id="loan-stat-self-sub">candidate financing own race</div></div>
-      <div class="stat-card"><div class="stat-value" id="loan-stat-top">—</div><div class="stat-label">Top Borrower</div><div class="stat-sub" id="loan-stat-top-sub">—</div></div>
+      <div class="stat-card accent-blue">
+        <span class="stat-icon">🏦</span>
+        <div class="stat-label">Total Borrowed</div>
+        <div class="stat-value" id="loan-stat-total">—</div>
+        <div class="stat-sub" id="loan-stat-total-sub">—</div>
+      </div>
+      <div class="stat-card accent-purple">
+        <span class="stat-icon">#</span>
+        <div class="stat-label"># of Loans</div>
+        <div class="stat-value" id="loan-stat-count">—</div>
+        <div class="stat-sub" id="loan-stat-count-sub">—</div>
+      </div>
+      <div class="stat-card accent-gold">
+        <span class="stat-icon">∅</span>
+        <div class="stat-label">Avg Loan</div>
+        <div class="stat-value" id="loan-stat-avg">—</div>
+        <div class="stat-sub" id="loan-stat-avg-sub">—</div>
+      </div>
+      <div class="stat-card accent-muted">
+        <span class="stat-icon">👤</span>
+        <div class="stat-label">Self-Loans</div>
+        <div class="stat-value" id="loan-stat-self-pct">—</div>
+        <div class="stat-sub" id="loan-stat-self-sub">candidate financing own race</div>
+      </div>
+      <div class="stat-card accent-green">
+        <span class="stat-icon">🏆</span>
+        <div class="stat-label">Top Borrower</div>
+        <div class="stat-value" id="loan-stat-top" style="font-size:20px">—</div>
+        <div class="stat-sub" id="loan-stat-top-sub">—</div>
+      </div>
     </div>
 
     <!-- Charts row -->
@@ -1223,13 +1248,13 @@
     <!-- Loans table -->
     <table class="data-table" id="loan-table" style="width:100%">
       <thead><tr>
-        <th>Date</th>
-        <th>Campaign</th>
-        <th>Lender</th>
-        <th>State</th>
-        <th>Parish</th>
-        <th class="num">Rate %</th>
-        <th class="num">Amount</th>
+        <th data-col="date">Date</th>
+        <th data-col="candidate">Campaign</th>
+        <th data-col="contributor">Lender</th>
+        <th data-col="lenderState">State</th>
+        <th data-col="parish">Parish</th>
+        <th data-col="rate" class="num">Rate %</th>
+        <th data-col="amount" class="num">Amount</th>
       </tr></thead>
       <tbody id="loan-tbody"></tbody>
     </table>
@@ -1580,7 +1605,7 @@ document.querySelectorAll('.tp-view-btn').forEach(btn => {
   });
 });
 
-document.querySelectorAll('thead th[data-col]').forEach(th => {
+document.querySelectorAll('#data-table thead th[data-col]').forEach(th => {
   th.addEventListener('click', () => {
     const col = th.dataset.col;
     if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
@@ -2849,6 +2874,8 @@ function escHtml(str) {
 let expData     = [];
 let expFiltered = [];
 let expPage     = 1;
+let expSortCol  = 'date';
+let expSortDir  = 'desc';
 const EXP_PAGE_SIZE = 50;
 let expCampaignChart = null;
 let expCategoryChart = null;
@@ -3324,6 +3351,21 @@ function expTRGoPage(p) { expTRPage = p; _renderExpTRPage(); }
 
 // ── Expenditures table ────────────────────────────────────────────
 function renderExpTable() {
+  // Sort expFiltered in place before paging
+  expFiltered.sort((a, b) => {
+    let av = a[expSortCol], bv = b[expSortCol];
+    if (expSortCol === 'amount' || expSortCol === 'rate') { av = Number(av) || 0; bv = Number(bv) || 0; }
+    else { av = (av || '').toString().toLowerCase(); bv = (bv || '').toString().toLowerCase(); }
+    if (av < bv) return expSortDir === 'asc' ? -1 : 1;
+    if (av > bv) return expSortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  // Update sort indicators
+  document.querySelectorAll('#exp-table thead th[data-col]').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.col === expSortCol) th.classList.add(expSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+
   const start = (expPage - 1) * EXP_PAGE_SIZE;
   const page  = expFiltered.slice(start, start + EXP_PAGE_SIZE);
   const tbody = document.getElementById('exp-tbody');
@@ -3370,6 +3412,17 @@ function downloadExpCSV() {
   a.click();
 }
 
+// ── Expenditure table column sort ────────────────────────────────
+document.querySelectorAll('#exp-table thead th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (expSortCol === col) expSortDir = expSortDir === 'asc' ? 'desc' : 'asc';
+    else { expSortCol = col; expSortDir = col === 'amount' ? 'desc' : 'asc'; }
+    expPage = 1;
+    renderExpTable();
+  });
+});
+
 // ── Wire up expenditure controls ──────────────────────────────────
 document.getElementById('exp-campaign-select').addEventListener('change', renderExpAll);
 document.getElementById('exp-category-select').addEventListener('change', renderExpAll);
@@ -3386,6 +3439,8 @@ document.getElementById('exp-amt-max').addEventListener('input', renderExpAll);
 let loanData     = [];
 let loanFiltered = [];
 let loanPage     = 1;
+let loanSortCol  = 'date';
+let loanSortDir  = 'desc';
 const LOAN_PAGE_SIZE = 50;
 let loanCampaignChart = null;
 let loanOriginChart   = null;
@@ -3626,6 +3681,21 @@ function loanLenderGoPage(p) { loanLenderPage = p; _renderLoanLenderPage(); }
 
 // ── Loans table ───────────────────────────────────────────────
 function renderLoanTable() {
+  // Sort loanFiltered in place before paging
+  loanFiltered.sort((a, b) => {
+    let av = a[loanSortCol], bv = b[loanSortCol];
+    if (loanSortCol === 'amount' || loanSortCol === 'rate') { av = Number(av) || 0; bv = Number(bv) || 0; }
+    else { av = (av || '').toString().toLowerCase(); bv = (bv || '').toString().toLowerCase(); }
+    if (av < bv) return loanSortDir === 'asc' ? -1 : 1;
+    if (av > bv) return loanSortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  // Update sort indicators
+  document.querySelectorAll('#loan-table thead th[data-col]').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.col === loanSortCol) th.classList.add(loanSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+
   const start = (loanPage - 1) * LOAN_PAGE_SIZE;
   const page  = loanFiltered.slice(start, start + LOAN_PAGE_SIZE);
   const tbody = document.getElementById('loan-tbody');
@@ -3665,6 +3735,17 @@ function downloadLoanCSV() {
   a.download = `la_loans_${document.getElementById('cycle-select').value}.csv`;
   a.click();
 }
+
+// ── Loan table column sort ────────────────────────────────────
+document.querySelectorAll('#loan-table thead th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (loanSortCol === col) loanSortDir = loanSortDir === 'asc' ? 'desc' : 'asc';
+    else { loanSortCol = col; loanSortDir = col === 'amount' || col === 'rate' ? 'desc' : 'asc'; }
+    loanPage = 1;
+    renderLoanTable();
+  });
+});
 
 // ── Wire up loan controls ──────────────────────────────────────
 document.getElementById('loan-campaign-select').addEventListener('change', renderLoanAll);
