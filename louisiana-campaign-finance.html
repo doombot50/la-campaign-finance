@@ -527,11 +527,63 @@
     .stats-row { grid-template-columns: 1fr 1fr; }
     .map-panel-row { grid-template-columns: 1fr; }
   }
+  /* ── Sticky top wrapper ─────────────────────────────────────── */
+  .sticky-top { position:sticky; top:0; z-index:1000; background:var(--card); box-shadow:0 2px 12px rgba(0,0,0,0.22); }
+  header { position:static !important; border-bottom:1px solid var(--border); box-shadow:none !important; }
+
+  /* ── Controls collapse ──────────────────────────────────────── */
+  .ctrl-always-row { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+  .ctrl-filters { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; overflow:hidden; max-height:200px; opacity:1; transition:max-height .28s ease, opacity .2s ease, margin .2s ease; margin-top:10px; }
+  .ctrl-filters.collapsed { max-height:0; opacity:0; margin-top:0; pointer-events:none; }
+  .btn-toggle-filters { background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:5px; transition:all .15s; white-space:nowrap; align-self:flex-end; }
+  .btn-toggle-filters:hover { border-color:var(--gold); color:var(--gold); }
+  .btn-toggle-filters .caret { display:inline-block; transition:transform .2s; }
+  .btn-toggle-filters.open .caret { transform:rotate(180deg); }
+  .filter-count-badge { background:var(--gold); color:var(--btn-active-text); font-size:10px; font-weight:700; padding:1px 5px; border-radius:10px; min-width:16px; text-align:center; display:none; }
+  .filter-count-badge.visible { display:inline-block; }
+
+  /* ── Filter chips bar ───────────────────────────────────────── */
+  #filter-chips-bar { display:none; flex-wrap:wrap; gap:6px; align-items:center; padding:6px 24px; background:rgba(200,169,81,0.04); border-top:1px solid rgba(200,169,81,0.15); }
+  .filter-chip { display:inline-flex; align-items:center; gap:4px; background:rgba(200,169,81,0.12); border:1px solid rgba(200,169,81,0.3); color:var(--gold); padding:3px 7px 3px 9px; border-radius:20px; font-size:11px; font-weight:500; white-space:nowrap; max-width:220px; }
+  .chip-label { overflow:hidden; text-overflow:ellipsis; }
+  .chip-x { cursor:pointer; font-size:14px; line-height:1; opacity:0.55; flex-shrink:0; transition:opacity .15s; }
+  .chip-x:hover { opacity:1; }
+  .chip-clear-all { background:transparent; border:1px solid var(--border); color:var(--muted); padding:3px 10px; border-radius:20px; font-size:11px; cursor:pointer; transition:all .15s; }
+  .chip-clear-all:hover { border-color:var(--gold); color:var(--gold); }
+
   /* ── Section tabs ─────────────────────────────────────────── */
-  .section-tabs { display:flex; gap:0; background:var(--card); border-bottom:2px solid var(--border); padding:0 24px; }
+  .section-tabs { display:flex; gap:0; background:var(--card); border-bottom:2px solid var(--border); padding:0 24px; border-top:1px solid var(--border); }
   .section-tab { padding:11px 28px; background:none; border:none; border-bottom:3px solid transparent; margin-bottom:-2px; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; transition:color .15s,border-color .15s; letter-spacing:.01em; }
   .section-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
   .section-tab:hover:not(.active) { color:var(--text); }
+
+  /* ── Stat card accents ──────────────────────────────────────── */
+  .stat-card { border-left:3px solid transparent; transition:border-color .3s; }
+  .stat-card.accent-green  { border-left-color:#4caf7d; }
+  .stat-card.accent-blue   { border-left-color:#4d9de0; }
+  .stat-card.accent-purple { border-left-color:#9b72cf; }
+  .stat-card.accent-gold   { border-left-color:var(--gold); }
+  .stat-card.accent-muted  { border-left-color:var(--muted); }
+  .stat-card.accent-red    { border-left-color:var(--rep); }
+  .stat-icon { font-size:20px; float:right; opacity:0.4; margin-top:-2px; line-height:1; }
+
+  /* ── Table density toggle ───────────────────────────────────── */
+  .density-toggle { display:flex; gap:0; border:1px solid var(--border); border-radius:5px; overflow:hidden; }
+  .density-btn { background:transparent; border:none; padding:4px 8px; font-size:11px; color:var(--muted); cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .density-btn.active { background:var(--gold); color:var(--btn-active-text); font-weight:700; }
+  table.compact td { padding:4px 12px !important; font-size:12px !important; }
+  table.compact thead th { padding:5px 12px; }
+
+  /* ── Skeleton loading ───────────────────────────────────────── */
+  @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+  .skeleton { display:inline-block; border-radius:4px; background:linear-gradient(90deg,var(--border) 25%,rgba(255,255,255,0.07) 50%,var(--border) 75%); background-size:400px 100%; animation:shimmer 1.4s infinite linear; vertical-align:middle; }
+  .stat-value .skeleton { width:90px; height:28px; border-radius:6px; }
+  .stat-sub   .skeleton { width:110px; height:11px; border-radius:4px; margin-top:4px; }
+
+  /* ── Tab fade-in transition ─────────────────────────────────── */
+  .tab-view { animation:tabFadeIn .17s ease; }
+  @keyframes tabFadeIn { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:translateY(0)} }
+
   /* ── Expenditure controls bar ─────────────────────────────── */
   .exp-controls-bar { background:var(--card); border-bottom:1px solid var(--border); padding:10px 24px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
   /* ── Expenditure charts row ───────────────────────────────── */
@@ -541,6 +593,16 @@
 </head>
 <body>
 
+<!-- PROXY BANNER (scrolls away) -->
+<div id="proxy-banner">
+  <span>⚡</span>
+  <span><strong>Enable live Louisiana Ethics data:</strong> run <code>python la_ethics_server.py</code> in this folder, then reload. Downloads real contribution data directly from <strong>ethics.la.gov</strong> — updated daily.</span>
+  <button class="dismiss-btn" onclick="document.getElementById('proxy-banner').style.display='none'">Dismiss</button>
+</div>
+
+<!-- STICKY TOP: header + filters + tabs -->
+<div class="sticky-top" id="sticky-top">
+
 <!-- HEADER -->
 <header>
   <div class="header-inner">
@@ -549,30 +611,25 @@
       <div class="header-title">Louisiana Campaign Finance Dashboard</div>
       <div class="header-subtitle">Louisiana State Ethics campaign finance data</div>
     </div>
-    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode"
-      style="margin-left:auto;background:transparent;border:1px solid var(--border);
-             color:var(--muted);border-radius:6px;padding:5px 10px;cursor:pointer;
-             font-size:16px;line-height:1;transition:all 0.2s;flex-shrink:0">🌙</button>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <div id="proxy-live-badge" style="display:none">
+        <span class="dot"></span> Live data
+      </div>
+      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode"
+        style="background:transparent;border:1px solid var(--border);
+               color:var(--muted);border-radius:6px;padding:5px 10px;cursor:pointer;
+               font-size:16px;line-height:1;transition:all 0.2s">🌙</button>
+    </div>
   </div>
 </header>
 
-<!-- PROXY BANNER -->
-<div id="proxy-banner">
-  <span>⚡</span>
-  <span><strong>Enable live Louisiana Ethics data:</strong> run <code>python la_ethics_server.py</code> in this folder, then reload. Downloads real contribution data directly from <strong>ethics.la.gov</strong> — updated daily.</span>
-  <button class="dismiss-btn" onclick="document.getElementById('proxy-banner').style.display='none'">Dismiss</button>
-</div>
-<div id="proxy-live-badge">
-  <span class="dot"></span> LA Ethics proxy connected — real data active
-</div>
-
-<!-- DATA LOAD NOTICE -->
+<!-- DATA LOAD NOTICE (inside sticky so it's always visible until dismissed) -->
 <div id="data-notice" style="
   background: rgba(200,169,81,0.08); border-bottom: 1px solid rgba(200,169,81,0.2);
-  padding: 7px 24px; font-size: 12px; color: var(--muted);
+  padding: 6px 24px; font-size: 12px; color: var(--muted);
   display: flex; align-items: center; gap: 8px; justify-content: space-between;
 ">
-  <span>⏳ <strong style="color:var(--gold)">Heads up:</strong> selecting a new year downloads data directly from ethics.la.gov — the first load may take 20–60 seconds.</span>
+  <span>⏳ <strong style="color:var(--gold)">Heads up:</strong> first load for each cycle downloads from ethics.la.gov and may take 20–60 seconds.</span>
   <button onclick="document.getElementById('data-notice').style.display='none'"
     style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">✕</button>
 </div>
@@ -580,9 +637,11 @@
 <!-- CONTROLS -->
 <div class="controls-bar">
   <div class="controls-inner">
-    <div class="ctrl-group">
-      <label>Election Cycle</label>
-      <select class="ctrl-select" id="cycle-select">
+    <!-- Always-visible row: cycle + toggle + clear + load -->
+    <div class="ctrl-always-row">
+      <div class="ctrl-group">
+        <label>Election Cycle</label>
+        <select class="ctrl-select" id="cycle-select">
         <option value="2026" selected>2025–2026 — Federal / Local</option>
         <option value="2024">2023–2024 — LA Governor / Presidential</option>
         <option value="2022">2021–2022 — Federal / Local</option>
@@ -597,7 +656,17 @@
         <option value="2004">2003–2004 — LA Governor / Presidential</option>
         <option value="2002">2001–2002 — Federal / Local</option>
       </select>
-    </div>
+      </div><!-- /ctrl-group cycle -->
+      <button class="btn-toggle-filters open" id="btn-toggle-filters" onclick="toggleFilters()">
+        Filters <span class="filter-count-badge" id="filter-count-badge"></span>
+        <span class="caret">▾</span>
+      </button>
+      <button class="btn-secondary" id="btn-clear-filters" title="Clear all filters" style="align-self:flex-end">✕ Clear</button>
+      <button class="btn-load" id="btn-load" style="align-self:flex-end">Load Data</button>
+    </div><!-- /ctrl-always-row -->
+
+    <!-- Collapsible filters -->
+    <div class="ctrl-filters" id="ctrl-filters">
     <div class="ctrl-group">
       <label>Party</label>
       <select class="ctrl-select" id="party-select">
@@ -700,21 +769,15 @@
       </select>
     </div>
     <div class="ctrl-group">
-      <label>Map View</label>
-      <div class="map-toggle-btns" style="flex-direction:row;">
-        <button class="map-toggle-btn active" id="btn-bubbles">Bubbles</button>
-        <button class="map-toggle-btn" id="btn-choropleth">Choropleth</button>
-        <button class="map-toggle-btn" id="btn-us-states">US States</button>
-      </div>
-    </div>
-    <div class="ctrl-group">
       <label>&nbsp;</label>
       <button class="btn-secondary" id="btn-excl-ff" title="Toggle to hide contributions restricted to filing/qualifying fees">Exclude Filing Fees</button>
     </div>
-    <button class="btn-secondary" id="btn-clear-filters" title="Clear all filters">✕ Clear Filters</button>
-    <button class="btn-load" id="btn-load">Load Data</button>
-  </div>
-</div>
+    </div><!-- /ctrl-filters -->
+  </div><!-- /controls-inner -->
+</div><!-- /controls-bar -->
+
+<!-- FILTER CHIPS -->
+<div id="filter-chips-bar"></div>
 
 <!-- SECTION TABS -->
 <div class="section-tabs">
@@ -723,33 +786,40 @@
   <button class="section-tab" id="tab-loans" onclick="switchTab('loans')">🏦 Loans</button>
 </div>
 
-<div id="contributions-view">
+</div><!-- /sticky-top -->
+
+<div id="contributions-view" class="tab-view">
 <!-- MAIN -->
 <div class="main">
 
   <!-- STATS ROW -->
   <div class="stats-row">
-    <div class="stat-card">
+    <div class="stat-card accent-green">
+      <span class="stat-icon">💰</span>
       <div class="stat-label">Total Raised</div>
       <div class="stat-value" id="stat-total">—</div>
       <div class="stat-sub" id="stat-total-sub">Loading...</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card accent-blue">
+      <span class="stat-icon">#</span>
       <div class="stat-label"># Donations</div>
       <div class="stat-value" id="stat-count">—</div>
       <div class="stat-sub" id="stat-count-sub">across all sources</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card accent-purple">
+      <span class="stat-icon">∅</span>
       <div class="stat-label">Avg Donation</div>
       <div class="stat-value" id="stat-avg">—</div>
       <div class="stat-sub" id="stat-avg-sub">per contribution</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card accent-gold">
+      <span class="stat-icon">📍</span>
       <div class="stat-label">Top Parish</div>
       <div class="stat-value" id="stat-top-parish" style="font-size:20px;">—</div>
       <div class="stat-sub" id="stat-top-parish-sub">by total raised</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card accent-muted">
+      <span class="stat-icon">✈</span>
       <div class="stat-label">Out-of-State</div>
       <div class="stat-value" id="stat-oos-total">—</div>
       <div class="stat-sub" id="stat-oos-sub">of total raised</div>
@@ -838,6 +908,10 @@
     <div class="table-header-row">
       <div class="table-title">Contribution Records</div>
       <div class="table-actions">
+        <div class="density-toggle" title="Row density">
+          <button class="density-btn active" id="density-comfortable" onclick="setDensity('comfortable')">Comfortable</button>
+          <button class="density-btn" id="density-compact" onclick="setDensity('compact')">Compact</button>
+        </div>
         <button class="upload-btn" onclick="downloadCSV()">⬇ Download CSV</button>
       </div>
     </div>
@@ -869,7 +943,7 @@
 </div><!-- /contributions-view -->
 
 <!-- EXPENDITURES VIEW -->
-<div id="expenditures-view" style="display:none">
+<div id="expenditures-view" class="tab-view" style="display:none">
 
   <!-- Expenditure controls -->
   <div class="exp-controls-bar">
@@ -925,27 +999,32 @@
 
     <!-- Expenditure stats -->
     <div class="stats-row">
-      <div class="stat-card">
+      <div class="stat-card accent-red">
+        <span class="stat-icon">💸</span>
         <div class="stat-label">Total Spent</div>
         <div class="stat-value" id="exp-stat-total">—</div>
         <div class="stat-sub" id="exp-stat-total-sub">across all campaigns</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card accent-blue">
+        <span class="stat-icon">#</span>
         <div class="stat-label"># Expenditures</div>
         <div class="stat-value" id="exp-stat-count">—</div>
         <div class="stat-sub">individual payments</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card accent-purple">
+        <span class="stat-icon">∅</span>
         <div class="stat-label">Avg Payment</div>
         <div class="stat-value" id="exp-stat-avg">—</div>
         <div class="stat-sub">per expenditure</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card accent-gold">
+        <span class="stat-icon">🏆</span>
         <div class="stat-label">Top Campaign</div>
         <div class="stat-value" id="exp-stat-top-campaign" style="font-size:16px">—</div>
         <div class="stat-sub" id="exp-stat-top-campaign-sub">by total spent</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card accent-muted">
+        <span class="stat-icon">📂</span>
         <div class="stat-label">Top Category</div>
         <div class="stat-value" id="exp-stat-top-cat" style="font-size:16px">—</div>
         <div class="stat-sub" id="exp-stat-top-cat-sub">by total spent</div>
@@ -1051,7 +1130,7 @@
 <!-- ══════════════════════════════════════════════════════════════
      LOANS VIEW
      ══════════════════════════════════════════════════════════════ -->
-<div id="loans-view" style="display:none">
+<div id="loans-view" class="tab-view" style="display:none">
   <div class="content-inner" style="padding:24px">
 
     <!-- Stats row -->
@@ -1519,12 +1598,32 @@ function debounceFilter() {
 // ============================================================
 // LOAD DATA
 // ============================================================
+function _showStatSkeletons() {
+  const sk = (w, h) => `<span class="skeleton" style="width:${w};height:${h};display:inline-block;border-radius:6px;"></span>`;
+  const skSub = (w) => `<span class="skeleton" style="width:${w};height:11px;display:inline-block;border-radius:4px;margin-top:4px;"></span>`;
+  [
+    ['stat-total',      '100px','28px'], ['stat-count',    '70px','28px'],
+    ['stat-avg',        '90px', '28px'], ['stat-top-parish','80px','22px'],
+    ['stat-oos-total',  '90px', '28px']
+  ].forEach(([id, w, h]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = sk(w, h);
+  });
+  [
+    ['stat-total-sub','120px'], ['stat-top-parish-sub','90px'], ['stat-oos-sub','100px']
+  ].forEach(([id, w]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = skSub(w);
+  });
+}
+
 async function loadData() {
   const cycle = document.getElementById('cycle-select').value;
   const btn = document.getElementById('btn-load');
   btn.textContent = 'Loading…';
   btn.disabled = true;
 
+  _showStatSkeletons();
   setStatus('loading');
   showMapSpinner(true);
 
@@ -1645,6 +1744,7 @@ function applyFiltersAndRender() {
   currentPage = 1;
   tcPage = 1;
   renderAll();
+  renderFilterChips();
 }
 
 // ============================================================
@@ -2808,6 +2908,17 @@ function switchTab(tab) {
   if (tab === 'expenditures' && expData.length === 0) loadExpData();
   if (tab === 'loans'        && loanData.length === 0) loadLoanData();
   _saveUrlState();
+  renderFilterChips();
+
+  // Re-trigger fade-in animation each time the tab is shown
+  const viewId = tab === 'expenditures' ? 'expenditures-view'
+               : tab === 'loans'        ? 'loans-view'
+               : 'contributions-view';
+  const view = document.getElementById(viewId);
+  view.classList.remove('tab-view');
+  // Force reflow so the browser registers the class removal before re-adding
+  void view.offsetWidth;
+  view.classList.add('tab-view');
 }
 
 // ── Fetch expenditure data ────────────────────────────────────────
@@ -2941,6 +3052,7 @@ function renderExpAll() {
   renderExpTopRecipients();
   renderExpTable();
   _saveUrlState();
+  renderFilterChips();
 }
 
 // ── Stats ─────────────────────────────────────────────────────────
@@ -3374,6 +3486,7 @@ function renderLoanAll() {
   renderLoanLenders();
   renderLoanTable();
   _saveUrlState();
+  renderFilterChips();
 }
 
 // ── Stats ─────────────────────────────────────────────────────
@@ -3725,6 +3838,152 @@ function handleCPOverlayClick(e) {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeContributorProfile();
 });
+
+// ============================================================
+// FILTER TOGGLE & DENSITY
+// ============================================================
+
+let _filtersOpen = true;
+function toggleFilters() {
+  _filtersOpen = !_filtersOpen;
+  const el  = document.getElementById('ctrl-filters');
+  const btn = document.getElementById('btn-toggle-filters');
+  el.classList.toggle('collapsed', !_filtersOpen);
+  btn.classList.toggle('open', _filtersOpen);
+}
+
+let _density = localStorage.getItem('la_density') || 'comfortable';
+function setDensity(mode) {
+  _density = mode;
+  localStorage.setItem('la_density', mode);
+  const tbl = document.getElementById('data-table');
+  if (tbl) tbl.classList.toggle('compact', mode === 'compact');
+  document.getElementById('density-comfortable').classList.toggle('active', mode === 'comfortable');
+  document.getElementById('density-compact').classList.toggle('active', mode === 'compact');
+}
+// Apply saved density on load
+document.addEventListener('DOMContentLoaded', () => setDensity(_density));
+
+// ── Filter chips ─────────────────────────────────────────────
+
+function _currentTab() {
+  if (document.getElementById('expenditures-view').style.display !== 'none') return 'expenditures';
+  if (document.getElementById('loans-view').style.display !== 'none') return 'loans';
+  return 'contributions';
+}
+
+function renderFilterChips() {
+  const bar = document.getElementById('filter-chips-bar');
+  const tab = _currentTab();
+  const chips = [];
+
+  if (tab === 'contributions') {
+    const party = document.getElementById('party-select').value;
+    if (party !== 'ALL') chips.push({ label: `Party: ${party}`, field: 'party-select', reset: 'ALL', type: 'select' });
+
+    const parish = document.getElementById('parish-select').value;
+    if (parish !== 'ALL') chips.push({ label: `Parish: ${parish}`, field: 'parish-select', reset: 'ALL', type: 'select' });
+
+    const origin = document.getElementById('origin-select').value;
+    if (origin !== 'ALL') chips.push({ label: `Origin: ${origin}`, field: 'origin-select', reset: 'ALL', type: 'select' });
+
+    const amin = document.getElementById('amt-min').value;
+    if (amin) chips.push({ label: `Min $${Number(amin).toLocaleString()}`, field: 'amt-min', reset: '', type: 'input' });
+
+    const amax = document.getElementById('amt-max').value;
+    if (amax) chips.push({ label: `Max $${Number(amax).toLocaleString()}`, field: 'amt-max', reset: '', type: 'input' });
+
+    const cand = document.getElementById('candidate-search').value.trim();
+    if (cand) chips.push({ label: `Committee: ${cand}`, field: 'candidate-search', reset: '', type: 'input' });
+
+    const donor = document.getElementById('donor-search').value.trim();
+    if (donor) chips.push({ label: `Donor: ${donor}`, field: 'donor-search', reset: '', type: 'input' });
+
+    const zip = document.getElementById('zip-search').value.trim();
+    if (zip) chips.push({ label: `ZIP: ${zip}`, field: 'zip-search', reset: '', type: 'input' });
+
+    const notes = document.getElementById('notes-search').value.trim();
+    if (notes) chips.push({ label: `Notes: ${notes}`, field: 'notes-search', reset: '', type: 'input' });
+
+    if (document.getElementById('btn-excl-ff').classList.contains('active'))
+      chips.push({ label: 'Excl. Filing Fees', field: 'btn-excl-ff', reset: '', type: 'toggle' });
+
+  } else if (tab === 'expenditures') {
+    const camp = document.getElementById('exp-campaign-select').value;
+    if (camp !== 'ALL') chips.push({ label: `Campaign: ${camp.split(' ').slice(-1)[0]}`, field: 'exp-campaign-select', reset: 'ALL', type: 'select' });
+
+    const cat = document.getElementById('exp-category-select').value;
+    if (cat !== 'ALL') chips.push({ label: `Cat: ${cat}`, field: 'exp-category-select', reset: 'ALL', type: 'select' });
+
+    const rec = document.getElementById('exp-recipient-search').value.trim();
+    if (rec) chips.push({ label: `Recipient: ${rec}`, field: 'exp-recipient-search', reset: '', type: 'input' });
+
+    const desc = document.getElementById('exp-desc-search').value.trim();
+    if (desc) chips.push({ label: `Desc: ${desc}`, field: 'exp-desc-search', reset: '', type: 'input' });
+
+    const par = document.getElementById('exp-parish-select').value;
+    if (par !== 'ALL') chips.push({ label: `Parish: ${par === 'OOS' ? 'Out of State' : par}`, field: 'exp-parish-select', reset: 'ALL', type: 'select' });
+
+    const eamin = document.getElementById('exp-amt-min').value;
+    if (eamin) chips.push({ label: `Min $${Number(eamin).toLocaleString()}`, field: 'exp-amt-min', reset: '', type: 'input' });
+
+    const eamax = document.getElementById('exp-amt-max').value;
+    if (eamax) chips.push({ label: `Max $${Number(eamax).toLocaleString()}`, field: 'exp-amt-max', reset: '', type: 'input' });
+
+  } else {
+    const lcamp = document.getElementById('loan-campaign-select').value;
+    if (lcamp !== 'ALL') chips.push({ label: `Campaign: ${lcamp.split(' ').slice(-1)[0]}`, field: 'loan-campaign-select', reset: 'ALL', type: 'select' });
+
+    const lst = document.getElementById('loan-state-select').value;
+    if (lst !== 'ALL') chips.push({ label: `State: ${lst === 'OOS' ? 'Out of State' : lst}`, field: 'loan-state-select', reset: 'ALL', type: 'select' });
+
+    const lamin = document.getElementById('loan-amt-min').value;
+    if (lamin) chips.push({ label: `Min $${Number(lamin).toLocaleString()}`, field: 'loan-amt-min', reset: '', type: 'input' });
+
+    const lamax = document.getElementById('loan-amt-max').value;
+    if (lamax) chips.push({ label: `Max $${Number(lamax).toLocaleString()}`, field: 'loan-amt-max', reset: '', type: 'input' });
+  }
+
+  // Update badge count on toggle button
+  const badge = document.getElementById('filter-count-badge');
+  if (badge) { badge.textContent = chips.length; badge.classList.toggle('visible', chips.length > 0); }
+
+  // Render chips
+  if (!chips.length) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = chips.map((c, i) =>
+    `<span class="filter-chip"><span class="chip-label">${escHtml(c.label)}</span><span class="chip-x" data-idx="${i}" onclick="_dismissChip(this)">×</span></span>`
+  ).join('') + `<button class="chip-clear-all" onclick="clearCurrentTabFilters()">Clear all ×</button>`;
+
+  // Store for onclick lookup
+  bar._chips = chips;
+}
+
+function _dismissChip(el) {
+  const chips = document.getElementById('filter-chips-bar')._chips || [];
+  const c = chips[parseInt(el.dataset.idx)];
+  if (!c) return;
+  const field = document.getElementById(c.field);
+  if (!field) return;
+  if (c.type === 'select') field.value = c.reset;
+  else if (c.type === 'input') field.value = c.reset;
+  else if (c.type === 'toggle') field.classList.remove('active');
+  _reRenderCurrentTab();
+}
+
+function clearCurrentTabFilters() {
+  const tab = _currentTab();
+  if (tab === 'contributions') document.getElementById('btn-clear-filters').click();
+  else if (tab === 'expenditures') document.getElementById('btn-clear-exp-filters').click();
+  else document.getElementById('btn-clear-loan-filters').click();
+}
+
+function _reRenderCurrentTab() {
+  const tab = _currentTab();
+  if (tab === 'contributions') applyFiltersAndRender();
+  else if (tab === 'expenditures') renderExpAll();
+  else renderLoanAll();
+}
 
 // ============================================================
 // URL STATE PERSISTENCE
