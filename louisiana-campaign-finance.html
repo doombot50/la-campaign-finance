@@ -366,18 +366,33 @@
     text-align: center; padding: 48px 20px; color: var(--muted);
   }
   .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  /* ── Pagination ─────────────────────────────────────────────── */
   .pagination {
-    display: flex; justify-content: center; align-items: center;
-    gap: 8px; margin-top: 14px; flex-wrap: wrap;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
   }
+  .pag-summary { font-size: 12px; color: var(--muted); }
+  .pag-summary strong { color: var(--text); font-weight: 600; }
+  .pag-controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: center; }
+  .pag-ellipsis { color: var(--muted); font-size: 13px; padding: 0 3px; user-select: none; }
+  .pag-jump-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted);
+                   margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--border); }
+  .pag-jump { width: 54px; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+              border-radius: 5px; padding: 4px 6px; font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
+  .pag-jump:focus { outline: none; border-color: var(--gold); }
   .page-btn {
-    padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border);
-    background: transparent; color: var(--muted); cursor: pointer; font-size: 12px;
-    transition: all 0.2s;
+    min-width: 32px; height: 32px; padding: 0 8px;
+    border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 13px;
+    transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center;
+    font-variant-numeric: tabular-nums;
   }
-  .page-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+  .page-btn.pag-arrow { padding: 0 10px; font-size: 12px; gap: 3px; white-space: nowrap; }
+  .page-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); background: rgba(200,169,81,0.06); }
   .page-btn.active { background: var(--gold); color: var(--btn-active-text); border-color: var(--gold); font-weight: 700; }
   .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  /* Compact inline pagination for panel headers */
+  .pag-inline { display: flex; align-items: center; gap: 4px; }
   .page-info { font-size: 12px; color: var(--muted); }
 
   /* EXPANDABLE ROW DETAIL */
@@ -1054,7 +1069,7 @@
         <button class="upload-btn" onclick="downloadCSV()">⬇ Download CSV</button>
       </div>
     </div>
-    <div class="table-scroll-wrap">
+    <div class="table-scroll-wrap" id="main-table-scroll">
       <table id="data-table">
         <thead>
           <tr>
@@ -1247,7 +1262,7 @@
       <div id="exp-unavailable-msg" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">
         Expenditure data is only available from 2016 onward.
       </div>
-      <div class="table-scroll-wrap">
+      <div class="table-scroll-wrap" id="exp-table-scroll">
         <table class="data-table" id="exp-table" style="width:100%">
           <thead>
             <tr>
@@ -1384,7 +1399,7 @@
     </div>
 
     <!-- Loans table -->
-    <div class="table-scroll-wrap">
+    <div class="table-scroll-wrap" id="loan-table-scroll">
       <table class="data-table" id="loan-table" style="width:100%">
         <thead><tr>
           <th data-col="date">Date</th>
@@ -1421,7 +1436,7 @@
       <p style="font-size:12px;color:var(--muted);padding:0 4px 12px">
         Biggest givers across every committee in the selected cycle. Click any donor to see everywhere they gave.
       </p>
-      <div class="table-scroll-wrap">
+      <div class="table-scroll-wrap" id="donors-table-scroll">
         <table class="data-table" id="donors-table" style="width:100%">
           <thead><tr>
             <th style="width:48px" data-dcol="rank">#</th>
@@ -2752,11 +2767,11 @@ function _renderTCPage() {
   }).join('');
 
   // Pagination controls
-  if (totalPages <= 1) { pag.innerHTML = ''; return; }
-  pag.innerHTML =
-    `<button class="page-btn" onclick="tcGoPage(${tcPage - 1})" ${tcPage === 1 ? 'disabled' : ''}>‹ Prev</button>` +
-    `<span class="page-info">${start + 1}–${Math.min(start + TC_PAGE_SIZE, _tcSorted.length)} of ${_tcSorted.length}</span>` +
-    `<button class="page-btn" onclick="tcGoPage(${tcPage + 1})" ${tcPage === totalPages ? 'disabled' : ''}>Next ›</button>`;
+  buildPagination({
+    pageId: 'tc-pagination', current: tcPage, totalPages,
+    totalRecords: _tcSorted.length, pageSize: TC_PAGE_SIZE,
+    recordLabel: 'contributors', goFn: 'tcGoPage', compact: true
+  });
 }
 
 function tcGoPage(p) {
@@ -2825,31 +2840,75 @@ function renderTable() {
   renderPagination(totalPages, total);
 }
 
-function renderPagination(totalPages, total) {
-  const pag = document.getElementById('pagination');
-  if (totalPages <= 1) { pag.innerHTML = ''; return; }
+// ============================================================
+// UNIFIED PAGINATION UTILITY
+// ============================================================
+/**
+ * buildPagination — renders consistent pagination into a container element.
+ * @param {string}  pageId       — id of the .pagination div to populate
+ * @param {number}  current      — current page (1-based)
+ * @param {number}  totalPages   — total number of pages
+ * @param {number}  totalRecords — record count for "Showing X-Y of Z"
+ * @param {number}  pageSize     — records per page
+ * @param {string}  recordLabel  — e.g. "contributions", "expenditures"
+ * @param {string}  goFn         — JS function name to call, e.g. "goPage"
+ * @param {string}  [scrollId]   — id of .table-scroll-wrap to reset on nav
+ * @param {boolean} [compact]    — true for panel tables (no ellipsis, no jump)
+ */
+function buildPagination({ pageId, current, totalPages, totalRecords, pageSize, recordLabel = 'records', goFn, scrollId, compact = false }) {
+  const pg = document.getElementById(pageId);
+  if (!pg) return;
 
-  let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>`;
+  const start = (current - 1) * pageSize + 1;
+  const end   = Math.min(current * pageSize, totalRecords);
 
-  const range = getPageRange(currentPage, totalPages);
-  range.forEach(p => {
-    if (p === '...') html += `<span class="page-info" style="padding:0 4px">…</span>`;
-    else html += `<button class="page-btn${p===currentPage?' active':''}" onclick="goPage(${p})">${p}</button>`;
-  });
+  const summaryHtml = totalRecords > 0
+    ? `<span class="pag-summary">Showing <strong>${start.toLocaleString()}–${end.toLocaleString()}</strong> of <strong>${totalRecords.toLocaleString()}</strong> ${recordLabel}</span>`
+    : '';
 
-  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Next ›</button>`;
-  html += `<span class="page-info">${total.toLocaleString()} records</span>`;
-  pag.innerHTML = html;
+  if (totalPages <= 1) { pg.innerHTML = summaryHtml; return; }
+
+  const scroll  = scrollId ? `document.getElementById('${scrollId}')?.scrollTo(0,0);` : '';
+  const call    = p => `${scroll}${goFn}(${p})`;
+
+  let controls = `<div class="pag-controls">`;
+  controls += `<button class="page-btn pag-arrow" onclick="${call(current - 1)}" ${current === 1 ? 'disabled' : ''} aria-label="Previous page">‹ Prev</button>`;
+
+  if (compact) {
+    controls += `<span class="page-btn active" style="cursor:default;min-width:64px;font-size:12px">${current.toLocaleString()} / ${totalPages.toLocaleString()}</span>`;
+  } else {
+    getPageRange(current, totalPages).forEach(p => {
+      if (p === '...') controls += `<span class="pag-ellipsis">…</span>`;
+      else controls += `<button class="page-btn${p === current ? ' active' : ''}" onclick="${call(p)}" aria-label="Page ${p}"${p === current ? ' aria-current="page"' : ''}>${p}</button>`;
+    });
+  }
+
+  controls += `<button class="page-btn pag-arrow" onclick="${call(current + 1)}" ${current === totalPages ? 'disabled' : ''} aria-label="Next page">Next ›</button>`;
+
+  if (!compact && totalPages > 10) {
+    controls += `<span class="pag-jump-wrap">Go to <input class="pag-jump" type="number" min="1" max="${totalPages}" value="${current}" onchange="const _v=Math.min(Math.max(1,Math.round(+this.value)),${totalPages});${scroll}${goFn}(_v)" aria-label="Jump to page"></span>`;
+  }
+
+  controls += `</div>`;
+  pg.innerHTML = summaryHtml + controls;
 }
 
 function getPageRange(cur, total) {
-  if (total <= 7) return Array.from({length:total},(_,i)=>i+1);
+  if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
   const pages = [1];
   if (cur > 3) pages.push('...');
-  for (let i=Math.max(2,cur-1); i<=Math.min(total-1,cur+1); i++) pages.push(i);
-  if (cur < total-2) pages.push('...');
+  for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i);
+  if (cur < total - 2) pages.push('...');
   pages.push(total);
   return pages;
+}
+
+function renderPagination(totalPages, total) {
+  buildPagination({
+    pageId: 'pagination', current: currentPage, totalPages,
+    totalRecords: total, pageSize: PAGE_SIZE,
+    recordLabel: 'contributions', goFn: 'goPage', scrollId: 'main-table-scroll'
+  });
 }
 
 function goPage(p) {
@@ -3751,14 +3810,11 @@ function _renderExpTRPage() {
 
   // Pagination controls
   const totalPages = Math.ceil(_expTRSorted.length / EXP_TR_PAGE_SIZE);
-  if (totalPages <= 1) { pg.innerHTML = ''; return; }
-  let btns = '';
-  if (expTRPage > 1) btns += `<button class="page-btn" onclick="expTRGoPage(${expTRPage-1})">‹</button>`;
-  const lo = Math.max(1, expTRPage-2), hi = Math.min(totalPages, expTRPage+2);
-  for (let p = lo; p <= hi; p++) btns += `<button class="page-btn${p===expTRPage?' active':''}" onclick="expTRGoPage(${p})">${p}</button>`;
-  if (expTRPage < totalPages) btns += `<button class="page-btn" onclick="expTRGoPage(${expTRPage+1})">›</button>`;
-  btns += `<span style="margin-left:8px;color:var(--muted);font-size:12px">top ${_expTRSorted.length}</span>`;
-  pg.innerHTML = btns;
+  buildPagination({
+    pageId: 'exp-top-recipients-pagination', current: expTRPage, totalPages,
+    totalRecords: _expTRSorted.length, pageSize: EXP_TR_PAGE_SIZE,
+    recordLabel: 'recipients', goFn: 'expTRGoPage', compact: true
+  });
 }
 
 function expTRGoPage(p) { expTRPage = p; _renderExpTRPage(); }
@@ -3809,18 +3865,14 @@ function renderExpTable() {
 
   // Pagination
   const totalPages = Math.ceil(expFiltered.length / EXP_PAGE_SIZE);
-  const pg = document.getElementById('exp-pagination');
-  if (totalPages <= 1) { pg.innerHTML = ''; return; }
-  let btns = '';
-  if (expPage > 1) btns += `<button class="page-btn" onclick="expGoPage(${expPage-1})">‹</button>`;
-  const lo = Math.max(1, expPage-2), hi = Math.min(totalPages, expPage+2);
-  for (let p = lo; p <= hi; p++) btns += `<button class="page-btn${p===expPage?' active':''}" onclick="expGoPage(${p})">${p}</button>`;
-  if (expPage < totalPages) btns += `<button class="page-btn" onclick="expGoPage(${expPage+1})">›</button>`;
-  btns += `<span style="margin-left:8px;color:var(--muted);font-size:12px">${expFiltered.length.toLocaleString()} records</span>`;
-  pg.innerHTML = btns;
+  buildPagination({
+    pageId: 'exp-pagination', current: expPage, totalPages,
+    totalRecords: expFiltered.length, pageSize: EXP_PAGE_SIZE,
+    recordLabel: 'expenditures', goFn: 'expGoPage', scrollId: 'exp-table-scroll'
+  });
 }
 
-function expGoPage(p) { expPage = p; renderExpTable(); window.scrollTo(0,0); }
+function expGoPage(p) { expPage = p; renderExpTable(); }
 
 // ── CSV export ────────────────────────────────────────────────────
 function downloadExpCSV() {
@@ -4090,14 +4142,11 @@ function _renderLoanLenderPage() {
     </tr>
   `).join('');
   const totalPages = Math.ceil(_loanLenderSorted.length / LOAN_LENDER_PAGE_SIZE);
-  if (totalPages <= 1) { pg.innerHTML = ''; return; }
-  let btns = '';
-  if (loanLenderPage > 1) btns += `<button class="page-btn" onclick="loanLenderGoPage(${loanLenderPage-1})">‹</button>`;
-  const lo = Math.max(1, loanLenderPage-2), hi = Math.min(totalPages, loanLenderPage+2);
-  for (let p = lo; p <= hi; p++) btns += `<button class="page-btn${p===loanLenderPage?' active':''}" onclick="loanLenderGoPage(${p})">${p}</button>`;
-  if (loanLenderPage < totalPages) btns += `<button class="page-btn" onclick="loanLenderGoPage(${loanLenderPage+1})">›</button>`;
-  btns += `<span style="margin-left:8px;color:var(--muted);font-size:12px">top ${_loanLenderSorted.length}</span>`;
-  pg.innerHTML = btns;
+  buildPagination({
+    pageId: 'loan-lenders-pagination', current: loanLenderPage, totalPages,
+    totalRecords: _loanLenderSorted.length, pageSize: LOAN_LENDER_PAGE_SIZE,
+    recordLabel: 'lenders', goFn: 'loanLenderGoPage', compact: true
+  });
 }
 function loanLenderGoPage(p) { loanLenderPage = p; _renderLoanLenderPage(); }
 
@@ -4143,18 +4192,14 @@ function renderLoanTable() {
       <td class="num">$${Math.round(r.amount).toLocaleString()}</td>
     </tr>
   `).join('');
-  const totalPages = Math.ceil(loanFiltered.length / LOAN_PAGE_SIZE);
-  const pg = document.getElementById('loan-pagination');
-  if (totalPages <= 1) { pg.innerHTML = ''; return; }
-  let btns = '';
-  if (loanPage > 1) btns += `<button class="page-btn" onclick="loanGoPage(${loanPage-1})">‹</button>`;
-  const lo = Math.max(1, loanPage-2), hi = Math.min(totalPages, loanPage+2);
-  for (let p = lo; p <= hi; p++) btns += `<button class="page-btn${p===loanPage?' active':''}" onclick="loanGoPage(${p})">${p}</button>`;
-  if (loanPage < totalPages) btns += `<button class="page-btn" onclick="loanGoPage(${loanPage+1})">›</button>`;
-  btns += `<span style="margin-left:8px;color:var(--muted);font-size:12px">${loanFiltered.length.toLocaleString()} records</span>`;
-  pg.innerHTML = btns;
+  buildPagination({
+    pageId: 'loan-pagination', current: loanPage,
+    totalPages: Math.ceil(loanFiltered.length / LOAN_PAGE_SIZE),
+    totalRecords: loanFiltered.length, pageSize: LOAN_PAGE_SIZE,
+    recordLabel: 'loans', goFn: 'loanGoPage', scrollId: 'loan-table-scroll'
+  });
 }
-function loanGoPage(p) { loanPage = p; renderLoanTable(); window.scrollTo(0,0); }
+function loanGoPage(p) { loanPage = p; renderLoanTable(); }
 
 // ── CSV export ────────────────────────────────────────────────
 function downloadLoanCSV() {
@@ -4278,18 +4323,15 @@ function renderDonorsLeaderboard() {
   _setAriaSort('#donors-table', 'data-dcol', donorsSortCol, donorsSortDir);
 
   // Pagination
-  const totalPages = Math.ceil(rows.length / DONORS_PAGE_SIZE);
-  if (totalPages <= 1) { pg.innerHTML = `<span style="color:var(--muted);font-size:12px">${rows.length.toLocaleString()} donors</span>`; return; }
-  let btns = '';
-  if (donorsPage > 1) btns += `<button class="page-btn" onclick="donorsGoPage(${donorsPage-1})">‹</button>`;
-  const lo = Math.max(1, donorsPage-2), hi = Math.min(totalPages, donorsPage+2);
-  for (let p = lo; p <= hi; p++) btns += `<button class="page-btn${p===donorsPage?' active':''}" onclick="donorsGoPage(${p})">${p}</button>`;
-  if (donorsPage < totalPages) btns += `<button class="page-btn" onclick="donorsGoPage(${donorsPage+1})">›</button>`;
-  btns += `<span style="margin-left:8px;color:var(--muted);font-size:12px">${rows.length.toLocaleString()} donors</span>`;
-  pg.innerHTML = btns;
+  buildPagination({
+    pageId: 'donors-pagination', current: donorsPage,
+    totalPages: Math.ceil(rows.length / DONORS_PAGE_SIZE),
+    totalRecords: rows.length, pageSize: DONORS_PAGE_SIZE,
+    recordLabel: 'donors', goFn: 'donorsGoPage', scrollId: 'donors-table-scroll'
+  });
 }
 
-function donorsGoPage(p) { donorsPage = p; renderDonorsLeaderboard(); window.scrollTo(0,0); }
+function donorsGoPage(p) { donorsPage = p; renderDonorsLeaderboard(); }
 
 function downloadDonorsCSV() {
   if (!_donorsAgg.length) buildDonorsAgg();
