@@ -188,8 +188,12 @@
     padding: 18px 20px;
   }
   .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-  .stat-value { font-size: 28px; font-weight: 700; color: var(--gold); line-height: 1; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; }
   .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .stat-delta { font-size: 11px; margin-top: 3px; font-weight: 600; letter-spacing: 0.2px; }
+  .stat-delta.up   { color: #4caf7d; }
+  .stat-delta.down { color: #e05c5c; }
+  .stat-delta.flat { color: var(--muted); }
 
   /* MAP + PANEL ROW */
   .map-panel-row { display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 20px; }
@@ -264,7 +268,7 @@
   .tp-name { font-size: 13px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tp-bar-wrap { width: 80px; height: 6px; background: var(--border); border-radius: 3px; flex-shrink: 0; }
   .tp-bar { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.4s; }
-  .tp-val { font-size: 12px; color: var(--muted); width: 70px; text-align: right; flex-shrink: 0; }
+  .tp-val { font-size: 12px; color: var(--muted); width: 70px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
   /* TREND CHART */
   .trend-card {
@@ -287,6 +291,7 @@
     padding: 0 10px 8px; border-bottom: 1px solid var(--border);
   }
   .tc-table th.num { text-align: right; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .tc-table td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
   .tc-table tr:last-child td { border-bottom: none; }
   .tc-table tr:hover td { background: rgba(255,255,255,.03); }
@@ -300,16 +305,18 @@
   .tc-bar-cell { width: 140px; }
   .tc-bar-wrap { background: rgba(255,255,255,.07); border-radius: 3px; height: 6px; overflow: hidden; }
   .tc-bar-fill { height: 100%; border-radius: 3px; background: var(--gold); }
-  .tc-amount { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .tc-count  { text-align: right; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .tc-amount { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+  .tc-count  { text-align: right; color: var(--muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .tc-type   { font-size: 11px; padding: 1px 6px; border-radius: 10px; white-space: nowrap;
                background: rgba(255,255,255,.08); color: var(--muted); }
 
   /* DATA TABLE */
   .table-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
-    padding: 16px 20px; margin-bottom: 20px; overflow-x: auto;
+    padding: 16px 20px; margin-bottom: 20px;
   }
+  /* Scrollable table area with sticky header support */
+  .table-scroll-wrap { overflow-x: auto; overflow-y: auto; max-height: 70vh; }
   .table-header-row {
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
   }
@@ -327,6 +334,8 @@
     padding: 8px 12px; text-align: left; font-size: 12px; color: var(--muted);
     text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border);
     cursor: pointer; white-space: nowrap; user-select: none;
+    position: sticky; top: 0; z-index: 2;
+    background: var(--card); box-shadow: 0 1px 0 var(--border);
   }
   thead th:hover { color: var(--gold); }
   thead th.sort-asc::after { content: ' ↑'; color: var(--gold); }
@@ -606,8 +615,10 @@
   .section-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
   .section-tab:hover:not(.active) { color:var(--text); }
 
-  /* ── Stat card accents ──────────────────────────────────────── */
-  .stat-card { border-left:3px solid transparent; transition:border-color .3s; }
+  /* ── Stat card accents + hover ──────────────────────────────── */
+  .stat-card { border-left:3px solid transparent; transition:border-color .3s, transform .15s ease, box-shadow .15s ease; cursor:default; }
+  .stat-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.35); }
+  [data-theme="light"] .stat-card:hover { box-shadow:0 8px 24px rgba(0,0,0,0.14); }
   .stat-card.accent-green  { border-left-color:#4caf7d; }
   .stat-card.accent-blue   { border-left-color:#4d9de0; }
   .stat-card.accent-purple { border-left-color:#9b72cf; }
@@ -615,6 +626,13 @@
   .stat-card.accent-muted  { border-left-color:var(--muted); }
   .stat-card.accent-red    { border-left-color:var(--rep); }
   .stat-icon { font-size:20px; float:right; opacity:0.4; margin-top:-2px; line-height:1; }
+  /* Panel card hover */
+  .panel-card { transition:transform .15s ease, box-shadow .15s ease; }
+  .panel-card:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,0.3); }
+  [data-theme="light"] .panel-card:hover { box-shadow:0 6px 18px rgba(0,0,0,0.12); }
+  /* No-results row inside tables */
+  .table-no-results { text-align:center; padding:36px 20px; color:var(--muted); font-size:13px; }
+  .table-no-results .no-res-icon { font-size:32px; margin-bottom:8px; opacity:0.5; }
 
   /* ── Table density toggle ───────────────────────────────────── */
   .density-toggle { display:flex; gap:0; border:1px solid var(--border); border-radius:5px; overflow:hidden; }
@@ -638,6 +656,26 @@
   /* ── Expenditure charts row ───────────────────────────────── */
   .exp-charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
   @media(max-width:900px){ .exp-charts-row { grid-template-columns:1fr; } }
+
+  /* ── Print stylesheet ─────────────────────────────────────── */
+  @media print {
+    .sticky-top, .controls-bar, .section-tabs, .map-panel-row,
+    .trend-card, .top-contributors-card, .filter-chips-bar,
+    .table-actions, .pagination, .expand-cell, .density-toggle,
+    #proxy-banner, #proxy-live-badge, footer,
+    .btn-load, .btn-secondary, .btn-toggle-filters { display:none !important; }
+    body { background:#fff !important; color:#111 !important; font-size:11px; }
+    .stat-card { border:1px solid #ccc !important; box-shadow:none !important; transform:none !important; break-inside:avoid; }
+    .stats-row { grid-template-columns:repeat(4,1fr) !important; margin-bottom:12px; }
+    .table-card { border:none !important; padding:0 !important; }
+    .table-scroll-wrap { max-height:none !important; overflow:visible !important; }
+    thead th { background:#f0f0f0 !important; color:#333 !important; box-shadow:none !important; position:static !important; }
+    tbody tr { break-inside:avoid; }
+    #la-mardi-gras-stripe { display:block !important; }
+    .stat-value { color:#c8a951 !important; }
+    a { text-decoration:none; color:inherit; }
+    @page { margin:1.5cm; size:A4 landscape; }
+  }
 </style>
 </head>
 <body>
@@ -888,18 +926,21 @@
       <div class="stat-label">Total Raised</div>
       <div class="stat-value" id="stat-total">—</div>
       <div class="stat-sub" id="stat-total-sub">Loading...</div>
+      <div class="stat-delta" id="stat-total-delta"></div>
     </div>
     <div class="stat-card accent-blue">
       <span class="stat-icon">#</span>
       <div class="stat-label"># Donations</div>
       <div class="stat-value" id="stat-count">—</div>
       <div class="stat-sub" id="stat-count-sub">across all sources</div>
+      <div class="stat-delta" id="stat-count-delta"></div>
     </div>
     <div class="stat-card accent-purple">
-      <span class="stat-icon">∅</span>
+      <span class="stat-icon">⌀</span>
       <div class="stat-label">Avg Donation</div>
       <div class="stat-value" id="stat-avg">—</div>
       <div class="stat-sub" id="stat-avg-sub">per contribution</div>
+      <div class="stat-delta" id="stat-avg-delta"></div>
     </div>
     <div class="stat-card accent-gold">
       <span class="stat-icon">📍</span>
@@ -908,10 +949,11 @@
       <div class="stat-sub" id="stat-top-parish-sub">by total raised</div>
     </div>
     <div class="stat-card accent-muted">
-      <span class="stat-icon">✈</span>
+      <span class="stat-icon">✈️</span>
       <div class="stat-label">Out-of-State</div>
       <div class="stat-value" id="stat-oos-total">—</div>
       <div class="stat-sub" id="stat-oos-sub">of total raised</div>
+      <div class="stat-delta" id="stat-oos-delta"></div>
     </div>
   </div>
 
@@ -1012,24 +1054,26 @@
         <button class="upload-btn" onclick="downloadCSV()">⬇ Download CSV</button>
       </div>
     </div>
-    <table id="data-table">
-      <thead>
-        <tr>
-          <th style="width:28px;cursor:default"></th>
-          <th data-col="date">Date</th>
-          <th data-col="contributor">Contributor</th>
-          <th data-col="contributorState" style="width:52px">State</th>
-          <th data-col="parish">Parish</th>
-          <th data-col="candidate">Candidate</th>
-          <th data-col="party">Party</th>
-          <th data-col="donorType">Donor Type</th>
-          <th data-col="amount">Amount</th>
-          <th data-col="notes">Notes</th>
-          <th data-col="source">Source</th>
-        </tr>
-      </thead>
-      <tbody id="table-body"></tbody>
-    </table>
+    <div class="table-scroll-wrap">
+      <table id="data-table">
+        <thead>
+          <tr>
+            <th style="width:28px;cursor:default"></th>
+            <th data-col="date">Date</th>
+            <th data-col="contributor">Contributor</th>
+            <th data-col="contributorState" style="width:52px">State</th>
+            <th data-col="parish">Parish</th>
+            <th data-col="candidate">Candidate</th>
+            <th data-col="party">Party</th>
+            <th data-col="donorType">Donor Type</th>
+            <th data-col="amount">Amount</th>
+            <th data-col="notes">Notes</th>
+            <th data-col="source">Source</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
     <div class="empty-state" id="empty-state" style="display:none;">
       <div class="empty-icon">🔍</div>
       <div>No records match the current filters</div>
@@ -1203,21 +1247,27 @@
       <div id="exp-unavailable-msg" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">
         Expenditure data is only available from 2016 onward.
       </div>
-      <table class="data-table" id="exp-table" style="width:100%">
-        <thead>
-          <tr>
-            <th data-col="date">Date</th>
-            <th data-col="candidate">Campaign</th>
-            <th data-col="contributor">Recipient</th>
-            <th data-col="_cat">Category</th>
-            <th data-col="recipientState">State</th>
-            <th data-col="parish">Parish</th>
-            <th data-col="amount" class="num">Amount</th>
-            <th style="cursor:default">Description</th>
-          </tr>
-        </thead>
-        <tbody id="exp-tbody"></tbody>
-      </table>
+      <div class="table-scroll-wrap">
+        <table class="data-table" id="exp-table" style="width:100%">
+          <thead>
+            <tr>
+              <th data-col="date">Date</th>
+              <th data-col="candidate">Campaign</th>
+              <th data-col="contributor">Recipient</th>
+              <th data-col="_cat">Category</th>
+              <th data-col="recipientState">State</th>
+              <th data-col="parish">Parish</th>
+              <th data-col="amount" class="num">Amount</th>
+              <th style="cursor:default">Description</th>
+            </tr>
+          </thead>
+          <tbody id="exp-tbody"></tbody>
+        </table>
+      </div>
+      <div class="table-no-results" id="exp-no-results" style="display:none">
+        <div class="no-res-icon">🔍</div>
+        No expenditures match the current filters
+      </div>
       <div class="pagination" id="exp-pagination"></div>
     </div>
 
@@ -1334,18 +1384,24 @@
     </div>
 
     <!-- Loans table -->
-    <table class="data-table" id="loan-table" style="width:100%">
-      <thead><tr>
-        <th data-col="date">Date</th>
-        <th data-col="candidate">Campaign</th>
-        <th data-col="contributor">Lender</th>
-        <th data-col="lenderState">State</th>
-        <th data-col="parish">Parish</th>
-        <th data-col="rate" class="num">Rate %</th>
-        <th data-col="amount" class="num">Amount</th>
-      </tr></thead>
-      <tbody id="loan-tbody"></tbody>
-    </table>
+    <div class="table-scroll-wrap">
+      <table class="data-table" id="loan-table" style="width:100%">
+        <thead><tr>
+          <th data-col="date">Date</th>
+          <th data-col="candidate">Campaign</th>
+          <th data-col="contributor">Lender</th>
+          <th data-col="lenderState">State</th>
+          <th data-col="parish">Parish</th>
+          <th data-col="rate" class="num">Rate %</th>
+          <th data-col="amount" class="num">Amount</th>
+        </tr></thead>
+        <tbody id="loan-tbody"></tbody>
+      </table>
+    </div>
+    <div class="table-no-results" id="loan-no-results" style="display:none">
+      <div class="no-res-icon">🔍</div>
+      No loans match the current filters
+    </div>
     <div class="pagination" id="loan-pagination"></div>
 
   </div>
@@ -1365,17 +1421,19 @@
       <p style="font-size:12px;color:var(--muted);padding:0 4px 12px">
         Biggest givers across every committee in the selected cycle. Click any donor to see everywhere they gave.
       </p>
-      <table class="data-table" id="donors-table" style="width:100%">
-        <thead><tr>
-          <th style="width:48px" data-dcol="rank">#</th>
-          <th data-dcol="name">Donor</th>
-          <th data-dcol="type">Type</th>
-          <th class="num" data-dcol="committees">Committees</th>
-          <th class="num" data-dcol="count">Gifts</th>
-          <th class="num" data-dcol="total">Total</th>
-        </tr></thead>
-        <tbody id="donors-tbody"></tbody>
-      </table>
+      <div class="table-scroll-wrap">
+        <table class="data-table" id="donors-table" style="width:100%">
+          <thead><tr>
+            <th style="width:48px" data-dcol="rank">#</th>
+            <th data-dcol="name">Donor</th>
+            <th data-dcol="type">Type</th>
+            <th class="num" data-dcol="committees">Committees</th>
+            <th class="num" data-dcol="count">Gifts</th>
+            <th class="num" data-dcol="total">Total</th>
+          </tr></thead>
+          <tbody id="donors-tbody"></tbody>
+        </table>
+      </div>
       <div id="donors-empty" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">No contribution data loaded yet.</div>
       <div class="pagination" id="donors-pagination"></div>
     </div>
@@ -1843,6 +1901,17 @@ function _showStatSkeletons() {
     const el = document.getElementById(id);
     if (el) el.innerHTML = skSub(w);
   });
+  // Clear delta badges while loading
+  ['stat-total-delta','stat-count-delta','stat-avg-delta','stat-oos-delta'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = '';
+  });
+  // Skeleton rows in the contributions table
+  const tbody = document.getElementById('table-body');
+  if (tbody) {
+    const cols = ['28px','60px','140px','44px','90px','130px','40px','60px','70px','100px','60px'];
+    const skRow = `<tr>${cols.map(w => `<td><span class="skeleton" style="width:${w};height:12px;display:inline-block;border-radius:3px;"></span></td>`).join('')}</tr>`;
+    tbody.innerHTML = Array(8).fill(skRow).join('');
+  }
 }
 
 async function loadData() {
@@ -2023,7 +2092,7 @@ function renderStats() {
 
   const parishTotals = {};
   filteredData.forEach(d => {
-    if (d.parish === 'Out of State') return;   // exclude from LA-parish stats
+    if (d.parish === 'Out of State') return;
     parishTotals[d.parish] = (parishTotals[d.parish]||0) + d.amount;
   });
   const topParish = Object.entries(parishTotals).sort((a,b)=>b[1]-a[1])[0];
@@ -2031,14 +2100,38 @@ function renderStats() {
   const oosTotal = filteredData.filter(d => d.parish === 'Out of State').reduce((s,d) => s+d.amount, 0);
   const oosPct   = total ? ((oosTotal / total) * 100).toFixed(1) : '0.0';
 
-  document.getElementById('stat-total').textContent = formatMoney(total);
-  document.getElementById('stat-total-sub').textContent = `from ${count} records`;
-  document.getElementById('stat-count').textContent = count.toLocaleString();
-  document.getElementById('stat-avg').textContent = formatMoney(avg);
+  // Animated count-up for numeric stats
+  countUp(document.getElementById('stat-total'), total, formatMoney);
+  countUp(document.getElementById('stat-count'), count, v => Math.round(v).toLocaleString());
+  countUp(document.getElementById('stat-avg'),   avg,   formatMoney);
+  countUp(document.getElementById('stat-oos-total'), oosTotal, formatMoney);
+
+  document.getElementById('stat-total-sub').textContent = `from ${count.toLocaleString()} records`;
   document.getElementById('stat-top-parish').textContent = topParish ? topParish[0] : '—';
   document.getElementById('stat-top-parish-sub').textContent = topParish ? formatMoney(topParish[1]) : 'No data';
-  document.getElementById('stat-oos-total').textContent = formatMoney(oosTotal);
   document.getElementById('stat-oos-sub').textContent = `${oosPct}% of total raised`;
+
+  // Save full-dataset stats for delta comparison (only when unfiltered)
+  const cycleVal = document.getElementById('cycle-select').value;
+  if (filteredData.length === allData.length && allData.length > 0) {
+    saveCycleStats(cycleVal, { total, count, avg, oosTotal });
+  }
+
+  // Show deltas vs previous cycle
+  const prevCycleVal = String(parseInt(cycleVal) - 2);
+  const prev = getCycleStats(prevCycleVal);
+  if (prev) {
+    _renderDelta('stat-total-delta', total, prev.total);
+    _renderDelta('stat-count-delta', count, prev.count);
+    _renderDelta('stat-avg-delta',   avg,   prev.avg);
+    _renderDelta('stat-oos-delta',   oosTotal, prev.oosTotal);
+  } else {
+    ['stat-total-delta','stat-count-delta','stat-avg-delta','stat-oos-delta'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = ''; el.className = 'stat-delta'; }
+    });
+  }
+
   _saveUrlState();
 }
 
@@ -3084,6 +3177,51 @@ function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ============================================================
+// COUNT-UP ANIMATION
+// ============================================================
+function countUp(el, target, formatter, duration = 650) {
+  if (!el) return;
+  const start = performance.now();
+  const from  = 0;
+  function step(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // ease-out quad
+    const eased = 1 - (1 - progress) * (1 - progress);
+    const value = from + (target - from) * eased;
+    el.textContent = formatter(value);
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ============================================================
+// CYCLE STATS — save/restore for delta calculation
+// ============================================================
+function _cycleStatsKey(cycleVal) { return `cycle_stats_${cycleVal}`; }
+
+function saveCycleStats(cycleVal, stats) {
+  try { localStorage.setItem(_cycleStatsKey(cycleVal), JSON.stringify(stats)); } catch(e) {}
+}
+
+function getCycleStats(cycleVal) {
+  try { const v = localStorage.getItem(_cycleStatsKey(cycleVal)); return v ? JSON.parse(v) : null; }
+  catch(e) { return null; }
+}
+
+function _renderDelta(elId, current, prev) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!prev || prev === 0 || current === 0) { el.textContent = ''; el.className = 'stat-delta'; return; }
+  const pct = ((current - prev) / Math.abs(prev)) * 100;
+  const abs = Math.abs(pct);
+  if (abs < 0.5) { el.textContent = '→ flat vs prev cycle'; el.className = 'stat-delta flat'; return; }
+  const arrow = pct > 0 ? '↑' : '↓';
+  el.textContent = `${arrow} ${abs.toFixed(1)}% vs prev cycle`;
+  el.className = `stat-delta ${pct > 0 ? 'up' : 'down'}`;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // EXPENDITURES TAB
 // ═══════════════════════════════════════════════════════════════
@@ -3646,6 +3784,15 @@ function renderExpTable() {
   const start = (expPage - 1) * EXP_PAGE_SIZE;
   const page  = expFiltered.slice(start, start + EXP_PAGE_SIZE);
   const tbody = document.getElementById('exp-tbody');
+  const noRes = document.getElementById('exp-no-results');
+
+  if (!expFiltered.length) {
+    tbody.innerHTML = '';
+    if (noRes) noRes.style.display = '';
+    document.getElementById('exp-pagination').innerHTML = '';
+    return;
+  }
+  if (noRes) noRes.style.display = 'none';
 
   tbody.innerHTML = page.map(r => `
     <tr>
@@ -3975,6 +4122,16 @@ function renderLoanTable() {
   const start = (loanPage - 1) * LOAN_PAGE_SIZE;
   const page  = loanFiltered.slice(start, start + LOAN_PAGE_SIZE);
   const tbody = document.getElementById('loan-tbody');
+  const noRes = document.getElementById('loan-no-results');
+
+  if (!loanFiltered.length) {
+    tbody.innerHTML = '';
+    if (noRes) noRes.style.display = '';
+    document.getElementById('loan-pagination').innerHTML = '';
+    return;
+  }
+  if (noRes) noRes.style.display = 'none';
+
   tbody.innerHTML = page.map(r => `
     <tr>
       <td>${r.date || '—'}</td>
