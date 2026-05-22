@@ -598,8 +598,9 @@
   .chip-clear-all:hover { border-color:var(--gold); color:var(--gold); }
 
   /* ── Section tabs ─────────────────────────────────────────── */
-  .section-tabs { display:flex; gap:0; background:var(--card); border-bottom:2px solid var(--border); padding:0 24px; border-top:1px solid var(--border); }
-  .section-tab { padding:11px 28px; background:none; border:none; border-bottom:3px solid transparent; margin-bottom:-2px; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; transition:color .15s,border-color .15s; letter-spacing:.01em; }
+  .section-tabs { display:flex; gap:0; background:var(--card); border-bottom:2px solid var(--border); padding:0 24px; border-top:1px solid var(--border); overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .section-tabs::-webkit-scrollbar { display:none; }
+  .section-tab { padding:11px 28px; background:none; border:none; border-bottom:3px solid transparent; margin-bottom:-2px; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; transition:color .15s,border-color .15s; letter-spacing:.01em; flex-shrink:0; white-space:nowrap; }
   .section-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
   .section-tab:hover:not(.active) { color:var(--text); }
 
@@ -737,7 +738,7 @@
         <option value="PAC">Any PAC</option>
         <option value="PAC-DEM">PAC — Democrat-leaning</option>
         <option value="PAC-REP">PAC — Republican-leaning</option>
-        <option value="OTH">Other / Unknown</option>
+        <option value="OTH">Uncategorized / Unknown</option>
       </select>
     </div>
     <div class="ctrl-group">
@@ -1060,7 +1061,7 @@
         <option>Travel & Transportation</option>
         <option>Legal & Compliance</option>
         <option>Office & Operations</option>
-        <option>Other</option>
+        <option>Uncategorized</option>
       </select>
     </div>
     <div class="ctrl-group">
@@ -2403,7 +2404,7 @@ function renderDonorTypeChart() {
   donorTypeChart = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Individual', 'PAC', 'Business', 'Union', 'Organization', 'Other'],
+      labels: ['Individual', 'PAC', 'Business', 'Union', 'Organization', 'Uncategorized'],
       datasets: [{
         data: [totals.IND, totals.PAC, totals.BUS, totals.UNION, totals.ORG, totals.OTH],
         backgroundColor: [
@@ -2624,7 +2625,7 @@ function _renderTCPage() {
   const maxTotal   = _tcSorted[0].total;
 
   const typeLabel = { IND: 'Individual', PAC: 'PAC', BUS: 'Business',
-                      UNION: 'Union', ORG: 'Organization', OTH: 'Other' };
+                      UNION: 'Union', ORG: 'Organization', OTH: 'Uncategorized' };
   const typeColor = { IND: '#50b478', PAC: '#9966ff', BUS: '#8c8c8c',
                       UNION: '#4682b4', ORG: '#ffa500', OTH: '#5a5a5a' };
 
@@ -2966,7 +2967,7 @@ function donorTypeBadgeHtml(d) {
     if (align === 'PAC-DEM') return `<span class="party-badge pac-dem">PAC (D)</span>`;
     return `<span class="party-badge pac">PAC</span>`;
   }
-  const map = { IND: ['ind','Individual'], BUS: ['bus','Business'], ORG: ['org','Organization'], OTH: ['oth','Other'] };
+  const map = { IND: ['ind','Individual'], BUS: ['bus','Business'], ORG: ['org','Organization'], OTH: ['oth','Uncategorized'] };
   const [cls, label] = map[dt] || ['oth', dt];
   return `<span class="party-badge ${cls}">${label}</span>`;
 }
@@ -3111,7 +3112,7 @@ function detectExpCategory(desc) {
   if (/TRAVEL|MILEAGE|HOTEL|AIRFARE|TRANSPORT|LODGING|FLIGHT|GAS |FUEL|UBER|LYFT|RENTAL CAR/.test(d)) return 'Travel & Transportation';
   if (/LEGAL|ATTORNEY|COMPLIANCE|FILING FEE|AUDIT|ACCOUNTI|FINANCE REPORT|CPA|LAW FIRM/.test(d)) return 'Legal & Compliance';
   if (/OFFICE|SUPPLY|SUPPLIES|EQUIPMENT|PHONE|INTERNET|RENT|UTILITIES|STORAGE/.test(d)) return 'Office & Operations';
-  return 'Other';
+  return 'Uncategorized';
 }
 
 // ── Tab switching ────────────────────────────────────────────────
@@ -3248,6 +3249,8 @@ async function loadExpData() {
   const expCached = await idbGet(expCacheKey);
   if (expCached) {
     expData = expCached;
+    // Re-tag categories so cached rows reflect the current category labels
+    expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
     document.getElementById('exp-loading-msg').style.display = 'none';
     populateExpCampaignDropdown();
     renderExpAll();
