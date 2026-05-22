@@ -4083,7 +4083,11 @@ function renderDonorsLeaderboard() {
   }
   empty.style.display = 'none';
 
-  const maxTotal = Math.max(...rows.map(r => r.total));
+  // NB: use a loop, not Math.max(...rows.map()) — spreading a 100k+ element
+  // array as call args throws "Maximum call stack size exceeded" on large
+  // cycles (e.g. 2019-2020 governor + presidential).
+  let maxTotal = 0;
+  for (const r of rows) if (r.total > maxTotal) maxTotal = r.total;
   const start = (donorsPage - 1) * DONORS_PAGE_SIZE;
   const page  = rows.slice(start, start + DONORS_PAGE_SIZE);
 
