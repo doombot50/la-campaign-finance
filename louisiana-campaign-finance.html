@@ -520,6 +520,8 @@
 
   /* LEAFLET OVERRIDES */
   .leaflet-container { background: var(--bg) !important; }
+  /* Push controls below the floating map-card-header (≈44px tall) */
+  .map-card .leaflet-top { top: 44px !important; }
   .leaflet-control-zoom a { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
   .leaflet-control-zoom a:hover { background: var(--gold) !important; color: var(--btn-active-text) !important; }
   .leaflet-popup-content-wrapper { background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); }
