@@ -58,6 +58,9 @@
   a { color: var(--gold); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
+  /* EMPTY STATE — hide the dashboard grid until data is loaded */
+  .main.is-empty > *:not(#empty-state) { display: none !important; }
+
   /* LOUISIANA BRANDING */
   #la-mardi-gras-stripe {
     height: 3px;
@@ -833,6 +836,29 @@
 <div id="contributions-view" class="tab-view">
 <!-- MAIN -->
 <div class="main">
+
+  <!-- EMPTY STATE (shown before any data is loaded) -->
+  <div id="empty-state" style="display:none;text-align:center;padding:64px 24px 72px">
+    <svg width="84" height="64" viewBox="0 0 58 44" fill="var(--gold)" style="opacity:0.85;margin-bottom:4px" aria-hidden="true">
+      <ellipse cx="22" cy="27" rx="14" ry="10"/>
+      <path d="M9 23 L0 20 L1 28 L9 30Z"/>
+      <path d="M30 22 C33 17 36 13 35 7" stroke="var(--gold)" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+      <circle cx="35" cy="6" r="5"/>
+      <path d="M39 7.5 L57 12.5 L57 16 L38 11Z"/>
+      <ellipse cx="48" cy="14.5" rx="9" ry="3.5" opacity="0.55"/>
+    </svg>
+    <h2 style="color:var(--gold);font-size:22px;margin-bottom:10px;font-weight:700">Explore Louisiana Campaign Finance</h2>
+    <p style="color:var(--muted);max-width:520px;margin:0 auto 22px;font-size:14px;line-height:1.6">
+      Search contribution, expenditure, and loan records filed with the Louisiana Ethics
+      Commission. Pick an election cycle below and load the data to begin.
+    </p>
+    <button class="btn-load" onclick="document.getElementById('btn-load').click()" style="font-size:15px;padding:11px 30px">
+      Load <span id="empty-state-cycle">2025–2026</span> Data
+    </button>
+    <p id="empty-state-proxy" style="display:none;color:var(--muted);margin-top:24px;font-size:12px">
+      ⚡ For live data, run <code style="background:rgba(200,169,81,0.12);padding:2px 6px;border-radius:4px">python la_ethics_server.py</code> in this folder, then reload.
+    </p>
+  </div>
 
   <!-- STATS ROW -->
   <div class="stats-row">
@@ -1751,6 +1777,7 @@ async function loadData() {
   btn.disabled = true;
 
   _showStatSkeletons();
+  updateEmptyState();   // hide empty-state splash while loading
   setStatus('loading');
   showMapSpinner(true);
 
@@ -1764,6 +1791,7 @@ async function loadData() {
   _loadedCycle = cycle;
   btn.disabled = false;
   updateLoadBtn();
+  updateEmptyState();   // re-check now that loading has finished
 }
 
 async function fetchLAEthicsLive(cycle) {
@@ -1892,6 +1920,24 @@ function renderAll() {
   // Refresh cross-campaign views if visible (they derive from allData)
   if (document.getElementById('donors-view')?.style.display !== 'none')  renderDonorsLeaderboard();
   if (document.getElementById('compare-view')?.style.display !== 'none') renderCompare();
+  updateEmptyState();
+}
+
+// Show a friendly call-to-action when no contribution data is loaded yet
+function updateEmptyState() {
+  const main = document.querySelector('#contributions-view .main');
+  const es   = document.getElementById('empty-state');
+  if (!main || !es) return;
+  const loading = document.getElementById('btn-load').disabled;
+  const isEmpty = allData.length === 0 && !loading;
+  main.classList.toggle('is-empty', isEmpty);
+  es.style.display = isEmpty ? '' : 'none';
+  if (isEmpty) {
+    const sel = document.getElementById('cycle-select');
+    const label = (sel.options[sel.selectedIndex]?.text || '').split('—')[0].trim();
+    document.getElementById('empty-state-cycle').textContent = label || sel.value;
+    document.getElementById('empty-state-proxy').style.display = proxyAvailable ? 'none' : '';
+  }
 }
 
 // ============================================================
