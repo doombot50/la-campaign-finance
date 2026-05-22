@@ -58,6 +58,23 @@
   a { color: var(--gold); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
+  /* ACCESSIBILITY */
+  .skip-link {
+    position: absolute; left: 8px; top: -48px; z-index: 3000;
+    background: var(--gold); color: #000; padding: 8px 16px; border-radius: 0 0 6px 6px;
+    font-weight: 700; font-size: 13px; transition: top 0.15s;
+  }
+  .skip-link:focus { top: 0; text-decoration: none; outline: 2px solid #000; }
+  /* Visible keyboard focus ring across interactive elements */
+  a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible,
+  [tabindex]:focus-visible, th[role="button"]:focus-visible {
+    outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px;
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+
   /* EMPTY STATE — hide the dashboard grid until data is loaded */
   .main.is-empty > *:not(#empty-state) { display: none !important; }
 
@@ -622,8 +639,10 @@
 </head>
 <body>
 
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
 <!-- LOUISIANA MARDI GRAS STRIPE -->
-<div id="la-mardi-gras-stripe" title="Mardi Gras colors: Purple (Justice) · Gold (Power) · Green (Faith)"></div>
+<div id="la-mardi-gras-stripe" title="Mardi Gras colors: Purple (Justice) · Gold (Power) · Green (Faith)" aria-hidden="true"></div>
 
 <!-- PROXY BANNER (scrolls away) -->
 <div id="proxy-banner">
@@ -648,7 +667,6 @@
         <path d="M39 7.5 L57 12.5 L57 16 L38 11Z"/>
         <ellipse cx="48" cy="14.5" rx="9" ry="3.5" opacity="0.55"/>
       </svg>
-      <span style="font-size:26px;line-height:1">⚜️</span>
     </div>
     <div>
       <div class="header-title">Louisiana Campaign Finance Dashboard</div>
@@ -658,10 +676,10 @@
       <div id="proxy-live-badge" style="display:none">
         <span class="dot"></span> Live data
       </div>
-      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode"
+      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle light or dark mode"
         style="background:transparent;border:1px solid var(--border);
                color:var(--muted);border-radius:6px;padding:5px 10px;cursor:pointer;
-               font-size:16px;line-height:1;transition:all 0.2s">🌙</button>
+               font-size:16px;line-height:1;transition:all 0.2s"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -820,22 +838,22 @@
 </div><!-- /controls-bar -->
 
 <!-- FILTER CHIPS -->
-<div id="filter-chips-bar"></div>
+<div id="filter-chips-bar" aria-live="polite"></div>
 
 <!-- SECTION TABS -->
-<div class="section-tabs">
-  <button class="section-tab active" id="tab-contributions" onclick="switchTab('contributions')">💰 Contributions</button>
-  <button class="section-tab" id="tab-expenditures" onclick="switchTab('expenditures')">💸 Expenditures</button>
-  <button class="section-tab" id="tab-loans" onclick="switchTab('loans')">🏦 Loans</button>
-  <button class="section-tab" id="tab-donors" onclick="switchTab('donors')">🏆 Top Donors</button>
-  <button class="section-tab" id="tab-compare" onclick="switchTab('compare')">⚖️ Compare</button>
+<div class="section-tabs" role="tablist" aria-label="Dashboard sections">
+  <button class="section-tab active" id="tab-contributions" role="tab" aria-selected="true"  aria-controls="contributions-view" onclick="switchTab('contributions')">💰 Contributions</button>
+  <button class="section-tab" id="tab-expenditures" role="tab" aria-selected="false" tabindex="-1" aria-controls="expenditures-view" onclick="switchTab('expenditures')">💸 Expenditures</button>
+  <button class="section-tab" id="tab-loans" role="tab" aria-selected="false" tabindex="-1" aria-controls="loans-view" onclick="switchTab('loans')">🏦 Loans</button>
+  <button class="section-tab" id="tab-donors" role="tab" aria-selected="false" tabindex="-1" aria-controls="donors-view" onclick="switchTab('donors')">🏆 Top Donors</button>
+  <button class="section-tab" id="tab-compare" role="tab" aria-selected="false" tabindex="-1" aria-controls="compare-view" onclick="switchTab('compare')">⚖️ Compare</button>
 </div>
 
 </div><!-- /sticky-top -->
 
-<div id="contributions-view" class="tab-view">
+<div id="contributions-view" class="tab-view" role="tabpanel" aria-labelledby="tab-contributions" tabindex="0">
 <!-- MAIN -->
-<div class="main">
+<div class="main" id="main-content">
 
   <!-- EMPTY STATE (shown before any data is loaded) -->
   <div id="empty-state" style="display:none;text-align:center;padding:64px 24px 72px">
@@ -1019,7 +1037,7 @@
 </div><!-- /contributions-view -->
 
 <!-- EXPENDITURES VIEW -->
-<div id="expenditures-view" class="tab-view" style="display:none">
+<div id="expenditures-view" class="tab-view" style="display:none" role="tabpanel" aria-labelledby="tab-expenditures" tabindex="0">
 
   <!-- Expenditure controls -->
   <div class="exp-controls-bar">
@@ -1206,7 +1224,7 @@
 <!-- ══════════════════════════════════════════════════════════════
      LOANS VIEW
      ══════════════════════════════════════════════════════════════ -->
-<div id="loans-view" class="tab-view" style="display:none">
+<div id="loans-view" class="tab-view" style="display:none" role="tabpanel" aria-labelledby="tab-loans" tabindex="0">
   <div class="content-inner" style="padding:24px">
 
     <!-- Stats row -->
@@ -1331,7 +1349,7 @@
 </div><!-- /loans-view -->
 
 <!-- TOP DONORS VIEW -->
-<div id="donors-view" class="tab-view" style="display:none">
+<div id="donors-view" class="tab-view" style="display:none" role="tabpanel" aria-labelledby="tab-donors" tabindex="0">
   <div class="main">
     <div class="table-card">
       <div class="table-header-row">
@@ -1362,7 +1380,7 @@
 </div>
 
 <!-- COMPARE VIEW -->
-<div id="compare-view" class="tab-view" style="display:none">
+<div id="compare-view" class="tab-view" style="display:none" role="tabpanel" aria-labelledby="tab-compare" tabindex="0">
   <div class="main">
     <div class="table-card">
       <div class="table-header-row">
@@ -1379,9 +1397,9 @@
 </div>
 
 <!-- STATUS BAR -->
-<div class="status-bar">
+<div class="status-bar" role="status" aria-live="polite">
   <div class="status-inner">
-    <div class="status-dot ok" id="status-dot"></div>
+    <div class="status-dot ok" id="status-dot" aria-hidden="true"></div>
     <div class="status-text" id="status-text">Ready · <span id="status-records">0</span> records loaded · Last updated: <span id="status-updated">—</span></div>
     <div class="status-text" style="margin-left:auto;">LA Ethics: <span id="la-status">Sample data</span></div>
   </div>
@@ -1396,7 +1414,7 @@
   <p><strong style="color:var(--gold);">Data Source:</strong>
     <a href="https://ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank">Louisiana Ethics Administration Campaign Finance</a>
   </p>
-  <p>This dashboard is for informational and research purposes. Sample LA Ethics data is illustrative.</p>
+  <p>This dashboard is for informational and research purposes.</p>
   <p style="margin-top:8px;">Built with <a href="https://claude.ai" target="_blank">Claude</a> by Charlie Stephens</p>
 </footer>
 
@@ -1506,6 +1524,7 @@ let debounceTimer = null;
 let selectedParish = null;
 let cpCurrentContribs = [];
 let cpCurrentName = '';
+let _modalReturnFocus = null;   // element to restore focus to when a modal closes
 
 // ============================================================
 // INDEXEDDB PERSISTENT CACHE
@@ -2662,10 +2681,11 @@ function renderTable() {
     return 0;
   });
 
-  document.querySelectorAll('thead th[data-col]').forEach(th => {
+  document.querySelectorAll('#data-table thead th[data-col]').forEach(th => {
     th.classList.remove('sort-asc','sort-desc');
     if (th.dataset.col === sortCol) th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
   });
+  _setAriaSort('#data-table', 'data-col', sortCol, sortDir);
 
   const total = sorted.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -3112,7 +3132,11 @@ function switchTab(tab) {
     const el = document.getElementById(id); if (el) el.style.display = k === tab ? '' : 'none';
   });
   Object.entries(TAB_BUTTONS).forEach(([k, id]) => {
-    const el = document.getElementById(id); if (el) el.classList.toggle('active', k === tab);
+    const el = document.getElementById(id); if (!el) return;
+    const isActive = k === tab;
+    el.classList.toggle('active', isActive);
+    el.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    el.tabIndex = isActive ? 0 : -1;   // roving tabindex
   });
 
   const sel = document.getElementById('cycle-select');
@@ -3160,6 +3184,51 @@ function switchTab(tab) {
     view.classList.add('tab-view');
   }
 }
+
+// Arrow-key navigation across the section tablist (WAI-ARIA tabs pattern)
+document.querySelector('.section-tabs')?.addEventListener('keydown', (e) => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+  const tabs = Array.from(document.querySelectorAll('.section-tabs [role="tab"]'));
+  const cur = tabs.indexOf(document.activeElement);
+  if (cur === -1) return;
+  e.preventDefault();
+  let next = cur;
+  if (e.key === 'ArrowRight') next = (cur + 1) % tabs.length;
+  else if (e.key === 'ArrowLeft') next = (cur - 1 + tabs.length) % tabs.length;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = tabs.length - 1;
+  const btn = tabs[next];
+  btn.focus();
+  btn.click();   // activate the tab (switchTab handles roving tabindex)
+});
+
+// Make all sortable table headers keyboard-operable (Enter/Space) + announce as buttons
+document.querySelectorAll('th[data-col], th[data-dcol]').forEach(th => {
+  if (th.dataset.dcol === 'rank') return;   // rank column isn't sortable
+  th.setAttribute('role', 'button');
+  th.setAttribute('tabindex', '0');
+  th.setAttribute('aria-sort', 'none');
+  th.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); th.click(); }
+  });
+});
+
+// Helper: reflect current sort on a table's headers for screen readers
+function _setAriaSort(tableSel, attrName, activeCol, dir) {
+  document.querySelectorAll(`${tableSel} thead th[${attrName}]`).forEach(th => {
+    const isActive = th.getAttribute(attrName) === activeCol;
+    th.setAttribute('aria-sort', isActive ? (dir === 'asc' ? 'ascending' : 'descending') : 'none');
+  });
+}
+
+// Hide purely decorative icons from assistive tech, and label key controls
+document.querySelectorAll('.stat-icon, .pelican-icon').forEach(el => el.setAttribute('aria-hidden', 'true'));
+document.getElementById('cycle-select')?.setAttribute('aria-label', 'Election cycle');
+document.getElementById('candidate-search')?.setAttribute('aria-label', 'Search committee');
+document.getElementById('donor-search')?.setAttribute('aria-label', 'Search donor');
+document.getElementById('zip-search')?.setAttribute('aria-label', 'Search ZIP code');
+document.getElementById('notes-search')?.setAttribute('aria-label', 'Search notes');
+['exp-loading-msg', 'loan-loading-msg'].forEach(id => document.getElementById(id)?.setAttribute('aria-live', 'polite'));
 
 // ── Fetch expenditure data ────────────────────────────────────────
 async function loadExpData() {
@@ -3567,6 +3636,7 @@ function renderExpTable() {
     th.classList.remove('sort-asc', 'sort-desc');
     if (th.dataset.col === expSortCol) th.classList.add(expSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
   });
+  _setAriaSort('#exp-table', 'data-col', expSortCol, expSortDir);
 
   const start = (expPage - 1) * EXP_PAGE_SIZE;
   const page  = expFiltered.slice(start, start + EXP_PAGE_SIZE);
@@ -3895,6 +3965,7 @@ function renderLoanTable() {
     th.classList.remove('sort-asc', 'sort-desc');
     if (th.dataset.col === loanSortCol) th.classList.add(loanSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
   });
+  _setAriaSort('#loan-table', 'data-col', loanSortCol, loanSortDir);
 
   const start = (loanPage - 1) * LOAN_PAGE_SIZE;
   const page  = loanFiltered.slice(start, start + LOAN_PAGE_SIZE);
@@ -4038,6 +4109,7 @@ function renderDonorsLeaderboard() {
     th.classList.remove('sort-asc', 'sort-desc');
     if (th.dataset.dcol === donorsSortCol) th.classList.add(donorsSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
   });
+  _setAriaSort('#donors-table', 'data-dcol', donorsSortCol, donorsSortDir);
 
   // Pagination
   const totalPages = Math.ceil(rows.length / DONORS_PAGE_SIZE);
@@ -4287,13 +4359,16 @@ function showContributorProfile(name) {
 
   cpCurrentContribs = contribs;
   cpCurrentName     = name;
+  _modalReturnFocus = document.activeElement;   // remember trigger for focus restore
   document.getElementById('cp-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  document.querySelector('#cp-modal .cp-close')?.focus();
 }
 
 function closeContributorProfile() {
   document.getElementById('cp-overlay').classList.remove('open');
   document.body.style.overflow = '';
+  if (_modalReturnFocus && _modalReturnFocus.focus) { _modalReturnFocus.focus(); _modalReturnFocus = null; }
 }
 
 function exportContributorProfileCSV() {
@@ -4364,6 +4439,19 @@ function toggleFilters() {
   el.classList.toggle('collapsed', !_filtersOpen);
   btn.classList.toggle('open', _filtersOpen);
 }
+
+// Auto-collapse the filter panel once when the user scrolls down into the data,
+// keeping the sticky header compact. Resets when they scroll back to the top so
+// it can collapse again on the next downward scroll (but won't fight a manual re-open).
+let _filtersAutoCollapsed = false;
+window.addEventListener('scroll', () => {
+  const y = window.scrollY || document.documentElement.scrollTop;
+  if (y > 140) {
+    if (_filtersOpen && !_filtersAutoCollapsed) { toggleFilters(); _filtersAutoCollapsed = true; }
+  } else {
+    _filtersAutoCollapsed = false;
+  }
+}, { passive: true });
 
 let _density = localStorage.getItem('la_density') || 'comfortable';
 function setDensity(mode) {
@@ -4701,8 +4789,11 @@ function showCampaignProfile(name) {
   document.getElementById('camp-name').textContent = name;
   _refreshCampStats();
   campSwitchTab('contribs');
+  _modalReturnFocus = document.activeElement;   // remember trigger for focus restore
   document.getElementById('camp-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  // Move focus into the dialog
+  document.querySelector('#camp-modal .cp-close')?.focus();
 }
 
 function _refreshCampStats() {
@@ -4809,6 +4900,7 @@ function renderCampCashFlow() {
 function closeCampaignProfile() {
   document.getElementById('camp-overlay').classList.remove('open');
   document.body.style.overflow = '';
+  if (_modalReturnFocus && _modalReturnFocus.focus) { _modalReturnFocus.focus(); _modalReturnFocus = null; }
 }
 
 function campSwitchTab(tab) {
@@ -4887,7 +4979,7 @@ function exportCampaignCSV() {
 </script>
 <!-- CAMPAIGN PROFILE MODAL -->
 <div class="cp-overlay" id="camp-overlay" onclick="if(event.target===this)closeCampaignProfile()">
-  <div class="cp-modal" id="camp-modal" style="max-width:860px">
+  <div class="cp-modal" id="camp-modal" style="max-width:860px" role="dialog" aria-modal="true" aria-labelledby="camp-name">
     <div class="cp-header">
       <div>
         <div class="cp-name" id="camp-name">—</div>
@@ -4895,7 +4987,7 @@ function exportCampaignCSV() {
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="exportCampaignCSV()">⬇ CSV</button>
-        <button class="cp-close" onclick="closeCampaignProfile()">✕</button>
+        <button class="cp-close" onclick="closeCampaignProfile()" aria-label="Close campaign profile">✕</button>
       </div>
     </div>
     <!-- Stats -->
@@ -4941,7 +5033,7 @@ function exportCampaignCSV() {
 
 <!-- CONTRIBUTOR PROFILE MODAL -->
 <div class="cp-overlay" id="cp-overlay" onclick="handleCPOverlayClick(event)">
-  <div class="cp-modal" id="cp-modal">
+  <div class="cp-modal" id="cp-modal" role="dialog" aria-modal="true" aria-labelledby="cp-name">
     <div class="cp-header">
       <div>
         <div class="cp-name" id="cp-name">—</div>
@@ -4949,7 +5041,7 @@ function exportCampaignCSV() {
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px;white-space:nowrap" onclick="exportContributorProfileCSV()">⬇ Export CSV</button>
-        <button class="cp-close" onclick="closeContributorProfile()">✕</button>
+        <button class="cp-close" onclick="closeContributorProfile()" aria-label="Close contributor profile">✕</button>
       </div>
     </div>
     <div class="cp-stats">
