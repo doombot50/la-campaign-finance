@@ -58,12 +58,37 @@
   a { color: var(--gold); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
+  /* LOUISIANA BRANDING */
+  #la-mardi-gras-stripe {
+    height: 3px;
+    background: linear-gradient(90deg, #7b2d8b 0%, #7b2d8b 33.3%, #c8a951 33.3%, #c8a951 66.6%, #2d8a45 66.6%);
+    flex-shrink: 0;
+  }
+  .pelican-icon { width: 34px; height: 26px; flex-shrink: 0; opacity: 0.92; }
+  .header-logo { display: flex; align-items: center; gap: 8px; }
+  .header-wordmark { display: flex; flex-direction: column; }
+  .header-wordmark-state {
+    font-size: 9px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--gold); opacity: 0.7; line-height: 1;
+  }
+  .header-wordmark-name {
+    font-size: 11px; font-weight: 700; color: var(--gold); letter-spacing: 0.5px; line-height: 1.3;
+  }
+
   /* HEADER */
   header {
     background: var(--card);
     border-bottom: 1px solid var(--border);
     padding: 0 24px;
     position: sticky; top: 0; z-index: 1000;
+    overflow: hidden;
+  }
+  header::after {
+    content: '⚜';
+    position: absolute; right: 60px; top: -18px;
+    font-size: 110px; line-height: 1;
+    color: var(--gold); opacity: 0.035;
+    pointer-events: none; user-select: none; font-family: serif;
   }
   .header-inner {
     max-width: 1400px; margin: 0 auto;
@@ -594,6 +619,9 @@
 </head>
 <body>
 
+<!-- LOUISIANA MARDI GRAS STRIPE -->
+<div id="la-mardi-gras-stripe" title="Mardi Gras colors: Purple (Justice) · Gold (Power) · Green (Faith)"></div>
+
 <!-- PROXY BANNER (scrolls away) -->
 <div id="proxy-banner">
   <span>⚡</span>
@@ -607,10 +635,21 @@
 <!-- HEADER -->
 <header>
   <div class="header-inner">
-    <div class="header-logo">⚜️</div>
+    <div class="header-logo">
+      <!-- State pelican — Louisiana's official state bird and flag symbol -->
+      <svg class="pelican-icon" viewBox="0 0 58 44" fill="var(--gold)" xmlns="http://www.w3.org/2000/svg" aria-label="Louisiana Brown Pelican">
+        <ellipse cx="22" cy="27" rx="14" ry="10"/>
+        <path d="M9 23 L0 20 L1 28 L9 30Z"/>
+        <path d="M30 22 C33 17 36 13 35 7" stroke="var(--gold)" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+        <circle cx="35" cy="6" r="5"/>
+        <path d="M39 7.5 L57 12.5 L57 16 L38 11Z"/>
+        <ellipse cx="48" cy="14.5" rx="9" ry="3.5" opacity="0.55"/>
+      </svg>
+      <span style="font-size:26px;line-height:1">⚜️</span>
+    </div>
     <div>
       <div class="header-title">Louisiana Campaign Finance Dashboard</div>
-      <div class="header-subtitle">Louisiana State Ethics campaign finance data</div>
+      <div class="header-subtitle">Pelican State · Since 1812 · Ethics Commission Data</div>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0">
       <div id="proxy-live-badge" style="display:none">
@@ -1274,6 +1313,10 @@
 
 <!-- FOOTER -->
 <footer>
+  <p style="font-size:13px;letter-spacing:1px;color:var(--gold);font-weight:600;margin-bottom:6px;">
+    ⚜️ Union, Justice, and Confidence ⚜️
+  </p>
+  <p style="font-size:11px;color:var(--muted);margin-bottom:10px;">Louisiana State Motto · The Pelican State</p>
   <p><strong style="color:var(--gold);">Data Source:</strong>
     <a href="https://ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank">Louisiana Ethics Administration Campaign Finance</a>
   </p>
