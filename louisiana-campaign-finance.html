@@ -1508,6 +1508,59 @@ let cpCurrentContribs = [];
 let cpCurrentName = '';
 
 // ============================================================
+// INDEXEDDB PERSISTENT CACHE
+// Survives browser restarts (sessionStorage was cleared on tab close and
+// silently overflowed its ~5MB quota on the large contributions dataset).
+// ============================================================
+const IDB_NAME = 'la_campaign_finance';
+const IDB_STORE = 'datasets';
+const IDB_TTL_MS = 24 * 60 * 60 * 1000;   // refresh data once a day
+let _idbPromise = null;
+
+function _idbOpen() {
+  if (_idbPromise) return _idbPromise;
+  _idbPromise = new Promise((resolve, reject) => {
+    let req;
+    try { req = indexedDB.open(IDB_NAME, 1); }
+    catch (e) { reject(e); return; }
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+  return _idbPromise;
+}
+
+async function idbGet(key) {
+  try {
+    const db = await _idbOpen();
+    const rec = await new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const rq = tx.objectStore(IDB_STORE).get(key);
+      rq.onsuccess = () => resolve(rq.result);
+      rq.onerror   = () => reject(rq.error);
+    });
+    if (!rec) return null;
+    if (IDB_TTL_MS && rec.ts && (Date.now() - rec.ts > IDB_TTL_MS)) return null;   // stale
+    return rec.data;
+  } catch (e) { return null; }
+}
+
+async function idbSet(key, data) {
+  try {
+    const db = await _idbOpen();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put({ ts: Date.now(), data }, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror    = () => reject(tx.error);
+    });
+  } catch (e) { /* ignore quota / private-mode errors */ }
+}
+
+// ============================================================
 // ============================================================
 // THEME TOGGLE
 // ============================================================
@@ -1795,14 +1848,12 @@ async function loadData() {
 }
 
 async function fetchLAEthicsLive(cycle) {
-  const cacheKey = `la_live2_${cycle}`;   // v2: ensures both cycle years are included
-  const cached = sessionStorage.getItem(cacheKey);
+  const cacheKey = `live_${cycle}`;
+  const cached = await idbGet(cacheKey);
   if (cached) {
-    try {
-      laEthicsData = JSON.parse(cached);
-      document.getElementById('la-status').textContent = `${laEthicsData.length.toLocaleString()} LA Ethics records (cached)`;
-      return;
-    } catch(e) { sessionStorage.removeItem(cacheKey); }
+    laEthicsData = cached;
+    document.getElementById('la-status').textContent = `${laEthicsData.length.toLocaleString()} LA Ethics records (cached)`;
+    return;
   }
 
   // Poll until the server has finished downloading and caching the CSV.
@@ -1833,7 +1884,7 @@ async function fetchLAEthicsLive(cycle) {
       laEthicsData.forEach(d => {
         if (!d.donorType) d.donorType = detectDonorType(d.contributor);
       });
-      try { sessionStorage.setItem(cacheKey, JSON.stringify(laEthicsData)); } catch(e) {}
+      idbSet(cacheKey, laEthicsData);   // persist (fire-and-forget)
       document.getElementById('la-status').textContent =
         `${laEthicsData.length.toLocaleString()} LA Ethics records`;
       return;
@@ -2813,7 +2864,8 @@ function normalizeParty(p) {
 function updateStatusBar() {
   document.getElementById('status-records').textContent = filteredData.length.toLocaleString();
   document.getElementById('status-updated').textContent = new Date().toLocaleTimeString();
-  document.getElementById('la-status').textContent = 'No data loaded';
+  // Note: la-status is owned by fetchLAEthicsLive (shows record count / "cached") —
+  // don't clobber it here.
 }
 
 function setStatus(state) {
@@ -3122,23 +3174,21 @@ async function loadExpData() {
   document.getElementById('exp-unavailable-msg').style.display = 'none';
   document.getElementById('exp-table').style.display = '';
 
-  // ── sessionStorage cache check ────────────────────────────────
-  const expCacheKey = `la_exp2_${cycle}`;   // v2: ensures both cycle years are included
-  const expCached = sessionStorage.getItem(expCacheKey);
+  // ── IndexedDB cache check ─────────────────────────────────────
+  const expCacheKey = `exp_${cycle}`;
+  const expCached = await idbGet(expCacheKey);
   if (expCached) {
-    try {
-      expData = JSON.parse(expCached);
-      document.getElementById('exp-loading-msg').style.display = 'none';
-      populateExpCampaignDropdown();
-      renderExpAll();
-      // Refresh open campaign profile modal if it's for this data
-      if (document.getElementById('camp-overlay').classList.contains('open')) {
-        _campExps = expData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
-        _refreshCampStats();
-        if (_campTab === 'exps') campSwitchTab('exps');
-      }
-      return;
-    } catch(e) { /* fall through to network fetch */ }
+    expData = expCached;
+    document.getElementById('exp-loading-msg').style.display = 'none';
+    populateExpCampaignDropdown();
+    renderExpAll();
+    // Refresh open campaign profile modal if it's for this data
+    if (document.getElementById('camp-overlay').classList.contains('open')) {
+      _campExps = expData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _refreshCampStats();
+      if (_campTab === 'exps') campSwitchTab('exps');
+    }
+    return;
   }
 
   if (!proxyAvailable) {
@@ -3158,7 +3208,7 @@ async function loadExpData() {
       expData = await r.json();
       // Tag each record with category
       expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
-      try { sessionStorage.setItem(expCacheKey, JSON.stringify(expData)); } catch(e) {}
+      idbSet(expCacheKey, expData);   // persist (fire-and-forget)
       document.getElementById('exp-loading-msg').style.display = 'none';
       populateExpCampaignDropdown();
       renderExpAll();
@@ -3608,23 +3658,21 @@ async function loadLoanData() {
   document.getElementById('loan-unavailable-msg').style.display = 'none';
   document.getElementById('loan-table').style.display = '';
 
-  // ── sessionStorage cache check ────────────────────────────────
-  const loanCacheKey = `la_loan2_${cycle}`;   // v2: ensures both cycle years are included
-  const loanCached = sessionStorage.getItem(loanCacheKey);
+  // ── IndexedDB cache check ─────────────────────────────────────
+  const loanCacheKey = `loan_${cycle}`;
+  const loanCached = await idbGet(loanCacheKey);
   if (loanCached) {
-    try {
-      loanData = JSON.parse(loanCached);
-      document.getElementById('loan-loading-msg').style.display = 'none';
-      populateLoanCampaignDropdown();
-      renderLoanAll();
-      // Refresh open campaign profile modal
-      if (document.getElementById('camp-overlay').classList.contains('open')) {
-        _campLoans = loanData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
-        _refreshCampStats();
-        if (_campTab === 'loans') campSwitchTab('loans');
-      }
-      return;
-    } catch(e) { /* fall through to network fetch */ }
+    loanData = loanCached;
+    document.getElementById('loan-loading-msg').style.display = 'none';
+    populateLoanCampaignDropdown();
+    renderLoanAll();
+    // Refresh open campaign profile modal
+    if (document.getElementById('camp-overlay').classList.contains('open')) {
+      _campLoans = loanData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _refreshCampStats();
+      if (_campTab === 'loans') campSwitchTab('loans');
+    }
+    return;
   }
 
   if (!proxyAvailable) {
@@ -3647,7 +3695,7 @@ async function loadLoanData() {
         d._isSelf = parts.some(p => p.length > 2 && lender.includes(p));
         return d;
       });
-      try { sessionStorage.setItem(loanCacheKey, JSON.stringify(loanData)); } catch(e) {}
+      idbSet(loanCacheKey, loanData);   // persist (fire-and-forget)
       document.getElementById('loan-loading-msg').style.display = 'none';
       populateLoanCampaignDropdown();
       renderLoanAll();
