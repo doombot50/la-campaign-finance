@@ -824,6 +824,8 @@
   <button class="section-tab active" id="tab-contributions" onclick="switchTab('contributions')">💰 Contributions</button>
   <button class="section-tab" id="tab-expenditures" onclick="switchTab('expenditures')">💸 Expenditures</button>
   <button class="section-tab" id="tab-loans" onclick="switchTab('loans')">🏦 Loans</button>
+  <button class="section-tab" id="tab-donors" onclick="switchTab('donors')">🏆 Top Donors</button>
+  <button class="section-tab" id="tab-compare" onclick="switchTab('compare')">⚖️ Compare</button>
 </div>
 
 </div><!-- /sticky-top -->
@@ -1301,6 +1303,54 @@
 
   </div>
 </div><!-- /loans-view -->
+
+<!-- TOP DONORS VIEW -->
+<div id="donors-view" class="tab-view" style="display:none">
+  <div class="main">
+    <div class="table-card">
+      <div class="table-header-row">
+        <div class="table-title">🏆 Top Donors — All Committees This Cycle</div>
+        <div class="table-actions">
+          <input type="text" class="ctrl-input search" id="donors-search" placeholder="Search donor…" style="width:200px" aria-label="Search top donors">
+          <button class="upload-btn" onclick="downloadDonorsCSV()">⬇ Download CSV</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);padding:0 4px 12px">
+        Biggest givers across every committee in the selected cycle. Click any donor to see everywhere they gave.
+      </p>
+      <table class="data-table" id="donors-table" style="width:100%">
+        <thead><tr>
+          <th style="width:48px" data-dcol="rank">#</th>
+          <th data-dcol="name">Donor</th>
+          <th data-dcol="type">Type</th>
+          <th class="num" data-dcol="committees">Committees</th>
+          <th class="num" data-dcol="count">Gifts</th>
+          <th class="num" data-dcol="total">Total</th>
+        </tr></thead>
+        <tbody id="donors-tbody"></tbody>
+      </table>
+      <div id="donors-empty" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">No contribution data loaded yet.</div>
+      <div class="pagination" id="donors-pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPARE VIEW -->
+<div id="compare-view" class="tab-view" style="display:none">
+  <div class="main">
+    <div class="table-card">
+      <div class="table-header-row">
+        <div class="table-title">⚖️ Compare Campaigns</div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);padding:0 4px 12px">
+        Pick up to three committees to compare raised, spent, and cash on hand side by side.
+        Expenditure and loan figures require those datasets to be loaded (visit those tabs once for this cycle).
+      </p>
+      <div id="compare-pickers" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
+      <div id="compare-body"></div>
+    </div>
+  </div>
+</div>
 
 <!-- STATUS BAR -->
 <div class="status-bar">
@@ -1839,6 +1889,9 @@ function renderAll() {
   updateStatusBar();
   // Refresh cash flow chart if expenditures tab is active
   if (document.getElementById('expenditures-view').style.display !== 'none') renderCashFlowChart();
+  // Refresh cross-campaign views if visible (they derive from allData)
+  if (document.getElementById('donors-view')?.style.display !== 'none')  renderDonorsLeaderboard();
+  if (document.getElementById('compare-view')?.style.display !== 'none') renderCompare();
 }
 
 // ============================================================
@@ -2947,13 +3000,22 @@ function detectExpCategory(desc) {
 // Snapshot of all cycle options, captured once on first tab switch
 let _allCycleOpts = null;
 
+const TAB_VIEWS = {
+  contributions: 'contributions-view', expenditures: 'expenditures-view',
+  loans: 'loans-view', donors: 'donors-view', compare: 'compare-view'
+};
+const TAB_BUTTONS = {
+  contributions: 'tab-contributions', expenditures: 'tab-expenditures',
+  loans: 'tab-loans', donors: 'tab-donors', compare: 'tab-compare'
+};
+
 function switchTab(tab) {
-  document.getElementById('contributions-view').style.display = tab === 'contributions' ? '' : 'none';
-  document.getElementById('expenditures-view').style.display  = tab === 'expenditures'  ? '' : 'none';
-  document.getElementById('loans-view').style.display         = tab === 'loans'         ? '' : 'none';
-  document.getElementById('tab-contributions').classList.toggle('active', tab === 'contributions');
-  document.getElementById('tab-expenditures').classList.toggle('active', tab === 'expenditures');
-  document.getElementById('tab-loans').classList.toggle('active', tab === 'loans');
+  Object.entries(TAB_VIEWS).forEach(([k, id]) => {
+    const el = document.getElementById(id); if (el) el.style.display = k === tab ? '' : 'none';
+  });
+  Object.entries(TAB_BUTTONS).forEach(([k, id]) => {
+    const el = document.getElementById(id); if (el) el.classList.toggle('active', k === tab);
+  });
 
   const sel = document.getElementById('cycle-select');
 
@@ -2986,18 +3048,19 @@ function switchTab(tab) {
 
   if (tab === 'expenditures' && expData.length === 0) loadExpData();
   if (tab === 'loans'        && loanData.length === 0) loadLoanData();
+  if (tab === 'donors')  renderDonorsLeaderboard();
+  if (tab === 'compare') renderCompare();
   _saveUrlState();
   renderFilterChips();
 
   // Re-trigger fade-in animation each time the tab is shown
-  const viewId = tab === 'expenditures' ? 'expenditures-view'
-               : tab === 'loans'        ? 'loans-view'
-               : 'contributions-view';
-  const view = document.getElementById(viewId);
-  view.classList.remove('tab-view');
-  // Force reflow so the browser registers the class removal before re-adding
-  void view.offsetWidth;
-  view.classList.add('tab-view');
+  const view = document.getElementById(TAB_VIEWS[tab] || 'contributions-view');
+  if (view) {
+    view.classList.remove('tab-view');
+    // Force reflow so the browser registers the class removal before re-adding
+    void view.offsetWidth;
+    view.classList.add('tab-view');
+  }
 }
 
 // ── Fetch expenditure data ────────────────────────────────────────
@@ -3796,6 +3859,229 @@ document.getElementById('loan-state-select').addEventListener('change', renderLo
 document.getElementById('loan-amt-min').addEventListener('input', renderLoanAll);
 document.getElementById('loan-amt-max').addEventListener('input', renderLoanAll);
 
+// ═══════════════════════════════════════════════════════════════
+// TOP DONORS LEADERBOARD (cross-campaign)
+// ═══════════════════════════════════════════════════════════════
+let donorsPage = 1;
+const DONORS_PAGE_SIZE = 50;
+let _donorsAgg = [];
+let donorsSortCol = 'total';
+let donorsSortDir = 'desc';
+
+function buildDonorsAgg() {
+  const cycleYear = parseInt(document.getElementById('cycle-select').value);
+  const prev = cycleYear - 1;
+  const byDonor = {};
+  allData.forEach(d => {
+    if (!d.date) return;
+    const yr = new Date(d.date).getFullYear();
+    if (yr !== cycleYear && yr !== prev) return;
+    const k = d.contributor || 'Unknown';
+    if (!byDonor[k]) byDonor[k] = { name: k, total: 0, count: 0, committees: new Set(), type: d.donorType || '' };
+    byDonor[k].total += d.amount;
+    byDonor[k].count++;
+    byDonor[k].committees.add(d.candidate);
+  });
+  _donorsAgg = Object.values(byDonor).map(o => ({
+    name: o.name, total: o.total, count: o.count, committees: o.committees.size, type: o.type
+  }));
+}
+
+function renderDonorsLeaderboard() {
+  buildDonorsAgg();
+  const search = (document.getElementById('donors-search').value || '').toLowerCase().trim();
+  let rows = search ? _donorsAgg.filter(r => r.name.toLowerCase().includes(search)) : _donorsAgg.slice();
+
+  // Sort
+  const dir = donorsSortDir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    let av = a[donorsSortCol], bv = b[donorsSortCol];
+    if (donorsSortCol === 'name' || donorsSortCol === 'type') {
+      av = (av || '').toLowerCase(); bv = (bv || '').toLowerCase();
+      return av < bv ? -dir : av > bv ? dir : 0;
+    }
+    return (av - bv) * dir;
+  });
+
+  const tbody = document.getElementById('donors-tbody');
+  const empty = document.getElementById('donors-empty');
+  const pg    = document.getElementById('donors-pagination');
+
+  if (!rows.length) {
+    tbody.innerHTML = '';
+    empty.style.display = '';
+    empty.textContent = allData.length
+      ? 'No donors match your search.'
+      : 'No contribution data loaded yet. Switch to Contributions and click Load Data.';
+    pg.innerHTML = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const maxTotal = Math.max(...rows.map(r => r.total));
+  const start = (donorsPage - 1) * DONORS_PAGE_SIZE;
+  const page  = rows.slice(start, start + DONORS_PAGE_SIZE);
+
+  tbody.innerHTML = page.map((r, i) => {
+    const rank = start + i + 1;
+    const pct  = maxTotal ? (r.total / maxTotal * 100) : 0;
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    return `<tr>
+      <td style="color:var(--muted);font-weight:700;text-align:center">${medal}</td>
+      <td><span class="contributor-link" data-contributor="${escHtml(r.name)}" onclick="showContributorProfile(this.dataset.contributor)">${escHtml(r.name)}</span></td>
+      <td><span style="font-size:11px;color:var(--muted)">${escHtml(r.type)}</span></td>
+      <td class="num">${r.committees}</td>
+      <td class="num">${r.count.toLocaleString()}</td>
+      <td class="num" style="font-weight:700;color:var(--gold);position:relative">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:rgba(200,169,81,0.10);z-index:0"></div>
+        <span style="position:relative;z-index:1">$${Math.round(r.total).toLocaleString()}</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Sort indicators
+  document.querySelectorAll('#donors-table thead th[data-dcol]').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.dcol === donorsSortCol) th.classList.add(donorsSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(rows.length / DONORS_PAGE_SIZE);
+  if (totalPages <= 1) { pg.innerHTML = `<span style="color:var(--muted);font-size:12px">${rows.length.toLocaleString()} donors</span>`; return; }
+  let btns = '';
+  if (donorsPage > 1) btns += `<button class="page-btn" onclick="donorsGoPage(${donorsPage-1})">‹</button>`;
+  const lo = Math.max(1, donorsPage-2), hi = Math.min(totalPages, donorsPage+2);
+  for (let p = lo; p <= hi; p++) btns += `<button class="page-btn${p===donorsPage?' active':''}" onclick="donorsGoPage(${p})">${p}</button>`;
+  if (donorsPage < totalPages) btns += `<button class="page-btn" onclick="donorsGoPage(${donorsPage+1})">›</button>`;
+  btns += `<span style="margin-left:8px;color:var(--muted);font-size:12px">${rows.length.toLocaleString()} donors</span>`;
+  pg.innerHTML = btns;
+}
+
+function donorsGoPage(p) { donorsPage = p; renderDonorsLeaderboard(); window.scrollTo(0,0); }
+
+function downloadDonorsCSV() {
+  if (!_donorsAgg.length) buildDonorsAgg();
+  const sorted = _donorsAgg.slice().sort((a,b) => b.total - a.total);
+  const headers = ['Rank','Donor','Type','Committees','Gifts','Total'];
+  const rows = sorted.map((r, i) => [i+1, r.name, r.type, r.committees, r.count, Math.round(r.total)]
+    .map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `la_top_donors_${document.getElementById('cycle-select').value}.csv`;
+  a.click();
+}
+
+// Search + column sort wiring
+document.getElementById('donors-search').addEventListener('input', () => { donorsPage = 1; renderDonorsLeaderboard(); });
+document.querySelectorAll('#donors-table thead th[data-dcol]').forEach(th => {
+  if (th.dataset.dcol === 'rank') return;   // rank column isn't independently sortable
+  th.addEventListener('click', () => {
+    const col = th.dataset.dcol;
+    if (donorsSortCol === col) donorsSortDir = donorsSortDir === 'asc' ? 'desc' : 'asc';
+    else { donorsSortCol = col; donorsSortDir = (col === 'name' || col === 'type') ? 'asc' : 'desc'; }
+    donorsPage = 1;
+    renderDonorsLeaderboard();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CAMPAIGN COMPARISON
+// ═══════════════════════════════════════════════════════════════
+let _compareSel = [null, null, null];
+
+function _allCampaignNames() {
+  const names = new Set();
+  allData.forEach(d => { if (d.candidate) names.add(d.candidate); });
+  expData.forEach(d => { if (d.candidate) names.add(d.candidate); });
+  loanData.forEach(d => { if (d.candidate) names.add(d.candidate); });
+  return [...names].sort();
+}
+
+function renderCompare() {
+  const pickers = document.getElementById('compare-pickers');
+  const names = _allCampaignNames();
+  const cycleYear = parseInt(document.getElementById('cycle-select').value);
+  const prev = cycleYear - 1;
+  const inCycle = (d) => { const yr = new Date(d.date).getFullYear(); return yr === cycleYear || yr === prev; };
+
+  if (!names.length) {
+    pickers.innerHTML = '';
+    document.getElementById('compare-body').innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">No contribution data loaded yet. Switch to Contributions and click Load Data.</div>';
+    return;
+  }
+
+  // Build the three dropdowns
+  pickers.innerHTML = [0,1,2].map(i => {
+    const opts = ['<option value="">— Select committee —</option>']
+      .concat(names.map(n => `<option value="${escHtml(n)}"${_compareSel[i]===n?' selected':''}>${escHtml(n)}</option>`))
+      .join('');
+    return `<div class="ctrl-group" style="flex:1;min-width:220px">
+      <label>Committee ${i+1}</label>
+      <select class="ctrl-select" data-cmpidx="${i}" style="width:100%">${opts}</select>
+    </div>`;
+  }).join('');
+  pickers.querySelectorAll('select[data-cmpidx]').forEach(sel => {
+    sel.addEventListener('change', () => { _compareSel[parseInt(sel.dataset.cmpidx)] = sel.value || null; renderCompare(); });
+  });
+
+  const chosen = _compareSel.filter(Boolean);
+  const body = document.getElementById('compare-body');
+  if (!chosen.length) {
+    body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Select one or more committees above to compare.</div>';
+    return;
+  }
+
+  const fmt = n => '$' + Math.round(n).toLocaleString();
+  const stats = chosen.map(name => {
+    const c = allData.filter(d => d.candidate === name && inCycle(d));
+    const e = expData.filter(d => d.candidate === name && inCycle(d));
+    const l = loanData.filter(d => d.candidate === name && inCycle(d));
+    const raised = c.reduce((s,d)=>s+d.amount,0);
+    const spent  = e.reduce((s,d)=>s+d.amount,0);
+    const borrowed = l.reduce((s,d)=>s+d.amount,0);
+    const donors = new Set(c.map(d=>d.contributor)).size;
+    return { name, raised, spent, borrowed, cash: raised + borrowed - spent, donors,
+             nContribs: c.length, nExps: e.length, nLoans: l.length,
+             expLoaded: expData.length > 0, loanLoaded: loanData.length > 0 };
+  });
+
+  const metric = (label, key, fmtFn, note) => {
+    const vals = stats.map(s => s[key]);
+    const max = Math.max(...vals.map(v => Math.abs(v)), 1);
+    return `<tr>
+      <td style="font-weight:600;white-space:nowrap">${label}${note?` <span style="font-size:10px;color:var(--muted)">${note}</span>`:''}</td>
+      ${stats.map(s => {
+        const v = s[key];
+        const pct = Math.abs(v)/max*100;
+        const isMax = v === Math.max(...vals) && vals.length > 1;
+        return `<td class="num" style="position:relative">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:rgba(200,169,81,0.10);z-index:0"></div>
+          <span style="position:relative;z-index:1;font-weight:${isMax?'700':'400'};color:${isMax?'var(--gold)':'var(--text)'}">${fmtFn(v)}</span>
+        </td>`;
+      }).join('')}
+    </tr>`;
+  };
+
+  const num = n => n.toLocaleString();
+  const expNote  = stats.some(s => !s.expLoaded)  ? '(load Expenditures tab)' : '';
+  const loanNote = stats.some(s => !s.loanLoaded) ? '(load Loans tab)' : '';
+
+  body.innerHTML = `
+    <table class="data-table" style="width:100%">
+      <thead><tr><th style="width:170px">Metric</th>${stats.map(s=>`<th class="num" style="max-width:200px">${escHtml(s.name)}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${metric('💰 Total Raised', 'raised', fmt)}
+        ${metric('👥 Unique Donors', 'donors', num)}
+        ${metric('💸 Total Spent', 'spent', fmt, expNote)}
+        ${metric('🏦 Total Borrowed', 'borrowed', fmt, loanNote)}
+        ${metric('📊 Cash on Hand', 'cash', fmt, (expNote||loanNote)?'(partial)':'')}
+        ${metric('# Contributions', 'nContribs', num)}
+      </tbody>
+    </table>`;
+}
+
 // ============================================================
 // CONTRIBUTOR PROFILE MODAL
 // ============================================================
@@ -4002,6 +4288,8 @@ document.addEventListener('DOMContentLoaded', () => setDensity(_density));
 function _currentTab() {
   if (document.getElementById('expenditures-view').style.display !== 'none') return 'expenditures';
   if (document.getElementById('loans-view').style.display !== 'none') return 'loans';
+  if (document.getElementById('donors-view')?.style.display !== 'none')  return 'donors';
+  if (document.getElementById('compare-view')?.style.display !== 'none') return 'compare';
   return 'contributions';
 }
 
@@ -4009,6 +4297,14 @@ function renderFilterChips() {
   const bar = document.getElementById('filter-chips-bar');
   const tab = _currentTab();
   const chips = [];
+
+  // Donors and Compare tabs have no shared filters
+  if (tab === 'donors' || tab === 'compare') {
+    bar.style.display = 'none';
+    const badge = document.getElementById('filter-count-badge');
+    if (badge) { badge.textContent = '0'; badge.classList.remove('visible'); }
+    return;
+  }
 
   if (tab === 'contributions') {
     const party = document.getElementById('party-select').value;
@@ -4137,9 +4433,7 @@ function _saveUrlState() {
   if (cycle && cycle !== '2026') p.set('cycle', cycle);
 
   // Active tab
-  const tab = document.getElementById('expenditures-view').style.display !== 'none' ? 'expenditures'
-            : document.getElementById('loans-view').style.display !== 'none'         ? 'loans'
-            : 'contributions';
+  const tab = _currentTab();
   if (tab !== 'contributions') p.set('tab', tab);
 
   // ── Contribution filters ───────────────────────────────────
