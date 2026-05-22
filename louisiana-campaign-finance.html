@@ -394,6 +394,14 @@
   /* Compact inline pagination for panel headers */
   .pag-inline { display: flex; align-items: center; gap: 4px; }
   .page-info { font-size: 12px; color: var(--muted); }
+  /* Per-page selector */
+  .per-page-wrap { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); white-space:nowrap; }
+  .per-page-select {
+    background:var(--bg); border:1px solid var(--border); color:var(--text);
+    padding:4px 6px; border-radius:5px; font-size:12px; cursor:pointer;
+    transition:border-color .15s;
+  }
+  .per-page-select:focus { outline:none; border-color:var(--gold); }
 
   /* EXPANDABLE ROW DETAIL */
   tbody tr.data-row { cursor: pointer; }
@@ -1062,6 +1070,14 @@
     <div class="table-header-row">
       <div class="table-title">Contribution Records</div>
       <div class="table-actions">
+        <label class="per-page-wrap">Rows
+          <select class="per-page-select" id="main-per-page" onchange="setPageSize(+this.value)" aria-label="Rows per page">
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="250">250</option>
+          </select>
+        </label>
         <div class="density-toggle" title="Row density">
           <button class="density-btn active" id="density-comfortable" onclick="setDensity('comfortable')">Comfortable</button>
           <button class="density-btn" id="density-compact" onclick="setDensity('compact')">Compact</button>
@@ -1252,6 +1268,14 @@
       <div class="table-header-row">
         <div class="table-title">Expenditure Records</div>
         <div class="table-actions">
+          <label class="per-page-wrap">Rows
+            <select class="per-page-select" id="exp-per-page" onchange="setExpPageSize(+this.value)" aria-label="Rows per page">
+              <option value="25">25</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+            </select>
+          </label>
           <button class="upload-btn" onclick="downloadExpCSV()">⬇ Download CSV</button>
         </div>
       </div>
@@ -1399,6 +1423,16 @@
     </div>
 
     <!-- Loans table -->
+    <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:8px">
+      <label class="per-page-wrap">Rows
+        <select class="per-page-select" id="loan-per-page" onchange="setLoanPageSize(+this.value)" aria-label="Rows per page">
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+          <option value="250">250</option>
+        </select>
+      </label>
+    </div>
     <div class="table-scroll-wrap" id="loan-table-scroll">
       <table class="data-table" id="loan-table" style="width:100%">
         <thead><tr>
@@ -1430,6 +1464,14 @@
         <div class="table-title">🏆 Top Donors — All Committees This Cycle</div>
         <div class="table-actions">
           <input type="text" class="ctrl-input search" id="donors-search" placeholder="Search donor…" style="width:200px" aria-label="Search top donors">
+          <label class="per-page-wrap">Rows
+            <select class="per-page-select" id="donors-per-page" onchange="setDonorsPageSize(+this.value)" aria-label="Rows per page">
+              <option value="25">25</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+            </select>
+          </label>
           <button class="upload-btn" onclick="downloadDonorsCSV()">⬇ Download CSV</button>
         </div>
       </div>
@@ -1581,7 +1623,7 @@ let laEthicsData = [];
 const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8765' : '';
 let proxyAvailable = false;
 let currentPage = 1;
-const PAGE_SIZE = 20;
+let PAGE_SIZE = parseInt(localStorage.getItem('pref_pageSize') || '20');
 let tcPage = 1;
 const TC_PAGE_SIZE = 10;
 const TC_MAX = 50;
@@ -3290,7 +3332,7 @@ let expFiltered = [];
 let expPage     = 1;
 let expSortCol  = 'date';
 let expSortDir  = 'desc';
-const EXP_PAGE_SIZE = 50;
+let EXP_PAGE_SIZE = parseInt(localStorage.getItem('pref_expPageSize') || '50');
 let expCampaignChart = null;
 let expCategoryChart = null;
 let expPartyChart    = null;
@@ -3917,7 +3959,7 @@ let loanFiltered = [];
 let loanPage     = 1;
 let loanSortCol  = 'date';
 let loanSortDir  = 'desc';
-const LOAN_PAGE_SIZE = 50;
+let LOAN_PAGE_SIZE = parseInt(localStorage.getItem('pref_loanPageSize') || '50');
 let loanCampaignChart = null;
 let loanOriginChart   = null;
 let loanLenderPage    = 1;
@@ -4235,7 +4277,7 @@ document.getElementById('loan-amt-max').addEventListener('input', renderLoanAll)
 // TOP DONORS LEADERBOARD (cross-campaign)
 // ═══════════════════════════════════════════════════════════════
 let donorsPage = 1;
-const DONORS_PAGE_SIZE = 50;
+let DONORS_PAGE_SIZE = parseInt(localStorage.getItem('pref_donorsPageSize') || '50');
 let _donorsAgg = [];
 let donorsSortCol = 'total';
 let donorsSortDir = 'desc';
@@ -4670,8 +4712,43 @@ function setDensity(mode) {
   document.getElementById('density-comfortable').classList.toggle('active', mode === 'comfortable');
   document.getElementById('density-compact').classList.toggle('active', mode === 'compact');
 }
-// Apply saved density on load
-document.addEventListener('DOMContentLoaded', () => setDensity(_density));
+
+// ── Rows-per-page setters ─────────────────────────────────────
+function setPageSize(n) {
+  PAGE_SIZE = n;
+  localStorage.setItem('pref_pageSize', n);
+  currentPage = 1;
+  renderTable();
+}
+function setExpPageSize(n) {
+  EXP_PAGE_SIZE = n;
+  localStorage.setItem('pref_expPageSize', n);
+  expPage = 1;
+  if (expData.length) renderExpAll();
+}
+function setLoanPageSize(n) {
+  LOAN_PAGE_SIZE = n;
+  localStorage.setItem('pref_loanPageSize', n);
+  loanPage = 1;
+  if (loanData.length) renderLoanAll();
+}
+function setDonorsPageSize(n) {
+  DONORS_PAGE_SIZE = n;
+  localStorage.setItem('pref_donorsPageSize', n);
+  donorsPage = 1;
+  renderDonorsLeaderboard();
+}
+
+// Apply saved density + per-page prefs on load
+document.addEventListener('DOMContentLoaded', () => {
+  setDensity(_density);
+  // Sync per-page dropdowns to restored values
+  const _syncPP = (id, val) => { const el = document.getElementById(id); if (el) el.value = String(val); };
+  _syncPP('main-per-page',   PAGE_SIZE);
+  _syncPP('exp-per-page',    EXP_PAGE_SIZE);
+  _syncPP('loan-per-page',   LOAN_PAGE_SIZE);
+  _syncPP('donors-per-page', DONORS_PAGE_SIZE);
+});
 
 // ── Filter chips ─────────────────────────────────────────────
 
