@@ -4333,6 +4333,89 @@ function _refreshCampStats() {
   document.getElementById('camp-borrowed').textContent = fmt(borrowed);
   document.getElementById('camp-net').textContent      = fmt(raised - spent);
   document.getElementById('camp-donors').textContent   = donors.toLocaleString();
+  renderCampCashFlow();
+}
+
+let _campCashChart = null;
+function renderCampCashFlow() {
+  const canvas = document.getElementById('camp-cashflow-chart');
+  if (!canvas) return;
+  const note = document.getElementById('camp-cashflow-note');
+
+  // Build monthly buckets across all loaded transactions
+  const months = {};   // 'YYYY-MM' -> { in: inflow, out: outflow }
+  const bucket = (date) => {
+    if (!date) return null;
+    const m = String(date).slice(0, 7);   // YYYY-MM
+    if (!/^\d{4}-\d{2}$/.test(m)) return null;
+    if (!months[m]) months[m] = { in: 0, out: 0 };
+    return months[m];
+  };
+  _campContribs.forEach(d => { const b = bucket(d.date); if (b) b.in  += d.amount; });
+  _campLoans.forEach(d    => { const b = bucket(d.date); if (b) b.in  += d.amount; });
+  _campExps.forEach(d     => { const b = bucket(d.date); if (b) b.out += d.amount; });
+
+  const keys = Object.keys(months).sort();
+
+  // Note about data completeness
+  const parts = [];
+  if (_campExps.length === 0)  parts.push('expenditures not loaded');
+  if (_campLoans.length === 0) parts.push('loans not loaded');
+  note.textContent = parts.length ? '⚠ ' + parts.join(' · ') : 'Raised + Borrowed − Spent';
+
+  if (!keys.length) {
+    if (_campCashChart) { _campCashChart.destroy(); _campCashChart = null; }
+    return;
+  }
+
+  // Cumulative series
+  let cumIn = 0, cumOut = 0;
+  const raisedSeries = [], spentSeries = [], cashSeries = [];
+  keys.forEach(k => {
+    cumIn  += months[k].in;
+    cumOut += months[k].out;
+    raisedSeries.push(Math.round(cumIn));
+    spentSeries.push(Math.round(cumOut));
+    cashSeries.push(Math.round(cumIn - cumOut));
+  });
+
+  const labels = keys.map(k => {
+    const [y, mo] = k.split('-');
+    return new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  });
+
+  const css = getComputedStyle(document.documentElement);
+  const gold   = css.getPropertyValue('--gold').trim()   || '#c8a951';
+  const muted  = css.getPropertyValue('--muted').trim()  || '#8b949e';
+  const green  = '#4caf7d', red = '#d76b6b';
+
+  if (_campCashChart) _campCashChart.destroy();
+  _campCashChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Cash on Hand', data: cashSeries, borderColor: gold, backgroundColor: 'rgba(200,169,81,0.12)',
+          fill: true, tension: 0.25, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 4 },
+        { label: 'Cumulative Raised', data: raisedSeries, borderColor: green, backgroundColor: 'transparent',
+          fill: false, tension: 0.25, borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, pointHoverRadius: 4 },
+        { label: 'Cumulative Spent', data: spentSeries, borderColor: red, backgroundColor: 'transparent',
+          fill: false, tension: 0.25, borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, pointHoverRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: muted, boxWidth: 12, font: { size: 10 } } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: $${c.parsed.y.toLocaleString()}` } }
+      },
+      scales: {
+        x: { ticks: { color: muted, font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false } },
+        y: { ticks: { color: muted, font: { size: 9 }, callback: v => '$' + (Math.abs(v) >= 1000 ? (v/1000).toFixed(0) + 'K' : v) }, grid: { color: 'rgba(128,128,128,0.1)' } }
+      }
+    }
+  });
 }
 
 function closeCampaignProfile() {
@@ -4434,6 +4517,14 @@ function exportCampaignCSV() {
       <div class="cp-stat"><div class="cp-stat-val" id="camp-borrowed">—</div><div class="cp-stat-lbl">Borrowed</div></div>
       <div class="cp-stat"><div class="cp-stat-val" id="camp-net">—</div><div class="cp-stat-lbl">Net (Raised − Spent)</div></div>
       <div class="cp-stat"><div class="cp-stat-val" id="camp-donors">—</div><div class="cp-stat-lbl">Unique Donors</div></div>
+    </div>
+    <!-- Cash on hand over time -->
+    <div id="camp-cashflow-wrap" style="padding:14px 24px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">📈 Cash on Hand Over Time</div>
+        <div id="camp-cashflow-note" style="font-size:10px;color:var(--muted)"></div>
+      </div>
+      <div style="position:relative;height:170px"><canvas id="camp-cashflow-chart"></canvas></div>
     </div>
     <!-- Sub-tabs -->
     <div style="display:flex;border-bottom:1px solid var(--border);background:var(--card)">
