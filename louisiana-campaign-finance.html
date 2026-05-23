@@ -356,6 +356,11 @@
   .party-badge.org     { background: var(--badge-org-bg); color: var(--badge-org-text); border: 1px solid var(--badge-org-bg); }
   .party-badge.bus     { background: var(--badge-bus-bg); color: var(--badge-bus-text); border: 1px solid var(--badge-bus-bg); }
   .party-badge.ind     { background: var(--badge-ind-bg); color: var(--badge-ind-text); border: 1px solid var(--badge-ind-bg); }
+  /* Political-party badges for minor parties (namespaced 'pty-' to avoid the
+     donor-type 'ind' = Individual collision above) */
+  .party-badge.pty-ind { background: rgba(150,150,170,0.22); color: #b9c0cc; border: 1px solid rgba(150,150,170,0.45); }
+  .party-badge.pty-lbt { background: rgba(224,176,32,0.20); color: #e8c454; border: 1px solid rgba(224,176,32,0.45); }
+  .party-badge.pty-grn { background: rgba(63,163,77,0.22); color: #6cd47f; border: 1px solid rgba(63,163,77,0.45); }
   .source-badge {
     display: inline-block; padding: 2px 7px; border-radius: 4px;
     font-size: 11px; font-weight: 700;
@@ -798,6 +803,9 @@
         <option value="ALL">All Parties</option>
         <option value="DEM">Democrat</option>
         <option value="REP">Republican</option>
+        <option value="IND">Independent / No Party</option>
+        <option value="LBT">Libertarian</option>
+        <option value="GRN">Green</option>
         <option value="PAC">Any PAC</option>
         <option value="PAC-DEM">PAC — Democrat-leaning</option>
         <option value="PAC-REP">PAC — Republican-leaning</option>
@@ -1705,6 +1713,20 @@ const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.pn
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 let tileLayer = null;
 
+// Party-slice display metadata (order = legend order). Declared here, above
+// applyTheme(), because applyTheme() calls renderPartyChart() during initial
+// top-level execution — these consts must be initialized before that call to
+// avoid a Temporal Dead Zone error.
+const PARTY_SLICE_META = {
+  DEM: { label: 'Democrat',    fill: 'rgba(33,102,172,0.85)',  line: '#2166ac' },
+  REP: { label: 'Republican',  fill: 'rgba(215,48,39,0.85)',   line: '#d73027' },
+  IND: { label: 'Independent', fill: 'rgba(150,150,170,0.85)', line: '#9696aa' },
+  LBT: { label: 'Libertarian', fill: 'rgba(224,176,32,0.85)',  line: '#e0b020' },
+  GRN: { label: 'Green',       fill: 'rgba(63,163,77,0.85)',   line: '#3fa34d' },
+  OTH: { label: 'Other',       fill: 'rgba(120,120,120,0.70)', line: '#888888' },
+};
+const PARTY_SLICE_ORDER = ['DEM','REP','IND','LBT','GRN','OTH'];
+
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   document.getElementById('theme-toggle').textContent = theme === 'light' ? '🌙' : '☀️';
@@ -2503,20 +2525,27 @@ function getDomPartyLabel(dem, rep, oth) {
 // PARTY CHART
 // ============================================================
 function renderPartyChart() {
-  const demTotal = filteredData.filter(d=>d.party==='DEM').reduce((s,d)=>s+d.amount,0);
-  const repTotal = filteredData.filter(d=>d.party==='REP').reduce((s,d)=>s+d.amount,0);
-  const othTotal = filteredData.filter(d=>d.party==='OTH').reduce((s,d)=>s+d.amount,0);
+  const totals = { DEM:0, REP:0, IND:0, LBT:0, GRN:0, OTH:0 };
+  filteredData.forEach(d => {
+    const p = d.party;
+    if (totals[p] !== undefined) totals[p] += d.amount;
+    else totals.OTH += d.amount;
+  });
+
+  // Only render slices that actually have money, preserving the canonical order.
+  const present = PARTY_SLICE_ORDER.filter(k => totals[k] > 0);
+  const grand = present.reduce((s,k) => s + totals[k], 0) || 1;
 
   if (partyChart) { partyChart.destroy(); partyChart = null; }
   const ctx = document.getElementById('party-chart').getContext('2d');
   partyChart = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Democrat','Republican','Other'],
+      labels: present.map(k => PARTY_SLICE_META[k].label),
       datasets: [{
-        data: [demTotal, repTotal, othTotal],
-        backgroundColor: ['rgba(33,102,172,0.85)','rgba(215,48,39,0.85)','rgba(77,172,38,0.85)'],
-        borderColor: ['#2166ac','#d73027','#4dac26'],
+        data: present.map(k => totals[k]),
+        backgroundColor: present.map(k => PARTY_SLICE_META[k].fill),
+        borderColor: present.map(k => PARTY_SLICE_META[k].line),
         borderWidth: 2,
         hoverOffset: 6
       }]
@@ -2531,7 +2560,7 @@ function renderPartyChart() {
         },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` ${ctx.label}: ${formatMoney(ctx.raw)} (${((ctx.raw/(demTotal+repTotal+othTotal||1))*100).toFixed(1)}%)`
+            label: (ctx) => ` ${ctx.label}: ${formatMoney(ctx.raw)} (${((ctx.raw/grand)*100).toFixed(1)}%)`
           }
         }
       }
@@ -3152,7 +3181,10 @@ function stateCell(st) {
 
 function partyBadgeHtml(d) {
   const p = d.party || 'OTH';
-  return `<span class="party-badge ${p.toLowerCase()}">${p}</span>`;
+  // Minor parties use namespaced 'pty-' classes to avoid colliding with
+  // donor-type classes (e.g. donor 'ind' = Individual vs party 'IND' = Independent).
+  const cls = { DEM: 'dem', REP: 'rep', IND: 'pty-ind', LBT: 'pty-lbt', GRN: 'pty-grn' }[p] || 'oth';
+  return `<span class="party-badge ${cls}">${p}</span>`;
 }
 
 function donorTypeBadgeHtml(d) {
@@ -3699,20 +3731,21 @@ function renderExpCategoryChart() {
 
 // ── Party breakdown ───────────────────────────────────────────────
 function renderExpPartyChart() {
-  const byParty = { DEM: 0, REP: 0, OTH: 0 };
+  const totals = { DEM:0, REP:0, IND:0, LBT:0, GRN:0, OTH:0 };
   expFiltered.forEach(r => {
-    if (r.party === 'DEM') byParty.DEM += r.amount;
-    else if (r.party === 'REP') byParty.REP += r.amount;
-    else byParty.OTH += r.amount;
+    const p = r.party;
+    if (totals[p] !== undefined) totals[p] += r.amount;
+    else totals.OTH += r.amount;
   });
+  const present = PARTY_SLICE_ORDER.filter(k => totals[k] > 0);
   const ctx = document.getElementById('exp-party-chart').getContext('2d');
   if (expPartyChart) expPartyChart.destroy();
   expPartyChart = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Democrat', 'Republican', 'Other / PAC'],
-      datasets: [{ data: [byParty.DEM, byParty.REP, byParty.OTH],
-        backgroundColor: ['#2166ac', '#d73027', '#c8a951'], borderWidth: 0 }]
+      labels: present.map(k => PARTY_SLICE_META[k].label),
+      datasets: [{ data: present.map(k => totals[k]),
+        backgroundColor: present.map(k => PARTY_SLICE_META[k].fill), borderWidth: 0 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -5088,7 +5121,8 @@ function _refreshCampStats() {
   const borrowed = _campLoans.reduce((s,d) => s + d.amount, 0);
   const donors   = new Set(_campContribs.map(d => d.contributor)).size;
   const party    = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
-  const partyLabel = party === 'DEM' ? '🔵 Democrat' : party === 'REP' ? '🔴 Republican' : '⚪ Other';
+  const partyLabel = ({ DEM:'🔵 Democrat', REP:'🔴 Republican', IND:'⚪ Independent',
+                        LBT:'🟡 Libertarian', GRN:'🟢 Green' })[party] || '⚪ Other';
 
   document.getElementById('camp-meta').textContent =
     `${partyLabel}  ·  ${_campContribs.length} contributions · ${_campExps.length} expenditures · ${_campLoans.length} loans`;

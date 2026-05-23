@@ -430,7 +430,16 @@ CURATED = [
 
 # ── Louisiana Secretary of State election candidate fetch ──────────────────────
 SOS_BASE = 'https://voterportal.sos.la.gov/ElectionResults/ElectionResults/Data'
-SOS_KEEP_PARTIES = {'REP', 'DEM'}
+# Keep major + minor parties. Everything not listed collapses to OTH downstream.
+SOS_KEEP_PARTIES = {'REP', 'DEM', 'IND', 'NOPTY', 'OTHER', 'LBT', 'GRN'}
+# Normalize raw SoS party codes to the dashboard's display categories.
+#   No Party (NOPTY) is treated as Independent; OTHER collapses to OTH.
+SOS_PARTY_NORM = {
+    'DEM': 'DEM', 'REP': 'REP',
+    'LBT': 'LBT', 'GRN': 'GRN',
+    'IND': 'IND', 'NOPTY': 'IND',
+    'OTHER': 'OTH',
+}
 
 def _sos_fetch(blob: str):
     """GET a blob from the SoS results API; return parsed JSON or None."""
@@ -451,7 +460,8 @@ def _parse_sos_desc(desc: str):
       middle   : 'Patrick "Dat" Barthel' -> 'Patrick Barthel'
       suffix   : 'Charles "Chuck" Jones' -> 'Charles Jones'
 
-    Only returns entries whose party is REP or DEM.
+    Returns entries for any party in SOS_KEEP_PARTIES, normalized via
+    SOS_PARTY_NORM (DEM/REP/IND/LBT/GRN/OTH).
     """
     m = re.match(r'^(.*)\s+\(([A-Z]+)\)$', desc.strip())
     if not m:
@@ -459,6 +469,7 @@ def _parse_sos_desc(desc: str):
     party = m.group(2)
     if party not in SOS_KEEP_PARTIES:
         return None, None
+    party = SOS_PARTY_NORM.get(party, 'OTH')
     name_raw = m.group(1).strip()
     # Strip surrounding double-quote nicknames but keep the content for
     # leading position ("Jeff" Landry → Jeff Landry) and drop entirely
