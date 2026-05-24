@@ -663,17 +663,17 @@
   .table-no-results .no-res-icon { font-size:32px; margin-bottom:8px; opacity:0.5; }
 
   /* ── Win/loss election-result badge ─────────────────────────── */
-  .camp-election { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-    padding:12px 24px; border-bottom:1px solid var(--border); background:var(--surface); }
-  .wl-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 11px;
-    border-radius:6px; font-size:12px; font-weight:700; letter-spacing:.3px; }
+  /* Lives inside the header — no separate background/border zone */
+  .camp-election { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    margin-top:6px; }
+  .wl-badge { display:inline-flex; align-items:center; gap:5px; padding:2px 9px;
+    border-radius:5px; font-size:11px; font-weight:700; letter-spacing:.3px; }
   .wl-badge.won    { color:#4caf7d; background:rgba(76,175,125,.15);  border:1px solid #1f6f43; }
   .wl-badge.lost   { color:#e05c5c; background:rgba(224,92,92,.13);   border:1px solid #7a2d2d; }
   .wl-badge.runoff { color:#e0b020; background:rgba(224,176,32,.15);  border:1px solid #7a5a1e; }
   .wl-badge.oth    { color:var(--muted); background:rgba(120,120,120,.15); border:1px solid var(--border); }
-  .wl-pct  { font-size:13px; color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
-  .wl-race { font-size:11px; color:var(--muted); width:100%; }
-  .wl-race strong { color:var(--text); }
+  .wl-pct  { font-size:12px; color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
+  .wl-race { font-size:11px; color:var(--muted); }
 
   /* ── Table density toggle ───────────────────────────────────── */
   .density-toggle { display:flex; gap:0; border:1px solid var(--border); border-radius:5px; overflow:hidden; }
@@ -5148,10 +5148,10 @@ function renderCampElection(name, party) {
   const M = { Elected: ['won','✓ WON'], Defeated: ['lost','✗ LOST'], Runoff: ['runoff','→ RUNOFF'] };
   const m = M[r.outcome] || ['oth', r.outcome || '—'];
   const yr  = (r.election_date || '').split('/').pop();
-  const pct = (r.vote_pct != null) ? `<span class="wl-pct">${r.vote_pct}% of vote</span>` : '';
+  const pct = (r.vote_pct != null) ? `<span class="wl-pct">${r.vote_pct}%</span>` : '';
+  const race = `<span class="wl-race">· ${yr} · ${escHtml(r.office)}</span>`;
   el.style.display = '';
-  el.innerHTML = `<span class="wl-badge ${m[0]}">${m[1]}</span>${pct}` +
-    `<div class="wl-race">📍 Matched race: <strong>${yr} · ${escHtml(r.office)}</strong></div>`;
+  el.innerHTML = `<span class="wl-badge ${m[0]}">${m[1]}</span>${pct}${race}`;
 }
 
 function showCampaignProfile(name) {
@@ -5186,8 +5186,11 @@ function _refreshCampStats() {
   const partyLabel = ({ DEM:'🔵 Democrat', REP:'🔴 Republican', IND:'⚪ Independent',
                         LBT:'🟡 Libertarian', GRN:'🟢 Green' })[party] || '⚪ Other';
 
-  document.getElementById('camp-meta').textContent =
-    `${partyLabel}  ·  ${_campContribs.length} contributions · ${_campExps.length} expenditures · ${_campLoans.length} loans`;
+  const metaParts = [partyLabel];
+  if (_campContribs.length) metaParts.push(`${_campContribs.length.toLocaleString()} contributions`);
+  if (_campExps.length)    metaParts.push(`${_campExps.length.toLocaleString()} expenditures`);
+  if (_campLoans.length)   metaParts.push(`${_campLoans.length.toLocaleString()} loans`);
+  document.getElementById('camp-meta').textContent = metaParts.join('  ·  ');
   renderCampElection(_campName, party);
   document.getElementById('camp-raised').textContent   = fmt(raised);
   document.getElementById('camp-spent').textContent    = fmt(spent);
@@ -5363,17 +5366,17 @@ function exportCampaignCSV() {
 <div class="cp-overlay" id="camp-overlay" onclick="if(event.target===this)closeCampaignProfile()">
   <div class="cp-modal" id="camp-modal" style="max-width:860px" role="dialog" aria-modal="true" aria-labelledby="camp-name">
     <div class="cp-header">
-      <div>
+      <div style="min-width:0">
         <div class="cp-name" id="camp-name">—</div>
         <div class="cp-meta" id="camp-meta"></div>
+        <!-- Election result badge lives here, inside the header -->
+        <div id="camp-election" class="camp-election" style="display:none"></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="exportCampaignCSV()">⬇ CSV</button>
         <button class="cp-close" onclick="closeCampaignProfile()" aria-label="Close campaign profile">✕</button>
       </div>
     </div>
-    <!-- Election result (win/loss) -->
-    <div id="camp-election" class="camp-election" style="display:none"></div>
     <!-- Stats -->
     <div class="cp-stats">
       <div class="cp-stat"><div class="cp-stat-val" id="camp-raised">—</div><div class="cp-stat-lbl">Raised</div></div>
