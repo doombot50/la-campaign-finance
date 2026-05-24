@@ -24,9 +24,19 @@ def slim(e):
 
 out = {}
 # Pass 1: exact full-name keys (T1)
+# Skip plain "FIRST LAST" names whose first+last is shared by other variants
+# (e.g. "SHAWN WILSON" vs "SHAWN D WILSON" — campaign-finance filer "Shawn Wilson"
+# would ambiguously land on the plain entry, which may be a different person).
 for norm, e in R.items():
     if e.get('ambiguous'):
         continue
+    t = norm.split()
+    if len(t) >= 2:
+        fl_key = f'{t[0]} {t[-1]}'
+        # If this name IS the bare first+last and other full names share that pair,
+        # suppress it — the short form is ambiguous from the campaign-finance side.
+        if norm == fl_key and len(firstlast[(t[0], t[-1])]) > 1:
+            continue
     out[norm] = slim(e)
 # Pass 2: unambiguous first+last keys (T2), never overwriting a T1 key
 for norm, e in R.items():

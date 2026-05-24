@@ -193,6 +193,18 @@ def collapse(candidacies):
         # Most recent race in the pool; tie-break by most significant office.
         rep = max(pool, key=lambda c: (int(date_key(c['date'])), -c['rank']))
 
+        # Ambiguity: suspicious office downgrade in the most-recent race.
+        # e.g. "Shawn Wilson" ran for Governor (rank 4) in 2023 but a *different*
+        # Shawn Wilson ran for Police Juror (rank 15) in 2025.  A real person
+        # almost never moves to a dramatically less significant office, so a
+        # rank gap > 8 between historical best and most-recent race signals a
+        # name collision with a same-party candidate.
+        if not ambiguous:
+            best_rank = min(c['rank'] for c in pool)
+            if rep['rank'] - best_rank > 8:
+                ambiguous = True
+                n_ambig += 1
+
         out[norm] = {
             'party': rep['party'], 'office': rep['office'], 'outcome': rep['outcome'],
             'vote_pct': rep['vote_pct'], 'election_date': rep['date'],

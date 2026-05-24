@@ -4820,7 +4820,7 @@
 "parties": [
 "DEM"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "JUAN LAFONTA": {
@@ -17042,7 +17042,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "VICTORIA GOLDSTEIN": {
@@ -32339,7 +32339,7 @@
 "IND",
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "THOMAS G TOMMY LAFARGUE": {
@@ -32483,7 +32483,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "ANTHONY MARQUIZE": {
@@ -33412,7 +33412,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "TIM BAUDIER": {
@@ -33945,7 +33945,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "MARTIN J MARTY BENOIT": {
@@ -35322,7 +35322,7 @@
 "parties": [
 "DEM"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "BARBARA NORTON": {
@@ -35857,7 +35857,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "CHRIS HAZEL": {
@@ -36335,7 +36335,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "JERRY TRUCK GISCLAIR": {
@@ -37348,7 +37348,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "JONATHAN HOLLOWAY": {
@@ -59898,7 +59898,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "KENNETH KEN SHIFLETT": {
@@ -66822,7 +66822,7 @@
 "DEM",
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "GARY LANDRIEU": {
@@ -66907,7 +66907,7 @@
 "parties": [
 "DEM"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "JIM STARK": {
@@ -77283,7 +77283,7 @@
 "parties": [
 "GRN"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "HENRY HERFORD": {
@@ -81836,7 +81836,7 @@
 "parties": [
 "DEM"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "KEITH GATES": {
@@ -112313,7 +112313,7 @@
 "OTH",
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "GERALD BOUDREAUX": {
@@ -112567,7 +112567,7 @@
 "parties": [
 "DEM"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "LAWRENCE A LARRY BAGLEY": {
@@ -113058,7 +113058,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "JAN SWIFT": {
@@ -113605,7 +113605,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "TERRY C LANDRY": {
@@ -113746,7 +113746,7 @@
 "parties": [
 "DEM"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "SKIP GALLAGHER": {
@@ -115788,7 +115788,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "DAVID MARCANTEL": {
@@ -147147,7 +147147,7 @@
 "DEM",
 "IND"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "SHAWNDRA RODRIGUEZ": {
@@ -163533,7 +163533,7 @@
 "parties": [
 "DEM"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "DOUG RITCHIE": {
@@ -202440,7 +202440,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "J CHRISTOPHER JOHNSON": {
@@ -204388,7 +204388,7 @@
 "parties": [
 "DEM"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "J RUSSELL RODDY": {
@@ -208510,7 +208510,7 @@
 "parties": [
 "REP"
 ],
-"ambiguous": false,
+"ambiguous": true,
 "party_office_only": false
 },
 "STEVEN MILLER": {
