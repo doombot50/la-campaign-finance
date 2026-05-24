@@ -662,6 +662,19 @@
   .table-no-results { text-align:center; padding:36px 20px; color:var(--muted); font-size:13px; }
   .table-no-results .no-res-icon { font-size:32px; margin-bottom:8px; opacity:0.5; }
 
+  /* ── Win/loss election-result badge ─────────────────────────── */
+  .camp-election { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:12px 24px; border-bottom:1px solid var(--border); background:var(--surface); }
+  .wl-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 11px;
+    border-radius:6px; font-size:12px; font-weight:700; letter-spacing:.3px; }
+  .wl-badge.won    { color:#4caf7d; background:rgba(76,175,125,.15);  border:1px solid #1f6f43; }
+  .wl-badge.lost   { color:#e05c5c; background:rgba(224,92,92,.13);   border:1px solid #7a2d2d; }
+  .wl-badge.runoff { color:#e0b020; background:rgba(224,176,32,.15);  border:1px solid #7a5a1e; }
+  .wl-badge.oth    { color:var(--muted); background:rgba(120,120,120,.15); border:1px solid var(--border); }
+  .wl-pct  { font-size:13px; color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
+  .wl-race { font-size:11px; color:var(--muted); width:100%; }
+  .wl-race strong { color:var(--text); }
+
   /* ── Table density toggle ───────────────────────────────────── */
   .density-toggle { display:flex; gap:0; border:1px solid var(--border); border-radius:5px; overflow:hidden; }
   .density-btn { background:transparent; border:none; padding:4px 8px; font-size:11px; color:var(--muted); cursor:pointer; transition:all .15s; white-space:nowrap; }
@@ -5095,6 +5108,52 @@ let _campName    = '';
 let _campTab     = 'contribs';
 let _campContribs = [], _campExps = [], _campLoans = [];
 
+// ============================================================
+// ELECTION RESULTS (win/loss badges)
+// ============================================================
+let electionResults = {};
+let _electionResultsLoaded = false;
+async function loadElectionResults() {
+  if (_electionResultsLoaded) return;
+  try {
+    const resp = await fetch(`${API_BASE}/api/election-results`);
+    if (resp.ok) electionResults = await resp.json();
+  } catch (e) { /* offline / not built — badges simply won't show */ }
+  _electionResultsLoaded = true;
+}
+
+const _WL_COMMITTEE_RE = /\b(PAC|FUND|COMMITTEE|PARTY|ASSOCIATION|ASSN|FRIENDS|CITIZENS|COALITION|ALLIANCE|INC|LLC|CORP|POLITICAL|ACTION|LEAGUE|FEDERATION|CAUCUS|FOUNDATION|SOCIETY|COUNCIL|BOARD|GROUP|ORGANIZATION|NORPAC|HOSPPAC|HOSTPAC|COMPANY|ENERGY|REALTORS|HOSPITAL|RESTAURANT|CHIROPRACTIC|ELECTRIC|STEP UP|TO ELECT)\b/i;
+function _wlNormName(s) {
+  s = (s || '').toUpperCase().replace(/\b(DR|MR|MRS|MS|JR|SR|II|III|IV|ESQ|PHD|MD)\.?\b/g, '').replace(/[^A-Z\s]/g, ' ');
+  return s.split(/\s+/).filter(Boolean).join(' ');
+}
+// High-confidence lookup: exact full name (T1) then unambiguous first+last (T2).
+// The served artifact already excludes ambiguous names and non-unique first+last,
+// so the client only needs normalize + two dict lookups + a party sanity check.
+function getElectionResult(name, party) {
+  if (!name || _WL_COMMITTEE_RE.test(name) || /\d/.test(name) || name.includes('&')) return null;
+  const norm = _wlNormName(name);
+  const toks = norm.split(' ');
+  if (toks.length < 2) return null;
+  let e = electionResults[norm] || electionResults[toks[0] + ' ' + toks[toks.length - 1]];
+  if (!e) return null;
+  if (party && (party === 'DEM' || party === 'REP') && (e.party === 'DEM' || e.party === 'REP') && party !== e.party) return null;
+  return e;
+}
+function renderCampElection(name, party) {
+  const el = document.getElementById('camp-election');
+  if (!el) return;
+  const r = getElectionResult(name, party);
+  if (!r) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const M = { Elected: ['won','✓ WON'], Defeated: ['lost','✗ LOST'], Runoff: ['runoff','→ RUNOFF'] };
+  const m = M[r.outcome] || ['oth', r.outcome || '—'];
+  const yr  = (r.election_date || '').split('/').pop();
+  const pct = (r.vote_pct != null) ? `<span class="wl-pct">${r.vote_pct}% of vote</span>` : '';
+  el.style.display = '';
+  el.innerHTML = `<span class="wl-badge ${m[0]}">${m[1]}</span>${pct}` +
+    `<div class="wl-race">📍 Matched race: <strong>${yr} · ${escHtml(r.office)}</strong></div>`;
+}
+
 function showCampaignProfile(name) {
   _campName     = name;
   _campContribs = allData.filter(d => d.candidate === name)
@@ -5107,6 +5166,9 @@ function showCampaignProfile(name) {
   document.getElementById('camp-name').textContent = name;
   _refreshCampStats();
   campSwitchTab('contribs');
+  // Election result may load async on first open; re-render once available.
+  const _p = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
+  loadElectionResults().then(() => renderCampElection(name, _p));
   _modalReturnFocus = document.activeElement;   // remember trigger for focus restore
   document.getElementById('camp-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -5126,6 +5188,7 @@ function _refreshCampStats() {
 
   document.getElementById('camp-meta').textContent =
     `${partyLabel}  ·  ${_campContribs.length} contributions · ${_campExps.length} expenditures · ${_campLoans.length} loans`;
+  renderCampElection(_campName, party);
   document.getElementById('camp-raised').textContent   = fmt(raised);
   document.getElementById('camp-spent').textContent    = fmt(spent);
   document.getElementById('camp-borrowed').textContent = fmt(borrowed);
@@ -5309,6 +5372,8 @@ function exportCampaignCSV() {
         <button class="cp-close" onclick="closeCampaignProfile()" aria-label="Close campaign profile">✕</button>
       </div>
     </div>
+    <!-- Election result (win/loss) -->
+    <div id="camp-election" class="camp-election" style="display:none"></div>
     <!-- Stats -->
     <div class="cp-stats">
       <div class="cp-stat"><div class="cp-stat-val" id="camp-raised">—</div><div class="cp-stat-lbl">Raised</div></div>

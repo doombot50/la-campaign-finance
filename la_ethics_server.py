@@ -1010,6 +1010,22 @@ class Handler(BaseHTTPRequestHandler):
             })
             return
 
+        # Flat election-results lookup (win/loss badges). Static, cached client-side.
+        if parsed.path == '/api/election-results':
+            lk = os.path.join(BASE_DIR, 'la_election_lookup.json')
+            if os.path.exists(lk):
+                with open(lk, 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.send_header('Content-Length', str(len(body)))
+                self._cors_headers()
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self._json({})   # gracefully empty if not built yet
+            return
+
         if parsed.path not in ('/api/la-ethics', '/api/la-expenditures', '/api/la-loans'):
             self.send_response(404)
             self._cors_headers()
