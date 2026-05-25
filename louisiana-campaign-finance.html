@@ -769,7 +769,8 @@
       display:block !important; padding:12px 20px !important;
       break-inside:avoid; border-bottom:1px solid #ddd !important;
     }
-    body.printing-profile #camp-cashflow-wrap canvas { max-height:160px !important; }
+    body.printing-profile #camp-cashflow-wrap canvas,
+    body.printing-profile #camp-cashflow-wrap img[data-chart-proxy] { max-height:160px !important; }
     /* Sub-tab buttons — hide them */
     body.printing-profile .section-tab { display:none !important; }
     /* Force career content visible and all transaction tabs hidden */
@@ -5593,20 +5594,50 @@ function closeCampaignProfile() {
 }
 
 function printCampaignProfile() {
-  // Switch to Career tab so the career chart is rendered before printing
+  // Switch to Career tab so both charts are rendered before we snapshot them
   campSwitchTab('career');
+
   // Stamp print date on overlay for watermark
   const overlay = document.getElementById('camp-overlay');
   overlay.setAttribute('data-print-date', new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}));
-  // Give Chart.js one rAF to finish any pending render, then print
-  requestAnimationFrame(() => {
+
+  // Double-rAF: let Chart.js finish its current render cycle, then snapshot.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    // ── Snapshot every chart canvas as a static PNG image ──────────────
+    // Chart.js fires a responsive resize callback when print CSS is applied,
+    // which can corrupt bar layouts mid-print.  Replacing canvases with <img>
+    // tags before window.print() ensures pixel-perfect, resize-proof output.
+    const canvasIds = ['camp-cashflow-chart', 'camp-career-chart'];
+    const swapped = [];
+
+    canvasIds.forEach(id => {
+      const canvas = document.getElementById(id);
+      if (!canvas || !canvas.width || !canvas.height) return;
+      try {
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/png');
+        img.style.width  = '100%';
+        img.style.height = canvas.offsetHeight + 'px';
+        img.style.display = 'block';
+        img.dataset.chartProxy = id;
+        canvas.parentNode.insertBefore(img, canvas);
+        canvas.style.display = 'none';
+        swapped.push({ canvas, img });
+      } catch (e) { /* tainted canvas — skip */ }
+    });
+
     document.body.classList.add('printing-profile');
     window.print();
-  });
-  // Clean up after the print dialog closes
-  window.addEventListener('afterprint', () => {
-    document.body.classList.remove('printing-profile');
-  }, { once: true });
+
+    // ── Restore canvases after the print dialog closes ─────────────────
+    window.addEventListener('afterprint', () => {
+      document.body.classList.remove('printing-profile');
+      swapped.forEach(({ canvas, img }) => {
+        canvas.style.display = '';
+        img.remove();
+      });
+    }, { once: true });
+  }));
 }
 
 function campSwitchTab(tab) {
