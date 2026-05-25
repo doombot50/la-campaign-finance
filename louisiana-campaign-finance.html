@@ -5454,19 +5454,18 @@ function renderCampCashFlow() {
   const green  = '#4caf7d', red = '#d76b6b';
 
   // ── Cycle highlight band ─────────────────────────────────────────────────
-  // Shade the currently-loaded 4-year cycle window on the chart so the user
-  // can see which slice of the career timeline the stats above refer to.
-  const cycleYear = parseInt(document.getElementById('cycle-select')?.value) || 0;
-  function _cycleKeys(y) {
-    if (y >= 2024) return ['2024-01','2027-12','2024–27'];
-    if (y >= 2020) return ['2020-01','2023-12','2020–23'];
-    if (y >= 2016) return ['2016-01','2019-12','2016–19'];
-    if (y >= 2012) return ['2012-01','2015-12','2012–15'];
-    if (y >= 2008) return ['2008-01','2011-12','2008–11'];
-    if (y >= 2004) return ['2004-01','2007-12','2004–07'];
-    return            ['2000-01','2003-12','2000–03'];
-  }
-  const [bandStart, bandEnd, bandLabel] = cycleYear ? _cycleKeys(cycleYear) : ['','',''];
+  // Shade the exact date span of the currently-loaded transactions so the
+  // user can see which slice of the career timeline the stats above refer to.
+  const _loadedDates = [
+    ..._campContribs.map(d => d.date),
+    ..._campExps.map(d => d.date),
+    ..._campLoans.map(d => d.date),
+  ].filter(Boolean).map(d => d.slice(0, 7));   // keep YYYY-MM only
+  const bandStart = _loadedDates.length ? _loadedDates.reduce((a, b) => a < b ? a : b) : '';
+  const bandEnd   = _loadedDates.length ? _loadedDates.reduce((a, b) => a > b ? a : b) : '';
+  const bandLabel = (bandStart && bandEnd)
+    ? `${bandStart.slice(0,4)}–${bandEnd.slice(2,4)} loaded`
+    : '';
   const cycleShadePlugin = (bandStart && keys.length > 1) ? {
     id: 'cycleShade',
     beforeDraw(chart) {
