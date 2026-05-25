@@ -36,6 +36,7 @@ import re as _re
 _CAND_INDEX  = None   # la_candidate_index.json.gz  — financial summary per cycle
 _CAND_RACES  = None   # la_candidacies_raw.json.gz  — all SoS race appearances
 _CAND_LOCK   = threading.Lock()
+_CAND_IDX_MTIME = 0   # mtime of index file when last loaded
 
 def _norm_name(name):
     n = name.upper()
@@ -44,15 +45,18 @@ def _norm_name(name):
     return ' '.join(n.split())
 
 def _load_career_data():
-    global _CAND_INDEX, _CAND_RACES
+    global _CAND_INDEX, _CAND_RACES, _CAND_IDX_MTIME
+    idx_path   = os.path.join(BASE_DIR, 'la_candidate_index.json.gz')
+    races_path = os.path.join(BASE_DIR, 'la_candidacies_raw.json.gz')
+    # Check if file has changed since last load (allows hot-reload after rebuild)
+    current_mtime = os.path.getmtime(idx_path) if os.path.exists(idx_path) else 0
     with _CAND_LOCK:
-        if _CAND_INDEX is not None:
+        if _CAND_INDEX is not None and current_mtime == _CAND_IDX_MTIME:
             return
-        idx_path   = os.path.join(BASE_DIR, 'la_candidate_index.json.gz')
-        races_path = os.path.join(BASE_DIR, 'la_candidacies_raw.json.gz')
         if os.path.exists(idx_path):
             with gzip.open(idx_path, 'rt', encoding='utf-8') as f:
                 _CAND_INDEX = json.load(f)
+            _CAND_IDX_MTIME = current_mtime
         else:
             _CAND_INDEX = {}
         if os.path.exists(races_path):
@@ -1081,6 +1085,30 @@ class Handler(BaseHTTPRequestHandler):
                 key=lambda r: r.get('date','')
             )
             self._json({'financial': financial, 'races': races, 'norm': norm})
+            return
+
+        # Static data files — serve gzip-encoded JSON directly so the browser can
+        # load them client-side without going through the candidate-history API.
+        _STATIC_DATA = {
+            '/la_candidate_index.json.gz': 'la_candidate_index.json.gz',
+            '/la_candidacies_raw.json.gz': 'la_candidacies_raw.json.gz',
+        }
+        if parsed.path in _STATIC_DATA:
+            fpath = os.path.join(BASE_DIR, _STATIC_DATA[parsed.path])
+            if os.path.exists(fpath):
+                with open(fpath, 'rb') as fh:
+                    body = fh.read()
+                self.send_response(200)
+                self._cors_headers()
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Encoding', 'gzip')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.send_response(404)
+                self._cors_headers()
+                self.end_headers()
             return
 
         if parsed.path not in ('/api/la-ethics', '/api/la-expenditures', '/api/la-loans'):
