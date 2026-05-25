@@ -5419,29 +5419,49 @@ function renderCampCareer() {
     Defeated:['lost',   '✗ Lost'],
     Runoff:  ['runoff', '→ Runoff'],
   };
-  // Deduplicate races: same office+date may appear as both a primary and general entry
-  const seen = new Set();
-  const races = (_careerData.races || []).filter(r => {
-    const key = r.date + '|' + r.office;
-    if (seen.has(key)) return false;
-    seen.add(key); return true;
-  }).reverse();  // most recent first
 
-  racesEl.innerHTML = races.map(r => {
-    const yr = (r.date||'').split('/').pop() || (r.date||'').slice(0,4);
-    const [cls, label] = OUTCOME_STYLE[r.outcome] || ['oth', r.outcome||'—'];
-    const pct = r.vote_pct != null ? `${r.vote_pct}%` : '';
-    // Trim long district suffixes for display
-    const office = (r.office||'').replace(/\s+--\s+.*/,'').replace(/\s+-\s+.*/,'');
-    const district = (r.office||'').match(/--\s*(.+)/)?.[1]?.trim() || '';
+  // Clean an office string: strip party-primary suffix and normalize spacing
+  function _cleanOffice(o) {
+    return (o||'').replace(/-(?:Republican|Democratic|Libertarian|Green|Independent|Other) Party$/i,'').trim();
+  }
+  function _baseOffice(o)    { return _cleanOffice(o).replace(/\s+--\s+.*/,'').trim(); }
+  function _districtPart(o)  { const m = _cleanOffice(o).match(/--\s*(.+)/); return m ? m[1].trim() : ''; }
+  function _raceYear(date)   { const p = (date||'').split('/'); return p.length===3 ? p[2] : (date||'').slice(0,4); }
+
+  // Group by year + base office — collapses primary / runoff / general for the same race
+  const groups = {};
+  for (const r of (_careerData.races || [])) {
+    const yr   = _raceYear(r.date);
+    const base = _baseOffice(r.office);
+    const key  = `${yr}|${base}`;
+    if (!groups[key]) groups[key] = { yr, base, district: _districtPart(r.office), steps: [] };
+    groups[key].steps.push(r);
+  }
+
+  // Within each group: sort by date, pick the terminal (Elected/Defeated) outcome
+  const grouped = Object.values(groups).map(g => {
+    const sorted   = g.steps.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    const terminal = sorted.slice().reverse().find(r => r.outcome==='Elected'||r.outcome==='Defeated')
+                     || sorted[sorted.length - 1];
+    const hadRunoff = sorted.some(r => r.outcome === 'Runoff');
+    // If only Runoff entries (no terminal yet — ongoing), use the last entry
+    return { ...g, terminal, hadRunoff, n: sorted.length };
+  }).sort((a,b) => b.yr.localeCompare(a.yr));  // most recent first
+
+  racesEl.innerHTML = grouped.map(g => {
+    const { terminal, hadRunoff } = g;
+    const [cls, label] = OUTCOME_STYLE[terminal.outcome] || ['oth', terminal.outcome||'—'];
+    const pct = terminal.vote_pct != null ? `${terminal.vote_pct}%` : '';
+    const via = hadRunoff && terminal.outcome !== 'Runoff'
+      ? `<span style="font-size:10px;color:var(--muted);margin-left:6px;font-style:italic">via runoff</span>` : '';
     return `<div class="race-row">
-      <div class="race-year">${yr}</div>
+      <div class="race-year">${g.yr}</div>
       <div class="race-office">
-        <div>${escHtml(office)}</div>
-        ${district ? `<div class="race-office-sub">${escHtml(district)}</div>` : ''}
+        <div>${escHtml(g.base)}</div>
+        ${g.district ? `<div class="race-office-sub">${escHtml(g.district)}</div>` : ''}
       </div>
       <div class="race-outcome">
-        <span class="wl-badge ${cls}">${label}</span>
+        <div><span class="wl-badge ${cls}">${label}</span>${via}</div>
         ${pct ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${pct}</div>` : ''}
       </div>
     </div>`;
