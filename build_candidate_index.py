@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Build la_candidate_index.json.gz — per-candidate, per-cycle financial summary.
-
-Reads all .la_cache/contributions_yr*.json.gz, expenditures_yr*.json.gz, and
-loans_yr*.json.gz and emits a compact index keyed by normalized candidate name:
+"""Build la_candidate_index.json.gz — per-candidate, per-cycle financial summary
+plus monthly in/out buckets for the cross-cycle cash-on-hand chart.
 
   "JEFF LANDRY": {
     "cycles": {
       "2024-2027": {"raised":6618001,"spent":0,"borrowed":0,"n_c":3527,"n_e":0,"n_l":0,"donors":2780},
-      "2020-2023": {"raised":4100000,"spent":3850000,...}
+      "2020-2023": {...}
+    },
+    "monthly": {                         ← NEW: keyed YYYY-MM
+      "2016-03": {"in":5000,"out":0},
+      "2020-09": {"in":120000,"out":45000},
+      ...
     },
     "total_raised": ..., "total_spent": ..., "total_borrowed": ...,
     "first_cycle": "2016-2019", "last_cycle": "2024-2027", "n_cycles": 3
   }
-
-Used by the /api/candidate-history server endpoint to power the multi-cycle
-career tab in the campaign profile modal without loading full cycle files.
 """
 import json, gzip, os, re, time
 from collections import defaultdict
@@ -38,9 +38,19 @@ def normalize(name):
     name = re.sub(r'[^A-Z\s]', ' ', name)
     return ' '.join(name.split())
 
+def month_key(date_str):
+    """'2023-09-14' or '2023-09' -> 'YYYY-MM', returns None if unparseable."""
+    d = (date_str or '').strip()
+    if len(d) >= 7 and d[4] == '-':
+        return d[:7]
+    return None
+
 # norm_name -> cycle -> {raised, spent, borrowed, n_c, n_e, n_l, donors: set}
 _empty = lambda: {'raised':0,'spent':0,'borrowed':0,'n_c':0,'n_e':0,'n_l':0,'donors':set()}
 index  = defaultdict(lambda: defaultdict(_empty))
+
+# norm_name -> month_key -> {in: float, out: float}
+monthly = defaultdict(lambda: defaultdict(lambda: {'in':0.0,'out':0.0}))
 
 def ingest(path, kind):
     n = 0
@@ -52,16 +62,22 @@ def ingest(path, kind):
                 if not cand or cand == 'Unknown': continue
                 norm  = normalize(cand)
                 if len(norm.split()) < 2: continue
-                year  = (r.get('date') or '0000-')[:4]
+                date  = r.get('date') or ''
+                year  = date[:4]
+                if not year.isdigit(): continue
                 cycle = get_cycle(year)
                 amt   = float(r.get('amount') or 0)
-                e     = index[norm][cycle]
+                mk    = month_key(date)
+
+                e = index[norm][cycle]
                 if kind == 'c':
                     e['raised'] += amt; e['n_c'] += 1
                     donor = (r.get('contributor') or '').strip()
                     if donor: e['donors'].add(donor)
+                    if mk: monthly[norm][mk]['in'] += amt
                 elif kind == 'e':
                     e['spent']    += amt; e['n_e'] += 1
+                    if mk: monthly[norm][mk]['out'] += amt
                 else:
                     e['borrowed'] += amt; e['n_l'] += 1
                 n += 1
@@ -105,8 +121,18 @@ for norm, cycles in index.items():
         }
     if not cycle_data: continue
     labels = list(cycle_data.keys())
+
+    # Monthly buckets — only include months with non-zero activity, rounded to 2dp
+    mon = {}
+    for mk, vals in sorted(monthly[norm].items()):
+        i = round(vals['in'],  2)
+        o = round(vals['out'], 2)
+        if i or o:
+            mon[mk] = {'in': i, 'out': o}
+
     out[norm] = {
         'cycles':          cycle_data,
+        'monthly':         mon,
         'total_raised':    round(total_raised,   2),
         'total_spent':     round(total_spent,    2),
         'total_borrowed':  round(total_borrowed, 2),
@@ -118,6 +144,5 @@ for norm, cycles in index.items():
 with gzip.open(OUT, 'wt', encoding='utf-8') as f:
     json.dump(out, f, separators=(',',':'))
 
-import os as _os
-sz = _os.path.getsize(OUT) / 1024
+sz = os.path.getsize(OUT) / 1024
 print(f'Wrote {OUT}: {len(out):,} candidates, {sz:.0f} KB')

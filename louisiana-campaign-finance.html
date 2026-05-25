@@ -5216,26 +5216,45 @@ function renderCampCashFlow() {
   if (!canvas) return;
   const note = document.getElementById('camp-cashflow-note');
 
-  // Build monthly buckets across all loaded transactions
-  const months = {};   // 'YYYY-MM' -> { in: inflow, out: outflow }
-  const bucket = (date) => {
-    if (!date) return null;
-    const m = String(date).slice(0, 7);   // YYYY-MM
-    if (!/^\d{4}-\d{2}$/.test(m)) return null;
-    if (!months[m]) months[m] = { in: 0, out: 0 };
-    return months[m];
-  };
-  _campContribs.forEach(d => { const b = bucket(d.date); if (b) b.in  += d.amount; });
-  _campLoans.forEach(d    => { const b = bucket(d.date); if (b) b.in  += d.amount; });
-  _campExps.forEach(d     => { const b = bucket(d.date); if (b) b.out += d.amount; });
+  // Prefer career monthly buckets (all cycles) over single-cycle transaction data.
+  // Career data is fetched in the background when the modal opens; if it's ready
+  // we get a complete multi-year picture. If not, we fall back to the loaded cycle.
+  let months = {};
+  let usingCareerData = false;
+
+  if (_careerData?.financial?.monthly && Object.keys(_careerData.financial.monthly).length) {
+    // Career monthly data: already bucketed by the server
+    months = _careerData.financial.monthly;
+    usingCareerData = true;
+  } else {
+    // Fallback: bucket from loaded single-cycle transactions
+    const bucket = (date) => {
+      if (!date) return null;
+      const m = String(date).slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(m)) return null;
+      if (!months[m]) months[m] = { in: 0, out: 0 };
+      return months[m];
+    };
+    _campContribs.forEach(d => { const b = bucket(d.date); if (b) b.in  += d.amount; });
+    _campLoans.forEach(d    => { const b = bucket(d.date); if (b) b.in  += d.amount; });
+    _campExps.forEach(d     => { const b = bucket(d.date); if (b) b.out += d.amount; });
+  }
 
   const keys = Object.keys(months).sort();
 
-  // Note about data completeness
-  const parts = [];
-  if (_campExps.length === 0)  parts.push('expenditures not loaded');
-  if (_campLoans.length === 0) parts.push('loans not loaded');
-  note.textContent = parts.length ? '⚠ ' + parts.join(' · ') : 'Raised + Borrowed − Spent';
+  // Data-coverage note
+  if (usingCareerData) {
+    const first = keys[0]?.replace('-', ' ') || '';
+    const last  = keys[keys.length - 1]?.replace('-', ' ') || '';
+    note.textContent = first && last ? `All available data · ${first} – ${last}` : 'All available data';
+    note.style.color = '';
+  } else {
+    const parts = [];
+    if (_campExps.length === 0)  parts.push('expenditures not loaded');
+    if (_campLoans.length === 0) parts.push('loans not loaded');
+    note.textContent = parts.length ? '⚠ ' + parts.join(' · ') : 'Raised + Borrowed − Spent';
+    note.style.color = parts.length ? 'var(--muted)' : '';
+  }
 
   if (!keys.length) {
     if (_campCashChart) { _campCashChart.destroy(); _campCashChart = null; }
@@ -5370,7 +5389,13 @@ async function fetchCareerData(name) {
   _careerData = null;
   try {
     const r = await fetch(`${API_BASE}/api/candidate-history?name=${encodeURIComponent(name)}`);
-    if (r.ok) _careerData = await r.json();
+    if (r.ok) {
+      _careerData = await r.json();
+      // Re-render cash-on-hand chart now that full monthly data is available
+      renderCampCashFlow();
+      // If Career tab is already open, re-render it too
+      if (_campTab === 'career') renderCampCareer();
+    }
   } catch(e) {}
 }
 
