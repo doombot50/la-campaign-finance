@@ -848,6 +848,74 @@
   .race-ind-bar-wrap { margin-bottom: 6px; }
   .race-ind-label { font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 2px; color: var(--text); }
   .race-ind-bar { height: 8px; border-radius: 4px; background: var(--accent); opacity: .8; }
+
+  /* ── Global search ─────────────────────────────────────────── */
+  .global-search-wrap { position: relative; }
+  #global-search {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 7px 12px 7px 30px;
+    font-size: 13px; width: 230px; transition: width .2s, border-color .2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: 9px center;
+  }
+  #global-search:focus { outline: none; border-color: var(--gold); width: 300px; }
+  #global-search-results {
+    position: fixed; /* fixed so header overflow:hidden doesn't clip it */
+    width: 380px; max-width: calc(100vw - 16px); max-height: 440px; overflow-y: auto;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.28);
+    z-index: 9999; display: none; padding: 4px;
+  }
+  .gs-result {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 7px; cursor: pointer; text-align: left;
+    width: 100%; background: none; border: none; color: var(--text);
+  }
+  .gs-result:hover, .gs-result.active { background: rgba(200,169,81,.12); }
+  .gs-result-main { flex: 1; min-width: 0; }
+  .gs-result-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gs-result-sub  { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gs-result-amt  { font-size: 12px; font-weight: 600; color: var(--gold); flex-shrink: 0; }
+  .gs-type-badge  {
+    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px;
+    flex-shrink: 0; letter-spacing: .03em; text-transform: uppercase;
+  }
+  .gs-type-cand { background: #dbeafe; color: #1e40af; }
+  .gs-type-comm { background: #fef9c3; color: #92400e; }
+  .gs-empty { padding: 14px; text-align: center; font-size: 12px; color: var(--muted); }
+
+  /* ── Overview / landing tab ────────────────────────────────── */
+  .ov-hero {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px; margin-bottom: 22px;
+  }
+  .ov-stat {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px;
+  }
+  .ov-stat-val { font-size: 24px; font-weight: 700; color: var(--gold); line-height: 1.1; }
+  .ov-stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .ov-section-title {
+    font-size: 14px; font-weight: 700; color: var(--text);
+    margin: 26px 0 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .ov-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  }
+  @media (max-width: 760px) { .ov-grid { grid-template-columns: 1fr; } }
+  .ov-elec-card, .ov-top-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 8px; background: var(--card); cursor: pointer;
+    transition: border-color .15s, transform .1s;
+  }
+  .ov-elec-card:hover, .ov-top-row:hover { border-color: var(--gold); transform: translateX(2px); }
+  .ov-elec-date { font-weight: 600; font-size: 13px; }
+  .ov-elec-meta { font-size: 11px; color: var(--muted); }
+  .ov-upcoming-pill { font-size: 9px; font-weight: 700; background: #16a34a; color: #fff; padding: 1px 6px; border-radius: 10px; margin-left: 6px; }
+  .ov-top-rank { font-size: 12px; color: var(--muted); width: 22px; flex-shrink: 0; }
+  .ov-top-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ov-top-amt { font-size: 13px; font-weight: 700; color: var(--gold); flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -886,6 +954,13 @@
       <div class="header-subtitle">Pelican State · Since 1812 · Ethics Commission Data</div>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <div class="global-search-wrap">
+        <input type="text" id="global-search" autocomplete="off" spellcheck="false"
+               placeholder="Search candidates, committees…"
+               aria-label="Search candidates and committees"
+               role="combobox" aria-expanded="false" aria-controls="global-search-results">
+        <div id="global-search-results" role="listbox" aria-label="Search results"></div>
+      </div>
       <div id="proxy-live-badge" style="display:none">
         <span class="dot"></span> Live data
       </div>
@@ -1059,7 +1134,8 @@
 
 <!-- SECTION TABS -->
 <div class="section-tabs" role="tablist" aria-label="Dashboard sections">
-  <button class="section-tab active" id="tab-contributions" role="tab" aria-selected="true"  aria-controls="contributions-view" onclick="switchTab('contributions')">💰 Contributions</button>
+  <button class="section-tab active" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview-view" onclick="switchTab('overview')">🏠 Overview</button>
+  <button class="section-tab" id="tab-contributions" role="tab" aria-selected="false" tabindex="-1" aria-controls="contributions-view" onclick="switchTab('contributions')">💰 Contributions</button>
   <button class="section-tab" id="tab-expenditures" role="tab" aria-selected="false" tabindex="-1" aria-controls="expenditures-view" onclick="switchTab('expenditures')">💸 Expenditures</button>
   <button class="section-tab" id="tab-loans" role="tab" aria-selected="false" tabindex="-1" aria-controls="loans-view" onclick="switchTab('loans')">🏦 Loans</button>
   <button class="section-tab" id="tab-donors" role="tab" aria-selected="false" tabindex="-1" aria-controls="donors-view" onclick="switchTab('donors')">🏆 Top Donors</button>
@@ -1069,7 +1145,30 @@
 
 </div><!-- /sticky-top -->
 
-<div id="contributions-view" class="tab-view" role="tabpanel" aria-labelledby="tab-contributions" tabindex="0">
+<!-- OVERVIEW VIEW (landing) -->
+<div id="overview-view" class="tab-view" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
+  <div class="main">
+    <div id="ov-loading" style="text-align:center;padding:50px;color:var(--muted);font-size:13px">Loading overview…</div>
+    <div id="ov-body" style="display:none">
+      <div style="margin-bottom:6px;font-size:13px;color:var(--muted)">
+        A bird's-eye view of Louisiana campaign finance — all cycles, 2000–present. Use the search box up top to jump to any candidate or committee.
+      </div>
+      <div class="ov-hero" id="ov-hero"></div>
+      <div class="ov-grid">
+        <div>
+          <div class="ov-section-title">🗳️ <span id="ov-elec-heading">Recent Elections</span></div>
+          <div id="ov-elections"></div>
+        </div>
+        <div>
+          <div class="ov-section-title">💰 Top All-Time Fundraisers</div>
+          <div id="ov-top"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="contributions-view" class="tab-view" style="display:none" role="tabpanel" aria-labelledby="tab-contributions" tabindex="0">
 <!-- MAIN -->
 <div class="main" id="main-content">
 
@@ -3641,11 +3740,13 @@ function detectExpCategory(desc) {
 let _allCycleOpts = null;
 
 const TAB_VIEWS = {
+  overview: 'overview-view',
   contributions: 'contributions-view', expenditures: 'expenditures-view',
   loans: 'loans-view', donors: 'donors-view', compare: 'compare-view',
   races: 'races-view'
 };
 const TAB_BUTTONS = {
+  overview: 'tab-overview',
   contributions: 'tab-contributions', expenditures: 'tab-expenditures',
   loans: 'tab-loans', donors: 'tab-donors', compare: 'tab-compare',
   races: 'tab-races'
@@ -3697,6 +3798,13 @@ function switchTab(tab) {
   if (tab === 'donors')  renderDonorsLeaderboard();
   if (tab === 'compare') renderCompare();
   if (tab === 'races')   loadRaces();
+  if (tab === 'overview') loadOverview();
+
+  // Overview and Races are cycle-independent — hide the cycle/filter controls
+  // so the landing page reads as a clean dashboard rather than a query form.
+  const controlsBar = document.querySelector('.controls-bar');
+  if (controlsBar) controlsBar.style.display = (tab === 'overview') ? 'none' : '';
+
   _saveUrlState();
   renderFilterChips();
 
@@ -5049,11 +5157,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Filter chips ─────────────────────────────────────────────
 
 function _currentTab() {
-  if (document.getElementById('expenditures-view').style.display !== 'none') return 'expenditures';
-  if (document.getElementById('loans-view').style.display !== 'none') return 'loans';
-  if (document.getElementById('donors-view')?.style.display !== 'none')  return 'donors';
-  if (document.getElementById('compare-view')?.style.display !== 'none') return 'compare';
-  return 'contributions';
+  for (const [tab, id] of Object.entries(TAB_VIEWS)) {
+    const el = document.getElementById(id);
+    if (el && el.style.display !== 'none') return tab;
+  }
+  return 'overview';
 }
 
 function renderFilterChips() {
@@ -5195,9 +5303,9 @@ function _saveUrlState() {
   const cycle = document.getElementById('cycle-select').value;
   if (cycle && cycle !== '2026') p.set('cycle', cycle);
 
-  // Active tab
+  // Active tab (overview is the default landing — omit it from the URL)
   const tab = _currentTab();
-  if (tab !== 'contributions') p.set('tab', tab);
+  if (tab !== 'overview') p.set('tab', tab);
 
   // ── Contribution filters ───────────────────────────────────
   const party = document.getElementById('party-select').value;
@@ -5313,7 +5421,7 @@ function _restoreUrlState() {
 
   // ── Tab switch — defer one tick so init() can finish first ─
   const tab = p.get('tab');
-  if (tab && tab !== 'contributions') {
+  if (tab && tab !== 'overview') {
     setTimeout(() => switchTab(tab), 0);
   }
 
@@ -5323,6 +5431,10 @@ function _restoreUrlState() {
 // ============================================================
 // INIT
 // ============================================================
+// Declared here (not with the overview functions further down) so it is already
+// initialized when init() calls loadOverview() — avoids a temporal-dead-zone error.
+let _overviewData = null;
+
 (async function init() {
   document.getElementById('la-status').textContent = 'No data loaded';
 
@@ -5348,7 +5460,20 @@ function _restoreUrlState() {
   }
 
   _restoreUrlState();
-  loadData();
+
+  // Default landing is the Overview tab — load it FIRST and hide the cycle/filter
+  // controls (they don't apply to the cycle-independent landing page). Loading it
+  // before the heavy contributions pre-load below ensures the overview's small
+  // request isn't queued behind the multi-megabyte contributions stream (the
+  // browser caps concurrent connections per host). If the URL restored a different
+  // tab, _restoreUrlState()'s deferred switchTab will reveal the controls again.
+  if (_currentTab() === 'overview') {
+    const cb = document.querySelector('.controls-bar');
+    if (cb) cb.style.display = 'none';
+    await loadOverview();
+  }
+
+  loadData();   // heavy contributions pre-load runs in the background
 })();
 
 // ============================================================
@@ -5404,7 +5529,7 @@ function renderCampElection(name, party) {
   el.innerHTML = `<span class="wl-badge ${m[0]}">${m[1]}</span>${pct}${race}`;
 }
 
-function showCampaignProfile(name) {
+function showCampaignProfile(name, openTab) {
   _campName     = name;
   _campContribs = allData.filter(d => d.candidate === name)
                     .sort((a,b) => b.date.localeCompare(a.date));
@@ -5415,7 +5540,10 @@ function showCampaignProfile(name) {
 
   document.getElementById('camp-name').textContent = name;
   _refreshCampStats();
-  campSwitchTab('contribs');
+  // When opened from search/overview the current cycle's transactions usually
+  // aren't loaded — default to the Career tab so all-cycle data shows. Callers
+  // from in-cycle tables omit openTab and get the contributions list as before.
+  campSwitchTab(openTab || (_campContribs.length ? 'contribs' : 'career'));
   // Election result may load async on first open; re-render once available.
   const _p = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
   loadElectionResults().then(() => renderCampElection(name, _p));
@@ -6134,6 +6262,218 @@ async function toggleRaceInd(btn, filerNum, office, cycle) {
   } catch(e) {
     panel.innerHTML = `<span style="font-size:11px;color:var(--muted)">Error: ${e.message}</span>`;
   }
+}
+
+// ── Global entity search ───────────────────────────────────────────────────────
+let _gsTimer = null;
+let _gsResults = [];
+let _gsActive = -1;
+
+function _gsFmt(n) {
+  if (!n) return '';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return '$' + Math.round(n/1e3) + 'K';
+  return '$' + Math.round(n);
+}
+
+function _gsResultSub(r) {
+  const bits = [];
+  if (r.last_office) {
+    const yr = (r.last_date || '').split('/').pop();
+    bits.push(r.last_office + (yr ? ` (${yr})` : ''));
+  } else if (r.n_cycles) {
+    bits.push(`${r.n_cycles} cycle${r.n_cycles === 1 ? '' : 's'} of finance`);
+  }
+  return bits.join(' · ');
+}
+
+function _gsPosition() {
+  const input = document.getElementById('global-search');
+  const box   = document.getElementById('global-search-results');
+  const r = input.getBoundingClientRect();
+  // Align left edge of dropdown to left edge of input; clamp so it never leaves the viewport
+  let left = r.left;
+  const maxLeft = window.innerWidth - 380 - 8;
+  if (left > maxLeft) left = maxLeft;
+  if (left < 8) left = 8;
+  box.style.top  = (r.bottom + 6) + 'px';
+  box.style.left = left + 'px';
+}
+
+async function _doGlobalSearch(q) {
+  const box = document.getElementById('global-search-results');
+  if (!q || q.trim().length < 2) {
+    box.style.display = 'none';
+    document.getElementById('global-search').setAttribute('aria-expanded', 'false');
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q.trim())}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    _gsResults = data.results || [];
+    _gsActive = -1;
+    _renderSearchResults(data.total || _gsResults.length);
+  } catch (e) {
+    _gsPosition();
+    box.innerHTML = `<div class="gs-empty">Search unavailable (${e.message})</div>`;
+    box.style.display = 'block';
+  }
+}
+
+function _renderSearchResults(total) {
+  const box = document.getElementById('global-search-results');
+  const input = document.getElementById('global-search');
+  _gsPosition();
+  if (!_gsResults.length) {
+    box.innerHTML = '<div class="gs-empty">No matches found.</div>';
+    box.style.display = 'block';
+    input.setAttribute('aria-expanded', 'true');
+    return;
+  }
+  const more = total > _gsResults.length
+    ? `<div class="gs-empty">+${(total - _gsResults.length).toLocaleString()} more — refine your search</div>` : '';
+  box.innerHTML = _gsResults.map((r, i) => {
+    const badge = r.is_candidate
+      ? '<span class="gs-type-badge gs-type-cand">Cand</span>'
+      : '<span class="gs-type-badge gs-type-comm">Comm</span>';
+    const sub = _gsResultSub(r);
+    return `<button class="gs-result" role="option" data-idx="${i}" onclick="_gsOpen(${i})">
+      ${badge}
+      <span class="gs-result-main">
+        <span class="gs-result-name">${escHtml(r.name)}</span>
+        ${sub ? `<span class="gs-result-sub">${escHtml(sub)}</span>` : ''}
+      </span>
+      ${r.total_raised ? `<span class="gs-result-amt">${_gsFmt(r.total_raised)}</span>` : ''}
+    </button>`;
+  }).join('') + more;
+  box.style.display = 'block';
+  input.setAttribute('aria-expanded', 'true');
+}
+
+function _gsOpen(i) {
+  const r = _gsResults[i];
+  if (!r) return;
+  document.getElementById('global-search-results').style.display = 'none';
+  document.getElementById('global-search').value = '';
+  document.getElementById('global-search').setAttribute('aria-expanded', 'false');
+  showCampaignProfile(r.name, 'career');
+}
+
+function _gsHighlight() {
+  const box = document.getElementById('global-search-results');
+  box.querySelectorAll('.gs-result').forEach((el, i) => {
+    el.classList.toggle('active', i === _gsActive);
+    if (i === _gsActive) el.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+(function _wireGlobalSearch() {
+  const input = document.getElementById('global-search');
+  const box   = document.getElementById('global-search-results');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    clearTimeout(_gsTimer);
+    _gsTimer = setTimeout(() => _doGlobalSearch(input.value), 180);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (box.style.display === 'none') return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); _gsActive = Math.min(_gsActive + 1, _gsResults.length - 1); _gsHighlight(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); _gsActive = Math.max(_gsActive - 1, 0); _gsHighlight(); }
+    else if (e.key === 'Enter') { if (_gsActive >= 0) { e.preventDefault(); _gsOpen(_gsActive); } else if (_gsResults.length) { _gsOpen(0); } }
+    else if (e.key === 'Escape') { box.style.display = 'none'; input.blur(); }
+  });
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.global-search-wrap')) box.style.display = 'none';
+  });
+  // Keyboard shortcut: "/" focuses search (unless already typing in a field)
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
+      e.preventDefault();
+      input.focus();
+    }
+  });
+})();
+
+// ── Overview / landing tab ─────────────────────────────────────────────────────
+// NB: _overviewData is declared earlier (before the init IIFE) to avoid a
+// temporal-dead-zone ReferenceError when init() calls loadOverview() on load.
+
+async function loadOverview() {
+  if (_overviewData) { renderOverview(); return; }
+  const loading = document.getElementById('ov-loading');
+  const body    = document.getElementById('ov-body');
+  try {
+    const res = await fetch(`${API_BASE}/api/overview`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    _overviewData = await res.json();
+    loading.style.display = 'none';
+    body.style.display = '';
+    renderOverview();
+  } catch (e) {
+    loading.innerHTML = `⚠ Overview needs the data server running.<br><span style="font-size:11px">(${e.message})</span>`;
+  }
+}
+
+function renderOverview() {
+  const d = _overviewData;
+  if (!d) return;
+
+  // Hero stats
+  document.getElementById('ov-hero').innerHTML = [
+    ['$' + (d.total_raised/1e9).toFixed(2) + 'B', 'Total raised, all cycles'],
+    [d.n_candidates.toLocaleString(), 'Candidates tracked'],
+    [d.n_committees.toLocaleString(), 'Committees & PACs'],
+    [d.n_elections.toLocaleString(), 'Elections'],
+    [(d.years.length ? d.years[d.years.length-1] + '–' + d.years[0] : '—'), 'Years covered'],
+  ].map(([v, l]) => `<div class="ov-stat"><div class="ov-stat-val">${v}</div><div class="ov-stat-label">${l}</div></div>`).join('');
+
+  // Elections (upcoming first if any, else recent)
+  const upcoming = d.upcoming_elections || [];
+  const recent   = d.recent_elections || [];
+  const heading  = document.getElementById('ov-elec-heading');
+  const elecList = upcoming.length ? upcoming.concat(recent).slice(0, 8) : recent;
+  heading.textContent = upcoming.length ? 'Elections' : 'Recent Elections';
+  document.getElementById('ov-elections').innerHTML = elecList.map(e => {
+    const yr = e.date.split('/').pop();
+    const pill = e.upcoming ? '<span class="ov-upcoming-pill">UPCOMING</span>' : '';
+    return `<div class="ov-elec-card" onclick="_ovOpenElection('${yr}')" role="button" tabindex="0">
+      <div><span class="ov-elec-date">${e.date}</span>${pill}</div>
+      <div class="ov-elec-meta">${e.n_races} race${e.n_races===1?'':'s'} · ${e.n_cands} candidate${e.n_cands===1?'':'s'} →</div>
+    </div>`;
+  }).join('') || '<div class="gs-empty">No election data.</div>';
+
+  // Top fundraisers (open profile by index to avoid name-in-onclick escaping issues)
+  document.getElementById('ov-top').innerHTML = (d.top_fundraisers || []).map((t, i) => `
+    <div class="ov-top-row" onclick="_ovOpenTop(${i})" role="button" tabindex="0">
+      <span class="ov-top-rank">${i+1}</span>
+      <span class="ov-top-name">${escHtml(t.name)}</span>
+      <span class="ov-top-amt">${_gsFmt(t.total_raised)}</span>
+    </div>`).join('') || '<div class="gs-empty">No data.</div>';
+}
+
+function _ovOpenTop(i) {
+  const t = _overviewData?.top_fundraisers?.[i];
+  if (t) showCampaignProfile(t.name, 'career');
+}
+
+function _ovOpenElection(year) {
+  // Jump to the Races tab filtered to that year + all offices
+  switchTab('races');
+  const yearSel = document.getElementById('races-year-filter');
+  const offSel  = document.getElementById('races-office-filter');
+  // races year filter populates async on first load; retry briefly until ready
+  let tries = 0;
+  (function setYear() {
+    if (yearSel.querySelector(`option[value="${year}"]`)) {
+      offSel.value = 'all';
+      yearSel.value = year;
+      loadRaces();
+    } else if (tries++ < 20) {
+      setTimeout(setYear, 100);
+    }
+  })();
 }
 </script>
 <!-- CAMPAIGN PROFILE MODAL -->

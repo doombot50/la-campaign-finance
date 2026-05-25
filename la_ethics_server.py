@@ -103,6 +103,69 @@ def _cycle_for_year(yy):
     if yy >= 2004: return '2004-2007'
     return '2000-2003'
 
+def _date_key(d):
+    """MM/DD/YYYY -> sortable 'YYYYMMDD' (empty string if unparseable)."""
+    p = (d or '').split('/')
+    if len(p) == 3 and len(p[2]) == 4:
+        return f'{p[2]}{p[0]:>02}{p[1]:>02}'
+    return ''
+
+def _iso_date(d):
+    """MM/DD/YYYY -> 'YYYY-MM-DD' (empty string if unparseable)."""
+    p = (d or '').split('/')
+    if len(p) == 3 and len(p[2]) == 4:
+        return f'{p[2]}-{p[0].zfill(2)}-{p[1].zfill(2)}'
+    return ''
+
+# ── Unified entity search index (lazy-built once from career data) ────────────
+_SEARCH_INDEX      = None   # list of {name, name_upper, is_candidate, total_raised, ...}
+_SEARCH_INDEX_LOCK = threading.Lock()
+
+def _build_search_index():
+    """Merge SoS candidacies + Ethics finance index into one searchable list."""
+    global _SEARCH_INDEX
+    with _SEARCH_INDEX_LOCK:
+        if _SEARCH_INDEX is not None:
+            return
+        _load_career_data()
+        _load_filer_lookup()
+        entries = {}
+
+        # Everyone who has ever appeared on a ballot
+        for name, cands in (_CAND_RACES or {}).items():
+            real = [c for c in cands if not c.get('party_office')]
+            last = max(real, key=lambda c: _date_key(c.get('date', ''))) if real else None
+            entries[name] = {
+                'name':         name,
+                'is_candidate': True,
+                'last_office':  last.get('office', '')  if last else '',
+                'last_outcome': last.get('outcome', '') if last else '',
+                'last_date':    last.get('date', '')    if last else '',
+                'n_races':      len(real),
+                'total_raised': 0.0,
+                'n_cycles':     0,
+            }
+
+        # Anyone with Ethics finance records (adds committees/PACs + $ totals)
+        for name, idx in (_CAND_INDEX or {}).items():
+            cycles = idx.get('cycles', {})
+            total  = sum(c.get('raised', 0) for c in cycles.values())
+            e = entries.get(name)
+            if e is None:
+                e = entries[name] = {
+                    'name': name, 'is_candidate': False,
+                    'last_office': '', 'last_outcome': '', 'last_date': '',
+                    'n_races': 0, 'total_raised': 0.0, 'n_cycles': 0,
+                }
+            e['total_raised'] = total
+            e['n_cycles']     = len(cycles)
+
+        for name, e in entries.items():
+            e['name_upper']   = name.upper()
+            e['filer_number'] = (_FILER_NUM or {}).get(_norm_name(name), '')
+
+        _SEARCH_INDEX = list(entries.values())
+
 def _load_donor_industries():
     global _DONOR_IND, _DONOR_IND_MTIME
     ind_path = os.path.join(BASE_DIR, 'la_donor_industries.json')
@@ -1335,6 +1398,106 @@ class Handler(BaseHTTPRequestHandler):
             all_years = sorted({r['year'] for r in race_list if r['year'] > 0},
                                reverse=True)
             self._json({'races': race_list, 'total': len(race_list), 'years': all_years})
+            return
+
+        # ── /api/search — unified candidate/committee lookup ─────────────────
+        if parsed.path == '/api/search':
+            _build_search_index()
+            q = params.get('q', [''])[0].strip().upper()
+            if len(q) < 2:
+                self._json({'results': [], 'query': q, 'total': 0})
+                return
+            # Tier 0: query begins a name token (e.g. first/last name) — best.
+            # Tier 1: query appears mid-token. Within each tier rank by $ raised
+            # so a last-name search surfaces the biggest names first.
+            word, contains = [], []
+            for e in _SEARCH_INDEX:
+                nu = e['name_upper']
+                pos = nu.find(q)
+                if pos < 0:
+                    continue
+                at_word_start = pos == 0 or nu[pos - 1] == ' '
+                (word if at_word_start else contains).append(e)
+            word.sort(key=lambda e: -e['total_raised'])
+            contains.sort(key=lambda e: -e['total_raised'])
+            ordered = word + contains
+            results = [{
+                'name':         e['name'],
+                'is_candidate': e['is_candidate'],
+                'total_raised': e['total_raised'],
+                'n_cycles':     e['n_cycles'],
+                'n_races':      e['n_races'],
+                'last_office':  e['last_office'],
+                'last_outcome': e['last_outcome'],
+                'last_date':    e['last_date'],
+                'filer_number': e['filer_number'],
+            } for e in ordered[:25]]
+            self._json({'results': results, 'query': q, 'total': len(ordered)})
+            return
+
+        # ── /api/overview — landing-page aggregate stats ─────────────────────
+        if parsed.path == '/api/overview':
+            _build_search_index()
+            # NB: do_GET uses `date` as a local elsewhere, which shadows the
+            # module-level `from datetime import date`; use time.strftime here.
+            today_iso = time.strftime('%Y-%m-%d')
+
+            total_raised = sum(e['total_raised'] for e in _SEARCH_INDEX)
+            n_candidates = sum(1 for e in _SEARCH_INDEX if e['is_candidate'])
+            n_committees = sum(1 for e in _SEARCH_INDEX if not e['is_candidate'])
+
+            # Elections: races (distinct offices) + candidate counts per date
+            date_races, date_cands = {}, {}
+            for name, cands in (_CAND_RACES or {}).items():
+                for c in cands:
+                    if c.get('party_office'):
+                        continue
+                    d = c.get('date', '')
+                    if not d:
+                        continue
+                    date_races.setdefault(d, set()).add(c.get('office', ''))
+                    date_cands[d] = date_cands.get(d, 0) + 1
+
+            elections = []
+            for d in date_races:
+                iso = _iso_date(d)
+                elections.append({
+                    'date':       d,
+                    'iso':        iso,
+                    'n_races':    len(date_races[d]),
+                    'n_cands':    date_cands.get(d, 0),
+                    'upcoming':   bool(iso and iso > today_iso),
+                    '_k':         _date_key(d),
+                })
+            elections.sort(key=lambda x: x['_k'], reverse=True)
+            upcoming = [e for e in elections if e['upcoming']]
+            upcoming.sort(key=lambda x: x['_k'])   # soonest first
+            recent   = [e for e in elections if not e['upcoming']][:8]
+            for e in elections:
+                e.pop('_k', None)
+
+            years = sorted({d.split('/')[-1] for d in date_races if len(d.split('/')) == 3},
+                           reverse=True)
+
+            top = sorted(_SEARCH_INDEX, key=lambda e: -e['total_raised'])[:12]
+            top_fundraisers = [{
+                'name':         e['name'],
+                'total_raised': e['total_raised'],
+                'filer_number': e['filer_number'],
+                'last_office':  e['last_office'],
+                'is_candidate': e['is_candidate'],
+            } for e in top]
+
+            self._json({
+                'total_raised':    total_raised,
+                'n_candidates':    n_candidates,
+                'n_committees':    n_committees,
+                'n_elections':     len(date_races),
+                'years':           years,
+                'upcoming_elections': upcoming[:6],
+                'recent_elections':   recent,
+                'top_fundraisers':    top_fundraisers,
+            })
             return
 
         # Static data files — serve gzip-encoded JSON directly so the browser can
