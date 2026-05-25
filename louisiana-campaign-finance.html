@@ -883,6 +883,26 @@
   .gs-type-cand { background: #dbeafe; color: #1e40af; }
   .gs-type-comm { background: #fef9c3; color: #92400e; }
   .gs-empty { padding: 14px; text-align: center; font-size: 12px; color: var(--muted); }
+  /* Token suggestion rows in global search dropdown */
+  .gs-token-header { padding: 6px 10px 2px; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    color: var(--gold); text-transform: uppercase; }
+  .gs-token-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px;
+    border-radius: 7px; cursor: pointer; width: 100%; background: none; border: none;
+    color: var(--text); font-size: 13px; text-align: left; }
+  .gs-token-item:hover, .gs-token-item.active { background: rgba(200,169,81,.12); }
+  .gs-token-key  { font-weight: 700; color: var(--gold); flex-shrink: 0; font-family: monospace; font-size: 12px; }
+  .gs-token-val  { flex: 1; min-width: 0; }
+  /* Money In/Out sub-toggle */
+  .money-subtabs { display: none; gap: 0; padding: 8px 24px 0; }
+  .money-subtab { padding: 5px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    transition: all .15s; }
+  .money-subtab:first-child { border-radius: 6px 0 0 6px; }
+  .money-subtab:last-child  { border-radius: 0 6px 6px 0; border-left: none; }
+  .money-subtab.active { background: var(--gold); border-color: var(--gold); color: #1a1208; }
+  /* Cycle chip — permanent, no dismiss button */
+  .chip-cycle { background: rgba(200,169,81,.18); border-color: rgba(200,169,81,.4); cursor: pointer; }
+  .chip-cycle:hover { background: rgba(200,169,81,.28); }
 
   /* ── Overview / landing tab ────────────────────────────────── */
   .ov-hero {
@@ -951,12 +971,11 @@
     </div>
     <div>
       <div class="header-title">Louisiana Campaign Finance Dashboard</div>
-      <div class="header-subtitle">Pelican State · Since 1812 · Ethics Commission Data</div>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0">
       <div class="global-search-wrap">
         <input type="text" id="global-search" autocomplete="off" spellcheck="false"
-               placeholder="Search candidates, committees…"
+               placeholder="Search or filter — try cycle:2024 party:rep donor:exxon…"
                aria-label="Search candidates and committees"
                role="combobox" aria-expanded="false" aria-controls="global-search-results">
         <div id="global-search-results" role="listbox" aria-label="Search results"></div>
@@ -983,8 +1002,8 @@
     style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">✕</button>
 </div>
 
-<!-- CONTROLS -->
-<div class="controls-bar">
+<!-- CONTROLS — hidden; all inputs remain in DOM for JS filter logic; token search replaces the UI -->
+<div class="controls-bar" style="display:none" aria-hidden="true">
   <div class="controls-inner">
     <!-- Always-visible row: cycle + toggle + clear + load -->
     <div class="ctrl-always-row">
@@ -1129,19 +1148,24 @@
   </div><!-- /controls-inner -->
 </div><!-- /controls-bar -->
 
-<!-- FILTER CHIPS -->
-<div id="filter-chips-bar" aria-live="polite"></div>
-
 <!-- SECTION TABS -->
 <div class="section-tabs" role="tablist" aria-label="Dashboard sections">
   <button class="section-tab active" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview-view" onclick="switchTab('overview')">🏠 Overview</button>
-  <button class="section-tab" id="tab-contributions" role="tab" aria-selected="false" tabindex="-1" aria-controls="contributions-view" onclick="switchTab('contributions')">💰 Contributions</button>
-  <button class="section-tab" id="tab-expenditures" role="tab" aria-selected="false" tabindex="-1" aria-controls="expenditures-view" onclick="switchTab('expenditures')">💸 Expenditures</button>
+  <button class="section-tab" id="tab-contributions" role="tab" aria-selected="false" tabindex="-1" aria-controls="contributions-view" onclick="switchTab('contributions')">💰 Money</button>
   <button class="section-tab" id="tab-loans" role="tab" aria-selected="false" tabindex="-1" aria-controls="loans-view" onclick="switchTab('loans')">🏦 Loans</button>
   <button class="section-tab" id="tab-donors" role="tab" aria-selected="false" tabindex="-1" aria-controls="donors-view" onclick="switchTab('donors')">🏆 Top Donors</button>
   <button class="section-tab" id="tab-compare" role="tab" aria-selected="false" tabindex="-1" aria-controls="compare-view" onclick="switchTab('compare')">⚖️ Compare</button>
   <button class="section-tab" id="tab-races" role="tab" aria-selected="false" tabindex="-1" aria-controls="races-view" onclick="switchTab('races')">🏛️ Races</button>
 </div>
+
+<!-- MONEY IN/OUT SUB-TOGGLE (shown only on Money tab, sits between tabs and content) -->
+<div class="money-subtabs" id="money-subtabs" role="group" aria-label="Money direction">
+  <button class="money-subtab active" id="money-tab-in"  onclick="switchMoneyView('in')">📥 In</button>
+  <button class="money-subtab"        id="money-tab-out" onclick="switchMoneyView('out')">📤 Out</button>
+</div>
+
+<!-- FILTER CHIPS -->
+<div id="filter-chips-bar" aria-live="polite"></div>
 
 </div><!-- /sticky-top -->
 
@@ -2272,11 +2296,13 @@ function _showStatSkeletons() {
   }
 }
 
+let _noticeDismissTimer = null;
+
 async function loadData() {
   const cycle = document.getElementById('cycle-select').value;
+  // btn-load is hidden now but may still be referenced; guard safely
   const btn = document.getElementById('btn-load');
-  btn.textContent = 'Loading…';
-  btn.disabled = true;
+  if (btn) { btn.textContent = 'Loading…'; btn.disabled = true; }
 
   _showStatSkeletons();
   updateEmptyState();   // hide empty-state splash while loading
@@ -2291,9 +2317,21 @@ async function loadData() {
   showMapSpinner(false);
   setStatus('ok');
   _loadedCycle = cycle;
-  btn.disabled = false;
+  if (btn) { btn.disabled = false; }
   updateLoadBtn();
   updateEmptyState();   // re-check now that loading has finished
+  renderFilterChips();  // refresh cycle chip label
+
+  // Auto-dismiss the data notice after the first successful load
+  const notice = document.getElementById('data-notice');
+  if (notice && notice.style.display !== 'none') {
+    clearTimeout(_noticeDismissTimer);
+    _noticeDismissTimer = setTimeout(() => {
+      notice.style.transition = 'opacity 0.6s';
+      notice.style.opacity = '0';
+      setTimeout(() => { notice.style.display = 'none'; }, 650);
+    }, 3500);
+  }
 }
 
 async function fetchLAEthicsLive(cycle) {
@@ -3741,78 +3779,104 @@ let _allCycleOpts = null;
 
 const TAB_VIEWS = {
   overview: 'overview-view',
-  contributions: 'contributions-view', expenditures: 'expenditures-view',
+  contributions: 'contributions-view',   // "Money" tab — In sub-view
   loans: 'loans-view', donors: 'donors-view', compare: 'compare-view',
   races: 'races-view'
+  // expenditures-view is managed by switchMoneyView(), not a top-level tab
 };
 const TAB_BUTTONS = {
   overview: 'tab-overview',
-  contributions: 'tab-contributions', expenditures: 'tab-expenditures',
+  contributions: 'tab-contributions',    // shares button with expenditures (Money tab)
   loans: 'tab-loans', donors: 'tab-donors', compare: 'tab-compare',
   races: 'tab-races'
 };
 
-function switchTab(tab) {
-  Object.entries(TAB_VIEWS).forEach(([k, id]) => {
-    const el = document.getElementById(id); if (el) el.style.display = k === tab ? '' : 'none';
-  });
-  Object.entries(TAB_BUTTONS).forEach(([k, id]) => {
-    const el = document.getElementById(id); if (!el) return;
-    const isActive = k === tab;
-    el.classList.toggle('active', isActive);
-    el.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    el.tabIndex = isActive ? 0 : -1;   // roving tabindex
-  });
+// Money tab sub-view direction ('in' = contributions, 'out' = expenditures)
+let _moneyDir = 'in';
 
+function switchMoneyView(dir) {
+  _moneyDir = dir;
+
+  // Handle cycle-select options for expenditures (2002+)
   const sel = document.getElementById('cycle-select');
-
-  // Snapshot all options the first time
   if (!_allCycleOpts) {
     _allCycleOpts = Array.from(sel.options).map(o => ({ value: o.value, text: o.text }));
   }
-
-  if (tab === 'expenditures') {
-    // Rebuild dropdown keeping only cycles that have expenditure data (2016+)
+  if (dir === 'out') {
     const cur = sel.value;
     sel.innerHTML = '';
-    _allCycleOpts
-      .filter(o => parseInt(o.value) >= 2002)
+    _allCycleOpts.filter(o => parseInt(o.value) >= 2002)
       .forEach(o => sel.add(new Option(o.text, o.value)));
-    // Preserve selection if still valid, otherwise jump to newest available
-    if (sel.querySelector(`option[value="${cur}"]`)) {
-      sel.value = cur;
-    } else {
-      sel.value = _allCycleOpts.find(o => parseInt(o.value) >= 2002)?.value || '2026';
-      expData = []; expFiltered = [];
-    }
+    if (sel.querySelector(`option[value="${cur}"]`)) { sel.value = cur; }
+    else { sel.value = _allCycleOpts.find(o => parseInt(o.value) >= 2002)?.value || '2026'; expData = []; expFiltered = []; }
   } else {
-    // Restore all options
     const cur = sel.value;
     sel.innerHTML = '';
     _allCycleOpts.forEach(o => sel.add(new Option(o.text, o.value)));
     sel.value = cur;
   }
 
-  if (tab === 'expenditures' && expData.length === 0) loadExpData();
-  if (tab === 'loans'        && loanData.length === 0) loadLoanData();
+  document.getElementById('contributions-view').style.display  = dir === 'in'  ? '' : 'none';
+  document.getElementById('expenditures-view').style.display   = dir === 'out' ? '' : 'none';
+  document.getElementById('money-tab-in').classList.toggle('active',  dir === 'in');
+  document.getElementById('money-tab-out').classList.toggle('active', dir === 'out');
+
+  if (dir === 'out' && expData.length === 0) loadExpData();
+  renderFilterChips();
+  _saveUrlState();
+}
+
+function switchTab(tab) {
+  // Hide all top-level views; also hide expenditures-view (managed by switchMoneyView)
+  Object.entries(TAB_VIEWS).forEach(([k, id]) => {
+    const el = document.getElementById(id); if (el) el.style.display = k === tab ? '' : 'none';
+  });
+  // Always hide expenditures-view here; switchMoneyView re-shows it if needed
+  const expV = document.getElementById('expenditures-view');
+  if (expV && tab !== 'contributions') expV.style.display = 'none';
+
+  Object.entries(TAB_BUTTONS).forEach(([k, id]) => {
+    const el = document.getElementById(id); if (!el) return;
+    const isActive = k === tab;
+    el.classList.toggle('active', isActive);
+    el.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    el.tabIndex = isActive ? 0 : -1;
+  });
+
+  // Snapshot cycle options the first time
+  const sel = document.getElementById('cycle-select');
+  if (!_allCycleOpts) {
+    _allCycleOpts = Array.from(sel.options).map(o => ({ value: o.value, text: o.text }));
+  }
+
+  // Money In/Out sub-toggle: show only on Money tab, sync sub-views
+  const moneySubtabs = document.getElementById('money-subtabs');
+  if (tab === 'contributions') {
+    moneySubtabs.style.display = 'flex';
+    switchMoneyView(_moneyDir);   // re-apply current sub-view direction
+    // (switchMoneyView handles loadExpData and cycle options)
+  } else {
+    moneySubtabs.style.display = 'none';
+    // Restore full cycle options when not on expenditures sub-view
+    const cur = sel.value;
+    sel.innerHTML = '';
+    _allCycleOpts.forEach(o => sel.add(new Option(o.text, o.value)));
+    sel.value = cur;
+  }
+
+  if (tab === 'loans'   && loanData.length === 0) loadLoanData();
   if (tab === 'donors')  renderDonorsLeaderboard();
   if (tab === 'compare') renderCompare();
   if (tab === 'races')   loadRaces();
   if (tab === 'overview') loadOverview();
 
-  // Overview and Races are cycle-independent — hide the cycle/filter controls
-  // so the landing page reads as a clean dashboard rather than a query form.
-  const controlsBar = document.querySelector('.controls-bar');
-  if (controlsBar) controlsBar.style.display = (tab === 'overview') ? 'none' : '';
-
   _saveUrlState();
   renderFilterChips();
 
-  // Re-trigger fade-in animation each time the tab is shown
+  // Re-trigger fade-in animation
   const view = document.getElementById(TAB_VIEWS[tab] || 'contributions-view');
   if (view) {
     view.classList.remove('tab-view');
-    // Force reflow so the browser registers the class removal before re-adding
     void view.offsetWidth;
     view.classList.add('tab-view');
   }
@@ -5170,14 +5234,23 @@ function renderFilterChips() {
   const chips = [];
 
   // Donors and Compare tabs have no shared filters
-  if (tab === 'donors' || tab === 'compare') {
+  if (tab === 'donors' || tab === 'compare' || tab === 'overview' || tab === 'races') {
     bar.style.display = 'none';
     const badge = document.getElementById('filter-count-badge');
     if (badge) { badge.textContent = '0'; badge.classList.remove('visible'); }
     return;
   }
 
-  if (tab === 'contributions') {
+  // Always show current cycle as a permanent first chip (clickable to change)
+  const cycleVal = document.getElementById('cycle-select').value;
+  const cycleOpt = (_allCycleOpts || []).find(o => o.value === cycleVal);
+  const cycleLabel = cycleOpt ? cycleOpt.text.split('—')[0].trim() : cycleVal;
+  chips.push({ label: `📅 ${cycleLabel}`, type: 'cycle', permanent: true });
+
+  // Effective tab for filter purposes (contributions = In, expenditures = Out)
+  const effTab = (tab === 'contributions' && _moneyDir === 'out') ? 'expenditures' : tab;
+
+  if (effTab === 'contributions') {
     const party = document.getElementById('party-select').value;
     if (party !== 'ALL') chips.push({ label: `Party: ${party}`, field: 'party-select', reset: 'ALL', type: 'select' });
 
@@ -5208,7 +5281,7 @@ function renderFilterChips() {
     if (document.getElementById('btn-excl-ff').classList.contains('active'))
       chips.push({ label: 'Excl. Filing Fees', field: 'btn-excl-ff', reset: '', type: 'toggle' });
 
-  } else if (tab === 'expenditures') {
+  } else if (effTab === 'expenditures') {
     const camp = document.getElementById('exp-campaign-select').value;
     if (camp !== 'ALL') chips.push({ label: `Campaign: ${camp.split(' ').slice(-1)[0]}`, field: 'exp-campaign-select', reset: 'ALL', type: 'select' });
 
@@ -5244,16 +5317,20 @@ function renderFilterChips() {
     if (lamax) chips.push({ label: `Max $${Number(lamax).toLocaleString()}`, field: 'loan-amt-max', reset: '', type: 'input' });
   }
 
-  // Update badge count on toggle button
+  // Dismissible chips count (exclude permanent cycle chip)
+  const dismissible = chips.filter(c => !c.permanent);
   const badge = document.getElementById('filter-count-badge');
-  if (badge) { badge.textContent = chips.length; badge.classList.toggle('visible', chips.length > 0); }
+  if (badge) { badge.textContent = dismissible.length; badge.classList.toggle('visible', dismissible.length > 0); }
 
-  // Render chips
-  if (!chips.length) { bar.style.display = 'none'; return; }
+  // Always show chips bar (cycle chip is always present on data tabs)
   bar.style.display = 'flex';
-  bar.innerHTML = chips.map((c, i) =>
-    `<span class="filter-chip"><span class="chip-label">${escHtml(c.label)}</span><span class="chip-x" data-idx="${i}" onclick="_dismissChip(this)">×</span></span>`
-  ).join('') + `<button class="chip-clear-all" onclick="clearCurrentTabFilters()">Clear all ×</button>`;
+  bar.innerHTML = chips.map((c, i) => {
+    if (c.type === 'cycle') {
+      // Permanent cycle chip — click to type cycle: in search
+      return `<span class="filter-chip chip-cycle" title="Click to change cycle" onclick="_focusSearchWithToken('cycle:')"><span class="chip-label">${escHtml(c.label)}</span></span>`;
+    }
+    return `<span class="filter-chip"><span class="chip-label">${escHtml(c.label)}</span><span class="chip-x" data-idx="${i}" onclick="_dismissChip(this)">×</span></span>`;
+  }).join('') + (dismissible.length ? `<button class="chip-clear-all" onclick="clearCurrentTabFilters()">Clear all ×</button>` : '');
 
   // Store for onclick lookup
   bar._chips = chips;
@@ -5273,15 +5350,17 @@ function _dismissChip(el) {
 
 function clearCurrentTabFilters() {
   const tab = _currentTab();
-  if (tab === 'contributions') document.getElementById('btn-clear-filters').click();
-  else if (tab === 'expenditures') document.getElementById('btn-clear-exp-filters').click();
+  const effTab = (tab === 'contributions' && _moneyDir === 'out') ? 'expenditures' : tab;
+  if (effTab === 'contributions') document.getElementById('btn-clear-filters').click();
+  else if (effTab === 'expenditures') document.getElementById('btn-clear-exp-filters').click();
   else document.getElementById('btn-clear-loan-filters').click();
 }
 
 function _reRenderCurrentTab() {
   const tab = _currentTab();
-  if (tab === 'contributions') applyFiltersAndRender();
-  else if (tab === 'expenditures') renderExpAll();
+  const effTab = (tab === 'contributions' && _moneyDir === 'out') ? 'expenditures' : tab;
+  if (effTab === 'contributions') applyFiltersAndRender();
+  else if (effTab === 'expenditures') renderExpAll();
   else renderLoanAll();
 }
 
@@ -6300,9 +6379,227 @@ function _gsPosition() {
   box.style.left = left + 'px';
 }
 
+// ── Token search system ────────────────────────────────────────────────────────
+// Maps token keys → {field: DOM element id, type: 'select'|'input'|'special'}
+const _TOKEN_DEFS = {
+  cycle:     { field: 'cycle-select',     type: 'special' },
+  party:     { field: 'party-select',     type: 'select'  },
+  state:     { field: 'origin-select',    type: 'select'  },
+  from:      { field: 'origin-select',    type: 'select'  },
+  min:       { field: 'amt-min',          type: 'amount'  },
+  max:       { field: 'amt-max',          type: 'amount'  },
+  zip:       { field: 'zip-search',       type: 'input'   },
+  parish:    { field: 'parish-select',    type: 'select'  },
+  donor:     { field: 'donor-search',     type: 'input'   },
+  notes:     { field: 'notes-search',     type: 'input'   },
+  committee: { field: 'candidate-search', type: 'input'   },
+};
+
+// Static completions for token keys that have known option sets
+function _tokenCompletions(key, partial) {
+  const p = (partial || '').toLowerCase();
+  const match = opts => opts.filter(o => !p || o.label.toLowerCase().includes(p) || o.value.toLowerCase().includes(p));
+
+  if (key === 'cycle') {
+    const opts = (_allCycleOpts || []).map(o => ({ label: o.text.split('—')[0].trim(), value: o.value }));
+    return match(opts);
+  }
+  if (key === 'party' || key === 'from' || key === 'state') {
+    const base = key === 'party'
+      ? [{ label: 'Republican', value: 'REP' }, { label: 'Democrat', value: 'DEM' },
+         { label: 'Independent', value: 'IND' }, { label: 'Libertarian', value: 'LBT' },
+         { label: 'Green', value: 'GRN' }, { label: 'Any PAC', value: 'PAC' },
+         { label: 'PAC — Republican-leaning', value: 'PAC-REP' },
+         { label: 'PAC — Democrat-leaning', value: 'PAC-DEM' },
+         { label: 'Uncategorized', value: 'OTH' }]
+      : [{ label: 'In-State (LA)', value: 'LA' }, { label: 'Out of State', value: 'OOS' },
+         { label: 'Texas', value: 'TX' }, { label: 'Mississippi', value: 'MS' },
+         { label: 'Florida', value: 'FL' }, { label: 'Georgia', value: 'GA' },
+         { label: 'New York', value: 'NY' }, { label: 'California', value: 'CA' },
+         { label: 'Washington DC', value: 'DC' }, { label: 'Illinois', value: 'IL' }];
+    return match(base);
+  }
+  if (key === 'parish') {
+    const sel = document.getElementById('parish-select');
+    const opts = sel ? Array.from(sel.options).filter(o => o.value !== 'ALL').map(o => ({ label: o.value, value: o.value })) : [];
+    return match(opts);
+  }
+  return null; // free-text token, no completions
+}
+
+// Parse amount shorthand: 5k → 5000, 1.5m → 1500000
+function _parseTokenAmount(s) {
+  const m = s.trim().match(/^([\d.]+)\s*([km]?)$/i);
+  if (!m) return NaN;
+  const n = parseFloat(m[1]);
+  const suf = m[2].toLowerCase();
+  return suf === 'k' ? n * 1000 : suf === 'm' ? n * 1000000 : n;
+}
+
+// Apply a token: set the corresponding DOM input and trigger the right refresh
+function _applyToken(key, rawValue) {
+  const def = _TOKEN_DEFS[key];
+  if (!def) return;
+
+  // Switch to the Money tab if we're on an unrelated tab and this is a contribution filter
+  if (['party','min','max','zip','parish','donor','notes','committee','from','state'].includes(key)) {
+    const cur = _currentTab();
+    if (cur !== 'contributions' && cur !== 'loans') switchTab('contributions');
+  }
+
+  const el = document.getElementById(def.field);
+  if (!el) return;
+
+  if (key === 'cycle') {
+    // Cycle token triggers a full data reload
+    const opt = Array.from(el.options).find(o => o.value === rawValue || o.text.toLowerCase().includes(rawValue.toLowerCase()));
+    const val = opt ? opt.value : rawValue;
+    el.value = val;
+    allData = []; laEthicsData = []; filteredData = [];
+    expData = []; expFiltered = [];
+    loanData = []; loanFiltered = [];
+    _loadedCycle = null;
+    loadData();
+    if (_moneyDir === 'out') loadExpData();
+    _saveUrlState();
+  } else if (def.type === 'amount') {
+    const n = _parseTokenAmount(rawValue);
+    el.value = isNaN(n) ? rawValue : n;
+    applyFiltersAndRender();
+  } else if (def.type === 'select') {
+    // Try exact match first, then case-insensitive label match
+    const opt = Array.from(el.options).find(o =>
+      o.value.toLowerCase() === rawValue.toLowerCase() ||
+      o.text.toLowerCase().includes(rawValue.toLowerCase())
+    );
+    el.value = opt ? opt.value : rawValue;
+    applyFiltersAndRender();
+  } else {
+    el.value = rawValue;
+    applyFiltersAndRender();
+  }
+
+  // Clear search and refresh chips
+  const input = document.getElementById('global-search');
+  input.value = '';
+  input.setAttribute('aria-expanded', 'false');
+  document.getElementById('global-search-results').style.display = 'none';
+  renderFilterChips();
+}
+
+// Focus the search bar and pre-fill a token key (e.g., 'cycle:')
+function _focusSearchWithToken(prefix) {
+  const input = document.getElementById('global-search');
+  input.value = prefix;
+  input.focus();
+  _doGlobalSearch(prefix);
+}
+
+// Render token key/value suggestions in the dropdown
+let _tokenSuggestions = [];   // parallel to _gsResults for keyboard nav
+
+function _renderTokenSuggestions(key, completions) {
+  const box = document.getElementById('global-search-results');
+  _gsResults = [];             // no entity results while in token mode
+  _tokenSuggestions = completions;
+  _gsActive = -1;
+  _gsPosition();
+
+  if (!completions) {
+    // Free-text token (zip, donor, notes, committee, min, max) — just show a hint
+    const hint = { cycle:'year (e.g. 2024)', from:'state code (e.g. TX)', state:'state code (e.g. TX)',
+                   min:'amount (e.g. 5000 or 5k)', max:'amount', zip:'ZIP code', donor:'donor name',
+                   notes:'keyword', committee:'committee name' }[key] || 'value';
+    box.innerHTML = `<div class="gs-token-header">${key}:</div>
+      <div class="gs-empty">Type a ${hint}, then press Enter to apply</div>`;
+    box.style.display = 'block';
+    document.getElementById('global-search').setAttribute('aria-expanded', 'true');
+    return;
+  }
+
+  if (!completions.length) {
+    box.innerHTML = `<div class="gs-token-header">${key}:</div><div class="gs-empty">No matches</div>`;
+  } else {
+    box.innerHTML = `<div class="gs-token-header">${key}:</div>` +
+      completions.map((c, i) =>
+        `<button class="gs-token-item" data-tidx="${i}" onclick="_applyToken('${key}','${escHtml(c.value)}')">
+          <span class="gs-token-key">${escHtml(c.value)}</span>
+          <span class="gs-token-val">${escHtml(c.label)}</span>
+        </button>`
+      ).join('');
+  }
+  box.style.display = 'block';
+  document.getElementById('global-search').setAttribute('aria-expanded', 'true');
+}
+
+// Render suggestions for token *keys* (when user types partial key like "cyc")
+const _ALL_TOKEN_KEYS = Object.keys(_TOKEN_DEFS);
+
+function _renderTokenKeySuggestions(matches) {
+  const box = document.getElementById('global-search-results');
+  _gsResults = []; _tokenSuggestions = [];
+  _gsPosition();
+  const descs = { cycle:'Filter by election cycle', party:'Filter by political party',
+    state:'Filter by donor state', from:'Filter by donor state',
+    min:'Minimum contribution amount', max:'Maximum contribution amount',
+    zip:'Filter by donor ZIP code', parish:'Filter by Louisiana parish',
+    donor:'Search donor name', notes:'Search transaction notes',
+    committee:'Search committee/campaign name' };
+  box.innerHTML = `<div class="gs-token-header">Filters</div>` +
+    matches.map(k =>
+      `<button class="gs-token-item" onclick="_focusSearchWithToken('${k}:')">
+        <span class="gs-token-key">${k}:</span>
+        <span class="gs-token-val">${descs[k] || ''}</span>
+      </button>`
+    ).join('');
+  box.style.display = 'block';
+  document.getElementById('global-search').setAttribute('aria-expanded', 'true');
+}
+
+// Keyboard highlight for token suggestions
+function _gsTokenHighlight() {
+  const box = document.getElementById('global-search-results');
+  box.querySelectorAll('.gs-token-item').forEach((el, i) => {
+    el.classList.toggle('active', i === _gsActive);
+    if (i === _gsActive) el.scrollIntoView({ block: 'nearest' });
+  });
+}
+
 async function _doGlobalSearch(q) {
   const box = document.getElementById('global-search-results');
-  if (!q || q.trim().length < 2) {
+  if (!q) {
+    box.style.display = 'none';
+    document.getElementById('global-search').setAttribute('aria-expanded', 'false');
+    _tokenSuggestions = [];
+    return;
+  }
+
+  // Detect token pattern: "key:" or "key:partial"
+  const tokenMatch = q.match(/^([\w]+):(.*)$/);
+  if (tokenMatch) {
+    const key = tokenMatch[1].toLowerCase();
+    const partial = tokenMatch[2];
+    if (_TOKEN_DEFS[key]) {
+      const completions = _tokenCompletions(key, partial);
+      _renderTokenSuggestions(key, completions);
+      return;
+    }
+    // Unknown key — fall through to entity search
+  }
+
+  // Detect partial token key (e.g., "cyc", "par") — show filter key suggestions
+  const trimmed = q.trim().toLowerCase();
+  if (!trimmed.includes(' ') && trimmed.length >= 2) {
+    const keyMatches = _ALL_TOKEN_KEYS.filter(k => k.startsWith(trimmed));
+    if (keyMatches.length && keyMatches.length < _ALL_TOKEN_KEYS.length) {
+      _renderTokenKeySuggestions(keyMatches);
+      return;
+    }
+  }
+
+  // Regular entity search (candidates / committees)
+  _tokenSuggestions = [];
+  if (q.trim().length < 2) {
     box.style.display = 'none';
     document.getElementById('global-search').setAttribute('aria-expanded', 'false');
     return;
@@ -6372,22 +6669,61 @@ function _gsHighlight() {
   const input = document.getElementById('global-search');
   const box   = document.getElementById('global-search-results');
   if (!input) return;
+
   input.addEventListener('input', () => {
     clearTimeout(_gsTimer);
     _gsTimer = setTimeout(() => _doGlobalSearch(input.value), 180);
   });
+
   input.addEventListener('keydown', (e) => {
     if (box.style.display === 'none') return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); _gsActive = Math.min(_gsActive + 1, _gsResults.length - 1); _gsHighlight(); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); _gsActive = Math.max(_gsActive - 1, 0); _gsHighlight(); }
-    else if (e.key === 'Enter') { if (_gsActive >= 0) { e.preventDefault(); _gsOpen(_gsActive); } else if (_gsResults.length) { _gsOpen(0); } }
-    else if (e.key === 'Escape') { box.style.display = 'none'; input.blur(); }
+
+    const inTokenMode = _tokenSuggestions.length > 0 || !!input.value.match(/^[\w]+:/);
+    const listLen = inTokenMode
+      ? box.querySelectorAll('.gs-token-item').length
+      : _gsResults.length;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _gsActive = Math.min(_gsActive + 1, listLen - 1);
+      inTokenMode ? _gsTokenHighlight() : _gsHighlight();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _gsActive = Math.max(_gsActive - 1, 0);
+      inTokenMode ? _gsTokenHighlight() : _gsHighlight();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (inTokenMode) {
+        // Keyboard-select a token suggestion
+        if (_gsActive >= 0) {
+          box.querySelectorAll('.gs-token-item')[_gsActive]?.click();
+        } else {
+          // Free-text token (no completions) — apply the full token:value typed
+          const m = input.value.match(/^([\w]+):(.+)$/);
+          if (m && _TOKEN_DEFS[m[1].toLowerCase()]) {
+            _applyToken(m[1].toLowerCase(), m[2].trim());
+          }
+        }
+      } else {
+        if (_gsActive >= 0) _gsOpen(_gsActive);
+        else if (_gsResults.length) _gsOpen(0);
+      }
+    } else if (e.key === 'Escape') {
+      box.style.display = 'none';
+      input.setAttribute('aria-expanded', 'false');
+      input.blur();
+    }
   });
+
   // Close on outside click
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.global-search-wrap')) box.style.display = 'none';
+    if (!e.target.closest('.global-search-wrap')) {
+      box.style.display = 'none';
+      input.setAttribute('aria-expanded', 'false');
+    }
   });
-  // Keyboard shortcut: "/" focuses search (unless already typing in a field)
+
+  // "/" focuses search from anywhere outside an input field
   document.addEventListener('keydown', (e) => {
     if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
       e.preventDefault();
