@@ -48,6 +48,36 @@ _DONOR_IND_LOCK  = threading.Lock()
 _FILER_NUM       = None   # la_filer_lookup.json — {norm_name: filer_number}
 _FILER_NUM_LOCK  = threading.Lock()
 
+# ── Ethics certified COH cache (lazy-loaded, hot-reloadable) ──────────────────
+_ETHICS_COH      = None   # ethics_coh_cache.json — {norm_name: {ending_coh, ...}}
+_ETHICS_COH_MTIME = 0
+_ETHICS_COH_LOCK = threading.Lock()
+
+def _load_ethics_coh():
+    global _ETHICS_COH, _ETHICS_COH_MTIME
+    with _ETHICS_COH_LOCK:
+        cpath = os.path.join(BASE_DIR, 'ethics_coh_cache.json')
+        if not os.path.exists(cpath):
+            if _ETHICS_COH is None:
+                _ETHICS_COH = {}
+            return
+        mtime = os.path.getmtime(cpath)
+        if _ETHICS_COH is not None and mtime <= _ETHICS_COH_MTIME:
+            return
+        try:
+            with open(cpath, 'r', encoding='utf-8') as f:
+                _ETHICS_COH = json.load(f)
+            _ETHICS_COH_MTIME = mtime
+        except Exception:
+            if _ETHICS_COH is None:
+                _ETHICS_COH = {}
+
+def _get_ethics_coh(name: str) -> dict | None:
+    """Return COH entry for normalized name, or None if not available."""
+    _load_ethics_coh()
+    norm = re.sub(r'\s+', ' ', name.strip().upper())
+    return _ETHICS_COH.get(norm) if _ETHICS_COH else None
+
 def _load_filer_lookup():
     global _FILER_NUM
     with _FILER_NUM_LOCK:
@@ -1232,7 +1262,26 @@ class Handler(BaseHTTPRequestHandler):
                 [r for r in races_raw if not _is_party_office(r.get('office',''))],
                 key=lambda r: r.get('date','')
             )
-            self._json({'financial': financial, 'races': races, 'norm': norm})
+            # Augment with certified COH from ethics_coh_cache.json if available
+            ethics_coh = _get_ethics_coh(name)
+            self._json({
+                'financial':   financial,
+                'races':       races,
+                'norm':        norm,
+                'ethics_coh':  ethics_coh,   # None if not yet scraped
+            })
+            return
+
+        # ── /api/coh — certified COH lookup for one or all filers ────────────
+        if parsed.path == '/api/coh':
+            _load_ethics_coh()
+            name = params.get('name', [''])[0].strip()
+            if name:
+                entry = _get_ethics_coh(name)
+                self._json(entry or {})
+            else:
+                # Return full cache (used by the dashboard for batch COH labels)
+                self._json(_ETHICS_COH or {})
             return
 
         # Industry breakdown for a filer across a cycle (or all time).
@@ -1699,6 +1748,8 @@ if __name__ == '__main__':
     print('    GET /api/data-status?cycle=2024     -- cache status (poll this while loading)')
     print('    GET /api/la-ethics?cycle=2024       -- contributions')
     print('    GET /api/la-expenditures?cycle=2024 -- expenditures')
+    print('    GET /api/coh                        -- certified COH from ethics PDFs (all)')
+    print('    GET /api/coh?name=MANDIE+LANDRY     -- COH for one filer')
     print()
     print('  Data pre-fetching in background. First user request returns immediately.')
     print('  Cache is refreshed automatically every 24 hours.')

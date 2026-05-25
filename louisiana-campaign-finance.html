@@ -5626,6 +5626,9 @@ function showCampaignProfile(name, openTab) {
   // Election result may load async on first open; re-render once available.
   const _p = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
   loadElectionResults().then(() => renderCampElection(name, _p));
+  // Reset certified COH stat (will be populated async by fetchCareerData)
+  const _cohStat = document.getElementById('camp-coh-stat');
+  if (_cohStat) _cohStat.style.display = 'none';
   fetchCareerData(name);  // pre-fetch career data in background (used if Career tab is opened)
   _modalReturnFocus = document.activeElement;   // remember trigger for focus restore
   document.getElementById('camp-overlay').classList.add('open');
@@ -6018,6 +6021,21 @@ async function fetchCareerData(name) {
         document.getElementById('camp-ct-spent').textContent   = formatMoney(fin.total_spent  || 0);
         document.getElementById('camp-ct-cycles').textContent  = `${n} cycle${n === 1 ? '' : 's'} of history`;
         strip.style.display = '';
+      }
+      // Certified COH from ethics annual filing
+      const coh = _careerData.ethics_coh;
+      const cohStat = document.getElementById('camp-coh-stat');
+      if (coh && coh.ending_coh != null) {
+        document.getElementById('camp-coh').textContent = formatMoney(coh.ending_coh);
+        const link = document.getElementById('camp-coh-link');
+        const yr   = coh.report_year || '';
+        const date = coh.date_filed  || '';
+        link.textContent = `certified ${yr ? yr + ' ' : ''}filing`;
+        link.href        = coh.pdf_url || '#';
+        link.title       = `Certified per LA Ethics annual filing${date ? ' filed ' + date : ''}. Click to view source PDF.`;
+        if (cohStat) cohStat.style.display = '';
+      } else {
+        if (cohStat) cohStat.style.display = 'none';
       }
       // Re-render cash-on-hand chart now that full monthly data is available
       renderCampCashFlow();
@@ -6840,6 +6858,10 @@ function _ovOpenElection(year) {
       <div class="cp-stat"><div class="cp-stat-val" id="camp-borrowed">—</div><div class="cp-stat-lbl">Borrowed</div></div>
       <div class="cp-stat"><div class="cp-stat-val" id="camp-net">—</div><div class="cp-stat-lbl">Net (Raised − Spent)</div></div>
       <div class="cp-stat"><div class="cp-stat-val" id="camp-donors">—</div><div class="cp-stat-lbl">Unique Donors</div></div>
+      <div class="cp-stat" id="camp-coh-stat" style="display:none">
+        <div class="cp-stat-val" id="camp-coh" style="color:var(--green,#2a7a3b)">—</div>
+        <div class="cp-stat-lbl">Cash on Hand <a id="camp-coh-link" href="#" target="_blank" style="font-size:9px;font-weight:600;color:var(--muted);text-decoration:none;letter-spacing:0.3px" title="Certified per LA Ethics annual filing"></a></div>
+      </div>
     </div>
     <!-- Cash on hand over time -->
     <div id="camp-cashflow-wrap" style="padding:14px 24px;border-bottom:1px solid var(--border)">
