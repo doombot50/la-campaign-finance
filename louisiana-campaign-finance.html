@@ -793,6 +793,61 @@
     }
     @page { margin:1.4cm; size:A4 portrait; }
   }
+
+  /* ── Races view ────────────────────────────────────────────── */
+  .race-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  .race-card-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 10px 14px 8px;
+    background: rgba(0,0,0,.04);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .race-office { font-weight: 600; font-size: 13px; color: var(--text); }
+  .race-date   { font-size: 11px; color: var(--muted); margin-left: 8px; }
+  .race-cand-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .race-cand-table th {
+    text-align: left; padding: 6px 12px 4px;
+    font-size: 10px; font-weight: 600; color: var(--muted);
+    border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: .04em;
+  }
+  .race-cand-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .race-cand-table tr:last-child td { border-bottom: none; }
+  .race-cand-table tr:hover td { background: rgba(0,0,0,.02); }
+  .cand-outcome-won  { color: #16a34a; font-weight: 700; font-size: 11px; }
+  .cand-outcome-lost { color: var(--muted); font-size: 11px; }
+  .cand-outcome-run  { color: #b45309; font-size: 11px; }
+  .party-badge {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 1px 6px; border-radius: 4px; letter-spacing: .03em;
+  }
+  .party-rep  { background: #fee2e2; color: #991b1b; }
+  .party-dem  { background: #dbeafe; color: #1e40af; }
+  .party-lib  { background: #fef9c3; color: #92400e; }
+  .party-grn  { background: #dcfce7; color: #166534; }
+  .party-ind  { background: #f3f4f6; color: #374151; }
+  .race-finance-btn {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--accent); cursor: pointer;
+  }
+  .race-finance-btn:hover { background: var(--accent); color: #fff; }
+  .race-ind-panel {
+    padding: 10px 14px; background: rgba(0,0,0,.02);
+    border-top: 1px solid var(--border); display: none;
+  }
+  .race-ind-bar-wrap { margin-bottom: 6px; }
+  .race-ind-label { font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 2px; color: var(--text); }
+  .race-ind-bar { height: 8px; border-radius: 4px; background: var(--accent); opacity: .8; }
 </style>
 </head>
 <body>
@@ -1009,6 +1064,7 @@
   <button class="section-tab" id="tab-loans" role="tab" aria-selected="false" tabindex="-1" aria-controls="loans-view" onclick="switchTab('loans')">🏦 Loans</button>
   <button class="section-tab" id="tab-donors" role="tab" aria-selected="false" tabindex="-1" aria-controls="donors-view" onclick="switchTab('donors')">🏆 Top Donors</button>
   <button class="section-tab" id="tab-compare" role="tab" aria-selected="false" tabindex="-1" aria-controls="compare-view" onclick="switchTab('compare')">⚖️ Compare</button>
+  <button class="section-tab" id="tab-races" role="tab" aria-selected="false" tabindex="-1" aria-controls="races-view" onclick="switchTab('races')">🏛️ Races</button>
 </div>
 
 </div><!-- /sticky-top -->
@@ -1611,6 +1667,37 @@
       </p>
       <div id="compare-pickers" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
       <div id="compare-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RACES VIEW -->
+<div id="races-view" class="tab-view" style="display:none" role="tabpanel" aria-labelledby="tab-races" tabindex="0">
+  <div class="main">
+    <div class="table-card">
+      <div class="table-header-row">
+        <div class="table-title">🏛️ Races &amp; Candidates</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="races-office-filter" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text)" onchange="loadRaces()">
+            <option value="major">Major Offices</option>
+            <option value="state">State Legislature</option>
+            <option value="board">Boards &amp; Courts</option>
+            <option value="judicial">Judicial</option>
+            <option value="local">Local</option>
+            <option value="all">All Offices</option>
+          </select>
+          <select id="races-year-filter" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text)" onchange="loadRaces()">
+            <option value="">All Years</option>
+          </select>
+        </div>
+      </div>
+      <div id="races-loading" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">
+        Loading races…
+      </div>
+      <div id="races-empty" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">
+        No races found.
+      </div>
+      <div id="races-body"></div>
     </div>
   </div>
 </div>
@@ -3555,11 +3642,13 @@ let _allCycleOpts = null;
 
 const TAB_VIEWS = {
   contributions: 'contributions-view', expenditures: 'expenditures-view',
-  loans: 'loans-view', donors: 'donors-view', compare: 'compare-view'
+  loans: 'loans-view', donors: 'donors-view', compare: 'compare-view',
+  races: 'races-view'
 };
 const TAB_BUTTONS = {
   contributions: 'tab-contributions', expenditures: 'tab-expenditures',
-  loans: 'tab-loans', donors: 'tab-donors', compare: 'tab-compare'
+  loans: 'tab-loans', donors: 'tab-donors', compare: 'tab-compare',
+  races: 'tab-races'
 };
 
 function switchTab(tab) {
@@ -3607,6 +3696,7 @@ function switchTab(tab) {
   if (tab === 'loans'        && loanData.length === 0) loadLoanData();
   if (tab === 'donors')  renderDonorsLeaderboard();
   if (tab === 'compare') renderCompare();
+  if (tab === 'races')   loadRaces();
   _saveUrlState();
   renderFilterChips();
 
@@ -5892,6 +5982,158 @@ function exportCampaignCSV() {
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download = `campaign_${_campName.replace(/[^a-z0-9]/gi,'_').toLowerCase()}.csv`;
   a.click();
+}
+
+// ── Races view ────────────────────────────────────────────────────────────────
+let _racesData = null;   // cached fetch result
+
+const PARTY_CSS = { REP:'party-rep', DEM:'party-dem', LIB:'party-lib', GRN:'party-grn' };
+function partyBadge(p) {
+  const cls = PARTY_CSS[p] || 'party-ind';
+  return `<span class="party-badge ${cls}">${p||'?'}</span>`;
+}
+
+function fmtRaisedShort(n) {
+  if (!n) return '—';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return '$' + Math.round(n/1e3) + 'K';
+  return '$' + Math.round(n);
+}
+
+function outcomeClass(o) {
+  if (!o) return 'cand-outcome-run';
+  const u = o.toUpperCase();
+  if (u.includes('ELECT') || u.includes('WIN')) return 'cand-outcome-won';
+  if (u.includes('DEFEAT') || u.includes('LOSS') || u.includes('LOST')) return 'cand-outcome-lost';
+  return 'cand-outcome-run';
+}
+
+function outcomeLabel(o) {
+  if (!o) return 'Pending';
+  const u = o.toUpperCase();
+  if (u.includes('ELECT') || u.includes('WIN')) return '✓ Won';
+  if (u.includes('DEFEAT') || u.includes('LOSS') || u.includes('LOST')) return '✗ Lost';
+  return o;
+}
+
+async function loadRaces(force) {
+  const officeFilter = document.getElementById('races-office-filter').value;
+  const yearFilter   = document.getElementById('races-year-filter').value;
+
+  const loading = document.getElementById('races-loading');
+  const empty   = document.getElementById('races-empty');
+  const body    = document.getElementById('races-body');
+
+  loading.style.display = 'block';
+  empty.style.display   = 'none';
+  body.innerHTML        = '';
+
+  try {
+    const qs = `?office=${encodeURIComponent(officeFilter)}&year=${encodeURIComponent(yearFilter)}`;
+    const res = await fetch(`${API_BASE}/api/races${qs}`);
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+
+    // Populate year filter if not yet populated
+    const yearSel = document.getElementById('races-year-filter');
+    if (yearSel.options.length <= 1 && data.years && data.years.length) {
+      data.years.forEach(y => yearSel.add(new Option(y, y)));
+    }
+
+    loading.style.display = 'none';
+    if (!data.races || !data.races.length) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    body.innerHTML = data.races.map(race => renderRaceCard(race)).join('');
+  } catch (e) {
+    loading.style.display = 'none';
+    body.innerHTML = `<div style="padding:20px;color:var(--muted);font-size:12px">⚠ Could not load races: ${e.message}</div>`;
+  }
+}
+
+function renderRaceCard(race) {
+  const cands = race.candidates || [];
+  const rows = cands.map(c => {
+    const pct   = c.vote_pct != null ? c.vote_pct.toFixed(1) + '%' : '—';
+    const won   = (c.outcome||'').toUpperCase().includes('ELECT');
+    const rowBg = won ? 'background:rgba(22,163,74,.04)' : '';
+    const profileBtn = c.filer_number
+      ? `<button class="race-finance-btn" onclick="toggleRaceInd(this,'${c.filer_number}','${race.office.replace(/'/g,'')}','${c.cycle}')" title="Industry breakdown">📊</button>`
+      : '';
+    return `<tr style="${rowBg}">
+      <td style="font-weight:${won?'600':'400'}">${c.name}</td>
+      <td>${partyBadge(c.party)}</td>
+      <td class="${outcomeClass(c.outcome)}">${outcomeLabel(c.outcome)}</td>
+      <td style="text-align:right">${pct}</td>
+      <td style="text-align:right">${fmtRaisedShort(c.raised)}</td>
+      <td style="text-align:right">${fmtRaisedShort(c.spent)}</td>
+      <td style="text-align:center">${profileBtn}</td>
+    </tr>
+    <tr class="race-ind-row" style="display:none">
+      <td colspan="7"><div class="race-ind-panel" id="ind-${c.filer_number}-${c.cycle.replace(/-/g,'')}"></div></td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="race-card">
+    <div class="race-card-header">
+      <span><span class="race-office">${race.office}</span><span class="race-date">${race.date}</span></span>
+      <span style="font-size:10px;color:var(--muted)">${cands.length} candidate${cands.length!==1?'s':''}</span>
+    </div>
+    <table class="race-cand-table">
+      <thead><tr>
+        <th>Candidate</th><th>Party</th><th>Outcome</th>
+        <th style="text-align:right">Vote %</th>
+        <th style="text-align:right">Raised</th>
+        <th style="text-align:right">Spent</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+async function toggleRaceInd(btn, filerNum, office, cycle) {
+  const row = btn.closest('tr').nextElementSibling;
+  if (!row) return;
+  const panel = row.querySelector('.race-ind-panel');
+  if (!panel) return;
+
+  const isOpen = row.style.display !== 'none';
+  if (isOpen) {
+    row.style.display = 'none';
+    panel.style.display = 'none';
+    return;
+  }
+
+  row.style.display = '';
+  panel.style.display = 'block';
+
+  if (panel.dataset.loaded) return;  // already fetched
+  panel.innerHTML = '<span style="font-size:11px;color:var(--muted)">Loading…</span>';
+
+  try {
+    const qs = `?filer=${encodeURIComponent(filerNum)}&cycle=${encodeURIComponent(cycle)}`;
+    const res = await fetch(`${API_BASE}/api/industry-breakdown${qs}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const industries = data.industries || [];
+    const top = industries.slice(0, 8);
+    const maxAmt = top[0] ? top[0].amount : 1;
+    if (!top.length) { panel.innerHTML = '<span style="font-size:11px;color:var(--muted)">No industry data</span>'; return; }
+    panel.innerHTML = '<div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Industry Breakdown</div>' +
+      top.map(ind => {
+        const pct = maxAmt > 0 ? (ind.amount / maxAmt * 100).toFixed(0) : 0;
+        return `<div class="race-ind-bar-wrap">
+          <div class="race-ind-label"><span>${ind.industry}</span><span>${fmtRaisedShort(ind.amount)}</span></div>
+          <div class="race-ind-bar" style="width:${pct}%"></div>
+        </div>`;
+      }).join('');
+    panel.dataset.loaded = '1';
+  } catch(e) {
+    panel.innerHTML = `<span style="font-size:11px;color:var(--muted)">Error: ${e.message}</span>`;
+  }
 }
 </script>
 <!-- CAMPAIGN PROFILE MODAL -->

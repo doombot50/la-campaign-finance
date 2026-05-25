@@ -44,6 +44,65 @@ _DONOR_IND       = None   # la_donor_industries.json — {donor_name: industry_b
 _DONOR_IND_MTIME = 0
 _DONOR_IND_LOCK  = threading.Lock()
 
+# ── Filer number lookup (lazy-loaded once from cache files) ───────────────────
+_FILER_NUM       = None   # la_filer_lookup.json — {norm_name: filer_number}
+_FILER_NUM_LOCK  = threading.Lock()
+
+def _load_filer_lookup():
+    global _FILER_NUM
+    with _FILER_NUM_LOCK:
+        if _FILER_NUM is not None:
+            return
+        fpath = os.path.join(BASE_DIR, 'la_filer_lookup.json')
+        if os.path.exists(fpath):
+            with open(fpath, 'r', encoding='utf-8') as f:
+                _FILER_NUM = json.load(f)
+        else:
+            _FILER_NUM = {}
+
+# ── Election results (lazy-loaded, used by /api/races) ───────────────────────
+_ELECTION_RESULTS      = None
+_ELECTION_RESULTS_LOCK = threading.Lock()
+
+def _load_election_results():
+    global _ELECTION_RESULTS
+    with _ELECTION_RESULTS_LOCK:
+        if _ELECTION_RESULTS is not None:
+            return
+        rpath = os.path.join(BASE_DIR, 'la_election_results.json')
+        if os.path.exists(rpath):
+            with open(rpath, 'r', encoding='utf-8') as f:
+                _ELECTION_RESULTS = json.load(f)
+        else:
+            _ELECTION_RESULTS = {}
+
+def _office_type(office):
+    """Classify an office string into a broad category."""
+    o = office.upper()
+    if _re.search(r'\bU\.?\s*S\.?\s+SENAT|UNITED STATES SENAT', o): return 'us_senate'
+    if _re.search(r'\bU\.?\s*S\.?\s+REP|CONGRESS', o):               return 'us_house'
+    if 'GOVERNOR' in o and 'LT' not in o and 'LIEUTENANT' not in o:  return 'governor'
+    if 'LIEUTENANT GOVERNOR' in o or 'LT. GOVERNOR' in o:            return 'lt_governor'
+    if 'STATE SENATOR' in o:                                          return 'state_senate'
+    if 'STATE REPRESENTATIVE' in o:                                   return 'state_house'
+    if 'SUPREME COURT' in o:                                          return 'supreme_court'
+    if any(x in o for x in ['BESE','PUBLIC SERVICE','PSC']):          return 'board'
+    if any(x in o for x in ['ATTORNEY GENERAL','SECRETARY OF STATE',
+                             'TREASURER','COMMISSIONER OF']):          return 'statewide'
+    if 'JUSTICE' in o or 'JUDGE' in o:                               return 'judicial'
+    if any(x in o for x in ['SHERIFF','MAYOR','PARISH PRESIDENT',
+                             'DISTRICT ATTORNEY','ASSESSOR']):         return 'local'
+    return 'other'
+
+def _cycle_for_year(yy):
+    if yy >= 2024: return '2024-2027'
+    if yy >= 2020: return '2020-2023'
+    if yy >= 2016: return '2016-2019'
+    if yy >= 2012: return '2012-2015'
+    if yy >= 2008: return '2008-2011'
+    if yy >= 2004: return '2004-2007'
+    return '2000-2003'
+
 def _load_donor_industries():
     global _DONOR_IND, _DONOR_IND_MTIME
     ind_path = os.path.join(BASE_DIR, 'la_donor_industries.json')
@@ -1182,6 +1241,100 @@ class Handler(BaseHTTPRequestHandler):
                     for ind in sorted(totals, key=lambda i: -totals[i])
                 ],
             })
+            return
+
+        # ── /api/races — all races grouped by (date, office), with candidate finance ─
+        if parsed.path == '/api/races':
+            _load_career_data()
+            _load_filer_lookup()
+
+            office_filter = params.get('office', ['major'])[0].lower()
+            year_filter   = params.get('year',   [''])[0].strip()
+
+            MAJOR_TYPES    = {'governor','us_senate','us_house','statewide','lt_governor'}
+            STATE_TYPES    = {'state_senate','state_house'}
+            BOARD_TYPES    = {'board','supreme_court'}
+            JUDICIAL_TYPES = {'judicial'}
+            LOCAL_TYPES    = {'local'}
+
+            races_by_key = {}
+
+            if _CAND_RACES:
+                for cand_name, candidacies in _CAND_RACES.items():
+                    for c in candidacies:
+                        if c.get('party_office'):
+                            continue
+                        date   = c.get('date', '')
+                        office = c.get('office', '')
+                        if not date or not office:
+                            continue
+                        parts = date.split('/')
+                        try:
+                            yr = int(parts[2]) if len(parts) == 3 else 0
+                        except Exception:
+                            yr = 0
+
+                        otype = _office_type(office)
+
+                        # Apply office type filter
+                        if office_filter == 'major':
+                            if otype not in MAJOR_TYPES: continue
+                        elif office_filter == 'state':
+                            if otype not in STATE_TYPES: continue
+                        elif office_filter == 'board':
+                            if otype not in BOARD_TYPES: continue
+                        elif office_filter == 'judicial':
+                            if otype not in JUDICIAL_TYPES: continue
+                        elif office_filter == 'local':
+                            if otype not in LOCAL_TYPES: continue
+                        elif office_filter != 'all':
+                            # treat as a specific office_type string
+                            if otype != office_filter: continue
+
+                        if year_filter and str(yr) != year_filter:
+                            continue
+
+                        key = (date, office)
+                        if key not in races_by_key:
+                            races_by_key[key] = {
+                                'date': date,
+                                'year': yr,
+                                'office': office,
+                                'office_type': otype,
+                                'candidates': [],
+                            }
+
+                        # Match to Ethics finance data
+                        norm_name = _norm_name(cand_name)
+                        filer_num = (_FILER_NUM.get(norm_name) or
+                                     _FILER_NUM.get(cand_name.upper(), ''))
+                        cycle_key = _cycle_for_year(yr)
+                        raised = spent = 0
+                        if _CAND_INDEX and cand_name in _CAND_INDEX:
+                            cyc = _CAND_INDEX[cand_name].get('cycles', {}).get(cycle_key, {})
+                            raised = cyc.get('raised', 0)
+                            spent  = cyc.get('spent',  0)
+
+                        races_by_key[key]['candidates'].append({
+                            'name':         cand_name,
+                            'party':        c.get('party', ''),
+                            'outcome':      c.get('outcome', ''),
+                            'vote_pct':     c.get('vote_pct'),
+                            'filer_number': filer_num,
+                            'cycle':        cycle_key,
+                            'raised':       raised,
+                            'spent':        spent,
+                        })
+
+            race_list = sorted(races_by_key.values(),
+                               key=lambda r: r['date'], reverse=True)
+            for race in race_list:
+                race['candidates'].sort(
+                    key=lambda c: (c.get('vote_pct') or 0), reverse=True)
+
+            all_years = sorted({r['year'] for r in race_list if r['year'] > 0},
+                               reverse=True)
+            self._json({'races': race_list, 'total': len(race_list), 'years': all_years})
             return
 
         # Static data files — serve gzip-encoded JSON directly so the browser can
