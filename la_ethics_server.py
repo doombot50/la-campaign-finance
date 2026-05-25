@@ -18,6 +18,7 @@ from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 import urllib.request
 import json, csv, io, os, re, time, gzip, threading, gc, sys
+from datetime import date
 
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle each HTTP request in its own thread so a slow download never blocks the server."""
@@ -37,6 +38,26 @@ _CAND_INDEX  = None   # la_candidate_index.json.gz  — financial summary per cy
 _CAND_RACES  = None   # la_candidacies_raw.json.gz  — all SoS race appearances
 _CAND_LOCK   = threading.Lock()
 _CAND_IDX_MTIME = 0   # mtime of index file when last loaded
+
+# ── Donor industry lookup (lazy-loaded, hot-reloadable) ────────────────────────
+_DONOR_IND       = None   # la_donor_industries.json — {donor_name: industry_bucket}
+_DONOR_IND_MTIME = 0
+_DONOR_IND_LOCK  = threading.Lock()
+
+def _load_donor_industries():
+    global _DONOR_IND, _DONOR_IND_MTIME
+    ind_path = os.path.join(BASE_DIR, 'la_donor_industries.json')
+    current_mtime = os.path.getmtime(ind_path) if os.path.exists(ind_path) else 0
+    with _DONOR_IND_LOCK:
+        if _DONOR_IND is not None and current_mtime == _DONOR_IND_MTIME:
+            return
+        if os.path.exists(ind_path):
+            with open(ind_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            _DONOR_IND = data.get('industries', data)  # handle both formats
+            _DONOR_IND_MTIME = current_mtime
+        else:
+            _DONOR_IND = {}
 
 def _norm_name(name):
     n = name.upper()
@@ -658,13 +679,18 @@ def lookup_party(name: str) -> str:
     return 'OTH'
 
 def parse_date(s):
-    """'9/26/2026 12:00:00 AM' -> '2026-09-26'"""
-    if not s: return '2024-01-01'
+    """'9/26/2026 12:00:00 AM' -> '2026-09-26'. Returns '' for missing/unparseable."""
+    if not s: return ''
     part = s.strip().split(' ')[0].split('/')
     if len(part) == 3:
         m, d, y = part
-        return f'{y}-{m.zfill(2)}-{d.zfill(2)}'
-    return s[:10]
+        try:
+            return f'{int(y):04d}-{int(m):02d}-{int(d):02d}'
+        except ValueError:
+            return ''
+    # Already ISO-ish: '2026-09-26' or truncated
+    cleaned = s.strip()[:10]
+    return cleaned if len(cleaned) == 10 and cleaned[4] == '-' else ''
 
 # ── Per-year cache helpers ────────────────────────────────────────────────────
 # Cache one gzip file per calendar year instead of one file per 4-year CSV range.
@@ -1087,11 +1113,83 @@ class Handler(BaseHTTPRequestHandler):
             self._json({'financial': financial, 'races': races, 'norm': norm})
             return
 
+        # Industry breakdown for a filer across a cycle (or all time).
+        # ?filer=FILER_NUMBER&cycle=2024-2027  (cycle optional — omit for all years)
+        if parsed.path == '/api/industry-breakdown':
+            filer = params.get('filer', [''])[0].strip()
+            if not filer:
+                self._json({'error': 'filer required'}); return
+            cycle = params.get('cycle', [''])[0].strip()  # e.g. "2024-2027" or ""
+
+            _load_donor_industries()
+
+            # Decide which year files to read
+            if cycle:
+                try:
+                    y0, y1 = [int(p) for p in cycle.split('-')]
+                    year_range = list(range(y0, y1 + 1))
+                except Exception:
+                    self._json({'error': 'invalid cycle format; use YYYY-YYYY'}); return
+            else:
+                year_range = list(range(2000, date.today().year + 2))
+
+            CACHE = os.path.join(BASE_DIR, '.la_cache')
+            totals: dict = {}     # industry → total_amount
+            counts: dict = {}     # industry → contribution_count
+            top_donors: dict = {} # industry → [(amount, donor)]
+
+            for yr in year_range:
+                fp = os.path.join(CACHE, f'contributions_yr{yr}.json.gz')
+                if not os.path.exists(fp):
+                    continue
+                with gzip.open(fp, 'rt', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            rec = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        if str(rec.get('filerNumber', '')) != filer:
+                            continue
+                        donor  = (rec.get('contributor') or '').strip()
+                        amount = float(rec.get('amount') or 0)
+                        if amount <= 0:
+                            continue
+                        industry = (_DONOR_IND.get(donor) if _DONOR_IND else None) or 'Other'
+                        totals[industry] = totals.get(industry, 0.0) + amount
+                        counts[industry] = counts.get(industry, 0) + 1
+                        heap = top_donors.setdefault(industry, [])
+                        heap.append((amount, donor))
+
+            # Trim top donors to top-5 by amount per bucket
+            top5 = {
+                ind: sorted(donors, key=lambda x: -x[0])[:5]
+                for ind, donors in top_donors.items()
+            }
+            self._json({
+                'filer': filer,
+                'cycle': cycle or 'all',
+                'has_industry_data': bool(_DONOR_IND),
+                'breakdown': [
+                    {
+                        'industry': ind,
+                        'total': round(totals[ind], 2),
+                        'count': counts[ind],
+                        'top_donors': [{'amount': a, 'name': n} for a, n in top5.get(ind, [])],
+                    }
+                    for ind in sorted(totals, key=lambda i: -totals[i])
+                ],
+            })
+            return
+
         # Static data files — serve gzip-encoded JSON directly so the browser can
         # load them client-side without going through the candidate-history API.
         _STATIC_DATA = {
             '/la_candidate_index.json.gz': 'la_candidate_index.json.gz',
             '/la_candidacies_raw.json.gz': 'la_candidacies_raw.json.gz',
+            '/la_donor_industries.json':   'la_donor_industries.json',
         }
         if parsed.path in _STATIC_DATA:
             fpath = os.path.join(BASE_DIR, _STATIC_DATA[parsed.path])
@@ -1101,7 +1199,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self._cors_headers()
                 self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Encoding', 'gzip')
+                if fpath.endswith('.gz'):
+                    self.send_header('Content-Encoding', 'gzip')
                 self.send_header('Content-Length', str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)

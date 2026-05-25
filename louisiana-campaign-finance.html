@@ -807,6 +807,7 @@
         <option value="2006">2005–2006 — Federal / Local</option>
         <option value="2004">2003–2004 — LA Governor / Presidential</option>
         <option value="2002">2001–2002 — Federal / Local</option>
+        <option value="2000">1999–2000 — LA Governor / Federal</option>
       </select>
       </div><!-- /ctrl-group cycle -->
       <button class="btn-toggle-filters open" id="btn-toggle-filters" onclick="toggleFilters()">
@@ -3529,7 +3530,7 @@ document.getElementById('notes-search')?.setAttribute('aria-label', 'Search note
 // ── Fetch expenditure data ────────────────────────────────────────
 async function loadExpData() {
   const cycle = document.getElementById('cycle-select').value;
-  if (parseInt(cycle) < 2002) {
+  if (parseInt(cycle) < 2000) {
     document.getElementById('exp-unavailable-msg').style.display = '';
     document.getElementById('exp-table').style.display = 'none';
     document.getElementById('exp-loading-msg').style.display = 'none';
@@ -5182,6 +5183,10 @@ function showCampaignProfile(name) {
   _modalReturnFocus = document.activeElement;   // remember trigger for focus restore
   document.getElementById('camp-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  // Render the cash-flow chart AFTER the modal is visible so the canvas has
+  // its true CSS dimensions (display:none → display:flex just happened above).
+  // Double-rAF ensures the browser has laid out the flex container.
+  requestAnimationFrame(() => requestAnimationFrame(() => renderCampCashFlow()));
   // Move focus into the dialog
   document.querySelector('#camp-modal .cp-close')?.focus();
 }
@@ -5214,6 +5219,9 @@ let _campCashChart = null;
 function renderCampCashFlow() {
   const canvas = document.getElementById('camp-cashflow-chart');
   if (!canvas) return;
+  // Guard: if the modal isn't open yet the canvas is inside display:none — Chart.js
+  // will measure 0×0 and lock the chart to that size.  Defer until modal is visible.
+  if (!document.getElementById('camp-overlay').classList.contains('open')) return;
   const note = document.getElementById('camp-cashflow-note');
 
   // Prefer career monthly buckets (all cycles) over single-cycle transaction data.

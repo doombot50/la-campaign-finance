@@ -23,7 +23,7 @@ from collections import defaultdict
 RAW_FILE = 'la_candidacies_raw.json.gz'
 
 SOS_BASE = 'https://voterportal.sos.la.gov/ElectionResults/ElectionResults/Data'
-MIN_YEAR = 2010
+MIN_YEAR = 2000
 
 def fetch(blob, timeout=25, retries=2):
     url = f'{SOS_BASE}?blob={blob}'
@@ -126,16 +126,36 @@ def ingest(cand_data, votes_data, ed):
     return n
 
 def main():
+    # ── Load existing raw candidacies for incremental re-run ───────────────────
+    import os
+    if os.path.exists(RAW_FILE):
+        import gzip as _gz
+        with _gz.open(RAW_FILE, 'rt', encoding='utf-8') as _f:
+            existing = json.load(_f)
+        # Find which election dates are already in the raw data
+        already_seen = set()
+        for cs in existing.values():
+            for c in cs:
+                already_seen.add(c.get('date', ''))
+        # Pre-populate candidacies from existing data
+        for norm, cs in existing.items():
+            candidacies[norm].extend(cs)
+        print(f'Loaded {len(existing):,} names from existing {RAW_FILE}')
+        print(f'Already-scraped election dates: {len(already_seen)}')
+    else:
+        already_seen = set()
+
     el = fetch('ElectionDates.htm')
     if not el:
         print('FATAL: could not fetch election list'); sys.exit(1)
     date2blob = {}
     for d in el['Dates']['Date']:
         mm, dd, yy = d['ElectionDate'].split('/')
-        if int(yy) >= MIN_YEAR:
-            date2blob[d['ElectionDate']] = f'{yy}{mm}{dd}'
+        ed = d['ElectionDate']
+        if int(yy) >= MIN_YEAR and ed not in already_seen:
+            date2blob[ed] = f'{yy}{mm}{dd}'
     dates = sorted(date2blob, key=date_key)
-    print(f'{len(dates)} elections since {MIN_YEAR}. Scraping (multiparish + parish)...')
+    print(f'{len(dates)} NEW elections to scrape since {MIN_YEAR}.')
 
     t0 = time.time()
     for i, ed in enumerate(dates):
