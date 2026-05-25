@@ -17536,16 +17536,18 @@
     "election_date": "10/12/2019"
   },
   "LES FARNUM": {
-    "party": "DEM",
-    "source": "SoS",
+    "party": "REP",
+    "source": "manual_correction",
     "office": "State Representative --  33rd Representative District",
-    "election_date": "11/06/2018"
+    "election_date": "11/06/2018",
+    "note": "Switched from DEM to REP after 2018 election; current Republican state rep"
   },
   "FARNUM": {
-    "party": "DEM",
-    "source": "SoS",
+    "party": "REP",
+    "source": "manual_correction",
     "office": "State Representative --  33rd Representative District",
-    "election_date": "11/06/2018"
+    "election_date": "11/06/2018",
+    "note": "Switched from DEM to REP after 2018 election; current Republican state rep"
   },
   "STUART MOSS": {
     "party": "REP",

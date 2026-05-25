@@ -648,6 +648,22 @@ def main():
 
     lookup = {}
 
+    # 0. Preserve any manual corrections from the existing file — these are
+    #    hand-verified entries (source == "manual_correction") that must survive
+    #    FEC / SoS updates.  They are re-applied last so they always win.
+    manual_corrections = {}
+    if os.path.exists(OUT_FILE):
+        try:
+            with open(OUT_FILE, 'r', encoding='utf-8') as _f:
+                _existing = json.load(_f)
+            manual_corrections = {k: v for k, v in _existing.items()
+                                   if isinstance(v, dict) and v.get('source') == 'manual_correction'}
+            if manual_corrections:
+                print(f'  Preserving {len(manual_corrections)} manual correction(s): '
+                      f'{", ".join(k for k in manual_corrections if " " in k)}')
+        except Exception as _e:
+            print(f'  WARNING: could not read existing file for manual corrections: {_e}')
+
     # 1. Curated state politicians (base layer — hand-verified entries)
     print('Loading curated state politicians …')
     curated = curated_to_lookup()
@@ -673,6 +689,11 @@ def main():
         n_upd = sum(1 for k in sos_lookup if ' ' in k and k in lookup)
         lookup.update(sos_lookup)
         print(f'  {n_new} new entries added, {n_upd} existing entries updated from SoS')
+
+    # 3b. Re-apply manual corrections — they always win over SoS/FEC data.
+    if manual_corrections:
+        lookup.update(manual_corrections)
+        print(f'  Re-applied {len(manual_corrections)} manual correction(s)')
 
     # 4. Summary
     full_name_entries = {k: v for k, v in lookup.items() if ' ' in k}
