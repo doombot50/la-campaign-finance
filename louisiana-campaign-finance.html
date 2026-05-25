@@ -707,7 +707,7 @@
   .exp-charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
   @media(max-width:900px){ .exp-charts-row { grid-template-columns:1fr; } }
 
-  /* ── Print stylesheet ─────────────────────────────────────── */
+  /* ── Print stylesheet — default (full page) ────────────────── */
   @media print {
     .sticky-top, .controls-bar, .section-tabs, .map-panel-row,
     .trend-card, .top-contributors-card, .filter-chips-bar,
@@ -725,6 +725,72 @@
     .stat-value { color:#c8a951 !important; }
     a { text-decoration:none; color:inherit; }
     @page { margin:1.5cm; size:A4 landscape; }
+  }
+
+  /* ── Print stylesheet — campaign profile export ─────────────── */
+  @media print {
+    /* When body has .printing-profile, hide everything except the profile modal */
+    body.printing-profile > *:not(#camp-overlay) { display:none !important; }
+
+    body.printing-profile #camp-overlay {
+      display:block !important; position:static !important;
+      background:none !important; padding:0 !important;
+      overflow:visible !important;
+    }
+    body.printing-profile .camp-modal {
+      max-width:none !important; width:100% !important;
+      max-height:none !important; overflow:visible !important;
+      box-shadow:none !important; border-radius:0 !important;
+      border:none !important; display:flex !important;
+      flex-direction:column !important;
+    }
+    body.printing-profile .camp-header {
+      background:#f8f6ef !important; border-bottom:2px solid #c8a951 !important;
+      padding:12px 20px !important; break-inside:avoid;
+    }
+    body.printing-profile .cp-name, body.printing-profile #camp-name {
+      color:#1a1a1a !important; font-size:20px !important;
+    }
+    body.printing-profile .cp-meta, body.printing-profile #camp-meta,
+    body.printing-profile #camp-election { color:#444 !important; }
+    /* Hide modal controls that make no sense on paper */
+    body.printing-profile .cp-close,
+    body.printing-profile .camp-close-btn,
+    body.printing-profile [onclick="closeCampaignProfile()"],
+    body.printing-profile [onclick*="exportCampaign"] { display:none !important; }
+    /* Stats bar */
+    body.printing-profile .cp-stats {
+      background:#f0ede4 !important; border-bottom:1px solid #ccc !important;
+      break-inside:avoid; flex-wrap:wrap !important;
+    }
+    body.printing-profile .cp-stat-val { color:#8a6e1e !important; }
+    /* Cash-on-hand chart area */
+    body.printing-profile #camp-cashflow-wrap {
+      display:block !important; padding:12px 20px !important;
+      break-inside:avoid; border-bottom:1px solid #ddd !important;
+    }
+    body.printing-profile #camp-cashflow-wrap canvas { max-height:160px !important; }
+    /* Sub-tab buttons — hide them */
+    body.printing-profile .section-tab { display:none !important; }
+    /* Force career content visible and all transaction tabs hidden */
+    body.printing-profile #camp-content-contribs,
+    body.printing-profile #camp-content-exps,
+    body.printing-profile #camp-content-loans { display:none !important; }
+    body.printing-profile #camp-content-career {
+      display:block !important; padding:12px 20px !important;
+      overflow:visible !important;
+    }
+    body.printing-profile #camp-career-chart { max-height:200px !important; }
+    /* Race timeline */
+    body.printing-profile .race-row { break-inside:avoid; }
+    body.printing-profile #camp-empty { display:none !important; }
+    /* Footer watermark */
+    body.printing-profile #camp-overlay::after {
+      content:'Louisiana Campaign Finance Dashboard · ' attr(data-print-date);
+      display:block; text-align:center; font-size:9px; color:#999;
+      padding:8px 0 4px; border-top:1px solid #eee; margin-top:8px;
+    }
+    @page { margin:1.4cm; size:A4 portrait; }
   }
 </style>
 </head>
@@ -5396,6 +5462,23 @@ function closeCampaignProfile() {
   if (_modalReturnFocus && _modalReturnFocus.focus) { _modalReturnFocus.focus(); _modalReturnFocus = null; }
 }
 
+function printCampaignProfile() {
+  // Switch to Career tab so the career chart is rendered before printing
+  campSwitchTab('career');
+  // Stamp print date on overlay for watermark
+  const overlay = document.getElementById('camp-overlay');
+  overlay.setAttribute('data-print-date', new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}));
+  // Give Chart.js one rAF to finish any pending render, then print
+  requestAnimationFrame(() => {
+    document.body.classList.add('printing-profile');
+    window.print();
+  });
+  // Clean up after the print dialog closes
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('printing-profile');
+  }, { once: true });
+}
+
 function campSwitchTab(tab) {
   _campTab = tab;
   ['contribs','exps','loans','career'].forEach(t => {
@@ -5652,6 +5735,7 @@ function exportCampaignCSV() {
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="exportCampaignCSV()">⬇ CSV</button>
+        <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="printCampaignProfile()" title="Print / Export PDF">🖨 Print</button>
         <button class="cp-close" onclick="closeCampaignProfile()" aria-label="Close campaign profile">✕</button>
       </div>
     </div>
