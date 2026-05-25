@@ -662,6 +662,15 @@
   .table-no-results { text-align:center; padding:36px 20px; color:var(--muted); font-size:13px; }
   .table-no-results .no-res-icon { font-size:32px; margin-bottom:8px; opacity:0.5; }
 
+  /* ── Career tab race timeline ───────────────────────────────── */
+  .race-row { display:flex; align-items:flex-start; gap:12px; padding:8px 0;
+    border-bottom:1px solid var(--border); font-size:13px; }
+  .race-row:last-child { border-bottom:none; }
+  .race-year { font-size:11px; color:var(--muted); width:38px; flex-shrink:0; padding-top:2px; }
+  .race-office { flex:1; color:var(--text); line-height:1.3; }
+  .race-office-sub { font-size:11px; color:var(--muted); margin-top:1px; }
+  .race-outcome { flex-shrink:0; text-align:right; }
+
   /* ── Win/loss election-result badge ─────────────────────────── */
   /* Lives inside the header — no separate background/border zone */
   .camp-election { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
@@ -5169,6 +5178,7 @@ function showCampaignProfile(name) {
   // Election result may load async on first open; re-render once available.
   const _p = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
   loadElectionResults().then(() => renderCampElection(name, _p));
+  fetchCareerData(name);  // pre-fetch career data in background (used if Career tab is opened)
   _modalReturnFocus = document.activeElement;   // remember trigger for focus restore
   document.getElementById('camp-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -5285,15 +5295,18 @@ function renderCampCashFlow() {
 function closeCampaignProfile() {
   document.getElementById('camp-overlay').classList.remove('open');
   document.body.style.overflow = '';
+  if (_careerChart) { _careerChart.destroy(); _careerChart = null; }
+  _careerData = null;
   if (_modalReturnFocus && _modalReturnFocus.focus) { _modalReturnFocus.focus(); _modalReturnFocus = null; }
 }
 
 function campSwitchTab(tab) {
   _campTab = tab;
-  ['contribs','exps','loans'].forEach(t => {
+  ['contribs','exps','loans','career'].forEach(t => {
     document.getElementById(`camp-content-${t}`).style.display = t === tab ? '' : 'none';
     document.getElementById(`camp-tab-${t}`).classList.toggle('active', t === tab);
   });
+  if (tab === 'career') { renderCampCareer(); return; }
 
   const empty = document.getElementById('camp-empty');
   if (tab === 'contribs') {
@@ -5349,6 +5362,92 @@ function campSwitchTab(tab) {
   }
 }
 
+// ── Career tab ────────────────────────────────────────────────────────────────
+let _careerData = null;   // cached for the current profile
+let _careerChart = null;
+
+async function fetchCareerData(name) {
+  _careerData = null;
+  try {
+    const r = await fetch(`${API_BASE}/api/candidate-history?name=${encodeURIComponent(name)}`);
+    if (r.ok) _careerData = await r.json();
+  } catch(e) {}
+}
+
+function renderCampCareer() {
+  const empty  = document.getElementById('camp-career-empty');
+  const racesEl = document.getElementById('camp-career-races');
+  if (!_careerData || (!_careerData.races?.length && !Object.keys(_careerData.financial?.cycles||{}).length)) {
+    empty.style.display = ''; racesEl.innerHTML = ''; return;
+  }
+  empty.style.display = 'none';
+
+  // ── Bar chart: raised vs spent by cycle ──
+  const fin    = _careerData.financial || {};
+  const cycles = fin.cycles || {};
+  const labels = Object.keys(cycles);
+  const raised = labels.map(c => cycles[c].raised);
+  const spent  = labels.map(c => cycles[c].spent);
+
+  if (_careerChart) { _careerChart.destroy(); _careerChart = null; }
+  const ctx = document.getElementById('camp-career-chart').getContext('2d');
+  _careerChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Raised',  data: raised, backgroundColor: 'rgba(76,175,125,0.75)', borderColor:'#4caf7d', borderWidth:1 },
+        { label: 'Spent',   data: spent,  backgroundColor: 'rgba(224,92,92,0.65)',  borderColor:'#e05c5c', borderWidth:1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position:'bottom', labels:{ color:'#8b949e', font:{size:11}, padding:10, boxWidth:10 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${formatMoney(ctx.raw)}` } }
+      },
+      scales: {
+        x: { ticks:{ color:'#8b949e', font:{size:11} }, grid:{ color:'rgba(255,255,255,0.05)' } },
+        y: { ticks:{ color:'#8b949e', font:{size:11}, callback: v => '$'+Math.round(v/1000)+'K' }, grid:{ color:'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
+
+  // ── Race timeline ──
+  const OUTCOME_STYLE = {
+    Elected: ['won',    '✓ Won'],
+    Defeated:['lost',   '✗ Lost'],
+    Runoff:  ['runoff', '→ Runoff'],
+  };
+  // Deduplicate races: same office+date may appear as both a primary and general entry
+  const seen = new Set();
+  const races = (_careerData.races || []).filter(r => {
+    const key = r.date + '|' + r.office;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  }).reverse();  // most recent first
+
+  racesEl.innerHTML = races.map(r => {
+    const yr = (r.date||'').split('/').pop() || (r.date||'').slice(0,4);
+    const [cls, label] = OUTCOME_STYLE[r.outcome] || ['oth', r.outcome||'—'];
+    const pct = r.vote_pct != null ? `${r.vote_pct}%` : '';
+    // Trim long district suffixes for display
+    const office = (r.office||'').replace(/\s+--\s+.*/,'').replace(/\s+-\s+.*/,'');
+    const district = (r.office||'').match(/--\s*(.+)/)?.[1]?.trim() || '';
+    return `<div class="race-row">
+      <div class="race-year">${yr}</div>
+      <div class="race-office">
+        <div>${escHtml(office)}</div>
+        ${district ? `<div class="race-office-sub">${escHtml(district)}</div>` : ''}
+      </div>
+      <div class="race-outcome">
+        <span class="wl-badge ${cls}">${label}</span>
+        ${pct ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${pct}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function exportCampaignCSV() {
   const rows = [];
   _campContribs.forEach(d => rows.push(['contribution', d.date, d.contributor, d.contributorState, d.parish, d.amount, d.notes||'']));
@@ -5394,10 +5493,11 @@ function exportCampaignCSV() {
       <div style="position:relative;height:170px"><canvas id="camp-cashflow-chart"></canvas></div>
     </div>
     <!-- Sub-tabs -->
-    <div style="display:flex;border-bottom:1px solid var(--border);background:var(--card)">
-      <button class="section-tab active" id="camp-tab-contribs"  onclick="campSwitchTab('contribs')"  style="font-size:13px;padding:9px 20px">💰 Contributions</button>
-      <button class="section-tab"        id="camp-tab-exps"      onclick="campSwitchTab('exps')"      style="font-size:13px;padding:9px 20px">💸 Expenditures</button>
-      <button class="section-tab"        id="camp-tab-loans"     onclick="campSwitchTab('loans')"     style="font-size:13px;padding:9px 20px">🏦 Loans</button>
+    <div style="display:flex;border-bottom:1px solid var(--border);background:var(--card);overflow-x:auto">
+      <button class="section-tab active" id="camp-tab-contribs"  onclick="campSwitchTab('contribs')"  style="font-size:13px;padding:9px 20px;white-space:nowrap">💰 Contributions</button>
+      <button class="section-tab"        id="camp-tab-exps"      onclick="campSwitchTab('exps')"      style="font-size:13px;padding:9px 20px;white-space:nowrap">💸 Expenditures</button>
+      <button class="section-tab"        id="camp-tab-loans"     onclick="campSwitchTab('loans')"     style="font-size:13px;padding:9px 20px;white-space:nowrap">🏦 Loans</button>
+      <button class="section-tab"        id="camp-tab-career"    onclick="campSwitchTab('career')"    style="font-size:13px;padding:9px 20px;white-space:nowrap">📊 Career</button>
     </div>
     <!-- Content -->
     <div class="cp-table-wrap">
@@ -5412,6 +5512,14 @@ function exportCampaignCSV() {
       <div id="camp-content-loans" style="display:none">
         <table class="cp-table"><thead><tr><th>Date</th><th>Lender</th><th>State</th><th>Parish</th><th class="num">Rate %</th><th class="num">Amount</th></tr></thead>
         <tbody id="camp-tbody-loans"></tbody></table>
+      </div>
+      <!-- Career tab — multi-cycle financials + race history -->
+      <div id="camp-content-career" style="display:none;padding:16px 20px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Fundraising by Election Cycle</div>
+        <div style="position:relative;height:180px;margin-bottom:20px"><canvas id="camp-career-chart"></canvas></div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Election History</div>
+        <div id="camp-career-races"></div>
+        <div id="camp-career-empty" style="display:none;color:var(--muted);font-size:13px;padding:20px 0;text-align:center">No career data available.</div>
       </div>
       <div id="camp-empty" style="display:none;padding:30px;text-align:center;color:var(--muted);font-size:13px">No data for this section in the loaded cycle.</div>
     </div>

@@ -31,6 +31,36 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 CACHE_TTL = 86400  # 24 hours
 HTML_FILE = os.path.join(BASE_DIR, 'louisiana-campaign-finance.html')
 
+# ── Candidate career data (lazy-loaded on first request) ──────────────────────
+import re as _re
+_CAND_INDEX  = None   # la_candidate_index.json.gz  — financial summary per cycle
+_CAND_RACES  = None   # la_candidacies_raw.json.gz  — all SoS race appearances
+_CAND_LOCK   = threading.Lock()
+
+def _norm_name(name):
+    n = name.upper()
+    n = _re.sub(r'\b(DR|MR|MRS|MS|JR|SR|II|III|IV|ESQ|PHD|MD)\.?\b', '', n)
+    n = _re.sub(r'[^A-Z\s]', ' ', n)
+    return ' '.join(n.split())
+
+def _load_career_data():
+    global _CAND_INDEX, _CAND_RACES
+    with _CAND_LOCK:
+        if _CAND_INDEX is not None:
+            return
+        idx_path   = os.path.join(BASE_DIR, 'la_candidate_index.json.gz')
+        races_path = os.path.join(BASE_DIR, 'la_candidacies_raw.json.gz')
+        if os.path.exists(idx_path):
+            with gzip.open(idx_path, 'rt', encoding='utf-8') as f:
+                _CAND_INDEX = json.load(f)
+        else:
+            _CAND_INDEX = {}
+        if os.path.exists(races_path):
+            with gzip.open(races_path, 'rt', encoding='utf-8') as f:
+                _CAND_RACES = json.load(f)
+        else:
+            _CAND_RACES = {}
+
 # ── Download status tracker ────────────────────────────────────────────────────
 # Maps cache_key -> {'status': 'idle'|'downloading'|'ready'|'error', 'message': str}
 _dl_status: dict = {}
@@ -1024,6 +1054,33 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(body)
             else:
                 self._json({})   # gracefully empty if not built yet
+            return
+
+        # Candidate career history — financial index + SoS race list for one name.
+        if parsed.path == '/api/candidate-history':
+            name = params.get('name', [''])[0].strip()
+            if not name:
+                self._json({'error': 'name required'}); return
+            _load_career_data()
+            norm = _norm_name(name)
+            toks = norm.split()
+            # Try T1 exact, then T2 first+last
+            financial = (_CAND_INDEX.get(norm) or
+                         (_CAND_INDEX.get(f'{toks[0]} {toks[-1]}') if len(toks) >= 2 else None) or
+                         {})
+            races_raw = (_CAND_RACES.get(norm) or
+                         (_CAND_RACES.get(f'{toks[0]} {toks[-1]}') if len(toks) >= 2 else None) or
+                         [])
+            # Sort races by date, exclude party-committee offices
+            def _is_party_office(o):
+                o = o.upper()
+                return any(x in o for x in ('DSCC','RSCC','DPEC','RPEC',
+                           'CENTRAL COMMITTEE','EXECUTIVE COMMITTEE','PARTY COMMITTEE'))
+            races = sorted(
+                [r for r in races_raw if not _is_party_office(r.get('office',''))],
+                key=lambda r: r.get('date','')
+            )
+            self._json({'financial': financial, 'races': races, 'norm': norm})
             return
 
         if parsed.path not in ('/api/la-ethics', '/api/la-expenditures', '/api/la-loans'):
