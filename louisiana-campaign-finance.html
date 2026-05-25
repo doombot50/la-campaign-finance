@@ -3830,8 +3830,20 @@ function renderCashFlowChart() {
         tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: $${Math.round(ctx.raw).toLocaleString()}` } }
       },
       scales: {
-        x: { ticks: { color: '#6b7280', font: { size: 9 }, maxRotation: 45 } },
-        y: { ticks: { color: '#6b7280', callback: v => '$' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v) } }
+        x: { ticks: { color: '#6b7280', font: { size: 9 }, maxRotation: 30, autoSkip: true, maxTicksLimit: 16 } },
+        y: {
+          beginAtZero: true,
+          grace: '12%',
+          ticks: {
+            color: '#6b7280',
+            maxTicksLimit: 6,
+            callback: v => {
+              if (v >= 1e6) return '$' + (v/1e6).toFixed(v >= 10e6 ? 1 : 2) + 'M';
+              if (v >= 1e3) return '$' + (v/1e3).toFixed(v >= 100e3 ? 0 : 1) + 'K';
+              return '$' + v;
+            }
+          }
+        }
       }
     }
   });
@@ -5290,30 +5302,87 @@ function renderCampCashFlow() {
   const muted  = css.getPropertyValue('--muted').trim()  || '#8b949e';
   const green  = '#4caf7d', red = '#d76b6b';
 
+  // ── Dynamic scale computation ─────────────────────────────────────────────
+  // Smart $K/$M/$B formatter that adapts to the data magnitude.
+  function fmtMoney(v) {
+    const sign = v < 0 ? '-' : '';
+    const a = Math.abs(v);
+    if (a >= 1e9)  return sign + '$' + (a / 1e9).toFixed(1) + 'B';
+    if (a >= 1e6)  return sign + '$' + (a / 1e6).toFixed(a >= 10e6 ? 1 : 2) + 'M';
+    if (a >= 1000) return sign + '$' + (a / 1000).toFixed(a >= 100000 ? 0 : 1) + 'K';
+    return sign + '$' + a.toFixed(0);
+  }
+
+  // Compute cash-on-hand range (left axis) and cumulative range (right axis) separately.
+  const cashMin   = cashSeries.length  ? Math.min(...cashSeries)   : 0;
+  const cashMax   = cashSeries.length  ? Math.max(...cashSeries)   : 0;
+  const cumMax    = raisedSeries.length ? Math.max(...raisedSeries) : 0;
+  const cashSpan  = Math.max(cashMax - cashMin, 1);
+
+  // Left axis: cash on hand — add ~15% headroom, floor at 0 unless cash went negative.
+  const yLeftMin  = cashMin < 0 ? cashMin - cashSpan * 0.12 : 0;
+  const yLeftMax  = cashMax + cashSpan * 0.18;
+
+  // Right axis: cumulative raised/spent — always 0-based, 10% headroom.
+  const yRightMax = cumMax > 0 ? cumMax * 1.1 : 1;
+
+  // X-axis: limit tick density based on number of data points.
+  const nPts = keys.length;
+  const xMaxTicks = nPts > 120 ? 10 : nPts > 48 ? 12 : nPts > 24 ? 10 : 8;
+
   if (_campCashChart) _campCashChart.destroy();
   _campCashChart = new Chart(canvas.getContext('2d'), {
     type: 'line',
     data: {
       labels,
       datasets: [
-        { label: 'Cash on Hand', data: cashSeries, borderColor: gold, backgroundColor: 'rgba(200,169,81,0.12)',
-          fill: true, tension: 0.25, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 4 },
-        { label: 'Cumulative Raised', data: raisedSeries, borderColor: green, backgroundColor: 'transparent',
-          fill: false, tension: 0.25, borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, pointHoverRadius: 4 },
-        { label: 'Cumulative Spent', data: spentSeries, borderColor: red, backgroundColor: 'transparent',
-          fill: false, tension: 0.25, borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, pointHoverRadius: 4 }
+        { label: 'Cash on Hand', data: cashSeries, yAxisID: 'y',
+          borderColor: gold, backgroundColor: 'rgba(200,169,81,0.13)',
+          fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 4 },
+        { label: 'Cumul. Raised', data: raisedSeries, yAxisID: 'y2',
+          borderColor: green, backgroundColor: 'transparent',
+          fill: false, tension: 0.3, borderWidth: 1.5, borderDash: [5,3], pointRadius: 0, pointHoverRadius: 3 },
+        { label: 'Cumul. Spent', data: spentSeries, yAxisID: 'y2',
+          borderColor: red, backgroundColor: 'transparent',
+          fill: false, tension: 0.3, borderWidth: 1.5, borderDash: [5,3], pointRadius: 0, pointHoverRadius: 3 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { labels: { color: muted, boxWidth: 12, font: { size: 10 } } },
-        tooltip: { callbacks: { label: c => `${c.dataset.label}: $${c.parsed.y.toLocaleString()}` } }
+        legend: { labels: { color: muted, boxWidth: 10, font: { size: 9 },
+          filter: item => item.text !== 'Cumul. Raised' || cumMax > 0 } },
+        tooltip: {
+          callbacks: {
+            label: c => {
+              const v = c.parsed.y;
+              return `${c.dataset.label}: ${fmtMoney(v)}`;
+            }
+          }
+        }
       },
       scales: {
-        x: { ticks: { color: muted, font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false } },
-        y: { ticks: { color: muted, font: { size: 9 }, callback: v => '$' + (Math.abs(v) >= 1000 ? (v/1000).toFixed(0) + 'K' : v) }, grid: { color: 'rgba(128,128,128,0.1)' } }
+        x: {
+          ticks: { color: muted, font: { size: 9 }, maxRotation: 0,
+                   autoSkip: true, maxTicksLimit: xMaxTicks },
+          grid: { display: false }
+        },
+        y: {
+          position: 'left',
+          min: yLeftMin, max: yLeftMax,
+          ticks: { color: gold, font: { size: 9 }, maxTicksLimit: 6,
+                   callback: fmtMoney },
+          grid: { color: 'rgba(128,128,128,0.1)' }
+        },
+        y2: {
+          position: 'right',
+          min: 0, max: yRightMax,
+          display: cumMax > 0,
+          ticks: { color: muted, font: { size: 8 }, maxTicksLimit: 5,
+                   callback: fmtMoney },
+          grid: { drawOnChartArea: false }
+        }
       }
     }
   });
