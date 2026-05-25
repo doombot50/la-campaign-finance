@@ -1111,7 +1111,10 @@
         </div>
       </div>
       <div class="panel-card">
-        <div class="panel-card-title">Donor Type Breakdown</div>
+        <div class="panel-card-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Industry Breakdown</span>
+          <button id="clear-industry-filter" style="display:none;font-size:10px;padding:2px 8px;line-height:1.4" class="btn-secondary" onclick="clearIndustryFilter()">✕ Clear filter</button>
+        </div>
         <div class="chart-wrap">
           <canvas id="donor-type-chart"></canvas>
         </div>
@@ -1193,7 +1196,7 @@
             <th data-col="parish">Parish</th>
             <th data-col="candidate">Candidate</th>
             <th data-col="party">Party</th>
-            <th data-col="donorType">Donor Type</th>
+            <th data-col="donorType">Industry</th>
             <th data-col="amount">Amount</th>
             <th data-col="notes">Notes</th>
             <th data-col="source">Source</th>
@@ -2203,6 +2206,7 @@ function applyFiltersAndRender() {
       if ((d.contributorState || '').toUpperCase() === 'LA') return false;
     }
     if (exclFilingFees && d.isFilingFee) return false;
+    if (_industryFilter !== null && _getIndustry(d) !== _industryFilter) return false;
     return true;
   });
 
@@ -2658,51 +2662,105 @@ function renderPartyChart() {
 }
 
 // ============================================================
-// DONOR TYPE CHART
+// INDUSTRY BREAKDOWN CHART (replaces simple Donor Type chart)
+// Uses server-injected d.industry field; falls back to donorType
 // ============================================================
+let _industryFilter = null;  // null = all; 'Law' = filter contributions to that industry
+
+const INDUSTRY_COLORS = {
+  'Individual':        '#4caf7d',
+  'PAC/Political':     '#9966ff',
+  'Law':               '#4682b4',
+  'Oil & Gas':         '#8B6914',
+  'Real Estate':       '#CD853F',
+  'Healthcare':        '#20b2aa',
+  'Construction':      '#daa520',
+  'Finance':           '#6495ed',
+  'Agriculture':       '#6b8e23',
+  'Labor/Unions':      '#b22222',
+  'Technology':        '#00ced1',
+  'Education':         '#9370db',
+  'Retail/Hospitality':'#ff8c00',
+  'Government':        '#708090',
+  'Other':             '#555555',
+};
+// Fallback: map legacy donorType codes → industry bucket
+const DONOR_TYPE_TO_IND = { IND:'Individual', PAC:'PAC/Political', BUS:'Other',
+                             UNION:'Labor/Unions', ORG:'Other', OTH:'Other' };
+
+function _getIndustry(d) {
+  if (d.industry) return d.industry;
+  return DONOR_TYPE_TO_IND[d.donorType] || 'Other';
+}
+
+function clearIndustryFilter() {
+  _industryFilter = null;
+  document.getElementById('clear-industry-filter').style.display = 'none';
+  renderAll();
+}
+
 function renderDonorTypeChart() {
-  const totals = { IND: 0, PAC: 0, BUS: 0, UNION: 0, ORG: 0, OTH: 0 };
+  // Tally by industry using ALL loaded data (not filteredData) so the chart
+  // always shows the full industry picture for context
+  const totals = {};
   filteredData.forEach(d => {
-    const dt = d.donorType || 'OTH';
-    if (totals[dt] !== undefined) totals[dt] += d.amount;
-    else totals.OTH += d.amount;
+    const ind = _getIndustry(d);
+    totals[ind] = (totals[ind] || 0) + d.amount;
   });
   const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0) || 1;
+
+  // Sort by total descending, cap at top 10 for readability
+  const sorted = Object.entries(totals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+  const indLabels = sorted.map(e => e[0]);
+  const indVals   = sorted.map(e => e[1]);
+  const indColors = indLabels.map(l => INDUSTRY_COLORS[l] || '#555');
+  const indAlpha  = indLabels.map(l => _industryFilter && l !== _industryFilter ? 0.3 : 0.85);
+  const bgColors  = indColors.map((c, i) => c + Math.round(indAlpha[i] * 255).toString(16).padStart(2,'0'));
 
   if (donorTypeChart) { donorTypeChart.destroy(); donorTypeChart = null; }
   const ctx = document.getElementById('donor-type-chart').getContext('2d');
   donorTypeChart = new Chart(ctx, {
-    type: 'doughnut',
+    type: 'bar',
     data: {
-      labels: ['Individual', 'PAC', 'Business', 'Union', 'Organization', 'Uncategorized'],
+      labels: indLabels,
       datasets: [{
-        data: [totals.IND, totals.PAC, totals.BUS, totals.UNION, totals.ORG, totals.OTH],
-        backgroundColor: [
-          'rgba(80,180,120,0.85)',
-          'rgba(153,102,255,0.85)',
-          'rgba(140,140,140,0.85)',
-          'rgba(70,130,180,0.85)',
-          'rgba(255,165,0,0.85)',
-          'rgba(90,90,90,0.85)'
-        ],
-        borderColor: ['#50b478','#9966ff','#8c8c8c','#4682b4','#ffa500','#5a5a5a'],
-        borderWidth: 2,
-        hoverOffset: 6
+        data: indVals,
+        backgroundColor: bgColors,
+        borderColor: indColors,
+        borderWidth: 1,
+        borderRadius: 3,
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      cutout: '65%',
+      indexAxis: 'y',   // horizontal bars — more room for labels
+      onClick(evt, elements) {
+        if (!elements.length) { clearIndustryFilter(); return; }
+        const ind = indLabels[elements[0].index];
+        if (_industryFilter === ind) { clearIndustryFilter(); return; }
+        _industryFilter = ind;
+        document.getElementById('clear-industry-filter').style.display = '';
+        renderAll();
+      },
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#8b949e', font: { size: 12 }, padding: 12, boxWidth: 12 }
-        },
+        legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` ${ctx.label}: ${formatMoney(ctx.raw)} (${((ctx.raw / grandTotal) * 100).toFixed(1)}%)`
+            label: c => ` ${formatMoney(c.raw)}  (${((c.raw / grandTotal) * 100).toFixed(1)}%)` +
+                        (_industryFilter === indLabels[c.dataIndex] ? '  ← filtered' : '')
           }
         }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { color: '#8b949e', font: { size: 9 },
+                   callback: v => v >= 1e6 ? '$'+(v/1e6).toFixed(1)+'M' : v >= 1e3 ? '$'+(v/1e3).toFixed(0)+'K' : '$'+v },
+          grid: { color: 'rgba(128,128,128,0.1)' }
+        },
+        y: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { display: false } }
       }
     }
   });
@@ -2986,7 +3044,7 @@ function renderTable() {
         <td>${escHtml(d.parish)}</td>
         <td><span class="contributor-link" data-candidate="${escHtml(d.candidate)}" onclick="event.stopPropagation();showCampaignProfile(this.dataset.candidate)">${escHtml(d.candidate)}</span></td>
         <td>${partyBadgeHtml(d)}</td>
-        <td>${donorTypeBadgeHtml(d)}</td>
+        <td>${industryBadgeHtml(d)}</td>
         <td class="amount-cell">${formatMoney(d.amount)}</td>
         <td style="font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(d.notes||'')}">${escHtml((d.notes||'').slice(0,60))}</td>
         <td><span class="source-badge la">LA Ethics</span></td>
@@ -3287,6 +3345,19 @@ function donorTypeBadgeHtml(d) {
   const map = { IND: ['ind','Individual'], BUS: ['bus','Business'], ORG: ['org','Organization'], OTH: ['oth','Uncategorized'] };
   const [cls, label] = map[dt] || ['oth', dt];
   return `<span class="party-badge ${cls}">${label}</span>`;
+}
+
+function industryBadgeHtml(d) {
+  const ind = _getIndustry(d);
+  // Map industry name to a badge class color
+  const cls = {
+    'Individual':'ind', 'PAC/Political':'pac', 'Law':'bus',
+    'Labor/Unions':'org', 'Other':'oth'
+  }[ind] || 'bus';
+  const isActive = _industryFilter === ind;
+  return `<span class="party-badge ${cls}" style="cursor:pointer;${isActive ? 'outline:1px solid var(--gold)' : ''}"
+    onclick="event.stopPropagation();_industryFilter='${escHtml(ind)}';document.getElementById('clear-industry-filter').style.display='';applyFilters();"
+    title="Filter to ${escHtml(ind)}">${escHtml(ind)}</span>`;
 }
 
 // ============================================================
@@ -5269,6 +5340,14 @@ function showCampaignProfile(name) {
   document.querySelector('#camp-modal .cp-close')?.focus();
 }
 
+function _cyclePeriodLabel(cycleYear) {
+  const y = parseInt(cycleYear) || 0;
+  if (!y) return 'loaded cycle';
+  const ends = y >= 2024 ? 2027 : y >= 2020 ? 2023 : y >= 2016 ? 2019 :
+               y >= 2012 ? 2015 : y >= 2008 ? 2011 : y >= 2004 ? 2007 : 2003;
+  return `${y - 1}–${String(ends).slice(2)} cycle`;
+}
+
 function _refreshCampStats() {
   const fmt = n => '$' + Math.round(n).toLocaleString();
   const raised   = _campContribs.reduce((s,d) => s + d.amount, 0);
@@ -5285,6 +5364,12 @@ function _refreshCampStats() {
   if (_campLoans.length)   metaParts.push(`${_campLoans.length.toLocaleString()} loans`);
   document.getElementById('camp-meta').textContent = metaParts.join('  ·  ');
   renderCampElection(_campName, party);
+
+  // Set cycle period label
+  const cycleVal = document.getElementById('cycle-select')?.value;
+  const periodEl = document.getElementById('camp-period-label');
+  if (periodEl) periodEl.textContent = _cyclePeriodLabel(cycleVal);
+
   document.getElementById('camp-raised').textContent   = fmt(raised);
   document.getElementById('camp-spent').textContent    = fmt(spent);
   document.getElementById('camp-borrowed').textContent = fmt(borrowed);
@@ -5368,6 +5453,51 @@ function renderCampCashFlow() {
   const muted  = css.getPropertyValue('--muted').trim()  || '#8b949e';
   const green  = '#4caf7d', red = '#d76b6b';
 
+  // ── Cycle highlight band ─────────────────────────────────────────────────
+  // Shade the currently-loaded 4-year cycle window on the chart so the user
+  // can see which slice of the career timeline the stats above refer to.
+  const cycleYear = parseInt(document.getElementById('cycle-select')?.value) || 0;
+  function _cycleKeys(y) {
+    if (y >= 2024) return ['2024-01','2027-12','2024–27'];
+    if (y >= 2020) return ['2020-01','2023-12','2020–23'];
+    if (y >= 2016) return ['2016-01','2019-12','2016–19'];
+    if (y >= 2012) return ['2012-01','2015-12','2012–15'];
+    if (y >= 2008) return ['2008-01','2011-12','2008–11'];
+    if (y >= 2004) return ['2004-01','2007-12','2004–07'];
+    return            ['2000-01','2003-12','2000–03'];
+  }
+  const [bandStart, bandEnd, bandLabel] = cycleYear ? _cycleKeys(cycleYear) : ['','',''];
+  const cycleShadePlugin = (bandStart && keys.length > 1) ? {
+    id: 'cycleShade',
+    beforeDraw(chart) {
+      const { ctx, scales: { x }, chartArea } = chart;
+      const si = keys.findIndex(k => k >= bandStart);
+      const eiRev = [...keys].reverse().findIndex(k => k <= bandEnd);
+      const ei = eiRev < 0 ? keys.length - 1 : keys.length - 1 - eiRev;
+      if (si < 0 || si > ei) return;
+      const step = x.getPixelForValue(1) - x.getPixelForValue(0);
+      const x0 = x.getPixelForValue(si) - step / 2;
+      const x1 = x.getPixelForValue(ei) + step / 2;
+      const cx0 = Math.max(x0, chartArea.left);
+      const cx1 = Math.min(x1, chartArea.right);
+      if (cx1 <= cx0) return;
+      ctx.save();
+      ctx.fillStyle = 'rgba(200,169,81,0.08)';
+      ctx.fillRect(cx0, chartArea.top, cx1 - cx0, chartArea.bottom - chartArea.top);
+      ctx.strokeStyle = 'rgba(200,169,81,0.3)';
+      ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      if (x0 >= chartArea.left)  { ctx.beginPath(); ctx.moveTo(cx0, chartArea.top); ctx.lineTo(cx0, chartArea.bottom); ctx.stroke(); }
+      if (x1 <= chartArea.right) { ctx.beginPath(); ctx.moveTo(cx1, chartArea.top); ctx.lineTo(cx1, chartArea.bottom); ctx.stroke(); }
+      if (cx1 - cx0 > 28) {
+        ctx.setLineDash([]); ctx.fillStyle = 'rgba(200,169,81,0.55)';
+        ctx.font = 'bold 8px -apple-system,sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(bandLabel + ' cycle', (cx0 + cx1) / 2, chartArea.top + 3);
+      }
+      ctx.restore();
+    }
+  } : null;
+
   // ── Dynamic scale computation ─────────────────────────────────────────────
   // Smart $K/$M/$B formatter that adapts to the data magnitude.
   function fmtMoney(v) {
@@ -5399,6 +5529,7 @@ function renderCampCashFlow() {
   if (_campCashChart) _campCashChart.destroy();
   _campCashChart = new Chart(canvas.getContext('2d'), {
     type: 'line',
+    plugins: [cycleShadePlugin].filter(Boolean),
     data: {
       labels,
       datasets: [
@@ -5551,6 +5682,16 @@ async function fetchCareerData(name) {
     const r = await fetch(`${API_BASE}/api/candidate-history?name=${encodeURIComponent(name)}`);
     if (r.ok) {
       _careerData = await r.json();
+      // Populate all-time career totals strip
+      const fin = _careerData.financial || {};
+      const n   = Object.keys(fin.cycles || {}).length;
+      const strip = document.getElementById('camp-career-strip');
+      if (strip && n > 0) {
+        document.getElementById('camp-ct-raised').textContent  = formatMoney(fin.total_raised || 0);
+        document.getElementById('camp-ct-spent').textContent   = formatMoney(fin.total_spent  || 0);
+        document.getElementById('camp-ct-cycles').textContent  = `${n} cycle${n === 1 ? '' : 's'} of history`;
+        strip.style.display = '';
+      }
       // Re-render cash-on-hand chart now that full monthly data is available
       renderCampCashFlow();
       // If Career tab is already open, re-render it too
@@ -5574,7 +5715,7 @@ function renderCampCareer() {
   const raised = labels.map(c => cycles[c].raised);
   const spent  = labels.map(c => cycles[c].spent);
 
-  // Smart money formatter for any scale ($1, $500, $12K, $1.2M, $3.1B)
+  // Smart money formatter ($1 → $500K → $1.2M → $3.1B)
   function fmtCycleY(v) {
     const a = Math.abs(v);
     if (a >= 1e9) return '$' + (a / 1e9).toFixed(1) + 'B';
@@ -5584,35 +5725,53 @@ function renderCampCareer() {
     return '';
   }
 
-  // Decide linear vs log: if data spans > 30× switch to log so small cycles remain visible.
-  const allAmts    = [...raised, ...spent].filter(v => v > 0);
-  const maxAmt     = allAmts.length ? Math.max(...allAmts) : 1;
-  const minNonZero = allAmts.length ? Math.min(...allAmts) : 1;
-  const useLog     = allAmts.length > 1 && maxAmt / minNonZero > 30;
-
-  // Log scale can't render 0; use null so Chart.js skips those bars cleanly.
-  const raisedPlot = useLog ? raised.map(v => v > 0 ? v : null) : raised;
-  const spentPlot  = useLog ? spent.map(v  => v > 0 ? v  : null) : spent;
-
-  // Shorten cycle labels for display: "2020-2023" → "2020–23"
-  const shortLabels = labels.map(l => {
+  // Filter to only cycles that have some financial activity (eliminates zero-anchor cycles
+  // that would shrink all bars relative to a near-zero baseline)
+  const activePairs = labels.map((l, i) => ({ l, r: raised[i] || 0, s: spent[i] || 0 }))
+                            .filter(p => p.r > 0 || p.s > 0);
+  const activeLabels = activePairs.map(p => p.l);
+  const activeRaised = activePairs.map(p => p.r);
+  const activeSpent  = activePairs.map(p => p.s);
+  const shortLabels  = activeLabels.map(l => {
     const m = l.match(/^(\d{4})-(\d{4})$/);
     return m ? `${m[1]}–${m[2].slice(2)}` : l;
   });
+
+  // Inline plugin: draw dollar value above each bar so small bars stay readable
+  const barValuePlugin = {
+    id: 'barValues',
+    afterDatasetsDraw(chart) {
+      const { ctx, chartArea } = chart;
+      chart.data.datasets.forEach((ds, di) => {
+        const meta = chart.getDatasetMeta(di);
+        if (meta.hidden) return;
+        meta.data.forEach((bar, j) => {
+          const v = ds.data[j];
+          if (!v || v < 1) return;
+          ctx.save();
+          ctx.font = '8px -apple-system,BlinkMacSystemFont,sans-serif';
+          ctx.fillStyle = 'rgba(139,148,158,0.9)';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(fmtCycleY(v), bar.x, Math.max(bar.y, chartArea.top + 12) - 2);
+          ctx.restore();
+        });
+      });
+    }
+  };
 
   if (_careerChart) { _careerChart.destroy(); _careerChart = null; }
   const ctx = document.getElementById('camp-career-chart').getContext('2d');
   _careerChart = new Chart(ctx, {
     type: 'bar',
+    plugins: [barValuePlugin],
     data: {
       labels: shortLabels,
       datasets: [
-        { label: 'Raised', data: raisedPlot,
-          backgroundColor: 'rgba(76,175,125,0.75)', borderColor: '#4caf7d',
-          borderWidth: 1, borderRadius: 3 },
-        { label: 'Spent',  data: spentPlot,
-          backgroundColor: 'rgba(224,92,92,0.65)',  borderColor: '#e05c5c',
-          borderWidth: 1, borderRadius: 3 },
+        { label: 'Raised', data: activeRaised,
+          backgroundColor: 'rgba(76,175,125,0.75)', borderColor: '#4caf7d', borderWidth: 1 },
+        { label: 'Spent',  data: activeSpent,
+          backgroundColor: 'rgba(224,92,92,0.65)',  borderColor: '#e05c5c', borderWidth: 1 },
       ]
     },
     options: {
@@ -5621,34 +5780,16 @@ function renderCampCareer() {
         legend: { position: 'bottom', labels: { color: '#8b949e', font: { size: 11 }, padding: 10, boxWidth: 10 } },
         tooltip: {
           callbacks: {
-            title: (items) => {
-              // Show the original full label in the tooltip
-              const i = items[0].dataIndex;
-              return labels[i] || items[0].label;
-            },
-            label: c => c.raw != null ? ` ${c.dataset.label}: ${formatMoney(c.raw)}` : ` ${c.dataset.label}: —`
+            title: items => activeLabels[items[0].dataIndex] || items[0].label,
+            label: c => ` ${c.dataset.label}: ${formatMoney(c.raw)}`
           }
         }
       },
       scales: {
         x: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
         y: {
-          type: useLog ? 'logarithmic' : 'linear',
-          grace: useLog ? undefined : '12%',
-          ticks: {
-            color: '#8b949e', font: { size: 11 },
-            maxTicksLimit: useLog ? 8 : 6,
-            callback(v) {
-              // For log scale, only label clean decades/half-decades to avoid clutter
-              if (useLog) {
-                const a = Math.abs(v);
-                const isClean = [1,2,5,10,20,50,100,200,500,1e3,2e3,5e3,1e4,2e4,5e4,
-                                  1e5,2e5,5e5,1e6,2e6,5e6,1e7,2e7,5e7,1e8].some(n => Math.abs(a - n) < a * 0.01);
-                return isClean ? fmtCycleY(v) : '';
-              }
-              return fmtCycleY(v);
-            }
-          },
+          beginAtZero: true, grace: '18%',
+          ticks: { color: '#8b949e', font: { size: 11 }, maxTicksLimit: 6, callback: fmtCycleY },
           grid: { color: 'rgba(255,255,255,0.05)' }
         }
       }
@@ -5738,6 +5879,11 @@ function exportCampaignCSV() {
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="printCampaignProfile()" title="Print / Export PDF">🖨 Print</button>
         <button class="cp-close" onclick="closeCampaignProfile()" aria-label="Close campaign profile">✕</button>
       </div>
+    </div>
+    <!-- Stats period banner: cycle label (left) + all-time totals (right, once career data loads) -->
+    <div style="padding:5px 24px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <span>📊 <span id="camp-period-label">Loaded cycle</span> — <button style="background:none;border:none;color:var(--gold);font-size:10px;cursor:pointer;padding:0" onclick="campSwitchTab('career')">View all cycles →</button></span>
+      <span id="camp-career-strip" style="display:none;color:var(--muted)">All-time: <strong id="camp-ct-raised" style="color:var(--text)">—</strong> raised · <strong id="camp-ct-spent" style="color:var(--text)">—</strong> spent · <em id="camp-ct-cycles"></em></span>
     </div>
     <!-- Stats -->
     <div class="cp-stats">

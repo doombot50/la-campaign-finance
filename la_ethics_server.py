@@ -1294,6 +1294,9 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(data)
             self.wfile.write(b'\r\n')
 
+        if report_type == 'contributions':
+            _load_donor_industries()
+
         try:
             wc(b'[')
             first = True
@@ -1306,6 +1309,18 @@ class Handler(BaseHTTPRequestHandler):
                         raw = raw.strip()
                         if not raw:
                             continue
+                        # Inject industry classification for contributions
+                        if report_type == 'contributions' and _DONOR_IND is not None:
+                            try:
+                                rec = json.loads(raw)
+                                donor = (rec.get('contributor') or '').strip()
+                                norm  = _norm_name(donor)
+                                rec['industry'] = (_DONOR_IND.get(norm)
+                                                   or _DONOR_IND.get(donor)
+                                                   or 'Other')
+                                raw = json.dumps(rec, separators=(',', ':'))
+                            except Exception:
+                                pass
                         wc((b'' if first else b',') + raw.encode('utf-8'))
                         first = False
             wc(b']')
