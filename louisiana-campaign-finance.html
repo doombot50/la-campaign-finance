@@ -6525,7 +6525,10 @@ let _tokenSuggestions = [];   // parallel to _gsResults for keyboard nav
 function _renderTokenSuggestions(key, completions) {
   const box = document.getElementById('global-search-results');
   _gsResults = [];             // no entity results while in token mode
-  _tokenSuggestions = completions;
+  // Free-text tokens (zip, donor, notes…) pass completions=null. Store [] not
+  // null, otherwise the Enter handler's `_tokenSuggestions.length` throws and
+  // the token is never applied (zip/donor/etc. filtering silently breaks).
+  _tokenSuggestions = completions || [];
   _gsActive = -1;
   _gsPosition();
 
