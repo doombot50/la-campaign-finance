@@ -1397,8 +1397,10 @@
 <!-- EXPENDITURES VIEW -->
 <div id="expenditures-view" class="tab-view" style="display:none" role="tabpanel" aria-labelledby="tab-expenditures" tabindex="0">
 
-  <!-- Expenditure controls -->
-  <div class="exp-controls-bar">
+  <!-- Expenditure controls — hidden; filtering is driven by the integrated header
+       search (token filters like recipient:, category:, min:). These inputs remain
+       in the DOM as the backing store that _applyToken writes to and filterExpData reads. -->
+  <div class="exp-controls-bar" style="display:none" aria-hidden="true">
     <div class="ctrl-group">
       <label>Campaign / Committee</label>
       <select class="ctrl-select" id="exp-campaign-select" style="min-width:200px">
@@ -5227,9 +5229,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Filter chips ─────────────────────────────────────────────
 
 function _currentTab() {
-  for (const [tab, id] of Object.entries(TAB_VIEWS)) {
+  // Use the active tab BUTTON, not the visible view: the Money tab's "Out"
+  // sub-view hides contributions-view, so a view-based check would wrongly
+  // report 'overview' whenever Money Out is showing.
+  for (const [tab, id] of Object.entries(TAB_BUTTONS)) {
     const el = document.getElementById(id);
-    if (el && el.style.display !== 'none') return tab;
+    if (el && el.classList.contains('active')) return tab;
   }
   return 'overview';
 }
@@ -6419,6 +6424,24 @@ const _TOKEN_DEFS = {
   committee: { field: 'candidate-search', type: 'input'   },
 };
 
+// Money Out (expenditures) token map — same UX, different backing fields.
+const _EXP_TOKEN_DEFS = {
+  cycle:     { field: 'cycle-select',         type: 'special' },
+  campaign:  { field: 'exp-campaign-select',  type: 'select'  },
+  category:  { field: 'exp-category-select',  type: 'select'  },
+  recipient: { field: 'exp-recipient-search', type: 'input'   },
+  desc:      { field: 'exp-desc-search',      type: 'input'   },
+  parish:    { field: 'exp-parish-select',    type: 'select'  },
+  min:       { field: 'exp-amt-min',          type: 'amount'  },
+  max:       { field: 'exp-amt-max',          type: 'amount'  },
+};
+
+// True when the Money tab is showing the expenditures (Money Out) sub-view.
+function _isMoneyOut() { return _currentTab() === 'contributions' && _moneyDir === 'out'; }
+// The token map for the current context (Money Out → expenditures, else contributions).
+function _activeTokenDefs() { return _isMoneyOut() ? _EXP_TOKEN_DEFS : _TOKEN_DEFS; }
+function _allTokenKeys() { return Object.keys(_activeTokenDefs()); }
+
 // Static completions for token keys that have known option sets
 function _tokenCompletions(key, partial) {
   const p = (partial || '').toLowerCase();
@@ -6444,9 +6467,16 @@ function _tokenCompletions(key, partial) {
     return match(base);
   }
   if (key === 'parish') {
-    const sel = document.getElementById('parish-select');
+    // Parish maps to a different select depending on Money In/Out context.
+    const sel = document.getElementById(_isMoneyOut() ? 'exp-parish-select' : 'parish-select');
     const opts = sel ? Array.from(sel.options).filter(o => o.value !== 'ALL').map(o => ({ label: o.value, value: o.value })) : [];
     return match(opts);
+  }
+  if (key === 'category' || key === 'campaign') {
+    // Pull live options straight from the (hidden) expenditure select elements.
+    const sel = document.getElementById(key === 'category' ? 'exp-category-select' : 'exp-campaign-select');
+    const opts = sel ? Array.from(sel.options).filter(o => o.value !== 'ALL').map(o => ({ label: o.text, value: o.value })) : [];
+    return match(opts).slice(0, 12);
   }
   return null; // free-text token, no completions
 }
@@ -6462,11 +6492,15 @@ function _parseTokenAmount(s) {
 
 // Apply a token: set the corresponding DOM input and trigger the right refresh
 function _applyToken(key, rawValue) {
-  const def = _TOKEN_DEFS[key];
+  const onOut = _isMoneyOut();
+  const def = _activeTokenDefs()[key];
   if (!def) return;
 
+  // Money Out re-renders the expenditures view; Money In re-renders contributions.
+  const refresh = onOut ? renderExpAll : applyFiltersAndRender;
+
   // Switch to the Money tab if we're on an unrelated tab and this is a contribution filter
-  if (['party','min','max','zip','parish','donor','notes','committee','from','state'].includes(key)) {
+  if (!onOut && ['party','min','max','zip','parish','donor','notes','committee','from','state'].includes(key)) {
     const cur = _currentTab();
     if (cur !== 'contributions' && cur !== 'loans') switchTab('contributions');
   }
@@ -6489,7 +6523,7 @@ function _applyToken(key, rawValue) {
   } else if (def.type === 'amount') {
     const n = _parseTokenAmount(rawValue);
     el.value = isNaN(n) ? rawValue : n;
-    applyFiltersAndRender();
+    refresh();
   } else if (def.type === 'select') {
     // Try exact match first, then case-insensitive label match
     const opt = Array.from(el.options).find(o =>
@@ -6497,10 +6531,10 @@ function _applyToken(key, rawValue) {
       o.text.toLowerCase().includes(rawValue.toLowerCase())
     );
     el.value = opt ? opt.value : rawValue;
-    applyFiltersAndRender();
+    refresh();
   } else {
     el.value = rawValue;
-    applyFiltersAndRender();
+    refresh();
   }
 
   // Clear search and refresh chips
@@ -6536,7 +6570,8 @@ function _renderTokenSuggestions(key, completions) {
     // Free-text token (zip, donor, notes, committee, min, max) — just show a hint
     const hint = { cycle:'year (e.g. 2024)', from:'state code (e.g. TX)', state:'state code (e.g. TX)',
                    min:'amount (e.g. 5000 or 5k)', max:'amount', zip:'ZIP code', donor:'donor name',
-                   notes:'keyword', committee:'committee name' }[key] || 'value';
+                   notes:'keyword', committee:'committee name',
+                   recipient:'recipient name', desc:'keyword', campaign:'campaign name' }[key] || 'value';
     box.innerHTML = `<div class="gs-token-header">${key}:</div>
       <div class="gs-empty">Type a ${hint}, then press Enter to apply</div>`;
     box.style.display = 'block';
@@ -6560,7 +6595,6 @@ function _renderTokenSuggestions(key, completions) {
 }
 
 // Render suggestions for token *keys* (when user types partial key like "cyc")
-const _ALL_TOKEN_KEYS = Object.keys(_TOKEN_DEFS);
 
 function _renderTokenKeySuggestions(matches) {
   const box = document.getElementById('global-search-results');
@@ -6568,10 +6602,13 @@ function _renderTokenKeySuggestions(matches) {
   _gsPosition();
   const descs = { cycle:'Filter by election cycle', party:'Filter by political party',
     state:'Filter by donor state', from:'Filter by donor state',
-    min:'Minimum contribution amount', max:'Maximum contribution amount',
+    min:'Minimum amount', max:'Maximum amount',
     zip:'Filter by donor ZIP code', parish:'Filter by Louisiana parish',
     donor:'Search donor name', notes:'Search transaction notes',
-    committee:'Search committee/campaign name' };
+    committee:'Search committee/campaign name',
+    // Money Out (expenditures) tokens
+    campaign:'Filter by campaign/committee', category:'Filter by spending category',
+    recipient:'Search expenditure recipient', desc:'Search expenditure description' };
   box.innerHTML = `<div class="gs-token-header">Filters</div>` +
     matches.map(k =>
       `<button class="gs-token-item" onclick="_focusSearchWithToken('${k}:')">
@@ -6606,7 +6643,7 @@ async function _doGlobalSearch(q) {
   if (tokenMatch) {
     const key = tokenMatch[1].toLowerCase();
     const partial = tokenMatch[2];
-    if (_TOKEN_DEFS[key]) {
+    if (_activeTokenDefs()[key]) {
       const completions = _tokenCompletions(key, partial);
       _renderTokenSuggestions(key, completions);
       return;
@@ -6617,8 +6654,9 @@ async function _doGlobalSearch(q) {
   // Detect partial token key (e.g., "cyc", "par") — show filter key suggestions
   const trimmed = q.trim().toLowerCase();
   if (!trimmed.includes(' ') && trimmed.length >= 2) {
-    const keyMatches = _ALL_TOKEN_KEYS.filter(k => k.startsWith(trimmed));
-    if (keyMatches.length && keyMatches.length < _ALL_TOKEN_KEYS.length) {
+    const allKeys = _allTokenKeys();
+    const keyMatches = allKeys.filter(k => k.startsWith(trimmed));
+    if (keyMatches.length && keyMatches.length < allKeys.length) {
       _renderTokenKeySuggestions(keyMatches);
       return;
     }
@@ -6727,7 +6765,7 @@ function _gsHighlight() {
         } else {
           // Free-text token (no completions) — apply the full token:value typed
           const m = input.value.match(/^([\w]+):(.+)$/);
-          if (m && _TOKEN_DEFS[m[1].toLowerCase()]) {
+          if (m && _activeTokenDefs()[m[1].toLowerCase()]) {
             _applyToken(m[1].toLowerCase(), m[2].trim());
           }
         }
