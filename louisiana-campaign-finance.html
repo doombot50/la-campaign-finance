@@ -511,6 +511,33 @@
     transition: all 0.15s;
   }
   .cp-close:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── Search / filter help ──────────────────────────────────── */
+  .help-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; width: 32px; height: 32px; cursor: pointer;
+    font-size: 15px; line-height: 1; flex-shrink: 0; transition: all .2s;
+  }
+  .help-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .fh-body { padding: 8px 24px 24px; }
+  .fh-group { margin-top: 18px; }
+  .fh-group-title { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+  .fh-group-note { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .fh-row {
+    display: grid; grid-template-columns: 150px 1fr; gap: 12px;
+    padding: 7px 0; border-top: 1px solid var(--border); align-items: baseline;
+  }
+  .fh-row:first-of-type { border-top: none; }
+  .fh-token {
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
+    color: var(--text); background: var(--bg); border: 1px solid var(--border);
+    border-radius: 5px; padding: 2px 7px; white-space: nowrap; justify-self: start;
+  }
+  .fh-desc { font-size: 12.5px; color: var(--text); line-height: 1.45; }
+  .fh-desc small { color: var(--muted); }
+  .fh-tips { margin-top: 20px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .fh-tips li { margin-bottom: 3px; }
+  @media (max-width: 560px) { .fh-row { grid-template-columns: 1fr; gap: 3px; } }
   .cp-stats {
     display: flex; gap: 0; border-bottom: 1px solid var(--border);
   }
@@ -980,6 +1007,7 @@
                role="combobox" aria-expanded="false" aria-controls="global-search-results">
         <div id="global-search-results" role="listbox" aria-label="Search results"></div>
       </div>
+      <button class="help-btn" id="filter-help-btn" onclick="openFilterHelp()" title="Search &amp; filter guide" aria-label="Open search and filter guide"><span aria-hidden="true">?</span></button>
       <div id="proxy-live-badge" style="display:none">
         <span class="dot"></span> Live data
       </div>
@@ -3825,6 +3853,7 @@ function switchMoneyView(dir) {
 
   if (dir === 'out' && expData.length === 0) loadExpData();
   renderFilterChips();
+  _updateSearchPlaceholder();
   _saveUrlState();
 }
 
@@ -3880,6 +3909,7 @@ function switchTab(tab) {
 
   _saveUrlState();
   renderFilterChips();
+  _updateSearchPlaceholder();
 
   // Re-trigger fade-in animation
   const view = document.getElementById(TAB_VIEWS[tab] || 'contributions-view');
@@ -5150,7 +5180,7 @@ function handleCPOverlayClick(e) {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeContributorProfile();
+  if (e.key === 'Escape') { closeContributorProfile(); closeFilterHelp(); }
 });
 
 // ============================================================
@@ -5550,6 +5580,7 @@ let _overviewData = null;
   }
 
   _restoreUrlState();
+  _updateSearchPlaceholder();
 
   // Default landing is the Overview tab — load it FIRST and hide the cycle/filter
   // controls (they don't apply to the cycle-independent landing page). Loading it
@@ -6442,6 +6473,27 @@ function _isMoneyOut() { return _currentTab() === 'contributions' && _moneyDir =
 function _activeTokenDefs() { return _isMoneyOut() ? _EXP_TOKEN_DEFS : _TOKEN_DEFS; }
 function _allTokenKeys() { return Object.keys(_activeTokenDefs()); }
 
+// Update the search box hint to match the filters available in the current context.
+function _updateSearchPlaceholder() {
+  const input = document.getElementById('global-search');
+  if (!input) return;
+  if (_isMoneyOut())
+    input.placeholder = 'Search or filter — try recipient:acme category:media min:5k…';
+  else if (_currentTab() === 'contributions')
+    input.placeholder = 'Search or filter — try zip:70801 party:rep donor:exxon…';
+  else
+    input.placeholder = 'Search candidates & committees — or try cycle:2024…';
+}
+
+// Search & filter guide modal
+function openFilterHelp() {
+  document.getElementById('help-overlay').classList.add('open');
+  document.querySelector('#help-modal .cp-close')?.focus();
+}
+function closeFilterHelp() {
+  document.getElementById('help-overlay').classList.remove('open');
+}
+
 // Static completions for token keys that have known option sets
 function _tokenCompletions(key, partial) {
   const p = (partial || '').toLowerCase();
@@ -6878,6 +6930,57 @@ function _ovOpenElection(year) {
 }
 </script>
 <!-- CAMPAIGN PROFILE MODAL -->
+<!-- SEARCH / FILTER HELP MODAL -->
+<div class="cp-overlay" id="help-overlay" onclick="if(event.target===this)closeFilterHelp()">
+  <div class="cp-modal" id="help-modal" style="max-width:660px" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="cp-header">
+      <div>
+        <div class="cp-name" id="help-title">🔍 Search &amp; Filter Guide</div>
+        <div class="cp-meta">Type any of these in the search box, then press <strong>Enter</strong> to apply. The available filters change with the active tab.</div>
+      </div>
+      <button class="cp-close" onclick="closeFilterHelp()" aria-label="Close filter guide">✕</button>
+    </div>
+    <div class="fh-body">
+
+      <div class="fh-group">
+        <div class="fh-group-title">Anywhere</div>
+        <div class="fh-row"><span class="fh-token">jeff landry</span><div class="fh-desc">Plain text (no colon) searches candidates &amp; committees across all cycles.</div></div>
+        <div class="fh-row"><span class="fh-token">cycle:2024</span><div class="fh-desc">Switch the election cycle. <small>Reloads data for the selected years.</small></div></div>
+      </div>
+
+      <div class="fh-group">
+        <div class="fh-group-title">Money In <span class="fh-group-note">— contributions (💰 Money → In)</span></div>
+        <div class="fh-row"><span class="fh-token">donor:exxon</span><div class="fh-desc">Donor / contributor name.</div></div>
+        <div class="fh-row"><span class="fh-token">zip:70801</span><div class="fh-desc">Donor ZIP code (prefix match).</div></div>
+        <div class="fh-row"><span class="fh-token">party:rep</span><div class="fh-desc">Party. <small>rep, dem, ind, lbt, grn, pac, pac-rep, pac-dem, oth</small></div></div>
+        <div class="fh-row"><span class="fh-token">state:tx</span><div class="fh-desc">Donor state (2-letter). <small>Also <code>from:tx</code>; use <code>oos</code> for out-of-state.</small></div></div>
+        <div class="fh-row"><span class="fh-token">parish:Orleans</span><div class="fh-desc">Louisiana parish.</div></div>
+        <div class="fh-row"><span class="fh-token">committee:landry</span><div class="fh-desc">Recipient committee / campaign.</div></div>
+        <div class="fh-row"><span class="fh-token">notes:loan</span><div class="fh-desc">Search the transaction notes.</div></div>
+        <div class="fh-row"><span class="fh-token">min:5000</span><div class="fh-desc">Minimum amount. <small>Supports shorthand: <code>5k</code>, <code>1.5m</code>.</small></div></div>
+        <div class="fh-row"><span class="fh-token">max:50k</span><div class="fh-desc">Maximum amount.</div></div>
+      </div>
+
+      <div class="fh-group">
+        <div class="fh-group-title">Money Out <span class="fh-group-note">— expenditures (💰 Money → Out)</span></div>
+        <div class="fh-row"><span class="fh-token">recipient:acme</span><div class="fh-desc">Payee / recipient name.</div></div>
+        <div class="fh-row"><span class="fh-token">category:media</span><div class="fh-desc">Spending category. <small>Suggestions appear as you type.</small></div></div>
+        <div class="fh-row"><span class="fh-token">desc:consulting</span><div class="fh-desc">Search the expenditure description.</div></div>
+        <div class="fh-row"><span class="fh-token">campaign:landry</span><div class="fh-desc">Spending campaign / committee.</div></div>
+        <div class="fh-row"><span class="fh-token">parish:Orleans</span><div class="fh-desc">Parish (or <code>oos</code> for out-of-state).</div></div>
+        <div class="fh-row"><span class="fh-token">min:1000 / max:50k</span><div class="fh-desc">Amount range.</div></div>
+      </div>
+
+      <ul class="fh-tips">
+        <li>Type a key followed by <code>:</code> (e.g. <code>party:</code>) to see suggestions.</li>
+        <li>Active filters show as chips below the tabs — click <strong>×</strong> to remove one, or <strong>Clear all</strong>.</li>
+        <li>Combine filters: apply several in a row to narrow results.</li>
+      </ul>
+
+    </div>
+  </div>
+</div>
+
 <div class="cp-overlay" id="camp-overlay" onclick="if(event.target===this)closeCampaignProfile()">
   <div class="cp-modal" id="camp-modal" style="max-width:860px" role="dialog" aria-modal="true" aria-labelledby="camp-name">
     <div class="cp-header">
