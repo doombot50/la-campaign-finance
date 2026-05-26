@@ -557,6 +557,38 @@
   .cp-detail-lbl { color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
   .cp-detail-val { color: var(--text); font-weight: 600; }
   .cp-table-wrap { padding: 16px 24px 24px; overflow-x: auto; }
+
+  /* ── Compare campaigns (profile cards) ─────────────────────── */
+  .cmp-add-hint { font-size: 12px; color: var(--muted); padding: 0 2px 12px; }
+  .cmp-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .cmp-chip {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 20px; padding: 4px 6px 4px 12px;
+    font-size: 12px; color: var(--text); max-width: 260px;
+  }
+  .cmp-chip-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cmp-chip-x {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 13px; line-height: 1; width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%;
+  }
+  .cmp-chip-x:hover { color: var(--gold); }
+  .cmp-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(238px, 1fr)); align-items: start; }
+  .cmp-card { border: 1px solid var(--border); border-radius: 12px; background: var(--card); overflow: hidden; }
+  .cmp-card-head { padding: 13px 16px; border-bottom: 1px solid var(--border); }
+  .cmp-card-name { font-size: 15px; font-weight: 700; color: var(--gold); line-height: 1.25; }
+  .cmp-card-meta { font-size: 11px; color: var(--muted); margin-top: 5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .cmp-badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px; letter-spacing: .03em; }
+  .cmp-win { color: #4caf7d; font-weight: 700; }
+  .cmp-loss { color: #d76b6b; font-weight: 700; }
+  .cmp-section-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 700; padding: 10px 16px 3px; }
+  .cmp-stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 6px 16px; border-top: 1px solid var(--border); font-size: 12.5px; }
+  .cmp-stat-lbl { color: var(--muted); }
+  .cmp-stat-val { font-weight: 600; color: var(--text); white-space: nowrap; }
+  .cmp-stat-val.leader { color: var(--gold); }
+  .cmp-chart-wrap { padding: 12px 14px 14px; border-top: 1px solid var(--border); }
+  .cmp-chart-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+  .cmp-chart-box { position: relative; height: 120px; }
+  .cmp-chart-empty { height: 120px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--muted); }
   .cp-table {
     width: 100%; border-collapse: collapse; font-size: 13px;
   }
@@ -1815,10 +1847,10 @@
         <div class="table-title">⚖️ Compare Campaigns</div>
       </div>
       <p style="font-size:12px;color:var(--muted);padding:0 4px 12px">
-        Pick up to three committees to compare raised, spent, and cash on hand side by side.
-        Expenditure and loan figures require those datasets to be loaded (visit those tabs once for this cycle).
+        Compare up to three campaigns side by side — full profile stats, all-time totals,
+        and cash-on-hand over time. Use the search bar at the top to add a campaign.
       </p>
-      <div id="compare-pickers" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
+      <div id="compare-pickers" style="margin-bottom:4px"></div>
       <div id="compare-body"></div>
     </div>
   </div>
@@ -4910,98 +4942,209 @@ document.querySelectorAll('#donors-table thead th[data-dcol]').forEach(th => {
 // ═══════════════════════════════════════════════════════════════
 // CAMPAIGN COMPARISON
 // ═══════════════════════════════════════════════════════════════
-let _compareSel = [null, null, null];
+const CMP_MAX = 3;
+let _compareSel = [];        // up to CMP_MAX campaign names, in add order
+let _compareCareer = {};     // name -> career data | 'loading' | 'error'
+let _compareCharts = [];     // active Chart.js instances (destroyed before each re-render)
 
-function _allCampaignNames() {
-  const names = new Set();
-  allData.forEach(d => { if (d.candidate) names.add(d.candidate); });
-  expData.forEach(d => { if (d.candidate) names.add(d.candidate); });
-  loanData.forEach(d => { if (d.candidate) names.add(d.candidate); });
-  return [...names].sort();
+// Add a campaign to the comparison (called from the unified search on the Compare tab).
+function addToCompare(name) {
+  if (!name) return;
+  if (!_compareSel.includes(name)) {
+    if (_compareSel.length >= CMP_MAX) _compareSel.shift();   // drop the oldest
+    _compareSel.push(name);
+    _fetchCompareCareer(name);
+  }
+  if (_currentTab() !== 'compare') switchTab('compare');
+  else renderCompare();
+}
+
+function removeCompareAt(i) {
+  _compareSel.splice(i, 1);
+  renderCompare();
+}
+
+// Fetch all-cycle career data (per-cycle totals, monthly in/out, certified COH, races)
+// so the comparison works for any searched campaign regardless of the loaded cycle.
+async function _fetchCompareCareer(name) {
+  if (_compareCareer[name] && _compareCareer[name] !== 'error') return;
+  _compareCareer[name] = 'loading';
+  try {
+    const r = await fetch(`${API_BASE}/api/candidate-history?name=${encodeURIComponent(name)}`);
+    _compareCareer[name] = r.ok ? await r.json() : 'error';
+  } catch (e) { _compareCareer[name] = 'error'; }
+  if (_currentTab() === 'compare') renderCompare();
+}
+
+function _cmpRaceYear(date) { const p = (date || '').split('/'); return p.length === 3 ? p[2] : (date || '').slice(0, 4); }
+
+// Most recent decided race (Elected/Defeated) from career data.
+function _cmpLastRace(cd) {
+  const decided = (cd?.races || []).filter(r => r.outcome === 'Elected' || r.outcome === 'Defeated');
+  if (!decided.length) return null;
+  decided.sort((a, b) => _cmpRaceYear(b.date).localeCompare(_cmpRaceYear(a.date)) || (b.date || '').localeCompare(a.date || ''));
+  const r = decided[0];
+  return { won: r.outcome === 'Elected', year: _cmpRaceYear(r.date) };
+}
+
+// Derive party from a race office suffix (e.g. "…-Republican Party") when transaction data lacks it.
+function _cmpCareerParty(cd) {
+  for (const r of (cd?.races || [])) {
+    const m = (r.office || '').match(/-(Republican|Democratic|Libertarian|Green|Independent)\s+Party$/i);
+    if (m) { const x = m[1].toLowerCase(); return x.startsWith('rep') ? 'REP' : x.startsWith('dem') ? 'DEM' : x.startsWith('lib') ? 'LBT' : x.startsWith('gre') ? 'GRN' : 'IND'; }
+  }
+  return null;
 }
 
 function renderCompare() {
+  // Tear down any charts from the previous render to avoid leaks / ghost canvases.
+  _compareCharts.forEach(c => { try { c.destroy(); } catch (e) {} });
+  _compareCharts = [];
+
   const pickers = document.getElementById('compare-pickers');
-  const names = _allCampaignNames();
+  const body    = document.getElementById('compare-body');
+  const fmt = n => '$' + Math.round(n).toLocaleString();
+  const num = n => Number(n || 0).toLocaleString();
+
+  // Selected-campaign chips + add hint
+  pickers.innerHTML =
+    `<div class="cmp-add-hint">🔍 Use the search bar above to add a campaign${_compareSel.length ? ` — ${_compareSel.length}/${CMP_MAX} selected` : ''}.</div>` +
+    (_compareSel.length
+      ? `<div class="cmp-chips">${_compareSel.map((n, i) =>
+          `<span class="cmp-chip"><span class="cmp-chip-name">${escHtml(n)}</span><button class="cmp-chip-x" title="Remove" aria-label="Remove ${escHtml(n)}" onclick="removeCompareAt(${i})">✕</button></span>`).join('')}</div>`
+      : '');
+
+  if (!_compareSel.length) {
+    body.innerHTML = '<div style="text-align:center;padding:44px 20px;color:var(--muted);font-size:13px">No campaigns selected yet.<br>Search a campaign or committee in the bar above to start comparing.</div>';
+    return;
+  }
+
   const cycleYear = parseInt(document.getElementById('cycle-select').value);
   const prev = cycleYear - 1;
   const inCycle = (d) => { const yr = new Date(d.date).getFullYear(); return yr === cycleYear || yr === prev; };
 
-  if (!names.length) {
-    pickers.innerHTML = '';
-    document.getElementById('compare-body').innerHTML =
-      '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">No contribution data loaded yet. Switch to Contributions and click Load Data.</div>';
-    return;
-  }
-
-  // Build the three dropdowns
-  pickers.innerHTML = [0,1,2].map(i => {
-    const opts = ['<option value="">— Select committee —</option>']
-      .concat(names.map(n => `<option value="${escHtml(n)}"${_compareSel[i]===n?' selected':''}>${escHtml(n)}</option>`))
-      .join('');
-    return `<div class="ctrl-group" style="flex:1;min-width:220px">
-      <label>Committee ${i+1}</label>
-      <select class="ctrl-select" data-cmpidx="${i}" style="width:100%">${opts}</select>
-    </div>`;
-  }).join('');
-  pickers.querySelectorAll('select[data-cmpidx]').forEach(sel => {
-    sel.addEventListener('change', () => { _compareSel[parseInt(sel.dataset.cmpidx)] = sel.value || null; renderCompare(); });
-  });
-
-  const chosen = _compareSel.filter(Boolean);
-  const body = document.getElementById('compare-body');
-  if (!chosen.length) {
-    body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Select one or more committees above to compare.</div>';
-    return;
-  }
-
-  const fmt = n => '$' + Math.round(n).toLocaleString();
-  const stats = chosen.map(name => {
+  const cards = _compareSel.map(name => {
     const c = allData.filter(d => d.candidate === name && inCycle(d));
     const e = expData.filter(d => d.candidate === name && inCycle(d));
     const l = loanData.filter(d => d.candidate === name && inCycle(d));
-    const raised = c.reduce((s,d)=>s+d.amount,0);
-    const spent  = e.reduce((s,d)=>s+d.amount,0);
-    const borrowed = l.reduce((s,d)=>s+d.amount,0);
-    const donors = new Set(c.map(d=>d.contributor)).size;
-    return { name, raised, spent, borrowed, cash: raised + borrowed - spent, donors,
-             nContribs: c.length, nExps: e.length, nLoans: l.length,
-             expLoaded: expData.length > 0, loanLoaded: loanData.length > 0 };
+    const raised = c.reduce((s, d) => s + d.amount, 0);
+    const spent  = e.reduce((s, d) => s + d.amount, 0);
+    const donors = new Set(c.map(d => d.contributor)).size;
+    const career = _compareCareer[name];
+    const cd  = (career && career !== 'loading' && career !== 'error') ? career : null;
+    const fin = cd?.financial || {};
+    return {
+      name, careerState: career,
+      party: (c[0] || e[0] || {}).party || _cmpCareerParty(cd) || 'OTH',
+      lastRace: _cmpLastRace(cd),
+      raised, spent, net: raised - spent, donors,
+      atRaised: fin.total_raised || 0, atSpent: fin.total_spent || 0,
+      cycles: Object.keys(fin.cycles || {}).length,
+      coh: cd?.ethics_coh?.ending_coh,
+      monthly: fin.monthly, loadedTx: { c, e, l },
+    };
   });
 
-  const metric = (label, key, fmtFn, note) => {
-    const vals = stats.map(s => s[key]);
-    const max = Math.max(...vals.map(v => Math.abs(v)), 1);
-    return `<tr>
-      <td style="font-weight:600;white-space:nowrap">${label}${note?` <span style="font-size:10px;color:var(--muted)">${note}</span>`:''}</td>
-      ${stats.map(s => {
-        const v = s[key];
-        const pct = Math.abs(v)/max*100;
-        const isMax = v === Math.max(...vals) && vals.length > 1;
-        return `<td class="num" style="position:relative">
-          <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:rgba(200,169,81,0.10);z-index:0"></div>
-          <span style="position:relative;z-index:1;font-weight:${isMax?'700':'400'};color:${isMax?'var(--gold)':'var(--text)'}">${fmtFn(v)}</span>
-        </td>`;
-      }).join('')}
-    </tr>`;
+  // Per-metric leader (for gold highlight) — only when >1 card and value > 0.
+  const lead = key => Math.max(...cards.map(c => c[key] || 0), 0);
+  const L = { raised: lead('raised'), spent: lead('spent'), net: lead('net'), donors: lead('donors'),
+              atRaised: lead('atRaised'), atSpent: lead('atSpent'), coh: lead('coh') };
+  const multi = cards.length > 1;
+  const isLead = (v, max) => multi && max > 0 && v === max;
+
+  const partyBadge = (p) => {
+    const m = { DEM: ['🔵 Dem', '#2166ac'], REP: ['🔴 Rep', '#d73027'], IND: ['⚪ Ind', '#888'],
+                LBT: ['🟡 Lib', '#c8a951'], GRN: ['🟢 Grn', '#4caf7d'] }[p] || ['⚪ Other', '#888'];
+    return `<span class="cmp-badge" style="background:${m[1]}22;color:${m[1]}">${m[0]}</span>`;
   };
+  const row = (lbl, val, leader) => `<div class="cmp-stat-row"><span class="cmp-stat-lbl">${lbl}</span><span class="cmp-stat-val${leader ? ' leader' : ''}">${val}</span></div>`;
+  const av  = (v, fn) => v ? fn(v) : '<span style="color:var(--muted)">—</span>';
 
-  const num = n => n.toLocaleString();
-  const expNote  = stats.some(s => !s.expLoaded)  ? '(load Expenditures tab)' : '';
-  const loanNote = stats.some(s => !s.loanLoaded) ? '(load Loans tab)' : '';
+  body.innerHTML = `<div class="cmp-grid">${cards.map((s, i) => {
+    const loading = s.careerState === 'loading';
+    const dash = loading ? '<span style="color:var(--muted)">…</span>' : '<span style="color:var(--muted)">—</span>';
+    const raceHtml = s.lastRace
+      ? `<span class="${s.lastRace.won ? 'cmp-win' : 'cmp-loss'}">${s.lastRace.won ? '✓ Won' : '✗ Lost'} ${s.lastRace.year || ''}</span>` : '';
+    const cohRow = (s.coh != null)
+      ? row('Certified Cash on Hand', fmt(s.coh), isLead(s.coh, L.coh))
+      : row('Certified Cash on Hand', dash, false);
+    return `<div class="cmp-card">
+      <div class="cmp-card-head">
+        <div class="cmp-card-name">${escHtml(s.name)}</div>
+        <div class="cmp-card-meta">${partyBadge(s.party)} ${raceHtml}
+          <button class="cmp-chip-x" title="Remove" aria-label="Remove ${escHtml(s.name)}" style="margin-left:auto" onclick="removeCompareAt(${i})">✕</button>
+        </div>
+      </div>
+      <div class="cmp-section-lbl">This cycle · ${_cyclePeriodLabel(cycleYear)}</div>
+      ${row('Raised', fmt(s.raised), isLead(s.raised, L.raised))}
+      ${row('Spent', fmt(s.spent), isLead(s.spent, L.spent))}
+      ${row('Net (Raised − Spent)', fmt(s.net), isLead(s.net, L.net))}
+      ${row('Unique Donors', num(s.donors), isLead(s.donors, L.donors))}
+      <div class="cmp-section-lbl">All-time${loading ? ' <span style="color:var(--muted);font-weight:400">(loading…)</span>' : ''}</div>
+      ${row('Raised', s.atRaised ? fmt(s.atRaised) : dash, isLead(s.atRaised, L.atRaised))}
+      ${row('Spent', s.atSpent ? fmt(s.atSpent) : dash, isLead(s.atSpent, L.atSpent))}
+      ${row('Cycles of history', s.cycles ? num(s.cycles) : dash, false)}
+      ${cohRow}
+      <div class="cmp-chart-wrap">
+        <div class="cmp-chart-lbl">📈 Cash on Hand over time</div>
+        <div class="cmp-chart-box"><canvas id="cmp-chart-${i}"></canvas></div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
 
-  body.innerHTML = `
-    <table class="data-table" style="width:100%">
-      <thead><tr><th style="width:170px">Metric</th>${stats.map(s=>`<th class="num" style="max-width:200px">${escHtml(s.name)}</th>`).join('')}</tr></thead>
-      <tbody>
-        ${metric('💰 Total Raised', 'raised', fmt)}
-        ${metric('👥 Unique Donors', 'donors', num)}
-        ${metric('💸 Total Spent', 'spent', fmt, expNote)}
-        ${metric('🏦 Total Borrowed', 'borrowed', fmt, loanNote)}
-        ${metric('📊 Cash on Hand', 'cash', fmt, (expNote||loanNote)?'(partial)':'')}
-        ${metric('# Contributions', 'nContribs', num)}
-      </tbody>
-    </table>`;
+  // Charts are created after the canvases are in the DOM (compare-view is visible here).
+  cards.forEach((s, i) => _renderCompareChart(`cmp-chart-${i}`, s));
+}
+
+function _renderCompareChart(canvasId, s) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  // Prefer all-cycle monthly buckets from career data; fall back to loaded-cycle transactions.
+  let months = {};
+  if (s.monthly && Object.keys(s.monthly).length) {
+    months = s.monthly;
+  } else {
+    const bucket = (date) => {
+      if (!date) return null;
+      const m = String(date).slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(m)) return null;
+      if (!months[m]) months[m] = { in: 0, out: 0 };
+      return months[m];
+    };
+    s.loadedTx.c.forEach(d => { const b = bucket(d.date); if (b) b.in  += d.amount; });
+    s.loadedTx.l.forEach(d => { const b = bucket(d.date); if (b) b.in  += d.amount; });
+    s.loadedTx.e.forEach(d => { const b = bucket(d.date); if (b) b.out += d.amount; });
+  }
+
+  const keys = Object.keys(months).sort();
+  if (!keys.length) {
+    const box = canvas.parentElement;
+    box.innerHTML = `<div class="cmp-chart-empty">${s.careerState === 'loading' ? 'Loading…' : 'No timeline data'}</div>`;
+    return;
+  }
+
+  let cum = 0;
+  const data = keys.map(k => { cum += (months[k].in || 0) - (months[k].out || 0); return Math.round(cum); });
+  const labels = keys.map(k => { const [y, mo] = k.split('-'); return new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }); });
+
+  const css   = getComputedStyle(document.documentElement);
+  const gold  = css.getPropertyValue('--gold').trim()  || '#c8a951';
+  const muted = css.getPropertyValue('--muted').trim() || '#8b949e';
+
+  const chart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets: [{ data, borderColor: gold, backgroundColor: gold + '22', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => 'CoH: $' + c.parsed.y.toLocaleString() } } },
+      scales: {
+        x: { ticks: { color: muted, font: { size: 9 }, maxTicksLimit: 5 }, grid: { display: false } },
+        y: { ticks: { color: muted, font: { size: 9 }, callback: v => '$' + (Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : Math.abs(v) >= 1e3 ? Math.round(v / 1e3) + 'k' : v) }, grid: { color: 'rgba(255,255,255,.05)' } },
+      },
+    },
+  });
+  _compareCharts.push(chart);
 }
 
 // ============================================================
@@ -6481,6 +6624,8 @@ function _updateSearchPlaceholder() {
     input.placeholder = 'Search or filter — try recipient:acme category:media min:5k…';
   else if (_currentTab() === 'contributions')
     input.placeholder = 'Search or filter — try zip:70801 party:rep donor:exxon…';
+  else if (_currentTab() === 'compare')
+    input.placeholder = 'Search a campaign to add to the comparison…';
   else
     input.placeholder = 'Search candidates & committees — or try cycle:2024…';
 }
@@ -6771,6 +6916,9 @@ function _gsOpen(i) {
   document.getElementById('global-search-results').style.display = 'none';
   document.getElementById('global-search').value = '';
   document.getElementById('global-search').setAttribute('aria-expanded', 'false');
+  // On the Compare tab, a search result is added to the comparison instead of
+  // opening its profile modal.
+  if (_currentTab() === 'compare') { addToCompare(r.name); return; }
   showCampaignProfile(r.name, 'career');
 }
 
