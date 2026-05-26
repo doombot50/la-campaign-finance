@@ -3864,6 +3864,12 @@ function switchTab(tab) {
     sel.value = cur;
   }
 
+  // Leaflet computes a 0×0 size when its container is hidden (the map lives in
+  // contributions-view, which is display:none on load). Re-measure + redraw once
+  // the Money tab is actually visible, otherwise the map renders as a gray box.
+  if (tab === 'contributions' && typeof map !== 'undefined') {
+    setTimeout(() => { map.invalidateSize(); renderMap(); }, 0);
+  }
   if (tab === 'loans'   && loanData.length === 0) loadLoanData();
   if (tab === 'donors')  renderDonorsLeaderboard();
   if (tab === 'compare') renderCompare();
