@@ -42,22 +42,412 @@
     "filer_id": "CAN991431",
     "report_id": 132570,
     "report_period": "Annual",
-    "report_year": 2027,
+    "report_year": 2025,
     "date_filed": "3/2/2026",
     "beginning_coh": 4619274.22,
     "ending_coh": 10713818.43,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-132570.pdf",
-    "fetched_at": "2026-05-25T21:14:02.446846Z"
+    "fetched_at": "2026-05-25T21:23:26.311001Z"
   },
   "JOHN BEL EDWARDS": {
     "filer_id": "CAN990972",
     "report_id": 120083,
     "report_period": "Annual",
-    "report_year": 2027,
+    "report_year": 2023,
     "date_filed": "2/15/2024",
     "beginning_coh": 53482.9,
     "ending_coh": 49888.76,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-120083.pdf",
-    "fetched_at": "2026-05-25T21:14:15.913467Z"
+    "fetched_at": "2026-05-25T21:23:29.113708Z"
+  },
+  "IBEW PAC": {
+    "filer_id": "PAC990351"
+  },
+  "REPUBLICAN PARTY OF LOUISIANA": {
+    "filer_id": "PAC990126"
+  },
+  "EDWARD L RISPONE": {
+    "filer_id": "CAN993860",
+    "report_id": 75541,
+    "report_period": "Annual",
+    "report_year": 2018,
+    "date_filed": "2/15/2019",
+    "beginning_coh": 0.0,
+    "ending_coh": 5504650.6,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-75541.pdf",
+    "fetched_at": "2026-05-25T21:19:36.331196Z"
+  },
+  "LA DEMOCRATS FORMERLY DEMOCRATIC PAC OF THE DEMO ST CENTRAL COMM DEMOPAC": {
+    "filer_id": "PAC990118"
+  },
+  "GUMBO PAC": {
+    "filer_id": "PAC990329"
+  },
+  "RGA REPUBLICAN GOVERNORS ASSOCIATION RIGHT DIRECTION PAC": {
+    "filer_id": "PAC990667"
+  },
+  "ENTERGY CORPORATION EMPLOYEE PAC ENPAC": {
+    "filer_id": "PAC990054"
+  },
+  "DEMOCRATIC GOVERNORS ASSOCIATION DGA": {
+    "filer_id": "PAC990379"
+  },
+  "DAVID VITTER": {
+    "filer_id": "CAN990426",
+    "report_id": 130548,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "1/20/2026",
+    "beginning_coh": 30555.62,
+    "ending_coh": 29655.62,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-130548.pdf",
+    "fetched_at": "2026-05-25T21:20:27.520424Z"
+  },
+  "WILLIAM BILLY NUNGESSER": {
+    "filer_id": "CAN990863",
+    "report_id": 131896,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "2/23/2026",
+    "beginning_coh": 1723990.91,
+    "ending_coh": 1798339.14,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131896.pdf",
+    "fetched_at": "2026-05-25T21:20:41.657766Z"
+  },
+  "AMERICAN ELECTRIC POWER COMMITTEE FOR RESPONSIBLE": {
+    "filer_id": "PAC990187"
+  },
+  "KATHLEEN BABINEAUX BLANCO": {
+    "filer_id": "PCC990001",
+    "report_id": 101387,
+    "report_period": "Annual",
+    "report_year": 2021,
+    "date_filed": "1/31/2022",
+    "beginning_coh": 33545.26,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-101387.pdf",
+    "fetched_at": "2026-05-25T21:21:02.316211Z"
+  },
+  "JOHN L JAY DARDENNE": {
+    "filer_id": "CAN990135",
+    "report_id": 129975,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "12/29/2025",
+    "beginning_coh": 1018.85,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-129975.pdf",
+    "fetched_at": "2026-05-25T21:21:15.984390Z"
+  },
+  "JOHN KENNEDY": {
+    "filer_id": "CAN990097",
+    "report_id": 131093,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "2/2/2026",
+    "beginning_coh": 311051.6,
+    "ending_coh": 316280.09,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131093.pdf",
+    "fetched_at": "2026-05-25T21:21:28.367256Z"
+  },
+  "LA CONSERVATIVE MAJORITY PAC FORMERLY LA COMMITTEE FOR A REPUBLICAN MAJORITY": {
+    "filer_id": "PAC990121"
+  },
+  "CAJUN PAC": {
+    "filer_id": "PAC990488"
+  },
+  "LA REALTORS PAC": {
+    "filer_id": "PAC990363"
+  },
+  "JAMES J JIM DONELON": {
+    "filer_id": "CAN990862",
+    "report_id": 132579,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "3/2/2026",
+    "beginning_coh": 393983.59,
+    "ending_coh": 308276.89,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-132579.pdf",
+    "fetched_at": "2026-05-25T21:22:06.601761Z"
+  },
+  "THE NORTHSHORE WINS INC": {
+    "filer_id": "PAC990597"
+  },
+  "EDUCATION REFORM NOW ADVOCACY": {
+    "filer_id": "PAC990349"
+  },
+  "HOUSE DEMOCRATIC CAMPAIGN COMMITTEE OF LA": {
+    "filer_id": "PAC990120"
+  },
+  "ELIZABETH MURRILL": {
+    "filer_id": "CAN994891",
+    "report_id": 132785,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "3/3/2026",
+    "beginning_coh": 1428469.98,
+    "ending_coh": 2177911.59,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-132785.pdf",
+    "fetched_at": "2026-05-25T21:22:42.370083Z"
+  },
+  "RAY NAGIN": {
+    "filer_id": "CAN990374",
+    "report_id": 56441,
+    "report_period": "Annual",
+    "report_year": 2015,
+    "date_filed": "1/28/2016",
+    "beginning_coh": 51989.67,
+    "ending_coh": 51842.28,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-56441.pdf",
+    "fetched_at": "2026-05-25T21:22:55.043468Z"
+  },
+  "MICHAEL G MIKE STRAIN": {
+    "filer_id": "CAN990944",
+    "report_id": 131820,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "2/20/2026",
+    "beginning_coh": 866159.28,
+    "ending_coh": 1055985.02,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131820.pdf",
+    "fetched_at": "2026-05-25T21:24:48.984332Z"
+  },
+  "LA MANUFACTURERS POLICAL ACTIONS COMMITTEE LAMP": {
+    "filer_id": "PAC990174"
+  },
+  "MARLIN GUSMAN": {
+    "filer_id": "CAN990287",
+    "report_id": 96874,
+    "report_period": "Annual",
+    "report_year": 2020,
+    "date_filed": "2/18/2021",
+    "beginning_coh": 203017.18,
+    "ending_coh": 188808.73,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-96874.pdf",
+    "fetched_at": "2026-05-25T23:07:39.206433Z"
+  },
+  "SCOTT A ANGELLE": {
+    "filer_id": "CAN991504",
+    "report_id": 131910,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "2/23/2026",
+    "beginning_coh": 0.0,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131910.pdf",
+    "fetched_at": "2026-05-25T23:07:52.647833Z"
+  },
+  "FOSTER L CAMPBELL": {
+    "filer_id": "CAN990099",
+    "report_id": 132377,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "3/1/2026",
+    "beginning_coh": 30977.76,
+    "ending_coh": 17569.96,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-132377.pdf",
+    "fetched_at": "2026-05-25T23:08:06.112111Z"
+  },
+  "NEWELL NORMAND": {
+    "filer_id": "CAN991058",
+    "report_id": 131881,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "2/23/2026",
+    "beginning_coh": 197693.65,
+    "ending_coh": 122913.65,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131881.pdf",
+    "fetched_at": "2026-05-25T23:08:19.282736Z"
+  },
+  "HELENA MORENO": {
+    "filer_id": "CAN991644",
+    "report_id": 132118,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "2/26/2026",
+    "beginning_coh": 295510.76,
+    "ending_coh": 266256.02,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-132118.pdf",
+    "fetched_at": "2026-05-25T23:08:32.242182Z"
+  },
+  "LATOYA CANTRELL": {
+    "filer_id": "CAN992210",
+    "report_id": 121277,
+    "report_period": "Annual",
+    "report_year": 2023,
+    "date_filed": "4/15/2024",
+    "beginning_coh": 6702.89,
+    "ending_coh": 2608.64,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-121277.pdf",
+    "fetched_at": "2026-05-25T23:08:46.045897Z"
+  },
+  "NEA ADVOCACY FUND": {
+    "filer_id": "PAC990511"
+  },
+  "SENATE DEMOCRATIC CAMPAIGN COMMITTEE OF LA": {
+    "filer_id": "PAC990119"
+  },
+  "JOSEPH P LOPINTO": {
+    "filer_id": "CAN991514",
+    "report_id": 131720,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "2/18/2026",
+    "beginning_coh": 305399.3,
+    "ending_coh": 400990.95,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131720.pdf",
+    "fetched_at": "2026-05-25T23:09:14.205894Z"
+  },
+  "JOHN SCHRODER": {
+    "filer_id": "CAN991280",
+    "report_id": 109761,
+    "report_period": "Annual",
+    "report_year": 2022,
+    "date_filed": "2/15/2023",
+    "beginning_coh": 2000996.15,
+    "ending_coh": 2405222.68,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-109761.pdf",
+    "fetched_at": "2026-05-25T23:09:27.894482Z"
+  },
+  "LOUISIANA FEDERATION FOR CHILDREN ACTION FUND": {
+    "filer_id": "PAC990409"
+  },
+  "ATMOS ENERGY CORPORATION PAC": {
+    "filer_id": "PAC990451"
+  },
+  "SHARON WESTON BROOME": {
+    "filer_id": "CAN990189",
+    "report_id": 121384,
+    "report_period": "Annual",
+    "report_year": 2023,
+    "date_filed": "4/25/2024",
+    "beginning_coh": 52208.07,
+    "ending_coh": 109314.88,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-121384.pdf",
+    "fetched_at": "2026-05-25T23:09:55.613064Z"
+  },
+  "LOUISIANA STATE FARM AGENTS PAC INC LASFAA PAC": {
+    "filer_id": "PAC990073"
+  },
+  "JOHN F YOUNG": {
+    "filer_id": "CAN991158",
+    "report_id": 108919,
+    "report_period": "Annual",
+    "report_year": 2022,
+    "date_filed": "2/10/2023",
+    "beginning_coh": 31437.48,
+    "ending_coh": 31344.15,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-108919.pdf",
+    "fetched_at": "2026-05-25T23:10:16.059206Z"
+  },
+  "LA HOSPITAL ASSOCIATION PAC HOSPPAC": {
+    "filer_id": "PAC990102"
+  },
+  "REPUBLICAN LEGISLATIVE DELEGATION CAMPAIGN COMMITTEE INC": {
+    "filer_id": "PAC990577"
+  },
+  "VALERO ENERGY CORPORATION PAC VALPAC": {
+    "filer_id": "PAC990162"
+  },
+  "LOUISIANA KIDS MATTER ACTION FUND": {
+    "filer_id": "OP990022"
+  },
+  "STAND FOR CHILDREN LOUISIANA IEC": {
+    "filer_id": "PAC990314"
+  },
+  "JASON ARD": {
+    "filer_id": "CAN991864",
+    "report_id": 133378,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "4/5/2026",
+    "beginning_coh": 3927.61,
+    "ending_coh": 210435.52,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-133378.pdf",
+    "fetched_at": "2026-05-25T23:11:11.365177Z"
+  },
+  "STEPHEN WAGUESPACK": {
+    "filer_id": "CAN995205"
+  },
+  "RALPH ABRAHAM": {
+    "filer_id": "CAN993884",
+    "report_id": 75702,
+    "report_period": "Annual",
+    "report_year": 2018,
+    "date_filed": "2/15/2019",
+    "beginning_coh": 0.0,
+    "ending_coh": 350275.2,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-75702.pdf",
+    "fetched_at": "2026-05-25T23:11:32.608261Z"
+  },
+  "MIKE FRANCIS": {
+    "filer_id": "CAN990821",
+    "report_id": 110469,
+    "report_period": "Annual",
+    "report_year": 2022,
+    "date_filed": "4/2/2023",
+    "beginning_coh": 0.0,
+    "ending_coh": 96683.06,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-110469.pdf",
+    "fetched_at": "2026-05-26T00:59:31.037302Z"
+  },
+  "J CAMERON HENRY": {
+    "filer_id": "CAN991168",
+    "report_id": 132507,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "date_filed": "3/2/2026",
+    "beginning_coh": 139990.9,
+    "ending_coh": 453808.94,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-132507.pdf",
+    "fetched_at": "2026-05-26T00:59:44.747548Z"
+  },
+  "SAFE AND FREE LOUISIANA": {
+    "filer_id": "PAC990619"
+  },
+  "SHAWN WILSON": {
+    "filer_id": "CAN991028",
+    "report_id": 119762,
+    "report_period": "Annual",
+    "report_year": 2023,
+    "date_filed": "2/14/2024",
+    "beginning_coh": 45022.83,
+    "ending_coh": 25137.45,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-119762.pdf",
+    "fetched_at": "2026-05-26T01:00:05.629645Z"
+  },
+  "ROYCE DUPLESSIS": {
+    "filer_id": "CAN993682",
+    "report_id": 128246,
+    "report_period": "Annual",
+    "report_year": 2024,
+    "date_filed": "7/14/2025",
+    "beginning_coh": 24988.17,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-128246.pdf",
+    "fetched_at": "2026-05-26T01:00:18.516430Z"
+  },
+  "JEAN PAUL MORRELL": {
+    "filer_id": "CAN990875",
+    "report_id": 127126,
+    "report_period": "Annual",
+    "report_year": 2024,
+    "date_filed": "3/27/2025",
+    "beginning_coh": 38163.73,
+    "ending_coh": 56347.05,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-127126.pdf",
+    "fetched_at": "2026-05-26T01:00:33.321974Z"
+  },
+  "LOUISIANA CITIZENS FOR JOB CREATORS INC": {
+    "filer_id": "PAC990320"
+  },
+  "CADE COLE": {
+    "filer_id": "CAN995642"
+  },
+  "LA INDEPENDENT FEDERATION OF ELECTORS": {
+    "filer_id": "PAC990090"
+  },
+  "AMERICANS FOR PROSPERITY": {
+    "filer_id": "OP990015"
   }
 }
