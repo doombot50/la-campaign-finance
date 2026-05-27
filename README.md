@@ -3,13 +3,13 @@
 An interactive dashboard over Louisiana campaign-finance data from
 [ethics.la.gov](https://www.ethics.la.gov/) — money in, money out, loans, top
 donors, races, side-by-side campaign comparisons, and certified Cash-on-Hand
-from annual ethics filings.
+from annual ethics filings (F102 candidate + F202 PAC).
 
 A single-page browser app (`louisiana-campaign-finance.html`) talks to a small
 Python proxy (`la_ethics_server.py`) that streams cached snapshots of the
 state's contribution / expenditure / loan CSVs, augmented with per-candidate
-career data and certified bank-balance anchors scraped from F102 Annual
-reports.
+career data and certified bank-balance anchors scraped from annual reports
+filed by both candidates and PACs.
 
 ## Quick start
 
@@ -37,7 +37,8 @@ parsed records in IndexedDB so subsequent loads are instant.
 - **Campaign profile** modal (any campaign name → click) — header stats,
   party + most recent election result, full contribution / expenditure / loan
   tables, a multi-cycle career chart, and a **Net Cash Flow** chart annotated
-  with certified Cash-on-Hand anchor dots from F102 Annual filings.
+  with certified Cash-on-Hand anchor dots from F102 (candidate) and F202
+  (PAC) Annual filings.
 - **Contributor profile** modal — every committee a donor gave to in the
   selected cycle, with totals.
 - **Compare** — add up to three campaigns via the unified search; each becomes
@@ -149,12 +150,16 @@ python3 fetch_ethics_coh.py --limit 10               # cap at N (testing)
 ```
 
 The scraper:
-1. Looks up the filer's CAN-style ID via `SearchByNameAdv.aspx`.
-2. Lists every F102 Annual report on `ViewEFiler.aspx?FilerID=…`.
+1. Looks up the filer's ID (CAN-style for candidates, PAC-style for PACs)
+   via `SearchByNameAdv.aspx`.
+2. Lists every Annual report on `ViewEFiler.aspx?FilerID=…` — F102
+   (candidate) or F202 (PAC).
 3. Downloads each report PDF (cached in `.ethics_pdf_cache/`).
-4. Extracts Lines 14 (Beginning COH) and 18 (Ending COH) with pdfplumber.
-5. Writes a per-candidate `reports: [...]` list (oldest → newest) plus a
-   flat-fields copy of the most-recent report for backward compatibility.
+4. Extracts the "Funds on hand at beginning / closing" Summary-Page lines
+   with pdfplumber.
+5. Writes a per-entity `reports: [...]` list (oldest → newest) — each item
+   stamped with its `form_type` (`F102` or `F202`) — plus a flat-fields
+   copy of the most-recent report for backward compatibility.
 
 PDF downloads use a 90 s timeout with 3× retry-with-exponential-backoff
 (2 s, 4 s, 8 s) and atomic writes (`.partial` → rename), so a flaky connection
@@ -183,9 +188,10 @@ the instance's disk between requests).
   normalized candidate-name string, not by `filerNumber`. About 0.3% of
   candidates have multiple filers under one name and roll up; a filer-keyed
   rebuild is on the roadmap.
-- **F102-only certified COH** — we only scrape annual reports (one anchor per
-  year). F101 campaign-period reports would add intra-year resolution; not
-  currently fetched.
+- **Annual-only certified COH** — we scrape F102 (candidate) and F202 (PAC)
+  Annual reports, giving one anchor per year. F101 / F201 campaign-period
+  reports (pre-primary, pre-general, post-election) would add intra-year
+  resolution; not currently fetched.
 - **No automated tests** — bugs in filter / search logic have to be caught by
   hand against the live dashboard. Test harness for the filter / token layer
   is on the roadmap.
@@ -196,6 +202,6 @@ the instance's disk between requests).
   logic — the most common bug surface.
 - Filer-keyed candidate index rebuild (fixes the 0.3% multi-committee
   roll-up).
-- Optional F101 campaign-period anchors on the Net Cash Flow chart (denser
-  dots during active campaigns).
+- Optional F101 / F201 campaign-period anchors on the Net Cash Flow chart
+  (denser dots during active campaigns and PAC pushes).
 - Independent-expenditure / super-PAC attribution view.
