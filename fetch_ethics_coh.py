@@ -23,6 +23,28 @@ Usage:
 
 PDFs cached in .ethics_pdf_cache/ to skip re-downloads.
 FilerIDs (CAN-style) cached in ethics_coh_cache.json under each entry.
+
+CACHE KEY LIMITATION
+--------------------
+ethics_coh_cache.json is keyed by the *normalized display name* used in our
+la_candidate_index.json.gz (upper-cased, whitespace-collapsed). This means:
+
+  - The search query sent to ethics.la.gov is the dashboard name verbatim.
+    If the ethics portal spells a name differently (e.g., "J. CAMERON HENRY"
+    vs "J CAMERON HENRY", or a hyphenated surname), the search may return no
+    match even though the filer exists.
+
+  - On a full rebuild (py -3 fetch_ethics_coh.py with no --filer), only names
+    in the candidate index get scraped. Newly-added candidates or names that
+    changed between builds won't appear until the next full run.
+
+  - Remedy: if --filer returns no match, try a last-name-only retry (already
+    done automatically) or pass a shorter/alternate spelling via --filer
+    manually, then the discovered filer_id will be reused on future runs.
+
+  - Long-term fix (not yet implemented): build a FilerID index keyed by
+    ethics portal name at scrape time, then fuzzy-match dashboard names
+    against it rather than relying on the search form returning the right hit.
 """
 
 import urllib.request
