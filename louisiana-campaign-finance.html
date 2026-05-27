@@ -6216,8 +6216,15 @@ async function fetchCareerData(name) {
         const yr   = coh.report_year || '';
         const date = coh.date_filed  || '';
         link.textContent = `certified ${yr ? yr + ' ' : ''}filing`;
-        link.href        = coh.pdf_url || '#';
-        link.title       = `Certified per LA Ethics annual filing${date ? ' filed ' + date : ''}. Click to view source PDF.`;
+        // Prefer the LA Ethics public report viewer (ShowEForm.aspx) — it's the
+        // user-facing report page that links to the PDF and renders in-browser.
+        // Fall back to the raw PDF if we don't have a report_id.
+        link.href = coh.report_id
+          ? `https://www.ethics.la.gov/CampaignFinanceSearch/ShowEForm.aspx?ReportID=${coh.report_id}`
+          : (coh.pdf_url || '#');
+        link.target = '_blank';
+        link.rel    = 'noopener noreferrer';
+        link.title  = `Certified per LA Ethics annual filing${date ? ' filed ' + date : ''}. Click to view the official report.`;
         if (cohStat) cohStat.style.display = '';
       } else {
         if (cohStat) cohStat.style.display = 'none';
