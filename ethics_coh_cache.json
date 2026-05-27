@@ -702,10 +702,82 @@
     "filer_id": "OP990015"
   },
   "BOILERMAKERS LOCAL LODGE PAC": {
-    "filer_id": "PAC990010"
+    "filer_id": "PAC990010",
+    "reports": [
+      {
+        "report_id": 1535,
+        "report_period": "Annual",
+        "report_year": 2000,
+        "form_type": "F202",
+        "date_filed": "10/24/2000",
+        "beginning_coh": 735.7,
+        "ending_coh": null,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1535.pdf"
+      }
+    ],
+    "report_id": 1535,
+    "report_period": "Annual",
+    "report_year": 2000,
+    "form_type": "F202",
+    "date_filed": "10/24/2000",
+    "beginning_coh": 735.7,
+    "ending_coh": null,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1535.pdf",
+    "fetched_at": "2026-05-27T01:56:45.282436Z"
   },
   "MAINSTREAM AMERICA PAC": {
-    "filer_id": "PAC990025"
+    "filer_id": "PAC990025",
+    "reports": [
+      {
+        "report_id": 1096,
+        "report_period": "Annual",
+        "report_year": 1999,
+        "form_type": "F202",
+        "date_filed": "1/25/2000",
+        "beginning_coh": 28107.86,
+        "ending_coh": 21054.07,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1096.pdf"
+      },
+      {
+        "report_id": 1712,
+        "report_period": "Annual",
+        "report_year": 2000,
+        "form_type": "F202",
+        "date_filed": "1/28/2001",
+        "beginning_coh": 68123.34,
+        "ending_coh": 70123.34,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1712.pdf"
+      },
+      {
+        "report_id": 2584,
+        "report_period": "Annual",
+        "report_year": 2001,
+        "form_type": "F202",
+        "date_filed": "2/14/2002",
+        "beginning_coh": 70123.34,
+        "ending_coh": 190297.83,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-2584.pdf"
+      },
+      {
+        "report_id": 3839,
+        "report_period": "Annual",
+        "report_year": 2002,
+        "form_type": "F202",
+        "date_filed": "1/22/2003",
+        "beginning_coh": 0.0,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-3839.pdf"
+      }
+    ],
+    "report_id": 3839,
+    "report_period": "Annual",
+    "report_year": 2002,
+    "form_type": "F202",
+    "date_filed": "1/22/2003",
+    "beginning_coh": 0.0,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-3839.pdf",
+    "fetched_at": "2026-05-27T01:57:12.066111Z"
   },
   "ROLFE H MCCOLLISTER": {
     "filer_id": "CAN990061"

@@ -570,7 +570,11 @@ def main():
                 print(f'  ERR  could not extract COH from report {report_id} ({year_label})')
                 continue
 
-            print(f'  OK   {year_label}  beginning=${beg_coh:,.2f}  ending=${end_coh:,.2f}')
+            # Format defensively — sometimes only one of the two lines parses
+            # (e.g., a brand-new PAC's first report has no beginning balance,
+            # or a final report leaves the closing field blank).
+            _fmt = lambda v: f'${v:,.2f}' if v is not None else '(none)'
+            print(f'  OK   {year_label}  beginning={_fmt(beg_coh)}  ending={_fmt(end_coh)}')
 
             reports_out.append({
                 'report_id':     report_id,
