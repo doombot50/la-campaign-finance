@@ -320,7 +320,13 @@ def get_annual_reports(filer_id: str) -> list:
         dec_dates  = [d for d in dates if d.startswith('12/31/')]
         if dec_dates:
             year_end = int(dec_dates[0].split('/')[-1])
-        # Fallback: use filed date year
+        # Sanity check: source data occasionally has sentinel dates like
+        # "1/1/3001" that fool the heuristic. Reject implausible years and
+        # fall back to date_filed - 1 (annuals close out year-after-filing).
+        if year_start is not None and (year_start < 1980 or year_start > 2050):
+            year_start = None
+        if year_end is not None and (year_end < 1980 or year_end > 2050):
+            year_end = None
         if year_start is None and date_filed:
             year_start = int(date_filed.split('/')[-1]) - 1
 
