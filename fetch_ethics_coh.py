@@ -64,6 +64,7 @@ import html.parser
 import json
 import os
 import re
+import socket
 import time
 import sys
 import argparse
@@ -137,10 +138,32 @@ def _fetch(url, data=None, referer=None, opener=None):
     return raw.decode('utf-8', errors='replace'), final_url
 
 
-def _download_binary(url):
+def _download_binary(url, timeout=90, retries=3):
+    """Download bytes from `url` with retry-with-backoff on transient timeouts.
+
+    PDFs from eap.ethics.la.gov are large and the server sometimes streams them
+    slowly; the per-socket read timeout fires far more often than the connect
+    fails. We retry 3× with exponential backoff before raising, and treat 4xx
+    HTTP errors as permanent (don't retry them).
+    """
+    last_err = None
     req = urllib.request.Request(url, headers={'User-Agent': UA})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return resp.read()
+    for attempt in range(1, retries + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.read()
+        except urllib.error.HTTPError as e:
+            # 4xx is permanent — don't burn retries on 404s etc.
+            if 400 <= e.code < 500 and e.code != 408:
+                raise
+            last_err = e
+        except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError) as e:
+            last_err = e
+        if attempt < retries:
+            backoff = 2 ** attempt   # 2s, 4s, 8s
+            print(f'    transient error on attempt {attempt}/{retries} ({last_err}); retrying in {backoff}s...')
+            time.sleep(backoff)
+    raise last_err
 
 
 # ── ASP.NET hidden-field extraction ──────────────────────────────────────────
@@ -317,20 +340,33 @@ def get_annual_reports(filer_id: str) -> list:
 
 def download_pdf(report_id: int, dry_run: bool = False) -> str | None:
     local = os.path.join(PDF_CACHE_DIR, f'LA-{report_id}.pdf')
+    # Treat suspiciously small cached files (<1KB) as broken partial downloads
+    # from earlier runs and re-fetch. A real F102 PDF is always tens of KB+.
     if os.path.exists(local):
-        return local
+        if os.path.getsize(local) >= 1024:
+            return local
+        print(f'    note: cached PDF {os.path.basename(local)} is tiny ({os.path.getsize(local)}B); re-fetching')
+        try: os.remove(local)
+        except OSError: pass
     if dry_run:
         return None
 
     url = PDF_URL.format(report_id=report_id)
+    # Write atomically (download → temp → rename) so an interrupted run can't
+    # leave a half-written .pdf in the cache that future runs treat as complete.
+    tmp = local + '.partial'
     try:
         data = _download_binary(url)
-        with open(local, 'wb') as f:
+        with open(tmp, 'wb') as f:
             f.write(data)
+        os.replace(tmp, local)
         time.sleep(DELAY)
         return local
     except Exception as e:
         print(f'    ERR PDF download ({url}): {e}')
+        try:
+            if os.path.exists(tmp): os.remove(tmp)
+        except OSError: pass
         return None
 
 
