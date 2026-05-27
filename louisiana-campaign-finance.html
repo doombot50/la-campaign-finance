@@ -816,6 +816,7 @@
     body.printing-profile .cp-close,
     body.printing-profile .camp-close-btn,
     body.printing-profile [onclick="closeCampaignProfile()"],
+    body.printing-profile [onclick="printCampaignProfile()"],
     body.printing-profile [onclick*="exportCampaign"] { display:none !important; }
     /* Stats bar */
     body.printing-profile .cp-stats {
@@ -5086,7 +5087,7 @@ function renderCompare() {
       ${row('Cycles of history', s.cycles ? num(s.cycles) : dash, false)}
       ${cohRow}
       <div class="cmp-chart-wrap">
-        <div class="cmp-chart-lbl">📈 Cash on Hand over time</div>
+        <div class="cmp-chart-lbl">📈 Net Cash Flow (Raised − Spent)</div>
         <div class="cmp-chart-box"><canvas id="cmp-chart-${i}"></canvas></div>
       </div>
     </div>`;
@@ -5137,7 +5138,7 @@ function _renderCompareChart(canvasId, s) {
     data: { labels, datasets: [{ data, borderColor: gold, backgroundColor: gold + '22', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => 'CoH: $' + c.parsed.y.toLocaleString() } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => 'Net: $' + c.parsed.y.toLocaleString() } } },
       scales: {
         x: { ticks: { color: muted, font: { size: 9 }, maxTicksLimit: 5 }, grid: { display: false } },
         y: { ticks: { color: muted, font: { size: 9 }, callback: v => '$' + (Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : Math.abs(v) >= 1e3 ? Math.round(v / 1e3) + 'k' : v) }, grid: { color: 'rgba(255,255,255,.05)' } },
@@ -5899,17 +5900,21 @@ function renderCampCashFlow() {
 
   const keys = Object.keys(months).sort();
 
-  // Data-coverage note
+  // Data-coverage note — also surface the categorical caveat so users don't
+  // mistake the gold line for an actual bank balance.
   if (usingCareerData) {
     const first = keys[0]?.replace('-', ' ') || '';
     const last  = keys[keys.length - 1]?.replace('-', ' ') || '';
-    note.textContent = first && last ? `All available data · ${first} – ${last}` : 'All available data';
+    const span  = first && last ? `${first} – ${last}` : 'all available data';
+    note.textContent = `${span} · excludes loans, refunds, transfers, in-kind`;
     note.style.color = '';
   } else {
     const parts = [];
     if (_campExps.length === 0)  parts.push('expenditures not loaded');
     if (_campLoans.length === 0) parts.push('loans not loaded');
-    note.textContent = parts.length ? '⚠ ' + parts.join(' · ') : 'Raised + Borrowed − Spent';
+    note.textContent = parts.length
+      ? '⚠ ' + parts.join(' · ')
+      : 'Net (Raised − Spent) · excludes loans, refunds, transfers, in-kind';
     note.style.color = parts.length ? 'var(--muted)' : '';
   }
 
@@ -6011,6 +6016,23 @@ function renderCampCashFlow() {
   const nPts = keys.length;
   const xMaxTicks = nPts > 120 ? 10 : nPts > 48 ? 12 : nPts > 24 ? 10 : 8;
 
+  // Certified COH anchor: plot the official ending-CoH dot on the line so the
+  // gap with our computed Net (Raised − Spent) is visible. Real CoH also reflects
+  // loans, refunds, transfers, and in-kind activity that we don't track per-month,
+  // so the line is an indicator of fundraising velocity, not a bank balance.
+  const cohAnchor = _careerData?.ethics_coh;
+  let anchorData = null, anchorLabel = '';
+  if (cohAnchor && cohAnchor.ending_coh != null && cohAnchor.report_year) {
+    const target = `${cohAnchor.report_year}-12`;
+    let idx = -1;
+    for (let i = keys.length - 1; i >= 0; i--) { if (keys[i] <= target) { idx = i; break; } }
+    if (idx >= 0) {
+      anchorData = new Array(keys.length).fill(null);
+      anchorData[idx] = cohAnchor.ending_coh;
+      anchorLabel = `Certified CoH (${cohAnchor.report_year})`;
+    }
+  }
+
   if (_campCashChart) _campCashChart.destroy();
   _campCashChart = new Chart(canvas.getContext('2d'), {
     type: 'line',
@@ -6018,7 +6040,7 @@ function renderCampCashFlow() {
     data: {
       labels,
       datasets: [
-        { label: 'Cash on Hand', data: cashSeries, yAxisID: 'y',
+        { label: 'Net (Raised − Spent)', data: cashSeries, yAxisID: 'y',
           borderColor: gold, backgroundColor: 'rgba(200,169,81,0.13)',
           fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 4 },
         { label: 'Cumul. Raised', data: raisedSeries, yAxisID: 'y2',
@@ -6026,7 +6048,12 @@ function renderCampCashFlow() {
           fill: false, tension: 0.3, borderWidth: 1.5, borderDash: [5,3], pointRadius: 0, pointHoverRadius: 3 },
         { label: 'Cumul. Spent', data: spentSeries, yAxisID: 'y2',
           borderColor: red, backgroundColor: 'transparent',
-          fill: false, tension: 0.3, borderWidth: 1.5, borderDash: [5,3], pointRadius: 0, pointHoverRadius: 3 }
+          fill: false, tension: 0.3, borderWidth: 1.5, borderDash: [5,3], pointRadius: 0, pointHoverRadius: 3 },
+        ...(anchorData ? [{
+          label: anchorLabel, data: anchorData, yAxisID: 'y',
+          showLine: false, pointRadius: 7, pointHoverRadius: 9,
+          pointBackgroundColor: '#4caf7d', pointBorderColor: '#fff', pointBorderWidth: 2,
+        }] : []),
       ]
     },
     options: {
@@ -6086,8 +6113,11 @@ function printCampaignProfile() {
   const overlay = document.getElementById('camp-overlay');
   overlay.setAttribute('data-print-date', new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}));
 
-  // Double-rAF: let Chart.js finish its current render cycle, then snapshot.
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+  // Give Chart.js enough time to fully draw the career chart in the case it
+  // was just initialized by the campSwitchTab('career') call above. Double-rAF
+  // is usually enough, but a tiny extra timeout protects against first-paint
+  // flakiness that can produce a blank snapshot.
+  requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => {
     // ── Snapshot every chart canvas as a static PNG image ──────────────
     // Chart.js fires a responsive resize callback when print CSS is applied,
     // which can corrupt bar layouts mid-print.  Replacing canvases with <img>
@@ -6122,7 +6152,7 @@ function printCampaignProfile() {
         img.remove();
       });
     }, { once: true });
-  }));
+  }, 120)));
 }
 
 function campSwitchTab(tab) {
@@ -7171,7 +7201,7 @@ function _ovOpenElection(year) {
     <!-- Cash on hand over time -->
     <div id="camp-cashflow-wrap" style="padding:14px 24px;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">📈 Cash on Hand Over Time</div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">📈 Net Cash Flow Over Time <span style="text-transform:none;font-weight:400;color:var(--muted)" title="Cumulative contributions minus expenditures across all of this candidate's committees. Does not reflect loans, refunds, transfers, or in-kind value. Certified Cash on Hand is shown as a dot when available — the gap between line and dot is real, not a bug.">(?)</span></div>
         <div id="camp-cashflow-note" style="font-size:10px;color:var(--muted)"></div>
       </div>
       <div style="position:relative;height:170px"><canvas id="camp-cashflow-chart"></canvas></div>
