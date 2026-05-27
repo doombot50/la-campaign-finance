@@ -287,7 +287,11 @@ def get_annual_reports(filer_id: str) -> list:
         if 'F102' in row:    form_type = 'F102'
         elif 'F202' in row:  form_type = 'F202'
         else:                continue
-        if '(ANN)' not in row and 'Annual' not in row:
+        # Require the specific "(ANN)" report-type code. The plain word "Annual"
+        # appears in unrelated table chrome on the PAC listings and was matching
+        # monthly / campaign-period reports — e.g., Republican Party of LA was
+        # listing 55 "annual" reports because of this.
+        if '(ANN)' not in row:
             continue
         # Skip rows marked as Superseded
         if 'Superseded' in row:
@@ -339,7 +343,20 @@ def get_annual_reports(filer_id: str) -> list:
         return datetime(2000, 1, 1)
 
     results.sort(key=_key, reverse=True)
-    return results
+
+    # Dedupe by reporting year: an annual report can have amendments (each is
+    # a separate row with the same year_start). Keep the latest by report_id
+    # — amendments correct earlier versions, so the highest ID is authoritative.
+    by_year = {}
+    for r in results:
+        yr = r.get('year_start')
+        if yr is None:
+            by_year.setdefault(('no-year', r['report_id']), r)   # keep all year-unknowns
+            continue
+        prev = by_year.get(yr)
+        if prev is None or r['report_id'] > prev['report_id']:
+            by_year[yr] = r
+    return list(by_year.values())
 
 
 # ── PDF download ──────────────────────────────────────────────────────────────
