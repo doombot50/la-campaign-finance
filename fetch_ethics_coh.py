@@ -2,16 +2,18 @@
 """
 fetch_ethics_coh.py — Louisiana Ethics COH Scraper
 ====================================================
-Fetches certified Cash on Hand (Lines 14 & 18) from the Louisiana Board of Ethics
-F102 Annual reports for each candidate in la_candidate_index.json.gz.
+Fetches certified Cash on Hand from the Louisiana Board of Ethics annual
+reports — both F102 (candidate) and F202 (PAC) — for every entry in
+la_candidate_index.json.gz.
 
 Flow per filer:
   1. If we already have filer_id (CAN-style) cached, skip to step 3.
   2. Search SearchByNameAdv.aspx + click through to discover ViewEFiler.aspx?FilerID=...
-  3. Parse ViewEFiler.aspx (no auth needed) to find ALL F102 Annual reports.
+  3. Parse ViewEFiler.aspx (no auth needed) to find ALL Annual reports
+     (F102 for candidates, F202 for PACs).
   4. For each Annual report, download the PDF from
-     https://eap.ethics.la.gov/CFSearch/LA-{ReportID}.pdf and extract Lines 14
-     (Beginning COH) and 18 (Ending COH) from the Summary Page.
+     https://eap.ethics.la.gov/CFSearch/LA-{ReportID}.pdf and extract the
+     "Funds on hand at beginning/closing" line items from the Summary Page.
   5. Write ethics_coh_cache.json (incremental — saved after each filer).
      Cache shape (per candidate name):
        {
@@ -277,11 +279,14 @@ def get_annual_reports(filer_id: str) -> list:
     results = []
 
     for row in rows:
-        # Must contain a ReportID, F102 report type, and "(ANN)" (Annual) marker
+        # Must contain a ReportID, an Annual report type, and "(ANN)" marker.
+        # F102 = candidate annual; F202 = PAC annual. Both share the same
+        # Summary Page layout (beginning + closing cash on hand line items).
         if 'ReportID=' not in row:
             continue
-        if 'F102' not in row:          # candidates only; skip F202 (PAC), etc.
-            continue
+        if 'F102' in row:    form_type = 'F102'
+        elif 'F202' in row:  form_type = 'F202'
+        else:                continue
         if '(ANN)' not in row and 'Annual' not in row:
             continue
         # Skip rows marked as Superseded
@@ -321,6 +326,7 @@ def get_annual_reports(filer_id: str) -> list:
             'year_end':   year_end,
             'date_filed': date_filed,
             'row_text':   clean,
+            'form_type':  form_type,    # 'F102' (candidate) or 'F202' (PAC)
         })
 
     # Sort newest-first by date_filed then report_id descending
@@ -372,14 +378,17 @@ def download_pdf(report_id: int, dry_run: bool = False) -> str | None:
 
 # ── PDF COH parser ────────────────────────────────────────────────────────────
 
-_RE14 = re.compile(
-    r'14\.\s+Funds?\s+on\s+hand\s+at\s+begin\w*'
+# F102 (candidate) Summary Page uses lines 14 / 18 for beginning / closing
+# Funds on Hand. F202 (PAC) uses the same wording on its Summary Page but
+# possibly different line numbers, so we match any `N.` prefix.
+_RE_BEG = re.compile(
+    r'\d+\.\s+Funds?\s+on\s+hand\s+at\s+begin\w*'
     r'(?:.*?)'
     r'\$\s*([\d,]+\.\d{2})',
     re.DOTALL | re.IGNORECASE
 )
-_RE18 = re.compile(
-    r'18\.\s+Funds?\s+on\s+hand\s+at\s+clos\w*'
+_RE_END = re.compile(
+    r'\d+\.\s+Funds?\s+on\s+hand\s+at\s+clos\w*'
     r'(?:.*?)'
     r'\$\s*([\d,]+\.\d{2})',
     re.DOTALL | re.IGNORECASE
@@ -388,7 +397,11 @@ _RE18 = re.compile(
 
 def parse_coh(pdf_path: str) -> tuple:
     """
-    Return (beginning_coh, ending_coh) floats from the F102 Summary Page.
+    Return (beginning_coh, ending_coh) floats from the report Summary Page.
+    Works for both F102 (candidate) and F202 (PAC) annual reports — both share
+    the same Summary Page layout with numbered "Funds on hand at beginning"
+    and "Funds on hand at close" line items.
+
     Returns (None, None) on failure.
     """
     try:
@@ -401,11 +414,11 @@ def parse_coh(pdf_path: str) -> tuple:
                 if 'SUMMARY PAGE (CONTINUED)' in upper:
                     continue
 
-                m14 = _RE14.search(text)
-                m18 = _RE18.search(text)
-                if m14 or m18:
-                    beg = float(m14.group(1).replace(',', '')) if m14 else None
-                    end = float(m18.group(1).replace(',', '')) if m18 else None
+                m_beg = _RE_BEG.search(text)
+                m_end = _RE_END.search(text)
+                if m_beg or m_end:
+                    beg = float(m_beg.group(1).replace(',', '')) if m_beg else None
+                    end = float(m_end.group(1).replace(',', '')) if m_end else None
                     return beg, end
         return None, None
     except Exception as e:
@@ -563,6 +576,7 @@ def main():
                 'report_id':     report_id,
                 'report_period': 'Annual',
                 'report_year':   year_label,
+                'form_type':     rep.get('form_type', 'F102'),   # F102=cand, F202=PAC
                 'date_filed':    date_filed,
                 'beginning_coh': beg_coh,
                 'ending_coh':    end_coh,
@@ -588,6 +602,7 @@ def main():
             'report_id':     latest['report_id'],
             'report_period': 'Annual',
             'report_year':   latest['report_year'],
+            'form_type':     latest.get('form_type', 'F102'),
             'date_filed':    latest['date_filed'],
             'beginning_coh': latest['beginning_coh'],
             'ending_coh':    latest['ending_coh'],

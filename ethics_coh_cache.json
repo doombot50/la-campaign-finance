@@ -12,6 +12,17 @@
   },
   "T C BLOXOM": {
     "filer_id": "CAN990103",
+    "reports": [
+      {
+        "report_id": 1061,
+        "report_period": "Annual",
+        "report_year": 1999,
+        "date_filed": "1/8/2000",
+        "beginning_coh": 5334.95,
+        "ending_coh": 5839.47,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1061.pdf"
+      }
+    ],
     "report_id": 1061,
     "report_period": "Annual",
     "report_year": 1999,
@@ -19,18 +30,29 @@
     "beginning_coh": 5334.95,
     "ending_coh": 5839.47,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1061.pdf",
-    "fetched_at": "2026-05-25T21:11:55.425912Z"
+    "fetched_at": "2026-05-27T01:31:49.290118Z"
   },
   "SAMUEL C TOLBERT": {
     "filer_id": "CAN990243",
+    "reports": [
+      {
+        "report_id": 1329,
+        "report_period": "Annual",
+        "report_year": 1999,
+        "date_filed": "5/5/2000",
+        "beginning_coh": 0.0,
+        "ending_coh": 2660.94,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1329.pdf"
+      }
+    ],
     "report_id": 1329,
     "report_period": "Annual",
-    "report_year": 2000,
+    "report_year": 1999,
     "date_filed": "5/5/2000",
     "beginning_coh": 0.0,
     "ending_coh": 2660.94,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1329.pdf",
-    "fetched_at": "2026-05-25T21:12:22.468474Z"
+    "fetched_at": "2026-05-27T01:32:28.204603Z"
   },
   "JOHN BATT": {
     "filer_id": "CAN990258"
@@ -81,7 +103,108 @@
     "filer_id": "PAC990118"
   },
   "GUMBO PAC": {
-    "filer_id": "PAC990329"
+    "filer_id": "PAC990329",
+    "reports": [
+      {
+        "report_id": 68516,
+        "report_period": "Annual",
+        "report_year": 2017,
+        "form_type": "F202",
+        "date_filed": "2/9/2018",
+        "beginning_coh": 511776.44,
+        "ending_coh": 860737.67,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-68516.pdf"
+      },
+      {
+        "report_id": 75652,
+        "report_period": "Annual",
+        "report_year": 2018,
+        "form_type": "F202",
+        "date_filed": "2/15/2019",
+        "beginning_coh": 860737.67,
+        "ending_coh": 2117598.25,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-75652.pdf"
+      },
+      {
+        "report_id": 86617,
+        "report_period": "Annual",
+        "report_year": 2019,
+        "form_type": "F202",
+        "date_filed": "2/12/2020",
+        "beginning_coh": 11566.15,
+        "ending_coh": 11566.15,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-86617.pdf"
+      },
+      {
+        "report_id": 95953,
+        "report_period": "Annual",
+        "report_year": 2020,
+        "form_type": "F202",
+        "date_filed": "2/12/2021",
+        "beginning_coh": 11566.15,
+        "ending_coh": 16875.43,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-95953.pdf"
+      },
+      {
+        "report_id": 100871,
+        "report_period": "Annual",
+        "report_year": 2021,
+        "form_type": "F202",
+        "date_filed": "1/18/2022",
+        "beginning_coh": 16875.43,
+        "ending_coh": 13975.43,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-100871.pdf"
+      },
+      {
+        "report_id": 108361,
+        "report_period": "Annual",
+        "report_year": 2022,
+        "form_type": "F202",
+        "date_filed": "2/2/2023",
+        "beginning_coh": 13975.43,
+        "ending_coh": 13133.22,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-108361.pdf"
+      },
+      {
+        "report_id": 119523,
+        "report_period": "Annual",
+        "report_year": 2023,
+        "form_type": "F202",
+        "date_filed": "2/13/2024",
+        "beginning_coh": 13133.22,
+        "ending_coh": 19143.02,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-119523.pdf"
+      },
+      {
+        "report_id": 124206,
+        "report_period": "Annual",
+        "report_year": 2024,
+        "form_type": "F202",
+        "date_filed": "1/14/2025",
+        "beginning_coh": 19143.02,
+        "ending_coh": 10618.02,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-124206.pdf"
+      },
+      {
+        "report_id": 130266,
+        "report_period": "Annual",
+        "report_year": 2025,
+        "form_type": "F202",
+        "date_filed": "1/12/2026",
+        "beginning_coh": 10618.02,
+        "ending_coh": 9768.02,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-130266.pdf"
+      }
+    ],
+    "report_id": 130266,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "form_type": "F202",
+    "date_filed": "1/12/2026",
+    "beginning_coh": 10618.02,
+    "ending_coh": 9768.02,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-130266.pdf",
+    "fetched_at": "2026-05-27T01:53:34.892480Z"
   },
   "RGA REPUBLICAN GOVERNORS ASSOCIATION RIGHT DIRECTION PAC": {
     "filer_id": "PAC990667"
@@ -217,6 +340,134 @@
   },
   "MARLIN GUSMAN": {
     "filer_id": "CAN990287",
+    "reports": [
+      {
+        "report_id": 4034,
+        "report_period": "Annual",
+        "report_year": 2001,
+        "date_filed": "2/13/2003",
+        "beginning_coh": 0.0,
+        "ending_coh": 180133.64,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-4034.pdf"
+      },
+      {
+        "report_id": 2336,
+        "report_period": "Annual",
+        "report_year": 2001,
+        "date_filed": "1/2/2002",
+        "beginning_coh": 0.0,
+        "ending_coh": 33955.66,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-2336.pdf"
+      },
+      {
+        "report_id": 6689,
+        "report_period": "Annual",
+        "report_year": 2003,
+        "date_filed": "2/12/2004",
+        "beginning_coh": 180133.64,
+        "ending_coh": 200678.44,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-6689.pdf"
+      },
+      {
+        "report_id": 17703,
+        "report_period": "Annual",
+        "report_year": 2008,
+        "date_filed": "12/28/2009",
+        "beginning_coh": 0.0,
+        "ending_coh": 361333.99,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-17703.pdf"
+      },
+      {
+        "report_id": 23113,
+        "report_period": "Annual",
+        "report_year": 2010,
+        "date_filed": "2/15/2011",
+        "beginning_coh": 322498.52,
+        "ending_coh": 433672.11,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-23113.pdf"
+      },
+      {
+        "report_id": 30211,
+        "report_period": "Annual",
+        "report_year": 2011,
+        "date_filed": "2/14/2012",
+        "beginning_coh": 433672.11,
+        "ending_coh": 539302.71,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-30211.pdf"
+      },
+      {
+        "report_id": 35644,
+        "report_period": "Annual",
+        "report_year": 2012,
+        "date_filed": "2/15/2013",
+        "beginning_coh": 539302.71,
+        "ending_coh": 589979.32,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-35644.pdf"
+      },
+      {
+        "report_id": 48100,
+        "report_period": "Annual",
+        "report_year": 2014,
+        "date_filed": "2/18/2015",
+        "beginning_coh": 49791.78,
+        "ending_coh": 23568.3,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-48100.pdf"
+      },
+      {
+        "report_id": 57633,
+        "report_period": "Annual",
+        "report_year": 2015,
+        "date_filed": "2/15/2016",
+        "beginning_coh": 23568.3,
+        "ending_coh": 2384.12,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-57633.pdf"
+      },
+      {
+        "report_id": 65386,
+        "report_period": "Annual",
+        "report_year": 2016,
+        "date_filed": "7/18/2017",
+        "beginning_coh": 2759.01,
+        "ending_coh": 32553.89,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-65386.pdf"
+      },
+      {
+        "report_id": 68911,
+        "report_period": "Annual",
+        "report_year": 2017,
+        "date_filed": "2/14/2018",
+        "beginning_coh": 52980.93,
+        "ending_coh": 107956.95,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-68911.pdf"
+      },
+      {
+        "report_id": 75671,
+        "report_period": "Annual",
+        "report_year": 2018,
+        "date_filed": "2/15/2019",
+        "beginning_coh": 107956.95,
+        "ending_coh": 157434.87,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-75671.pdf"
+      },
+      {
+        "report_id": 87497,
+        "report_period": "Annual",
+        "report_year": 2019,
+        "date_filed": "2/18/2020",
+        "beginning_coh": 157434.87,
+        "ending_coh": 203017.18,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-87497.pdf"
+      },
+      {
+        "report_id": 96874,
+        "report_period": "Annual",
+        "report_year": 2020,
+        "date_filed": "2/18/2021",
+        "beginning_coh": 203017.18,
+        "ending_coh": 188808.73,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-96874.pdf"
+      }
+    ],
     "report_id": 96874,
     "report_period": "Annual",
     "report_year": 2020,
@@ -224,7 +475,7 @@
     "beginning_coh": 203017.18,
     "ending_coh": 188808.73,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-96874.pdf",
-    "fetched_at": "2026-05-25T23:07:39.206433Z"
+    "fetched_at": "2026-05-27T01:45:14.459331Z"
   },
   "SCOTT A ANGELLE": {
     "filer_id": "CAN991504",
@@ -449,5 +700,1036 @@
   },
   "AMERICANS FOR PROSPERITY": {
     "filer_id": "OP990015"
+  },
+  "BOILERMAKERS LOCAL LODGE PAC": {
+    "filer_id": "PAC990010"
+  },
+  "MAINSTREAM AMERICA PAC": {
+    "filer_id": "PAC990025"
+  },
+  "ROLFE H MCCOLLISTER": {
+    "filer_id": "CAN990061"
+  },
+  "BOBBY SIMPSON": {
+    "filer_id": "CAN990025",
+    "reports": [
+      {
+        "report_id": 1110,
+        "report_period": "Annual",
+        "report_year": 1999,
+        "date_filed": "1/28/2000",
+        "beginning_coh": 21922.65,
+        "ending_coh": 18820.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1110.pdf"
+      }
+    ],
+    "report_id": 1110,
+    "report_period": "Annual",
+    "report_year": 1999,
+    "date_filed": "1/28/2000",
+    "beginning_coh": 21922.65,
+    "ending_coh": 18820.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1110.pdf",
+    "fetched_at": "2026-05-27T01:35:58.842846Z"
+  },
+  "MAX N TOBIAS": {
+    "filer_id": "CAN990265"
+  },
+  "KATHLEEN DAWKINS": {
+    "filer_id": "CAN990223",
+    "reports": [
+      {
+        "report_id": 1267,
+        "report_period": "Annual",
+        "report_year": 1999,
+        "date_filed": "3/8/2000",
+        "beginning_coh": 119.96,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1267.pdf"
+      }
+    ],
+    "report_id": 1267,
+    "report_period": "Annual",
+    "report_year": 1999,
+    "date_filed": "3/8/2000",
+    "beginning_coh": 119.96,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1267.pdf",
+    "fetched_at": "2026-05-27T01:38:05.782821Z"
+  },
+  "MIKE MCDONALD": {
+    "filer_id": "CAN990269"
+  },
+  "DAN PERKINS": {
+    "filer_id": "CAN990121"
+  },
+  "R J SMOKIE BOURGEOIS": {
+    "filer_id": "CAN990278"
+  },
+  "SHARON INGRAM MARCHMAN": {
+    "filer_id": "CAN990273",
+    "reports": [
+      {
+        "report_id": 48323,
+        "report_period": "Annual",
+        "report_year": 2014,
+        "date_filed": "2/26/2015",
+        "beginning_coh": 367.84,
+        "ending_coh": 367.84,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-48323.pdf"
+      }
+    ],
+    "report_id": 48323,
+    "report_period": "Annual",
+    "report_year": 2014,
+    "date_filed": "2/26/2015",
+    "beginning_coh": 367.84,
+    "ending_coh": 367.84,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-48323.pdf",
+    "fetched_at": "2026-05-27T01:38:42.102851Z"
+  },
+  "RONDA PERRAULT": {
+    "filer_id": "CAN990285"
+  },
+  "LYNETTE R DIFATTA": {
+    "filer_id": "CAN990284",
+    "reports": [
+      {
+        "report_id": 1741,
+        "report_period": "Annual",
+        "report_year": 2000,
+        "date_filed": "2/4/2001",
+        "beginning_coh": 264.63,
+        "ending_coh": 264.63,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1741.pdf"
+      },
+      {
+        "report_id": 2478,
+        "report_period": "Annual",
+        "report_year": 2001,
+        "date_filed": "2/3/2002",
+        "beginning_coh": 264.63,
+        "ending_coh": 224.63,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-2478.pdf"
+      },
+      {
+        "report_id": 3934,
+        "report_period": "Annual",
+        "report_year": 2002,
+        "date_filed": "2/3/2003",
+        "beginning_coh": 224.63,
+        "ending_coh": 1844.63,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-3934.pdf"
+      },
+      {
+        "report_id": 6850,
+        "report_period": "Annual",
+        "report_year": 2003,
+        "date_filed": "2/17/2004",
+        "beginning_coh": 1844.63,
+        "ending_coh": 1834.63,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-6850.pdf"
+      },
+      {
+        "report_id": 8559,
+        "report_period": "Annual",
+        "report_year": 2004,
+        "date_filed": "4/17/2005",
+        "beginning_coh": 1834.63,
+        "ending_coh": 929.63,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-8559.pdf"
+      },
+      {
+        "report_id": 9396,
+        "report_period": "Annual",
+        "report_year": 2005,
+        "date_filed": "2/14/2006",
+        "beginning_coh": 929.63,
+        "ending_coh": 830.71,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-9396.pdf"
+      },
+      {
+        "report_id": 11110,
+        "report_period": "Annual",
+        "report_year": 2006,
+        "date_filed": "2/6/2007",
+        "beginning_coh": 830.71,
+        "ending_coh": 650.71,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-11110.pdf"
+      },
+      {
+        "report_id": 14190,
+        "report_period": "Annual",
+        "report_year": 2007,
+        "date_filed": "1/31/2008",
+        "beginning_coh": 650.71,
+        "ending_coh": 650.71,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-14190.pdf"
+      },
+      {
+        "report_id": 16500,
+        "report_period": "Annual",
+        "report_year": 2008,
+        "date_filed": "2/14/2009",
+        "beginning_coh": 650.71,
+        "ending_coh": 650.71,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-16500.pdf"
+      },
+      {
+        "report_id": 19519,
+        "report_period": "Annual",
+        "report_year": 2009,
+        "date_filed": "3/8/2010",
+        "beginning_coh": 650.71,
+        "ending_coh": 650.71,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-19519.pdf"
+      },
+      {
+        "report_id": 22049,
+        "report_period": "Annual",
+        "report_year": 2010,
+        "date_filed": "1/27/2011",
+        "beginning_coh": 650.71,
+        "ending_coh": 376.71,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-22049.pdf"
+      },
+      {
+        "report_id": 29830,
+        "report_period": "Annual",
+        "report_year": 2011,
+        "date_filed": "2/11/2012",
+        "beginning_coh": 376.71,
+        "ending_coh": 278.71,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-29830.pdf"
+      },
+      {
+        "report_id": 34774,
+        "report_period": "Annual",
+        "report_year": 2012,
+        "date_filed": "2/7/2013",
+        "beginning_coh": 278.71,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-34774.pdf"
+      },
+      {
+        "report_id": 39493,
+        "report_period": "Annual",
+        "report_year": 2013,
+        "date_filed": "2/16/2014",
+        "beginning_coh": 0.0,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-39493.pdf"
+      },
+      {
+        "report_id": 47639,
+        "report_period": "Annual",
+        "report_year": 2014,
+        "date_filed": "2/15/2015",
+        "beginning_coh": 0.0,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-47639.pdf"
+      }
+    ],
+    "report_id": 47639,
+    "report_period": "Annual",
+    "report_year": 2014,
+    "date_filed": "2/15/2015",
+    "beginning_coh": 0.0,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-47639.pdf",
+    "fetched_at": "2026-05-27T01:40:17.347518Z"
+  },
+  "WAYNE ROGILLIO": {
+    "filer_id": "CAN990275"
+  },
+  "LEON E ROY": {
+    "filer_id": "CAN990256",
+    "reports": [
+      {
+        "report_id": 1198,
+        "report_period": "Annual",
+        "report_year": 1999,
+        "date_filed": "2/15/2000",
+        "beginning_coh": 0.0,
+        "ending_coh": 11596.5,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1198.pdf"
+      }
+    ],
+    "report_id": 1198,
+    "report_period": "Annual",
+    "report_year": 1999,
+    "date_filed": "2/15/2000",
+    "beginning_coh": 0.0,
+    "ending_coh": 11596.5,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1198.pdf",
+    "fetched_at": "2026-05-27T01:40:35.029657Z"
+  },
+  "DAVID J BONENO": {
+    "filer_id": "CAN990279",
+    "reports": [
+      {
+        "report_id": 2637,
+        "report_period": "Annual",
+        "report_year": 2001,
+        "date_filed": "2/15/2002",
+        "beginning_coh": 0.0,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-2637.pdf"
+      },
+      {
+        "report_id": 2628,
+        "report_period": "Annual",
+        "report_year": 2001,
+        "date_filed": "2/15/2002",
+        "beginning_coh": 9419.3,
+        "ending_coh": 6414.98,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-2628.pdf"
+      },
+      {
+        "report_id": 4041,
+        "report_period": "Annual",
+        "report_year": 2002,
+        "date_filed": "2/14/2003",
+        "beginning_coh": 0.0,
+        "ending_coh": 13082.63,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-4041.pdf"
+      },
+      {
+        "report_id": 6774,
+        "report_period": "Annual",
+        "report_year": 2003,
+        "date_filed": "2/16/2004",
+        "beginning_coh": 13082.63,
+        "ending_coh": 27032.52,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-6774.pdf"
+      },
+      {
+        "report_id": 9452,
+        "report_period": "Annual",
+        "report_year": 2005,
+        "date_filed": "2/15/2006",
+        "beginning_coh": 33496.67,
+        "ending_coh": 47922.23,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-9452.pdf"
+      },
+      {
+        "report_id": 11352,
+        "report_period": "Annual",
+        "report_year": 2006,
+        "date_filed": "2/15/2007",
+        "beginning_coh": 47922.23,
+        "ending_coh": 48941.32,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-11352.pdf"
+      },
+      {
+        "report_id": 14532,
+        "report_period": "Annual",
+        "report_year": 2007,
+        "date_filed": "2/15/2008",
+        "beginning_coh": 48941.32,
+        "ending_coh": 49284.03,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-14532.pdf"
+      },
+      {
+        "report_id": 16570,
+        "report_period": "Annual",
+        "report_year": 2008,
+        "date_filed": "2/16/2009",
+        "beginning_coh": 49284.03,
+        "ending_coh": 41158.18,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-16570.pdf"
+      },
+      {
+        "report_id": 18696,
+        "report_period": "Annual",
+        "report_year": 2009,
+        "date_filed": "2/15/2010",
+        "beginning_coh": 41158.18,
+        "ending_coh": 41197.86,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-18696.pdf"
+      },
+      {
+        "report_id": 22388,
+        "report_period": "Annual",
+        "report_year": 2010,
+        "date_filed": "2/9/2011",
+        "beginning_coh": 41197.86,
+        "ending_coh": 40887.77,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-22388.pdf"
+      },
+      {
+        "report_id": 29930,
+        "report_period": "Annual",
+        "report_year": 2011,
+        "date_filed": "2/13/2012",
+        "beginning_coh": 40887.77,
+        "ending_coh": 41033.1,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-29930.pdf"
+      },
+      {
+        "report_id": 34994,
+        "report_period": "Annual",
+        "report_year": 2012,
+        "date_filed": "2/12/2013",
+        "beginning_coh": 41033.1,
+        "ending_coh": 40021.11,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-34994.pdf"
+      },
+      {
+        "report_id": 39907,
+        "report_period": "Annual",
+        "report_year": 2013,
+        "date_filed": "2/18/2014",
+        "beginning_coh": 40021.11,
+        "ending_coh": 39055.53,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-39907.pdf"
+      },
+      {
+        "report_id": 47982,
+        "report_period": "Annual",
+        "report_year": 2014,
+        "date_filed": "2/18/2015",
+        "beginning_coh": 39055.53,
+        "ending_coh": 39198.86,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-47982.pdf"
+      },
+      {
+        "report_id": 57789,
+        "report_period": "Annual",
+        "report_year": 2015,
+        "date_filed": "2/16/2016",
+        "beginning_coh": 39198.86,
+        "ending_coh": 39340.47,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-57789.pdf"
+      },
+      {
+        "report_id": 63220,
+        "report_period": "Annual",
+        "report_year": 2016,
+        "date_filed": "2/15/2017",
+        "beginning_coh": 39340.47,
+        "ending_coh": 39499.43,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-63220.pdf"
+      },
+      {
+        "report_id": 69225,
+        "report_period": "Annual",
+        "report_year": 2017,
+        "date_filed": "2/15/2018",
+        "beginning_coh": 39499.43,
+        "ending_coh": 38984.72,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-69225.pdf"
+      },
+      {
+        "report_id": 74351,
+        "report_period": "Annual",
+        "report_year": 2018,
+        "date_filed": "2/1/2019",
+        "beginning_coh": 38984.72,
+        "ending_coh": 39127.3,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-74351.pdf"
+      },
+      {
+        "report_id": 86335,
+        "report_period": "Annual",
+        "report_year": 2019,
+        "date_filed": "2/10/2020",
+        "beginning_coh": 39127.3,
+        "ending_coh": 39715.05,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-86335.pdf"
+      },
+      {
+        "report_id": 96764,
+        "report_period": "Annual",
+        "report_year": 2020,
+        "date_filed": "2/18/2021",
+        "beginning_coh": 39715.05,
+        "ending_coh": 32135.09,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-96764.pdf"
+      },
+      {
+        "report_id": 102769,
+        "report_period": "Annual",
+        "report_year": 2021,
+        "date_filed": "2/15/2022",
+        "beginning_coh": 32135.09,
+        "ending_coh": 28082.47,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-102769.pdf"
+      },
+      {
+        "report_id": 108233,
+        "report_period": "Annual",
+        "report_year": 2022,
+        "date_filed": "1/31/2023",
+        "beginning_coh": 28082.47,
+        "ending_coh": 27839.26,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-108233.pdf"
+      },
+      {
+        "report_id": 118448,
+        "report_period": "Annual",
+        "report_year": 2023,
+        "date_filed": "1/24/2024",
+        "beginning_coh": 27839.26,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-118448.pdf"
+      }
+    ],
+    "report_id": 118448,
+    "report_period": "Annual",
+    "report_year": 2023,
+    "date_filed": "1/24/2024",
+    "beginning_coh": 27839.26,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-118448.pdf",
+    "fetched_at": "2026-05-27T01:42:34.197470Z"
+  },
+  "CHUCK REED": {
+    "filer_id": "CAN990286"
+  },
+  "ROBERT ROCKY DUCHARME": {
+    "filer_id": "CAN990283",
+    "reports": [
+      {
+        "report_id": 1851,
+        "report_period": "Annual",
+        "report_year": 2000,
+        "date_filed": "2/15/2001",
+        "beginning_coh": 37.87,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1851.pdf"
+      }
+    ],
+    "report_id": 1851,
+    "report_period": "Annual",
+    "report_year": 2000,
+    "date_filed": "2/15/2001",
+    "beginning_coh": 37.87,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1851.pdf",
+    "fetched_at": "2026-05-27T01:42:51.850039Z"
+  },
+  "MYRON HALL": {
+    "filer_id": "CAN990277"
+  },
+  "DARRELL P OURSO": {
+    "filer_id": "CAN990274",
+    "reports": [
+      {
+        "report_id": 6816,
+        "report_period": "Annual",
+        "report_year": 2003,
+        "date_filed": "2/17/2004",
+        "beginning_coh": 0.0,
+        "ending_coh": 9904.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-6816.pdf"
+      }
+    ],
+    "report_id": 6816,
+    "report_period": "Annual",
+    "report_year": 2003,
+    "date_filed": "2/17/2004",
+    "beginning_coh": 0.0,
+    "ending_coh": 9904.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-6816.pdf",
+    "fetched_at": "2026-05-27T01:43:09.792591Z"
+  },
+  "GEORGE STEVE DONAHUE": {
+    "filer_id": "CAN990293"
+  },
+  "JIM MAYER": {
+    "filer_id": "CAN990282"
+  },
+  "BILL STAPLES": {
+    "filer_id": "CAN990288"
+  },
+  "KENNETH BAZILE": {
+    "filer_id": "CAN990289"
+  },
+  "THOMAS RYDER": {
+    "filer_id": "CAN990295"
+  },
+  "RUSSELL E WISE": {
+    "filer_id": "CAN990290",
+    "reports": [
+      {
+        "report_id": 8237,
+        "report_period": "Annual",
+        "report_year": 2004,
+        "date_filed": "2/13/2005",
+        "beginning_coh": 29.07,
+        "ending_coh": 29.07,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-8237.pdf"
+      }
+    ],
+    "report_id": 8237,
+    "report_period": "Annual",
+    "report_year": 2004,
+    "date_filed": "2/13/2005",
+    "beginning_coh": 29.07,
+    "ending_coh": 29.07,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-8237.pdf",
+    "fetched_at": "2026-05-27T01:43:54.208644Z"
+  },
+  "LA REFORM PAC": {
+    "filer_id": "PAC990038"
+  },
+  "BUSINESS AFFAIRS RESEARCH PROGRAM": {
+    "filer_id": "PAC990039"
+  },
+  "LOUISIANA POLITICAL ACTION FOR CANDIDATE ELECTION": {
+    "filer_id": "PAC990012"
+  },
+  "EDWARD LYONS": {
+    "filer_id": "CAN990298"
+  },
+  "FOSTER MURPHY J OTHER PERSONS REPORTS": {
+    "filer_id": "OP0001"
+  },
+  "LOUISIANA ASSOCIATION OF EDUCATORS LAE PAC": {
+    "filer_id": "PAC990074"
+  },
+  "ULYSSES Z ADDISON": {
+    "filer_id": "CAN990272",
+    "reports": [
+      {
+        "report_id": 8588,
+        "report_period": "Annual",
+        "report_year": 2004,
+        "date_filed": "5/9/2005",
+        "beginning_coh": 690.69,
+        "ending_coh": 690.69,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-8588.pdf"
+      },
+      {
+        "report_id": 9402,
+        "report_period": "Annual",
+        "report_year": 2005,
+        "date_filed": "2/15/2006",
+        "beginning_coh": 690.69,
+        "ending_coh": 480.56,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-9402.pdf"
+      },
+      {
+        "report_id": 11233,
+        "report_period": "Annual",
+        "report_year": 2006,
+        "date_filed": "2/13/2007",
+        "beginning_coh": 480.56,
+        "ending_coh": 360.56,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-11233.pdf"
+      },
+      {
+        "report_id": 14517,
+        "report_period": "Annual",
+        "report_year": 2007,
+        "date_filed": "2/14/2008",
+        "beginning_coh": 0.0,
+        "ending_coh": 19296.18,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-14517.pdf"
+      },
+      {
+        "report_id": 18857,
+        "report_period": "Annual",
+        "report_year": 2009,
+        "date_filed": "2/16/2010",
+        "beginning_coh": 20355.67,
+        "ending_coh": 12873.02,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-18857.pdf"
+      }
+    ],
+    "report_id": 18857,
+    "report_period": "Annual",
+    "report_year": 2009,
+    "date_filed": "2/16/2010",
+    "beginning_coh": 20355.67,
+    "ending_coh": 12873.02,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-18857.pdf",
+    "fetched_at": "2026-05-27T01:46:20.960615Z"
+  },
+  "ORIAN GULOTTA": {
+    "filer_id": "CAN990267"
+  },
+  "ADAMS AND REESE PAC ARPAC": {
+    "filer_id": "PAC990004"
+  },
+  "LA INSURERS CONFERENCE LAINSCO FORMERLY LA LIFE AND HEALTH INSURANCE PAC": {
+    "filer_id": "PAC990029"
+  },
+  "PAUL CARMOUCHE": {
+    "filer_id": "CAN990244",
+    "reports": [
+      {
+        "report_id": 1137,
+        "report_period": "Annual",
+        "report_year": 1999,
+        "date_filed": "2/4/2000",
+        "beginning_coh": 36296.05,
+        "ending_coh": 37086.64,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1137.pdf"
+      },
+      {
+        "report_id": 1723,
+        "report_period": "Annual",
+        "report_year": 2000,
+        "date_filed": "1/30/2001",
+        "beginning_coh": 37086.64,
+        "ending_coh": 36790.22,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1723.pdf"
+      },
+      {
+        "report_id": 2439,
+        "report_period": "Annual",
+        "report_year": 2001,
+        "date_filed": "1/29/2002",
+        "beginning_coh": 36790.22,
+        "ending_coh": 37334.93,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-2439.pdf"
+      },
+      {
+        "report_id": 3859,
+        "report_period": "Annual",
+        "report_year": 2002,
+        "date_filed": "1/25/2003",
+        "beginning_coh": 34013.0,
+        "ending_coh": 33041.53,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-3859.pdf"
+      },
+      {
+        "report_id": 6749,
+        "report_period": "Annual",
+        "report_year": 2003,
+        "date_filed": "2/16/2004",
+        "beginning_coh": 33041.53,
+        "ending_coh": 31765.76,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-6749.pdf"
+      },
+      {
+        "report_id": 8235,
+        "report_period": "Annual",
+        "report_year": 2004,
+        "date_filed": "2/13/2005",
+        "beginning_coh": 31765.76,
+        "ending_coh": 30538.24,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-8235.pdf"
+      },
+      {
+        "report_id": 9270,
+        "report_period": "Annual",
+        "report_year": 2005,
+        "date_filed": "2/9/2006",
+        "beginning_coh": 30538.24,
+        "ending_coh": 30021.02,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-9270.pdf"
+      },
+      {
+        "report_id": 11045,
+        "report_period": "Annual",
+        "report_year": 2006,
+        "date_filed": "2/1/2007",
+        "beginning_coh": 30021.02,
+        "ending_coh": 29744.4,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-11045.pdf"
+      },
+      {
+        "report_id": 14310,
+        "report_period": "Annual",
+        "report_year": 2007,
+        "date_filed": "2/9/2008",
+        "beginning_coh": 29744.4,
+        "ending_coh": 28399.51,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-14310.pdf"
+      },
+      {
+        "report_id": 16492,
+        "report_period": "Annual",
+        "report_year": 2008,
+        "date_filed": "2/14/2009",
+        "beginning_coh": 28399.51,
+        "ending_coh": 19056.84,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-16492.pdf"
+      },
+      {
+        "report_id": 39585,
+        "report_period": "Annual",
+        "report_year": 2013,
+        "date_filed": "2/17/2014",
+        "beginning_coh": 8417.14,
+        "ending_coh": 3303.74,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-39585.pdf"
+      },
+      {
+        "report_id": 46542,
+        "report_period": "Annual",
+        "report_year": 2014,
+        "date_filed": "1/22/2015",
+        "beginning_coh": 3303.74,
+        "ending_coh": 303.74,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-46542.pdf"
+      },
+      {
+        "report_id": 55961,
+        "report_period": "Annual",
+        "report_year": 2015,
+        "date_filed": "1/13/2016",
+        "beginning_coh": 303.74,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-55961.pdf"
+      }
+    ],
+    "report_id": 55961,
+    "report_period": "Annual",
+    "report_year": 2015,
+    "date_filed": "1/13/2016",
+    "beginning_coh": 303.74,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-55961.pdf",
+    "fetched_at": "2026-05-27T01:47:57.962475Z"
+  },
+  "NORTHSHORE HOME BUILDERS ASSN PAC FORMERLY ST TAMMANY HOME BUILDERS ASSN": {
+    "filer_id": "PAC990011"
+  },
+  "KAY ILES": {
+    "filer_id": "CAN990011",
+    "reports": [
+      {
+        "report_id": 1257,
+        "report_period": "Annual",
+        "report_year": 1999,
+        "date_filed": "2/18/2000",
+        "beginning_coh": 11595.17,
+        "ending_coh": 12445.84,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1257.pdf"
+      },
+      {
+        "report_id": 1058,
+        "report_period": "Annual",
+        "report_year": 1999,
+        "date_filed": "1/6/2000",
+        "beginning_coh": 9975.86,
+        "ending_coh": 17717.29,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1058.pdf"
+      },
+      {
+        "report_id": 1642,
+        "report_period": "Annual",
+        "report_year": 2000,
+        "date_filed": "1/4/2001",
+        "beginning_coh": 12445.84,
+        "ending_coh": 10292.74,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1642.pdf"
+      },
+      {
+        "report_id": 2341,
+        "report_period": "Annual",
+        "report_year": 2001,
+        "date_filed": "1/4/2002",
+        "beginning_coh": 10292.74,
+        "ending_coh": 11100.96,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-2341.pdf"
+      },
+      {
+        "report_id": 2340,
+        "report_period": "Annual",
+        "report_year": 2001,
+        "date_filed": "1/4/2002",
+        "beginning_coh": 10292.74,
+        "ending_coh": 11100.96,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-2340.pdf"
+      },
+      {
+        "report_id": 3785,
+        "report_period": "Annual",
+        "report_year": 2002,
+        "date_filed": "1/9/2003",
+        "beginning_coh": 11100.96,
+        "ending_coh": 12047.81,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-3785.pdf"
+      },
+      {
+        "report_id": 6353,
+        "report_period": "Annual",
+        "report_year": 2003,
+        "date_filed": "1/7/2004",
+        "beginning_coh": 12047.81,
+        "ending_coh": 5861.34,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-6353.pdf"
+      },
+      {
+        "report_id": 6352,
+        "report_period": "Annual",
+        "report_year": 2003,
+        "date_filed": "1/7/2004",
+        "beginning_coh": 12047.81,
+        "ending_coh": 5861.34,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-6352.pdf"
+      },
+      {
+        "report_id": 7920,
+        "report_period": "Annual",
+        "report_year": 2004,
+        "date_filed": "1/13/2005",
+        "beginning_coh": 5861.34,
+        "ending_coh": 4998.38,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-7920.pdf"
+      },
+      {
+        "report_id": 9237,
+        "report_period": "Annual",
+        "report_year": 2005,
+        "date_filed": "2/6/2006",
+        "beginning_coh": 4998.38,
+        "ending_coh": 4998.38,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-9237.pdf"
+      },
+      {
+        "report_id": 10952,
+        "report_period": "Annual",
+        "report_year": 2006,
+        "date_filed": "1/19/2007",
+        "beginning_coh": 4998.38,
+        "ending_coh": 5015.93,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-10952.pdf"
+      },
+      {
+        "report_id": 14237,
+        "report_period": "Annual",
+        "report_year": 2007,
+        "date_filed": "2/6/2008",
+        "beginning_coh": 5015.93,
+        "ending_coh": 3815.93,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-14237.pdf"
+      },
+      {
+        "report_id": 16266,
+        "report_period": "Annual",
+        "report_year": 2008,
+        "date_filed": "2/3/2009",
+        "beginning_coh": 3815.93,
+        "ending_coh": 3815.93,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-16266.pdf"
+      },
+      {
+        "report_id": 17924,
+        "report_period": "Annual",
+        "report_year": 2009,
+        "date_filed": "1/21/2010",
+        "beginning_coh": 3815.93,
+        "ending_coh": 2845.88,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-17924.pdf"
+      },
+      {
+        "report_id": 21970,
+        "report_period": "Annual",
+        "report_year": 2010,
+        "date_filed": "1/24/2011",
+        "beginning_coh": 2845.88,
+        "ending_coh": 2845.88,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-21970.pdf"
+      },
+      {
+        "report_id": 21968,
+        "report_period": "Annual",
+        "report_year": 2010,
+        "date_filed": "1/24/2011",
+        "beginning_coh": 3815.93,
+        "ending_coh": 3815.93,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-21968.pdf"
+      },
+      {
+        "report_id": 29663,
+        "report_period": "Annual",
+        "report_year": 2011,
+        "date_filed": "2/8/2012",
+        "beginning_coh": 2845.88,
+        "ending_coh": 2718.68,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-29663.pdf"
+      },
+      {
+        "report_id": 34252,
+        "report_period": "Annual",
+        "report_year": 2012,
+        "date_filed": "1/23/2013",
+        "beginning_coh": 2718.68,
+        "ending_coh": 2718.68,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-34252.pdf"
+      },
+      {
+        "report_id": 38600,
+        "report_period": "Annual",
+        "report_year": 2013,
+        "date_filed": "1/28/2014",
+        "beginning_coh": 2718.68,
+        "ending_coh": 2718.68,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-38600.pdf"
+      }
+    ],
+    "report_id": 38600,
+    "report_period": "Annual",
+    "report_year": 2013,
+    "date_filed": "1/28/2014",
+    "beginning_coh": 2718.68,
+    "ending_coh": 2718.68,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-38600.pdf",
+    "fetched_at": "2026-05-27T01:49:49.732501Z"
+  },
+  "NEW ORLEANS HOME BUILDERS ASSOCIATION": {
+    "filer_id": "PAC990035"
+  },
+  "ANITA FIELDS": {
+    "filer_id": "CAN990160",
+    "reports": [
+      {
+        "report_id": 1130,
+        "report_period": "Annual",
+        "report_year": 1999,
+        "date_filed": "2/3/2000",
+        "beginning_coh": 847.0,
+        "ending_coh": 730.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1130.pdf"
+      },
+      {
+        "report_id": 1647,
+        "report_period": "Annual",
+        "report_year": 2000,
+        "date_filed": "1/8/2001",
+        "beginning_coh": 847.0,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1647.pdf"
+      }
+    ],
+    "report_id": 1647,
+    "report_period": "Annual",
+    "report_year": 2000,
+    "date_filed": "1/8/2001",
+    "beginning_coh": 847.0,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1647.pdf",
+    "fetched_at": "2026-05-27T01:50:13.533249Z"
+  },
+  "RHODES PAC": {
+    "filer_id": "PAC990019"
+  },
+  "L PHILLIP GOUAUX": {
+    "filer_id": "CAN990239",
+    "reports": [
+      {
+        "report_id": 1654,
+        "report_period": "Annual",
+        "report_year": 2000,
+        "date_filed": "1/8/2001",
+        "beginning_coh": 0.0,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1654.pdf"
+      }
+    ],
+    "report_id": 1654,
+    "report_period": "Annual",
+    "report_year": 2000,
+    "date_filed": "1/8/2001",
+    "beginning_coh": 0.0,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-1654.pdf",
+    "fetched_at": "2026-05-27T01:50:33.665055Z"
   }
 }
