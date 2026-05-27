@@ -8,15 +8,25 @@ F102 Annual reports for each candidate in la_candidate_index.json.gz.
 Flow per filer:
   1. If we already have filer_id (CAN-style) cached, skip to step 3.
   2. Search SearchByNameAdv.aspx + click through to discover ViewEFiler.aspx?FilerID=...
-  3. Parse ViewEFiler.aspx (no auth needed) to find most recent F102 Annual report.
-  4. Download PDF from https://eap.ethics.la.gov/CFSearch/LA-{ReportID}.pdf
-  5. Parse Lines 14 (Beginning COH) and 18 (Ending COH) from the Summary Page.
-  6. Write ethics_coh_cache.json (incremental — saved after each filer).
+  3. Parse ViewEFiler.aspx (no auth needed) to find ALL F102 Annual reports.
+  4. For each Annual report, download the PDF from
+     https://eap.ethics.la.gov/CFSearch/LA-{ReportID}.pdf and extract Lines 14
+     (Beginning COH) and 18 (Ending COH) from the Summary Page.
+  5. Write ethics_coh_cache.json (incremental — saved after each filer).
+     Cache shape (per candidate name):
+       {
+         "filer_id":   "CAN999999",
+         "reports":    [ {report_id, report_year, beginning_coh, ending_coh,
+                          date_filed, pdf_url, ...}, ... ],   # oldest → newest
+         "fetched_at": "...",
+         # Plus the most-recent report's fields flattened for backward-compat
+         # with code paths that read `ending_coh` / `report_year` directly.
+       }
 
 Usage:
-    py -3 fetch_ethics_coh.py                          # all candidates in index
-    py -3 fetch_ethics_coh.py --filer "MANDIE LANDRY"  # single filer
-    py -3 fetch_ethics_coh.py --year 2025              # filter to that report year
+    py -3 fetch_ethics_coh.py                          # all candidates, all years
+    py -3 fetch_ethics_coh.py --filer "MANDIE LANDRY"  # single filer, all years
+    py -3 fetch_ethics_coh.py --year 2025              # restrict to that report year
     py -3 fetch_ethics_coh.py --dry-run                # search + discover, no PDF
     py -3 fetch_ethics_coh.py --force                  # re-fetch even if cached
     py -3 fetch_ethics_coh.py --limit 10               # cap at N filers (testing)
@@ -391,7 +401,7 @@ def main():
     ap.add_argument('--filer',    metavar='NAME',
                     help='Process only this filer')
     ap.add_argument('--year',     type=int, metavar='YYYY',
-                    help='Prefer annual report for this year (default: most recent)')
+                    help='Restrict to a single report year (default: all years)')
     ap.add_argument('--dry-run',  action='store_true',
                     help='Search + discover FilerID, no PDF download')
     ap.add_argument('--force',    action='store_true',
@@ -422,8 +432,11 @@ def main():
     for i, name in enumerate(candidates, 1):
         tag = f'[{i}/{len(candidates)}] {name}'
 
-        if not args.force and name in cache and cache[name].get('ending_coh') is not None:
-            print(f'SKIP {tag} (cached)')
+        # Skip only if we already have the new multi-report list cached.
+        # Entries with only the old single-report fields get re-processed so they
+        # upgrade to the new schema on the next run (no --force required).
+        if not args.force and name in cache and isinstance(cache[name].get('reports'), list) and cache[name]['reports']:
+            print(f'SKIP {tag} (cached, {len(cache[name]["reports"])} reports)')
             n_skip += 1
             continue
 
@@ -472,52 +485,77 @@ def main():
             _save_cache(cache)
             continue
 
-        # Filter to requested year
+        # Optional year filter — restrict the set of reports we process this run.
+        # If the filter excludes everything, fall back to processing all reports
+        # (so the filer still gets at least its full history cached).
         if args.year:
             yr_match = [r for r in annual if r['year_start'] == args.year or r['year_end'] == args.year]
             if yr_match:
                 annual = yr_match
             else:
-                print(f'  -> no {args.year} annual report; using most recent')
+                print(f'  -> no {args.year} annual report; processing all years instead')
 
-        best = annual[0]
-        report_id  = best['report_id']
-        year_label = best.get('year_start') or '?'
-        date_filed = best.get('date_filed') or ''
-        print(f'  report: {report_id}  year={year_label}  filed={date_filed}')
-        print(f'    row: {best["row_text"][:120]}')
+        print(f'  {len(annual)} annual report{"s" if len(annual)!=1 else ""} to process')
 
         if args.dry_run:
-            print(f'  (dry-run — skipping PDF)')
-            # Still cache the filer_id
+            for rep in annual:
+                print(f'    (dry-run) report {rep["report_id"]}  year={rep.get("year_start") or "?"}  filed={rep.get("date_filed") or ""}')
             cache.setdefault(name, {})['filer_id'] = filer_id
             _save_cache(cache)
             continue
 
-        # ── Step 3: Download PDF ──────────────────────────────────────────────
-        pdf_path = download_pdf(report_id)
-        if pdf_path is None:
+        # ── Step 3+4: Download and parse every annual report ──────────────────
+        reports_out = []
+        for rep in annual:
+            report_id  = rep['report_id']
+            year_label = rep.get('year_start') or '?'
+            date_filed = rep.get('date_filed') or ''
+
+            pdf_path = download_pdf(report_id)
+            if pdf_path is None:
+                print(f'  ERR  download failed for report {report_id} ({year_label})')
+                continue
+
+            beg_coh, end_coh = parse_coh(pdf_path)
+            if beg_coh is None and end_coh is None:
+                print(f'  ERR  could not extract COH from report {report_id} ({year_label})')
+                continue
+
+            print(f'  OK   {year_label}  beginning=${beg_coh:,.2f}  ending=${end_coh:,.2f}')
+
+            reports_out.append({
+                'report_id':     report_id,
+                'report_period': 'Annual',
+                'report_year':   year_label,
+                'date_filed':    date_filed,
+                'beginning_coh': beg_coh,
+                'ending_coh':    end_coh,
+                'pdf_url':       PDF_URL.format(report_id=report_id),
+            })
+
+        if not reports_out:
             n_err += 1
             continue
 
-        # ── Step 4: Parse COH ─────────────────────────────────────────────────
-        beg_coh, end_coh = parse_coh(pdf_path)
-        if beg_coh is None and end_coh is None:
-            print(f'  ERR could not extract COH from PDF')
-            n_err += 1
-            continue
-
-        print(f'  OK  beginning=${beg_coh:,.2f}  ending=${end_coh:,.2f}')
+        # Sort oldest → newest so chart consumers can iterate in chronological order.
+        def _yr_key(r):
+            try:    return int(r['report_year'])
+            except: return 0
+        reports_out.sort(key=_yr_key)
+        latest = reports_out[-1]
 
         cache[name] = {
             'filer_id':      filer_id,
-            'report_id':     report_id,
+            'reports':       reports_out,
+            # Flat fields = most-recent report. Kept for backward compatibility with
+            # code paths that pre-date the `reports` list (e.g., the COH stat panel).
+            'report_id':     latest['report_id'],
             'report_period': 'Annual',
-            'report_year':   year_label,
-            'date_filed':    date_filed,
-            'beginning_coh': beg_coh,
-            'ending_coh':    end_coh,
-            'pdf_url':       PDF_URL.format(report_id=report_id),
+            'report_year':   latest['report_year'],
+            'date_filed':    latest['date_filed'],
+            'beginning_coh': latest['beginning_coh'],
+            'ending_coh':    latest['ending_coh'],
+            'pdf_url':       latest['pdf_url'],
             'fetched_at':    datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         }
         n_ok += 1

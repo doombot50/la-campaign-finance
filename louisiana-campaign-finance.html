@@ -6016,20 +6016,37 @@ function renderCampCashFlow() {
   const nPts = keys.length;
   const xMaxTicks = nPts > 120 ? 10 : nPts > 48 ? 12 : nPts > 24 ? 10 : 8;
 
-  // Certified COH anchor: plot the official ending-CoH dot on the line so the
-  // gap with our computed Net (Raised − Spent) is visible. Real CoH also reflects
-  // loans, refunds, transfers, and in-kind activity that we don't track per-month,
-  // so the line is an indicator of fundraising velocity, not a bank balance.
-  const cohAnchor = _careerData?.ethics_coh;
+  // Certified COH anchors: plot every official ending-CoH point we have from
+  // F102 Annual filings on top of the Net line. Between-anchor balance is
+  // unknown so we use a thin dashed line, not interpolation. Real CoH also
+  // reflects loans, refunds, transfers, and in-kind activity that we don't
+  // track per-month — the gold line is fundraising velocity, the dots are
+  // the ground truth.
+  const cohEntry = _careerData?.ethics_coh;
+  // Multi-year list if the new scraper has run; fall back to a single record
+  // built from the flat top-level fields for older cache entries.
+  const cohReports = (cohEntry && Array.isArray(cohEntry.reports) && cohEntry.reports.length)
+    ? cohEntry.reports
+    : (cohEntry && cohEntry.ending_coh != null && cohEntry.report_year
+        ? [{ ending_coh: cohEntry.ending_coh, report_year: cohEntry.report_year }]
+        : []);
   let anchorData = null, anchorLabel = '';
-  if (cohAnchor && cohAnchor.ending_coh != null && cohAnchor.report_year) {
-    const target = `${cohAnchor.report_year}-12`;
-    let idx = -1;
-    for (let i = keys.length - 1; i >= 0; i--) { if (keys[i] <= target) { idx = i; break; } }
-    if (idx >= 0) {
-      anchorData = new Array(keys.length).fill(null);
-      anchorData[idx] = cohAnchor.ending_coh;
-      anchorLabel = `Certified CoH (${cohAnchor.report_year})`;
+  if (cohReports.length) {
+    const data = new Array(keys.length).fill(null);
+    let plotted = 0;
+    cohReports.forEach(r => {
+      const yr = String(r.report_year || '');
+      if (!yr || r.ending_coh == null) return;
+      const target = `${yr}-12`;
+      let idx = -1;
+      for (let i = keys.length - 1; i >= 0; i--) {
+        if (keys[i] <= target) { idx = i; break; }
+      }
+      if (idx >= 0) { data[idx] = r.ending_coh; plotted++; }
+    });
+    if (plotted) {
+      anchorData = data;
+      anchorLabel = `Certified CoH (${plotted} filing${plotted > 1 ? 's' : ''})`;
     }
   }
 
@@ -6051,7 +6068,11 @@ function renderCampCashFlow() {
           fill: false, tension: 0.3, borderWidth: 1.5, borderDash: [5,3], pointRadius: 0, pointHoverRadius: 3 },
         ...(anchorData ? [{
           label: anchorLabel, data: anchorData, yAxisID: 'y',
-          showLine: false, pointRadius: 7, pointHoverRadius: 9,
+          // Thin dashed connector between anchors so the trajectory is readable
+          // without implying linear interpolation between certified filings.
+          showLine: true, spanGaps: true,
+          borderColor: 'rgba(76,175,125,0.45)', borderWidth: 1, borderDash: [4, 3],
+          pointRadius: 7, pointHoverRadius: 9,
           pointBackgroundColor: '#4caf7d', pointBorderColor: '#fff', pointBorderWidth: 2,
         }] : []),
       ]
