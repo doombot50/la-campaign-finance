@@ -455,15 +455,39 @@ def _norm(name: str) -> str:
     return re.sub(r'\s+', ' ', name.strip().upper())
 
 
-def load_candidates() -> list:
+# PAC-shaped name heuristic — anything whose name contains one of these markers
+# is treated as a PAC / committee for filtering purposes.
+_PAC_HINTS = ('PAC', 'POLITICAL ACTION', 'COMMITTEE', 'FUND', 'PARTY', 'CAUCUS', 'TRUST')
+
+def _looks_like_pac(name: str) -> bool:
+    n = name.upper()
+    return any(h in n for h in _PAC_HINTS)
+
+def load_candidates(by_raised: bool = True, pacs_only: bool = False) -> list:
+    """Return the list of candidate names to process.
+
+    by_raised=True (default) sorts by total_raised descending so the most
+    consequential filers get scraped first — critical for IE / super-PAC work
+    where you'd rather have RGA / Gumbo PAC / GOP cached than the long tail
+    of inactive 1998-era candidates.
+
+    pacs_only=True filters to PAC-shaped names (PAC / COMMITTEE / FUND / PARTY
+    / CAUCUS / TRUST in the name) for focused PAC scrape runs.
+    """
+    entries = []   # list of (name, total_raised)
     if os.path.exists(CAND_INDEX):
         with gzip.open(CAND_INDEX, 'rt', encoding='utf-8') as f:
             idx = json.load(f)
-        return [_norm(n) for n in idx.keys()]
-    if os.path.exists(FILER_LOOKUP):
+        for n, d in idx.items():
+            entries.append((_norm(n), float(d.get('total_raised') or 0)))
+    elif os.path.exists(FILER_LOOKUP):
         with open(FILER_LOOKUP, 'r', encoding='utf-8') as f:
-            return [_norm(n) for n in json.load(f).keys()]
-    return []
+            entries = [(_norm(n), 0.0) for n in json.load(f).keys()]
+    if pacs_only:
+        entries = [(n, r) for n, r in entries if _looks_like_pac(n)]
+    if by_raised:
+        entries.sort(key=lambda x: -x[1])
+    return [n for n, _ in entries]
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -480,6 +504,10 @@ def main():
                     help='Re-fetch even if already in cache')
     ap.add_argument('--limit',    type=int, metavar='N',
                     help='Cap at N filers (testing)')
+    ap.add_argument('--pacs-only', action='store_true',
+                    help='Only scrape PAC-shaped names (PAC / COMMITTEE / FUND / PARTY / CAUCUS / TRUST)')
+    ap.add_argument('--alphabetical', action='store_true',
+                    help='Process in index order instead of the default by-total-raised descending')
     args = ap.parse_args()
 
     # Load existing cache
@@ -493,8 +521,10 @@ def main():
     if args.filer:
         candidates = [_norm(args.filer)]
     else:
-        candidates = load_candidates()
-        print(f'Processing {len(candidates)} candidates from index')
+        candidates = load_candidates(by_raised=not args.alphabetical, pacs_only=args.pacs_only)
+        order = 'alphabetical' if args.alphabetical else 'by total_raised desc'
+        scope = 'PACs only' if args.pacs_only else 'all candidates'
+        print(f'Processing {len(candidates)} {scope} from index, ordered {order}')
         if args.limit:
             candidates = candidates[:args.limit]
             print(f'  (limited to first {args.limit})')
