@@ -490,6 +490,108 @@ def load_candidates(by_raised: bool = True, pacs_only: bool = False) -> list:
     return [n for n, _ in entries]
 
 
+def load_candidate_entries(by_raised: bool = True, pacs_only: bool = False) -> list:
+    """Same as load_candidates() but returns (name, total_raised) tuples so
+    callers (e.g. the status report) can show dollar amounts without
+    re-opening the index."""
+    entries = []
+    if os.path.exists(CAND_INDEX):
+        with gzip.open(CAND_INDEX, 'rt', encoding='utf-8') as f:
+            idx = json.load(f)
+        for n, d in idx.items():
+            entries.append((_norm(n), float(d.get('total_raised') or 0)))
+    elif os.path.exists(FILER_LOOKUP):
+        with open(FILER_LOOKUP, 'r', encoding='utf-8') as f:
+            entries = [(_norm(n), 0.0) for n in json.load(f).keys()]
+    if pacs_only:
+        entries = [(n, r) for n, r in entries if _looks_like_pac(n)]
+    if by_raised:
+        entries.sort(key=lambda x: -x[1])
+    return entries
+
+
+# ── Status report ─────────────────────────────────────────────────────────────
+
+def _fmt_money(n: float) -> str:
+    if n >= 1e6: return f'${n/1e6:.1f}M'
+    if n >= 1e3: return f'${n/1e3:.0f}K'
+    return f'${n:.0f}'
+
+def print_status(top: int, pacs_only: bool) -> None:
+    """Print a coverage report and exit. Shows the top-N filers by total_raised
+    with a check / cross / report-count / latest-year-cached per row, plus
+    summary totals across the full index."""
+    if not os.path.exists(COH_CACHE):
+        print('No cache file yet — run the scraper first.')
+        return
+    with open(COH_CACHE, 'r', encoding='utf-8') as f:
+        cache = json.load(f)
+
+    entries = load_candidate_entries(by_raised=True, pacs_only=pacs_only)
+    scope = 'PACs' if pacs_only else 'filers'
+    print(f'=== COH Coverage — top {top} {scope} by total raised ===\n')
+
+    # PDF disk vs cache lockstep check
+    pdfs_on_disk = 0
+    if os.path.isdir(PDF_CACHE_DIR):
+        pdfs_on_disk = sum(1 for f in os.listdir(PDF_CACHE_DIR) if f.endswith('.pdf'))
+    print(f'Cache:  {len(cache)} entries  '
+          f'({sum(1 for v in cache.values() if isinstance(v.get("reports"), list))} multi-year, '
+          f'{sum(1 for v in cache.values() if not isinstance(v.get("reports"), list))} legacy single-record)')
+    print(f'PDFs:   {pdfs_on_disk} on disk\n')
+
+    # Per-row coverage for the top N. Three states:
+    #   ok    = entry exists AND has >=1 report with COH data
+    #   stub  = entry exists but only stores filer_id (a pre-F202-support run
+    #           cached the lookup, then found no F102 reports for the PAC).
+    #           These get re-processed on the next scraper run.
+    #   miss  = no cache entry at all (never touched)
+    print(f'  {"":<4}  {"Filer":<54}  {"Raised":>8}  {"Reps":>4}  {"Latest":>6}')
+    print(f'  {"":<4}  {"-"*54}  {"-"*8}  {"-"*4}  {"-"*6}')
+    ok = stub = miss = 0
+    for name, raised in entries[:top]:
+        entry = cache.get(name)
+        if not entry:
+            mark, n_reps, latest = 'miss', 0, '-'
+            miss += 1
+        else:
+            reps_list = entry.get('reports') if isinstance(entry.get('reports'), list) else None
+            real_reps = [r for r in (reps_list or []) if r.get('ending_coh') is not None or r.get('beginning_coh') is not None]
+            # Fall back to top-level fields for legacy single-record entries
+            if not reps_list and (entry.get('ending_coh') is not None or entry.get('beginning_coh') is not None):
+                real_reps = [entry]
+            if real_reps:
+                mark = 'ok'
+                n_reps = len(real_reps)
+                latest = max((str(r.get('report_year') or '') for r in real_reps), default='')
+                ok += 1
+            else:
+                mark = 'stub'
+                n_reps, latest = 0, '-'
+                stub += 1
+        display = name if len(name) <= 54 else name[:51] + '...'
+        print(f'  {mark:<4}  {display:<54}  {_fmt_money(raised):>8}  {n_reps:>4}  {latest:>6}')
+
+    print()
+    print(f'Top {top}: {ok} ok, {stub} stub (re-scrape pending), {miss} missing '
+          f'({100*ok//max(top,1)}% real coverage)\n')
+
+    # Wider summary across the whole index. Real coverage = entries that
+    # actually contain COH data (excludes filer-only stubs).
+    def _has_real_data(e):
+        if not e: return False
+        if isinstance(e.get('reports'), list):
+            return any(r.get('ending_coh') is not None or r.get('beginning_coh') is not None
+                       for r in e['reports'])
+        return e.get('ending_coh') is not None or e.get('beginning_coh') is not None
+    real_names = {k for k, v in cache.items() if _has_real_data(v)}
+    for n in (50, 100, 250, 500, 1000):
+        if n > len(entries): break
+        slice_names = {nm for nm, _ in entries[:n]}
+        covered = len(slice_names & real_names)
+        print(f'  top {n:<5}: {covered:>4} / {n} with COH data ({100*covered//n:>3}%)')
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -508,7 +610,15 @@ def main():
                     help='Only scrape PAC-shaped names (PAC / COMMITTEE / FUND / PARTY / CAUCUS / TRUST)')
     ap.add_argument('--alphabetical', action='store_true',
                     help='Process in index order instead of the default by-total-raised descending')
+    ap.add_argument('--status', action='store_true',
+                    help='Print a coverage report (top-N filers cached/missing) and exit')
+    ap.add_argument('--top', type=int, default=30, metavar='N',
+                    help='Status report: how many top filers to list (default 30)')
     args = ap.parse_args()
+
+    if args.status:
+        print_status(top=args.top, pacs_only=args.pacs_only)
+        return
 
     # Load existing cache
     cache: dict = {}
