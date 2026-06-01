@@ -1359,6 +1359,7 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == '/api/races':
             _load_career_data()
             _load_filer_lookup()
+            _load_ethics_coh()
 
             office_filter = params.get('office', ['major'])[0].lower()
             year_filter   = params.get('year',   [''])[0].strip()
@@ -1427,6 +1428,12 @@ class Handler(BaseHTTPRequestHandler):
                             raised = cyc.get('raised', 0)
                             spent  = cyc.get('spent',  0)
 
+                        # Certified COH from ethics annual filing
+                        coh_entry   = _get_ethics_coh(cand_name)
+                        coh_ending  = coh_entry.get('ending_coh')  if coh_entry else None
+                        coh_year    = coh_entry.get('report_year') if coh_entry else None
+                        coh_pdf_url = coh_entry.get('pdf_url')     if coh_entry else None
+
                         races_by_key[key]['candidates'].append({
                             'name':         cand_name,
                             'party':        c.get('party', ''),
@@ -1436,6 +1443,9 @@ class Handler(BaseHTTPRequestHandler):
                             'cycle':        cycle_key,
                             'raised':       raised,
                             'spent':        spent,
+                            'coh_ending':   coh_ending,
+                            'coh_year':     coh_year,
+                            'coh_pdf_url':  coh_pdf_url,
                         })
 
             race_list = sorted(races_by_key.values(),

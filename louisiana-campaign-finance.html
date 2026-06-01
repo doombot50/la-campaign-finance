@@ -895,6 +895,14 @@
   .party-lib  { background: #fef9c3; color: #92400e; }
   .party-grn  { background: #dcfce7; color: #166534; }
   .party-ind  { background: #f3f4f6; color: #374151; }
+  .races-sort-btn {
+    font-size: 11px; padding: 2px 8px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--muted); cursor: pointer;
+  }
+  .races-sort-btn.active { background: rgba(200,169,81,.13); color: var(--gold); border-color: var(--gold); }
+  .races-sort-btn:hover:not(.active) { background: rgba(0,0,0,.05); }
+  .coh-certified { font-size: 10px; color: var(--muted); margin-left: 2px; }
   .race-finance-btn {
     font-size: 10px; padding: 2px 7px; border-radius: 4px;
     border: 1px solid var(--border); background: var(--bg);
@@ -1875,6 +1883,11 @@
           <select id="races-year-filter" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text)" onchange="loadRaces()">
             <option value="">All Years</option>
           </select>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)">
+            Sort:
+            <button class="races-sort-btn active" data-rsort="raised" onclick="_setRacesSort(this)">Raised</button>
+            <button class="races-sort-btn" data-rsort="coh" onclick="_setRacesSort(this)">Cash on Hand</button>
+          </div>
         </div>
       </div>
       <div id="races-loading" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">
@@ -6453,7 +6466,15 @@ function exportCampaignCSV() {
 }
 
 // ── Races view ────────────────────────────────────────────────────────────────
-let _racesData = null;   // cached fetch result
+let _racesData  = null;   // cached fetch result
+let _racesSort  = 'raised'; // 'raised' | 'coh'
+
+function _setRacesSort(btn) {
+  _racesSort = btn.dataset.rsort;
+  document.querySelectorAll('.races-sort-btn').forEach(b => b.classList.toggle('active', b === btn));
+  // Re-render current data with new sort (no refetch needed)
+  if (_racesData) _renderRacesData(_racesData);
+}
 
 const PARTY_CSS = { REP:'party-rep', DEM:'party-dem', LIB:'party-lib', GRN:'party-grn' };
 function partyBadge(p) {
@@ -6484,6 +6505,36 @@ function outcomeLabel(o) {
   return o;
 }
 
+function _renderRacesData(data) {
+  const body  = document.getElementById('races-body');
+  const empty = document.getElementById('races-empty');
+  if (!data.races || !data.races.length) { empty.style.display = 'block'; body.innerHTML = ''; return; }
+
+  // Sort candidates within each race by the active sort key
+  const sortedRaces = data.races.map(race => {
+    const cands = [...race.candidates].sort((a, b) => {
+      if (_racesSort === 'coh') {
+        // Candidates with COH data float up; ties broken by raised
+        const ca = a.coh_ending ?? -1, cb = b.coh_ending ?? -1;
+        return cb !== ca ? cb - ca : (b.raised || 0) - (a.raised || 0);
+      }
+      return (b.raised || 0) - (a.raised || 0);
+    });
+    return { ...race, candidates: cands };
+  });
+
+  // When sorting by COH, bubble races that have at least one COH entry to the top
+  if (_racesSort === 'coh') {
+    sortedRaces.sort((a, b) => {
+      const aMax = Math.max(...a.candidates.map(c => c.coh_ending ?? -1));
+      const bMax = Math.max(...b.candidates.map(c => c.coh_ending ?? -1));
+      return bMax - aMax;
+    });
+  }
+
+  body.innerHTML = sortedRaces.map(race => renderRaceCard(race)).join('');
+}
+
 async function loadRaces(force) {
   const officeFilter = document.getElementById('races-office-filter').value;
   const yearFilter   = document.getElementById('races-year-filter').value;
@@ -6500,21 +6551,16 @@ async function loadRaces(force) {
     const qs = `?office=${encodeURIComponent(officeFilter)}&year=${encodeURIComponent(yearFilter)}`;
     const res = await fetch(`${API_BASE}/api/races${qs}`);
     if (!res.ok) throw new Error('Server error ' + res.status);
-    const data = await res.json();
+    _racesData = await res.json();
 
     // Populate year filter if not yet populated
     const yearSel = document.getElementById('races-year-filter');
-    if (yearSel.options.length <= 1 && data.years && data.years.length) {
-      data.years.forEach(y => yearSel.add(new Option(y, y)));
+    if (yearSel.options.length <= 1 && _racesData.years && _racesData.years.length) {
+      _racesData.years.forEach(y => yearSel.add(new Option(y, y)));
     }
 
     loading.style.display = 'none';
-    if (!data.races || !data.races.length) {
-      empty.style.display = 'block';
-      return;
-    }
-
-    body.innerHTML = data.races.map(race => renderRaceCard(race)).join('');
+    _renderRacesData(_racesData);
   } catch (e) {
     loading.style.display = 'none';
     body.innerHTML = `<div style="padding:20px;color:var(--muted);font-size:12px">⚠ Could not load races: ${e.message}</div>`;
@@ -6523,12 +6569,20 @@ async function loadRaces(force) {
 
 function renderRaceCard(race) {
   const cands = race.candidates || [];
+  // Show COH column only if any candidate in this race has certified COH data
+  const hasCoh = cands.some(c => c.coh_ending != null);
+
   const rows = cands.map(c => {
     const pct   = c.vote_pct != null ? c.vote_pct.toFixed(1) + '%' : '—';
     const won   = (c.outcome||'').toUpperCase().includes('ELECT');
     const rowBg = won ? 'background:rgba(22,163,74,.04)' : '';
     const profileBtn = c.filer_number
       ? `<button class="race-finance-btn" onclick="toggleRaceInd(this,'${c.filer_number}','${race.office.replace(/'/g,'')}','${c.cycle}')" title="Industry breakdown">📊</button>`
+      : '';
+    const cohCell = hasCoh
+      ? (c.coh_ending != null
+          ? `<a href="${c.coh_pdf_url||'#'}" target="_blank" style="color:var(--green,#16a34a);text-decoration:none;font-weight:600" title="Certified ${c.coh_year||''} annual filing">${fmtRaisedShort(c.coh_ending)}</a><span class="coh-certified">${c.coh_year||''}</span>`
+          : `<span style="color:var(--muted)">—</span>`)
       : '';
     return `<tr style="${rowBg}">
       <td style="font-weight:${won?'600':'400'}">${c.name}</td>
@@ -6537,10 +6591,11 @@ function renderRaceCard(race) {
       <td style="text-align:right">${pct}</td>
       <td style="text-align:right">${fmtRaisedShort(c.raised)}</td>
       <td style="text-align:right">${fmtRaisedShort(c.spent)}</td>
+      ${hasCoh ? `<td style="text-align:right">${cohCell}</td>` : ''}
       <td style="text-align:center">${profileBtn}</td>
     </tr>
     <tr class="race-ind-row" style="display:none">
-      <td colspan="7"><div class="race-ind-panel" id="ind-${c.filer_number}-${c.cycle.replace(/-/g,'')}"></div></td>
+      <td colspan="${hasCoh?8:7}"><div class="race-ind-panel" id="ind-${c.filer_number}-${c.cycle.replace(/-/g,'')}"></div></td>
     </tr>`;
   }).join('');
 
@@ -6555,6 +6610,7 @@ function renderRaceCard(race) {
         <th style="text-align:right">Vote %</th>
         <th style="text-align:right">Raised</th>
         <th style="text-align:right">Spent</th>
+        ${hasCoh ? '<th style="text-align:right">Cash on Hand</th>' : ''}
         <th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
