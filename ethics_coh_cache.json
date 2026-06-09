@@ -1,14 +1,58 @@
 {
   "MANDIE LANDRY": {
     "filer_id": "CAN993944",
+    "reports": [
+      {
+        "report_id": 96474,
+        "report_period": "Annual",
+        "report_year": 2020,
+        "form_type": "F102",
+        "date_filed": "2/17/2021",
+        "beginning_coh": 0.0,
+        "ending_coh": 8688.02,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-96474.pdf"
+      },
+      {
+        "report_id": 105612,
+        "report_period": "Annual",
+        "report_year": 2021,
+        "form_type": "F102",
+        "date_filed": "10/21/2022",
+        "beginning_coh": 8688.02,
+        "ending_coh": 11776.51,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-105612.pdf"
+      },
+      {
+        "report_id": 126260,
+        "report_period": "Annual",
+        "report_year": 2024,
+        "form_type": "F102",
+        "date_filed": "2/18/2025",
+        "beginning_coh": 0.0,
+        "ending_coh": 14044.26,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-126260.pdf"
+      },
+      {
+        "report_id": 133246,
+        "report_period": "Annual",
+        "report_year": 2025,
+        "form_type": "F102",
+        "date_filed": "3/18/2026",
+        "beginning_coh": 14044.26,
+        "ending_coh": 24923.11,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-133246.pdf"
+      }
+    ],
     "report_id": 133246,
     "report_period": "Annual",
     "report_year": 2025,
+    "form_type": "F102",
     "date_filed": "3/18/2026",
     "beginning_coh": 14044.26,
     "ending_coh": 24923.11,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-133246.pdf",
-    "fetched_at": "2026-05-25T21:11:36.268448Z"
+    "fetched_at": "2026-06-09T18:41:04.040282Z",
+    "checked_at": "2026-06-09T18:41:04.040295Z"
   },
   "T C BLOXOM": {
     "filer_id": "CAN990103",
@@ -15662,5 +15706,9 @@
     "ending_coh": 0.0,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-4003.pdf",
     "fetched_at": "2026-05-27T13:16:18.976521Z"
+  },
+  "BOBBY JINDAL": {
+    "filer_id": "OP990004",
+    "checked_at": "2026-06-09T18:41:44.418013Z"
   }
 }
