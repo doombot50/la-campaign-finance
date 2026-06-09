@@ -15,9 +15,8 @@ name: Nightly data refresh
 
 on:
   workflow_dispatch:
-  # Uncomment to enable the nightly schedule (3-4am Central):
-  # schedule:
-  #   - cron: '0 9 * * *'
+  schedule:
+    - cron: '0 9 * * *'   # nightly, 3-4am Central
 
 concurrency:
   group: nightly-data
