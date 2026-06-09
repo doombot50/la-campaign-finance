@@ -32,6 +32,7 @@ jobs:
     timeout-minutes: 300
     env:
       GH_TOKEN: ${{ github.token }}
+      PYTHONUNBUFFERED: "1"   # live log lines, not minutes-late chunks
     steps:
       - uses: actions/checkout@v4
 
