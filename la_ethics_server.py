@@ -873,22 +873,6 @@ def is_cached_fresh(csv_key, report_type='contributions'):
     """True when every year in the range has a fresh per-year cache file."""
     return all(_year_is_fresh(y, report_type) for y in _key_years(csv_key))
 
-def _load_years(years, report_type):
-    """Load records from per-year NDJSON-gzip cache files (one JSON object per line)."""
-    records = []
-    for year in years:
-        p = _year_cache_path(year, report_type)
-        if os.path.exists(p):
-            with gzip.open(p, 'rt', encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        try:
-                            records.append(json.loads(line))
-                        except Exception:
-                            continue
-    return records
-
 def _parse_contribution_row(row):
     amt = float((row.get('ContributionAmt') or '').strip() or 0)
     if amt <= 0:
@@ -1145,21 +1129,6 @@ def download_and_cache(csv_key, report_type='contributions'):
               f'(skipped {dupes:,} duplicate rows)')
         gc.collect()
         set_status(status_key, 'ready', f'{total:,} records cached')
-
-
-def fetch_for_cycle(cycle, report_type='contributions'):
-    """Return records for the two-year window [cycle-1, cycle], loading only those years."""
-    y = int(cycle)
-    years_needed = [y - 1, y]
-    csv_key = get_csv_key(cycle)
-
-    # Download if either year is missing
-    if not all(_year_is_fresh(yr, report_type) for yr in years_needed):
-        download_and_cache(csv_key, report_type)
-
-    records = _load_years(years_needed, report_type)
-    gc.collect()
-    return records
 
 
 def prefetch_background(csv_key, report_type='contributions'):

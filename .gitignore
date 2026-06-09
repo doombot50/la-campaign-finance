@@ -1,5 +1,13 @@
 .la_cache/
+.ethics_pdf_cache/
 __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+
+# Runtime logs & scratch output
+*.log
+_scrape_*.txt
+oth_analysis.txt
+ov_test.json
+ethics_coh_cache.json.bak
