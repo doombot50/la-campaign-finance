@@ -308,27 +308,39 @@ def get_annual_reports(filer_id: str) -> list:
         clean = re.sub(r'\s+', ' ', clean).strip()
 
         # Dates in row: may include election date, period start, period end, filed date.
-        # Annual F102 period always starts 1/1/YYYY — use that to identify reporting year.
         dates = re.findall(r'\b(\d{1,2}/\d{1,2}/\d{4})\b', clean)
         year_start = year_end = date_filed = None
         date_filed = dates[-1] if dates else None
-        # Reporting period start is always 1/1/YYYY for Annual reports
-        jan_dates = [d for d in dates if d.startswith('1/1/')]
-        if jan_dates:
-            year_start = int(jan_dates[0].split('/')[-1])
-        # Period end: 12/31/YYYY
-        dec_dates  = [d for d in dates if d.startswith('12/31/')]
+
+        # A report year is only plausible if it's in the past (annuals for year Y
+        # are filed in Y+1) and not ancient. The portal's election-date column
+        # carries sentinels like "1/1/3001" and "1/1/2030" that pass loose bounds.
+        this_year = datetime.now().year
+        def _plausible(y):
+            return 1980 <= y <= this_year
+
+        # Anchor on the period END (12/31/YYYY): annual periods always close
+        # Dec 31, while the period START is mid-year for newly-registered
+        # committees — leaving a bogus election date as the only 1/1/x match.
+        dec_dates = [d for d in dates if d.startswith('12/31/')]
         if dec_dates:
-            year_end = int(dec_dates[0].split('/')[-1])
-        # Sanity check: source data occasionally has sentinel dates like
-        # "1/1/3001" that fool the heuristic. Reject implausible years and
-        # fall back to date_filed - 1 (annuals close out year-after-filing).
-        if year_start is not None and (year_start < 1980 or year_start > 2050):
-            year_start = None
-        if year_end is not None and (year_end < 1980 or year_end > 2050):
-            year_end = None
-        if year_start is None and date_filed:
-            year_start = int(date_filed.split('/')[-1]) - 1
+            y = int(dec_dates[0].split('/')[-1])
+            if _plausible(y):
+                year_end = y
+
+        # Period start: prefer a 1/1/YYYY consistent with the period end.
+        jan_years = [int(d.split('/')[-1]) for d in dates if d.startswith('1/1/')]
+        jan_years = [y for y in jan_years if _plausible(y)]
+        if year_end is not None and year_end in jan_years:
+            year_start = year_end
+        elif year_end is not None:
+            year_start = year_end          # mid-year registration: label by close year
+        elif jan_years:
+            year_start = jan_years[0]
+        elif date_filed:
+            y = int(date_filed.split('/')[-1]) - 1
+            if _plausible(y):
+                year_start = y             # annuals close out the year before filing
 
         results.append({
             'report_id':  report_id,
