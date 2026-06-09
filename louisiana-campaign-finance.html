@@ -5825,9 +5825,11 @@ function showCampaignProfile(name, openTab) {
   // Election result may load async on first open; re-render once available.
   const _p = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
   loadElectionResults().then(() => renderCampElection(name, _p));
-  // Reset certified COH stat (will be populated async by fetchCareerData)
+  // Reset certified COH + estimate stats (populated async by fetchCareerData)
   const _cohStat = document.getElementById('camp-coh-stat');
   if (_cohStat) _cohStat.style.display = 'none';
+  const _cohEstStat = document.getElementById('camp-coh-est-stat');
+  if (_cohEstStat) _cohEstStat.style.display = 'none';
   fetchCareerData(name);  // pre-fetch career data in background (used if Career tab is opened)
   _modalReturnFocus = document.activeElement;   // remember trigger for focus restore
   document.getElementById('camp-overlay').classList.add('open');
@@ -6292,6 +6294,22 @@ async function fetchCareerData(name) {
         if (cohStat) cohStat.style.display = '';
       } else {
         if (cohStat) cohStat.style.display = 'none';
+      }
+      // Hybrid live-cash estimate: certified base + net flows since the filing.
+      // Only shown when there are actual post-filing flows — otherwise it would
+      // just duplicate the certified number.
+      const est = _careerData.coh_estimate;
+      const estStat = document.getElementById('camp-coh-est-stat');
+      if (est && est.estimate != null && (est.raised_since > 0 || est.spent_since > 0)) {
+        document.getElementById('camp-coh-est').textContent = formatMoney(est.estimate);
+        const help = document.getElementById('camp-coh-est-help');
+        if (help) help.title =
+          `Certified cash on hand ${formatMoney(est.base)} as of 12/31/${est.base_year}, ` +
+          `plus ${formatMoney(est.raised_since)} raised and minus ${formatMoney(est.spent_since)} spent ` +
+          `reported since. Excludes loans, refunds, transfers, and in-kind. Estimate only.`;
+        if (estStat) estStat.style.display = '';
+      } else {
+        if (estStat) estStat.style.display = 'none';
       }
       // Re-render cash-on-hand chart now that full monthly data is available
       renderCampCashFlow();
@@ -7273,6 +7291,10 @@ function _ovOpenElection(year) {
       <div class="cp-stat" id="camp-coh-stat" style="display:none">
         <div class="cp-stat-val" id="camp-coh" style="color:var(--green,#2a7a3b)">—</div>
         <div class="cp-stat-lbl">Cash on Hand <a id="camp-coh-link" href="#" target="_blank" style="font-size:9px;font-weight:600;color:var(--muted);text-decoration:none;letter-spacing:0.3px" title="Certified per LA Ethics annual filing"></a></div>
+      </div>
+      <div class="cp-stat" id="camp-coh-est-stat" style="display:none">
+        <div class="cp-stat-val" id="camp-coh-est" style="color:var(--gold,#c8a951)">—</div>
+        <div class="cp-stat-lbl">Est. Current Cash <span id="camp-coh-est-help" style="cursor:help;color:var(--muted)" title="">(?)</span></div>
       </div>
     </div>
     <!-- Cash on hand over time -->

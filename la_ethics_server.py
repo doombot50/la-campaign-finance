@@ -1233,11 +1233,57 @@ class Handler(BaseHTTPRequestHandler):
             )
             # Augment with certified COH from ethics_coh_cache.json if available
             ethics_coh = _get_ethics_coh(name)
+
+            # Hybrid live-cash estimate: certified Dec-31 balance + net flows since.
+            # The per-year cache files are partitioned by record year, so "flows
+            # since the filing's close" is exactly the sum of whole year-files for
+            # years after the filing year. Matching mirrors the client (exact
+            # candidate-field equality, case-insensitive). Loans excluded — noted
+            # in the UI tooltip.
+            coh_estimate = None
+            if ethics_coh and ethics_coh.get('ending_coh') is not None:
+                try:
+                    base_year = int(ethics_coh.get('report_year'))
+                except (TypeError, ValueError):
+                    base_year = None
+                if base_year and base_year < date.today().year:
+                    target = name.strip().upper()
+                    raised_since = spent_since = 0.0
+                    for yr in range(base_year + 1, date.today().year + 1):
+                        for rtype in ('contributions', 'expenditures'):
+                            p = _year_cache_path(yr, rtype)
+                            if not os.path.exists(p):
+                                continue
+                            with gzip.open(p, 'rt', encoding='utf-8') as gf:
+                                for line in gf:
+                                    line = line.strip()
+                                    if not line:
+                                        continue
+                                    try:
+                                        rec = json.loads(line)
+                                    except json.JSONDecodeError:
+                                        continue
+                                    if (rec.get('candidate') or '').strip().upper() != target:
+                                        continue
+                                    amt = float(rec.get('amount') or 0)
+                                    if rtype == 'contributions':
+                                        raised_since += amt
+                                    else:
+                                        spent_since += amt
+                    coh_estimate = {
+                        'base':         ethics_coh['ending_coh'],
+                        'base_year':    base_year,
+                        'raised_since': round(raised_since, 2),
+                        'spent_since':  round(spent_since, 2),
+                        'estimate':     round(ethics_coh['ending_coh'] + raised_since - spent_since, 2),
+                    }
+
             self._json({
-                'financial':   financial,
-                'races':       races,
-                'norm':        norm,
-                'ethics_coh':  ethics_coh,   # None if not yet scraped
+                'financial':    financial,
+                'races':        races,
+                'norm':         norm,
+                'ethics_coh':   ethics_coh,   # None if not yet scraped
+                'coh_estimate': coh_estimate, # None unless certified base exists
             })
             return
 
@@ -1346,11 +1392,14 @@ class Handler(BaseHTTPRequestHandler):
                     for c in candidacies:
                         if c.get('party_office'):
                             continue
-                        date   = c.get('date', '')
-                        office = c.get('office', '')
-                        if not date or not office:
+                        # NB: named race_date, not `date` — a bare `date` local
+                        # would shadow datetime.date for ALL of do_GET and break
+                        # every earlier `date.today()` call with UnboundLocalError.
+                        race_date = c.get('date', '')
+                        office    = c.get('office', '')
+                        if not race_date or not office:
                             continue
-                        parts = date.split('/')
+                        parts = race_date.split('/')
                         try:
                             yr = int(parts[2]) if len(parts) == 3 else 0
                         except Exception:
@@ -1376,10 +1425,10 @@ class Handler(BaseHTTPRequestHandler):
                         if year_filter and str(yr) != year_filter:
                             continue
 
-                        key = (date, office)
+                        key = (race_date, office)
                         if key not in races_by_key:
                             races_by_key[key] = {
-                                'date': date,
+                                'date': race_date,
                                 'year': yr,
                                 'office': office,
                                 'office_type': otype,
