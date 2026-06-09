@@ -2,6 +2,10 @@ services:
   - type: web
     name: la-campaign-finance
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    plan: free
+    # Seed .la_cache/ from the data-cache GitHub release at build time so
+    # free-tier cold boots start with warm contribution data (the build
+    # image persists across spin-downs; runtime disk writes do not).
+    buildCommand: pip install -r requirements.txt && python3 fetch_cache_assets.py
     startCommand: python3 la_ethics_server.py
     healthCheckPath: /health

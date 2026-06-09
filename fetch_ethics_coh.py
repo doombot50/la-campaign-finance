@@ -71,7 +71,7 @@ import time
 import sys
 import argparse
 import gzip
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 try:
     import pdfplumber
@@ -604,6 +604,11 @@ def main():
                     help='Search + discover FilerID, no PDF download')
     ap.add_argument('--force',    action='store_true',
                     help='Re-fetch even if already in cache')
+    ap.add_argument('--recheck',  type=int, metavar='DAYS',
+                    help='Re-examine cached entries that lack a current-year annual '
+                         '(incl. no-report and not-found entries) if last checked more '
+                         'than DAYS ago. Entries >4 years behind are considered defunct '
+                         'and skipped (use --force). Designed for nightly cron runs.')
     ap.add_argument('--limit',    type=int, metavar='N',
                     help='Cap at N filers (testing)')
     ap.add_argument('--pacs-only', action='store_true',
@@ -641,16 +646,67 @@ def main():
 
     n_ok = n_skip = n_err = n_noreport = 0
 
+    # ── Cache-skip policy ─────────────────────────────────────────────────────
+    # Explicit --filer always re-examines (cheap: filer_id + per-report results
+    # are reused from cache, so only NEW reports cost a PDF download).
+    #   default:        skip every cached entry (incl. no-report / not-found)
+    #   --recheck DAYS: also re-examine entries with no current-year annual,
+    #                   if last checked > DAYS ago; >4yrs behind = defunct, skip
+    #   --force:        re-examine everything, re-download every PDF
+    now_utc        = datetime.now(timezone.utc)
+    this_year      = now_utc.year
+    last_completed = this_year - 1   # annuals for year Y are filed early in Y+1
+
+    def _newest_report_year(entry):
+        years = [r.get('report_year') for r in (entry.get('reports') or [])
+                 if isinstance(r.get('report_year'), int)]
+        return max(years) if years else None
+
+    def _checked_within(entry, days):
+        ts = entry.get('checked_at') or entry.get('fetched_at')
+        if not ts:
+            return False
+        try:
+            checked = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+        except ValueError:
+            return False
+        return (now_utc - checked) < timedelta(days=days)
+
+    def _skip_reason(entry):
+        """Return a skip-log string, or None to (re-)process this entry."""
+        if args.force or args.filer:
+            return None
+        # Legacy single-report entries (pre-`reports` schema): always re-process
+        # so they upgrade to full multi-year history, regardless of mode.
+        if entry.get('ending_coh') is not None and not entry.get('reports'):
+            return None
+        newest = _newest_report_year(entry)
+        if newest is not None and newest >= last_completed:
+            return f'current through {newest}'
+        if args.recheck is None:
+            if entry.get('not_found'):
+                return 'not found on portal (use --recheck/--force to retry)'
+            if isinstance(entry.get('reports'), list) and entry['reports']:
+                return f'{len(entry["reports"])} reports (use --recheck to refresh)'
+            if 'filer_id' in entry:
+                return 'no annual reports (use --recheck to retry)'
+            return None   # legacy stub entry — re-process to upgrade schema
+        # --recheck mode
+        if newest is not None and newest < this_year - 4:
+            return f'defunct (newest annual {newest}; use --force)'
+        if _checked_within(entry, args.recheck):
+            return f'checked within last {args.recheck}d'
+        return None
+
     for i, name in enumerate(candidates, 1):
         tag = f'[{i}/{len(candidates)}] {name}'
 
-        # Skip only if we already have the new multi-report list cached.
-        # Entries with only the old single-report fields get re-processed so they
-        # upgrade to the new schema on the next run (no --force required).
-        if not args.force and name in cache and isinstance(cache[name].get('reports'), list) and cache[name]['reports']:
-            print(f'SKIP {tag} (cached, {len(cache[name]["reports"])} reports)')
-            n_skip += 1
-            continue
+        if name in cache:
+            reason = _skip_reason(cache[name])
+            if reason:
+                print(f'SKIP {tag} ({reason})')
+                n_skip += 1
+                continue
 
         print(f'\n{tag}')
 
@@ -677,6 +733,11 @@ def main():
                 if not filer_id:
                     print(f'  -> filer not found on ethics portal')
                     n_noreport += 1
+                    # Negative-cache so nightly runs don't re-search every miss;
+                    # --recheck re-tries these once they age past the window.
+                    cache[name] = {'not_found': True,
+                                   'checked_at': now_utc.isoformat().replace('+00:00', 'Z')}
+                    _save_cache(cache)
                     continue
 
         print(f'  filer_id = {filer_id}')
@@ -693,7 +754,10 @@ def main():
             print(f'  -> no F102 Annual reports found')
             n_noreport += 1
             # Cache the filer_id even if no reports, to skip search next time
-            cache.setdefault(name, {})['filer_id'] = filer_id
+            entry = cache.setdefault(name, {})
+            entry['filer_id']   = filer_id
+            entry['checked_at'] = now_utc.isoformat().replace('+00:00', 'Z')
+            entry.pop('not_found', None)
             _save_cache(cache)
             continue
 
@@ -717,11 +781,20 @@ def main():
             continue
 
         # ── Step 3+4: Download and parse every annual report ──────────────────
+        # Reuse already-parsed reports from the cache (keyed by report_id) so a
+        # recheck only pays for genuinely NEW filings — critical on the Actions
+        # runner, where .ethics_pdf_cache starts empty every run.
+        prior = {r['report_id']: r for r in (cache.get(name, {}).get('reports') or [])
+                 if r.get('report_id')}
         reports_out = []
         for rep in annual:
             report_id  = rep['report_id']
             year_label = rep.get('year_start') or '?'
             date_filed = rep.get('date_filed') or ''
+
+            if not args.force and report_id in prior:
+                reports_out.append(prior[report_id])
+                continue
 
             pdf_path = download_pdf(report_id)
             if pdf_path is None:
@@ -775,6 +848,7 @@ def main():
             'ending_coh':    latest['ending_coh'],
             'pdf_url':       latest['pdf_url'],
             'fetched_at':    datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+            'checked_at':    datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         }
         n_ok += 1
         _save_cache(cache)
