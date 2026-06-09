@@ -69,6 +69,10 @@ jobs:
       - name: Commit COH cache if changed
         if: always()
         run: |
+          # Never commit a corrupt cache: if the JSON doesn't parse (e.g. the
+          # scrape was killed mid-write), restore the last good version.
+          python -c "import json; json.load(open('ethics_coh_cache.json'))" \
+            || git checkout -- ethics_coh_cache.json
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ethics_coh_cache.json

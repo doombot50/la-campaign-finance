@@ -863,8 +863,12 @@ def main():
 
 
 def _save_cache(cache):
-    with open(COH_CACHE, 'w', encoding='utf-8') as f:
+    # Atomic write: a kill signal mid-save (e.g. the workflow step timeout)
+    # must never leave a truncated JSON behind — the server would fail to load it.
+    tmp = COH_CACHE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(cache, f, indent=2)
+    os.replace(tmp, COH_CACHE)
 
 
 if __name__ == '__main__':
