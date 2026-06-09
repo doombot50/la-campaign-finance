@@ -603,6 +603,36 @@
         "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-57938.pdf"
       },
       {
+        "report_id": 62889,
+        "report_period": "Annual",
+        "report_year": 2016,
+        "form_type": "F202",
+        "date_filed": "2/13/2017",
+        "beginning_coh": 166149.71,
+        "ending_coh": 56538.12,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-62889.pdf"
+      },
+      {
+        "report_id": 68421,
+        "report_period": "Annual",
+        "report_year": 2017,
+        "form_type": "F202",
+        "date_filed": "2/8/2018",
+        "beginning_coh": 56538.12,
+        "ending_coh": 2383.77,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-68421.pdf"
+      },
+      {
+        "report_id": 98074,
+        "report_period": "Annual",
+        "report_year": 2020,
+        "form_type": "F202",
+        "date_filed": "5/13/2021",
+        "beginning_coh": 74728.29,
+        "ending_coh": 29100.84,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-98074.pdf"
+      },
+      {
         "report_id": 127184,
         "report_period": "Annual",
         "report_year": 2024,
@@ -621,28 +651,18 @@
         "beginning_coh": 2508.67,
         "ending_coh": 1077.03,
         "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131759.pdf"
-      },
-      {
-        "report_id": 68421,
-        "report_period": "Annual",
-        "report_year": 2030,
-        "form_type": "F202",
-        "date_filed": "2/8/2018",
-        "beginning_coh": 56538.12,
-        "ending_coh": 2383.77,
-        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-68421.pdf"
       }
     ],
-    "report_id": 68421,
+    "report_id": 131759,
     "report_period": "Annual",
-    "report_year": 2030,
+    "report_year": 2025,
     "form_type": "F202",
-    "date_filed": "2/8/2018",
-    "beginning_coh": 56538.12,
-    "ending_coh": 2383.77,
-    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-68421.pdf",
-    "fetched_at": "2026-06-09T18:59:35.922344Z",
-    "checked_at": "2026-06-09T18:59:35.922358Z"
+    "date_filed": "2/18/2026",
+    "beginning_coh": 2508.67,
+    "ending_coh": 1077.03,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131759.pdf",
+    "fetched_at": "2026-06-09T21:00:00.827607Z",
+    "checked_at": "2026-06-09T21:00:00.827642Z"
   },
   "GUMBO PAC": {
     "filer_id": "PAC990329",
@@ -2431,6 +2451,16 @@
         "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-69132.pdf"
       },
       {
+        "report_id": 96789,
+        "report_period": "Annual",
+        "report_year": 2020,
+        "form_type": "F202",
+        "date_filed": "2/18/2021",
+        "beginning_coh": 38489.08,
+        "ending_coh": 96153.25,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-96789.pdf"
+      },
+      {
         "report_id": 102746,
         "report_period": "Annual",
         "report_year": 2021,
@@ -2469,28 +2499,18 @@
         "beginning_coh": 162573.75,
         "ending_coh": 329481.98,
         "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131488.pdf"
-      },
-      {
-        "report_id": 96789,
-        "report_period": "Annual",
-        "report_year": 2030,
-        "form_type": "F202",
-        "date_filed": "2/18/2021",
-        "beginning_coh": 38489.08,
-        "ending_coh": 96153.25,
-        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-96789.pdf"
       }
     ],
-    "report_id": 96789,
+    "report_id": 131488,
     "report_period": "Annual",
-    "report_year": 2030,
+    "report_year": 2025,
     "form_type": "F202",
-    "date_filed": "2/18/2021",
-    "beginning_coh": 38489.08,
-    "ending_coh": 96153.25,
-    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-96789.pdf",
-    "fetched_at": "2026-06-09T19:16:16.404453Z",
-    "checked_at": "2026-06-09T19:16:16.404470Z"
+    "date_filed": "2/12/2026",
+    "beginning_coh": 162573.75,
+    "ending_coh": 329481.98,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131488.pdf",
+    "fetched_at": "2026-06-09T20:57:05.563806Z",
+    "checked_at": "2026-06-09T20:57:05.563822Z"
   },
   "ELIZABETH MURRILL": {
     "filer_id": "CAN994891",
@@ -3903,6 +3923,16 @@
         "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-56180.pdf"
       },
       {
+        "report_id": 62884,
+        "report_period": "Annual",
+        "report_year": 2016,
+        "form_type": "F202",
+        "date_filed": "2/13/2017",
+        "beginning_coh": 33393.84,
+        "ending_coh": 121907.05,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-62884.pdf"
+      },
+      {
         "report_id": 69110,
         "report_period": "Annual",
         "report_year": 2017,
@@ -3923,14 +3953,14 @@
         "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-75938.pdf"
       },
       {
-        "report_id": 62884,
+        "report_id": 97563,
         "report_period": "Annual",
         "report_year": 2020,
         "form_type": "F202",
-        "date_filed": "2/13/2017",
-        "beginning_coh": 33393.84,
-        "ending_coh": 121907.05,
-        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-62884.pdf"
+        "date_filed": "3/31/2021",
+        "beginning_coh": 329431.38,
+        "ending_coh": 281348.32,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-97563.pdf"
       },
       {
         "report_id": 126049,
@@ -3951,28 +3981,18 @@
         "beginning_coh": 734619.64,
         "ending_coh": 913498.99,
         "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131485.pdf"
-      },
-      {
-        "report_id": 97563,
-        "report_period": "Annual",
-        "report_year": 2030,
-        "form_type": "F202",
-        "date_filed": "3/31/2021",
-        "beginning_coh": 329431.38,
-        "ending_coh": 281348.32,
-        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-97563.pdf"
       }
     ],
-    "report_id": 97563,
+    "report_id": 131485,
     "report_period": "Annual",
-    "report_year": 2030,
+    "report_year": 2025,
     "form_type": "F202",
-    "date_filed": "3/31/2021",
-    "beginning_coh": 329431.38,
-    "ending_coh": 281348.32,
-    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-97563.pdf",
-    "fetched_at": "2026-06-09T19:27:05.988989Z",
-    "checked_at": "2026-06-09T19:27:05.989004Z"
+    "date_filed": "2/12/2026",
+    "beginning_coh": 734619.64,
+    "ending_coh": 913498.99,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-131485.pdf",
+    "fetched_at": "2026-06-09T20:58:36.844834Z",
+    "checked_at": "2026-06-09T20:58:36.844859Z"
   },
   "JOSEPH P LOPINTO": {
     "filer_id": "CAN991514",
