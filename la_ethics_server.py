@@ -118,6 +118,27 @@ def _get_entity(name=None, filer=None):
     return None
 
 
+# ── Precomputed insight blocks (built nightly by build_insights.py) ─────────
+_INSIGHTS       = None
+_INSIGHTS_MTIME = 0
+_INSIGHTS_LOCK  = threading.Lock()
+
+def _load_insights():
+    global _INSIGHTS, _INSIGHTS_MTIME
+    with _INSIGHTS_LOCK:
+        p = os.path.join(CACHE_DIR, 'la_insights.json.gz')
+        if not os.path.exists(p):
+            if _INSIGHTS is None:
+                _INSIGHTS = {}
+            return
+        mtime = os.path.getmtime(p)
+        if _INSIGHTS is not None and mtime <= _INSIGHTS_MTIME:
+            return
+        with gzip.open(p, 'rt', encoding='utf-8') as f:
+            _INSIGHTS = json.load(f)
+        _INSIGHTS_MTIME = mtime
+
+
 def _load_filer_lookup():
     global _FILER_NUM
     with _FILER_NUM_LOCK:
@@ -1373,6 +1394,12 @@ class Handler(BaseHTTPRequestHandler):
                 'coh_estimate': coh_estimate, # None unless certified base exists
                 'entity':       _get_entity(name=name),  # canonical entity or None
             })
+            return
+
+        # ── /api/insights — nightly precomputed insight blocks ───────────────
+        if parsed.path == '/api/insights':
+            _load_insights()
+            self._json(_INSIGHTS or {})
             return
 
         # ── /api/entity — canonical entity lookup by filer number or name ────

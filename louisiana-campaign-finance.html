@@ -1256,6 +1256,18 @@
           <div class="ov-section-title">💰 Top All-Time Fundraisers</div>
           <div id="ov-top"></div>
         </div>
+        <div id="ov-warchests-wrap" style="display:none">
+          <div class="ov-section-title">🏦 Biggest War Chests
+            <span id="ov-warchests-help" style="font-size:11px;font-weight:400;color:var(--muted);cursor:help" title="">(?)</span>
+          </div>
+          <div id="ov-warchests"></div>
+        </div>
+        <div id="ov-donors-wrap" style="display:none">
+          <div class="ov-section-title">🤝 Top Donors
+            <span id="ov-donors-help" style="font-size:11px;font-weight:400;color:var(--muted);cursor:help" title="">(?)</span>
+          </div>
+          <div id="ov-donors"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -7192,14 +7204,21 @@ function _gsHighlight() {
 // NB: _overviewData is declared earlier (before the init IIFE) to avoid a
 // temporal-dead-zone ReferenceError when init() calls loadOverview() on load.
 
+let _insightsData = null;   // nightly precomputed blocks (optional — may be {})
+
 async function loadOverview() {
   if (_overviewData) { renderOverview(); return; }
   const loading = document.getElementById('ov-loading');
   const body    = document.getElementById('ov-body');
   try {
-    const res = await fetch(`${API_BASE}/api/overview`);
+    // Insights are optional enrichment — fetch in parallel, tolerate absence
+    const [res, insRes] = await Promise.all([
+      fetch(`${API_BASE}/api/overview`),
+      fetch(`${API_BASE}/api/insights`).catch(() => null),
+    ]);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     _overviewData = await res.json();
+    _insightsData = insRes && insRes.ok ? await insRes.json() : null;
     loading.style.display = 'none';
     body.style.display = '';
     renderOverview();
@@ -7243,6 +7262,53 @@ function renderOverview() {
       <span class="ov-top-name">${escHtml(t.name)}</span>
       <span class="ov-top-amt">${_gsFmt(t.total_raised)}</span>
     </div>`).join('') || '<div class="gs-empty">No data.</div>';
+
+  // ── Nightly insight blocks (optional) ──────────────────────────────────
+  const ins = _insightsData;
+
+  const wcWrap = document.getElementById('ov-warchests-wrap');
+  const wc = ins && ins.war_chests && ins.war_chests.items && ins.war_chests.items.length;
+  if (wc) {
+    document.getElementById('ov-warchests-help').title = ins.war_chests.method;
+    document.getElementById('ov-warchests').innerHTML = ins.war_chests.items.slice(0, 10).map((w, i) => `
+      <div class="ov-top-row" onclick="_ovOpenWarchest(${i})" role="button" tabindex="0">
+        <span class="ov-top-rank">${i+1}</span>
+        <span class="ov-top-name">${escHtml(w.name)}</span>
+        <span class="ov-top-amt" style="color:var(--green,#2a7a3b)">
+          ${_gsFmt(w.ending)}<a href="${escHtml(w.pdf_url || '#')}" target="_blank" rel="noopener noreferrer"
+            onclick="event.stopPropagation()" title="Certified ${w.year} annual filing — view source PDF"
+            style="font-size:9px;color:var(--muted);text-decoration:none;margin-left:4px">${w.year}↗</a>
+        </span>
+      </div>`).join('');
+    wcWrap.style.display = '';
+  } else { wcWrap.style.display = 'none'; }
+
+  const dnWrap = document.getElementById('ov-donors-wrap');
+  const dn = ins && ins.top_donors && ins.top_donors.items && ins.top_donors.items.length;
+  if (dn) {
+    const winLbl = ins.window && ins.window.first_year
+      ? ` (${ins.window.first_year}–${ins.window.last_year})` : '';
+    document.getElementById('ov-donors-help').title =
+      ins.top_donors.method + (winLbl ? ` Window: ${winLbl.trim()}.` : '');
+    document.getElementById('ov-donors').innerHTML = ins.top_donors.items.slice(0, 10).map((t, i) => `
+      <div class="ov-top-row" onclick="_ovSearchDonor(${i})" role="button" tabindex="0"
+           title="${t.count.toLocaleString()} contribution${t.count === 1 ? '' : 's'} — click to filter">
+        <span class="ov-top-rank">${i+1}</span>
+        <span class="ov-top-name">${escHtml(t.name)}</span>
+        <span class="ov-top-amt">${_gsFmt(t.total)}</span>
+      </div>`).join('');
+    dnWrap.style.display = '';
+  } else { dnWrap.style.display = 'none'; }
+}
+
+function _ovOpenWarchest(i) {
+  const w = _insightsData?.war_chests?.items?.[i];
+  if (w) showCampaignProfile(w.name, 'career');
+}
+
+function _ovSearchDonor(i) {
+  const t = _insightsData?.top_donors?.items?.[i];
+  if (t) { switchTab('contributions'); _applyToken('donor', t.name); }
 }
 
 function _ovOpenTop(i) {

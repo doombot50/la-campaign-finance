@@ -69,6 +69,10 @@ jobs:
         # Output la_entities.json.gz ships with the upload glob below.
         run: python build_entities.py
 
+      - name: Build precomputed insight blocks
+        # War chests, top donors, party totals, monthly flow, transfer rollup.
+        run: python build_insights.py
+
       - name: Upload cache snapshots to release
         run: gh release upload data-cache .la_cache/*.json.gz --clobber
 
