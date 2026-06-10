@@ -64,6 +64,11 @@ jobs:
         # which are otherwise never re-parsed).
         run: python retag_caches.py
 
+      - name: Build canonical entity table
+        # Joins the fresh records to party/COH/career/race data once, centrally.
+        # Output la_entities.json.gz ships with the upload glob below.
+        run: python build_entities.py
+
       - name: Upload cache snapshots to release
         run: gh release upload data-cache .la_cache/*.json.gz --clobber
 

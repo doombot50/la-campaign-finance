@@ -78,6 +78,46 @@ def _get_ethics_coh(name: str) -> dict | None:
     norm = re.sub(r'\s+', ' ', name.strip().upper())
     return _ETHICS_COH.get(norm) if _ETHICS_COH else None
 
+# ── Canonical entity table (built nightly by build_entities.py) ─────────────
+_ENTITIES        = None   # filer_number -> entity record
+_ENTITIES_BYNAME = None   # normalized display name / alias -> filer_number
+_ENTITIES_MTIME  = 0
+_ENTITIES_LOCK   = threading.Lock()
+
+def _load_entities():
+    global _ENTITIES, _ENTITIES_BYNAME, _ENTITIES_MTIME
+    with _ENTITIES_LOCK:
+        p = os.path.join(CACHE_DIR, 'la_entities.json.gz')
+        if not os.path.exists(p):
+            if _ENTITIES is None:
+                _ENTITIES, _ENTITIES_BYNAME = {}, {}
+            return
+        mtime = os.path.getmtime(p)
+        if _ENTITIES is not None and mtime <= _ENTITIES_MTIME:
+            return
+        with gzip.open(p, 'rt', encoding='utf-8') as f:
+            data = json.load(f)
+        ents = data.get('entities', {})
+        byname = {}
+        for fn, e in ents.items():
+            for nm in [e.get('name', '')] + (e.get('aliases') or []):
+                key = re.sub(r'\s+', ' ', nm.strip().upper())
+                if key:
+                    byname[key] = fn
+        _ENTITIES, _ENTITIES_BYNAME, _ENTITIES_MTIME = ents, byname, mtime
+        print(f'  Entities: {len(ents)} loaded from la_entities.json.gz')
+
+def _get_entity(name=None, filer=None):
+    """Canonical entity by filer number (preferred) or any known name/alias."""
+    _load_entities()
+    if filer:
+        return _ENTITIES.get(str(filer))
+    if name:
+        fn = _ENTITIES_BYNAME.get(re.sub(r'\s+', ' ', name.strip().upper()))
+        return _ENTITIES.get(fn) if fn else None
+    return None
+
+
 def _load_filer_lookup():
     global _FILER_NUM
     with _FILER_NUM_LOCK:
@@ -727,6 +767,10 @@ def _bust_stale_caches():
         fpath = os.path.join(CACHE_DIR, fname)
         if not fname.endswith('.json.gz'):
             continue
+        # Only record caches are subject to busting — derived artifacts like
+        # la_entities.json.gz live here too and must survive boot.
+        if not fname.startswith(('contributions_', 'expenditures_', 'loans_')):
+            continue
         is_old_format = '_yr' not in fname
         is_stale = lookup_mtime and os.path.getmtime(fpath) < lookup_mtime
         if is_old_format or is_stale:
@@ -739,7 +783,16 @@ def _bust_stale_caches():
         print(f'  Cache: removed {busted} old/stale file(s) - will re-download as needed')
 
 def lookup_party(name: str, _depth: int = 0) -> str:
-    """Return DEM/REP/OTH for a filer name using the politician lookup.
+    """Return DEM/REP/OTH for a filer name. See lookup_party_detail."""
+    return lookup_party_detail(name, _depth)['party']
+
+
+def lookup_party_detail(name: str, _depth: int = 0) -> dict:
+    """Return {'party', 'source', 'matched'} for a filer name.
+
+    'source' is the lookup entry's provenance (SoS / SoS-results / curated...),
+    'party-org-name' for direct party-committee name signals, or None when
+    unmatched. 'matched' is the lookup key that hit, or None.
 
     Matching strategy (requires >= 2 tokens to avoid false positives):
       0. Comma-swap "LAST, FIRST [suffix]"  ("Kerner, Jr." handled gracefully)
@@ -751,8 +804,14 @@ def lookup_party(name: str, _depth: int = 0) -> str:
          ("John Bel Edwards for Louisiana Leadership PAC, LLC",
           "Friends of Jane Doe", "Committee to Elect John Smith") and retry.
     """
+    _MISS = {'party': 'OTH', 'source': None, 'matched': None}
+
+    def _hit(entry, key):
+        return {'party': entry.get('party', 'OTH'),
+                'source': entry.get('source'), 'matched': key}
+
     if not name or name == 'Unknown':
-        return 'OTH'
+        return dict(_MISS)
 
     # ── Party-committee fast path ──────────────────────────────────────────────
     # Filers that ARE a party org (not an individual) can be classified directly
@@ -772,9 +831,9 @@ def lookup_party(name: str, _depth: int = 0) -> str:
         'LOUISIANA DEMOCRATS',
     ]
     if any(s in _up for s in _REP_SIGNALS):
-        return 'REP'
+        return {'party': 'REP', 'source': 'party-org-name', 'matched': None}
     if any(s in _up for s in _DEM_SIGNALS):
-        return 'DEM'
+        return {'party': 'DEM', 'source': 'party-org-name', 'matched': None}
 
     # 0. Handle "LASTNAME, FIRSTNAME [suffix]" — try swapped form first
     if ',' in name:
@@ -784,19 +843,19 @@ def lookup_party(name: str, _depth: int = 0) -> str:
         if len(norm_swapped.split()) >= 2:
             entry = _POLITICIAN_LOOKUP.get(norm_swapped)
             if entry:
-                return entry.get('party', 'OTH')
+                return _hit(entry, norm_swapped)
 
     # Normalize the full name (strips honorifics, punctuation, collapses whitespace)
     norm = _normalize_name(name)
     if not norm:
-        return 'OTH'
+        return dict(_MISS)
     tokens = norm.split()
 
     # 1. Exact normalized full-name match
     if len(tokens) >= 2:
         entry = _POLITICIAN_LOOKUP.get(norm)
         if entry:
-            return entry.get('party', 'OTH')
+            return _hit(entry, norm)
 
     # Extended matching for names with middle names / initials / nicknames
     if len(tokens) >= 3:
@@ -806,20 +865,20 @@ def lookup_party(name: str, _depth: int = 0) -> str:
         first_last = f'{tokens[0]} {tokens[-1]}'
         entry = _POLITICIAN_LOOKUP.get(first_last)
         if entry:
-            return entry.get('party', 'OTH')
+            return _hit(entry, first_last)
 
         # 3. Skip leading single-letter initial ("J CAMERON HENRY" → "CAMERON HENRY")
         if len(tokens[0]) == 1:
             rest = ' '.join(tokens[1:])
             entry = _POLITICIAN_LOOKUP.get(rest)
             if entry:
-                return entry.get('party', 'OTH')
+                return _hit(entry, rest)
             # Also try first+last of remaining tokens ("M KIRK TALBOT" → "KIRK TALBOT")
             fl_rest = f'{tokens[1]} {tokens[-1]}'
             if fl_rest != rest:
                 entry = _POLITICIAN_LOOKUP.get(fl_rest)
                 if entry:
-                    return entry.get('party', 'OTH')
+                    return _hit(entry, fl_rest)
 
         # 4. Strip single-letter middle tokens, keep all multi-letter tokens
         #    e.g. "ALAN T SEABAUGH" → "ALAN SEABAUGH"
@@ -829,7 +888,7 @@ def lookup_party(name: str, _depth: int = 0) -> str:
             key = ' '.join(stripped)
             entry = _POLITICIAN_LOOKUP.get(key)
             if entry:
-                return entry.get('party', 'OTH')
+                return _hit(entry, key)
 
     # 5. Committee unwrap — candidate-affiliated committees embed the person's
     #    name in boilerplate ("X for Y", "Friends of X", "Committee to Elect X").
@@ -852,11 +911,11 @@ def lookup_party(name: str, _depth: int = 0) -> str:
             extracted.extend([before, after])
         for cand in extracted:
             if cand.strip() and cand.strip() != name.strip():
-                p = lookup_party(cand, _depth + 1)
-                if p != 'OTH':
-                    return p
+                d = lookup_party_detail(cand, _depth + 1)
+                if d['party'] != 'OTH':
+                    return d
 
-    return 'OTH'
+    return dict(_MISS)
 
 def parse_date(s):
     """'9/26/2026 12:00:00 AM' -> '2026-09-26'. Returns '' for missing/unparseable."""
@@ -1312,7 +1371,16 @@ class Handler(BaseHTTPRequestHandler):
                 'norm':         norm,
                 'ethics_coh':   ethics_coh,   # None if not yet scraped
                 'coh_estimate': coh_estimate, # None unless certified base exists
+                'entity':       _get_entity(name=name),  # canonical entity or None
             })
+            return
+
+        # ── /api/entity — canonical entity lookup by filer number or name ────
+        if parsed.path == '/api/entity':
+            name  = params.get('name',  [''])[0].strip()
+            filer = params.get('filer', [''])[0].strip()
+            ent = _get_entity(name=name or None, filer=filer or None)
+            self._json(ent or {})
             return
 
         # ── /api/coh — certified COH lookup for one or all filers ────────────
