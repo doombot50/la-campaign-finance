@@ -5850,6 +5850,20 @@ function _cyclePeriodLabel(cycleYear) {
   return `${y - 1}–${String(ends).slice(2)} cycle`;
 }
 
+// Map an entity's party_source to a provenance mark + tooltip. The mark
+// distinguishes official records (✓) from heuristic name matches (~).
+function _partyProvenance(src) {
+  if (src === 'SoS' || src === 'SoS-results')
+    return { mark: '✓', label: 'Party per Louisiana Secretary of State ballot records' };
+  if (src === 'manual_correction' || src === 'curated')
+    return { mark: '✓', label: 'Party manually verified' };
+  if (src === 'party-org-name')
+    return { mark: '✓', label: 'Party organization — classified from the committee name' };
+  if (src)
+    return { mark: '~', label: 'Party matched by name — heuristic, may be imperfect' };
+  return { mark: '',  label: 'Party could not be verified against official records' };
+}
+
 function _refreshCampStats() {
   const fmt = n => '$' + Math.round(n).toLocaleString();
   const raised   = _campContribs.reduce((s,d) => s + d.amount, 0);
@@ -6298,6 +6312,30 @@ async function fetchCareerData(name) {
       // Hybrid live-cash estimate: certified base + net flows since the filing.
       // Only shown when there are actual post-filing flows — otherwise it would
       // just duplicate the certified number.
+      // Entity-driven meta upgrade: canonical party with provenance tooltip.
+      // Record-baked party (shown immediately by _refreshCampStats) is a name
+      // match; once the entity arrives we can say HOW the party is known.
+      const ent = _careerData.entity;
+      if (ent && ent.party) {
+        const metaEl = document.getElementById('camp-meta');
+        if (metaEl) {
+          const lbl = ({ DEM:'🔵 Democrat', REP:'🔴 Republican', IND:'⚪ Independent',
+                         LBT:'🟡 Libertarian', GRN:'🟢 Green' })[ent.party]
+                      || (ent.kind === 'committee' ? '🏛 PAC / Committee' : '⚪ Other');
+          const prov = _partyProvenance(ent.party_source);
+          const partyHtml = `<span title="${escHtml(prov.label)}" style="cursor:help">${lbl}` +
+            (prov.mark ? ` <span style="font-size:9px;color:var(--muted)">${prov.mark}</span>` : '') + `</span>`;
+          const parts = [partyHtml];
+          if (_campContribs.length) parts.push(`${_campContribs.length.toLocaleString()} contributions`);
+          if (_campExps.length)     parts.push(`${_campExps.length.toLocaleString()} expenditures`);
+          if (_campLoans.length)    parts.push(`${_campLoans.length.toLocaleString()} loans`);
+          if (ent.aliases && ent.aliases.length) {
+            parts.push(`<span title="Also appears in filings as: ${escHtml(ent.aliases.join(', '))}" style="cursor:help;text-decoration:underline dotted">` +
+                       `${ent.aliases.length} alias${ent.aliases.length === 1 ? '' : 'es'}</span>`);
+          }
+          metaEl.innerHTML = parts.join('  ·  ');
+        }
+      }
       const est = _careerData.coh_estimate;
       const estStat = document.getElementById('camp-coh-est-stat');
       if (est && est.estimate != null && (est.raised_since > 0 || est.spent_since > 0)) {
@@ -6497,7 +6535,8 @@ function _setRacesSort(btn) {
 const PARTY_CSS = { REP:'party-rep', DEM:'party-dem', LIB:'party-lib', GRN:'party-grn' };
 function partyBadge(p) {
   const cls = PARTY_CSS[p] || 'party-ind';
-  return `<span class="party-badge ${cls}">${p||'?'}</span>`;
+  // Races-view party comes directly from SoS candidacy rows — official by construction
+  return `<span class="party-badge ${cls}" title="Party per Louisiana Secretary of State ballot records">${p||'?'}</span>`;
 }
 
 function fmtRaisedShort(n) {
