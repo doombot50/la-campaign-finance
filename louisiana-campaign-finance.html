@@ -1245,6 +1245,7 @@
     <div id="ov-body" style="display:none">
       <div style="margin-bottom:6px;font-size:13px;color:var(--muted)">
         A bird's-eye view of Louisiana campaign finance — all cycles, 2000–present. Use the search box up top to jump to any candidate or committee.
+        <span id="ov-freshness" style="display:none"> · Data refreshed <span id="ov-freshness-date" style="font-weight:600"></span></span>
       </div>
       <div class="ov-hero" id="ov-hero"></div>
       <div class="ov-grid">
@@ -7265,6 +7266,16 @@ function renderOverview() {
 
   // ── Nightly insight blocks (optional) ──────────────────────────────────
   const ins = _insightsData;
+
+  // Data freshness — from the nightly build's timestamp
+  if (ins && ins.built_at) {
+    const dt = new Date(ins.built_at);
+    if (!isNaN(dt)) {
+      document.getElementById('ov-freshness-date').textContent =
+        dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      document.getElementById('ov-freshness').style.display = '';
+    }
+  }
 
   const wcWrap = document.getElementById('ov-warchests-wrap');
   const wc = ins && ins.war_chests && ins.war_chests.items && ins.war_chests.items.length;
