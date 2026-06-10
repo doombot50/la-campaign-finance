@@ -2559,9 +2559,16 @@ function updateEmptyState() {
 // STATS
 // ============================================================
 function renderStats() {
-  const total = filteredData.reduce((s,d) => s+d.amount, 0);
+  // Headline excludes committee-to-committee transfers (flagged nightly via
+  // the entity table) so the same dollar isn't counted at both committees.
+  let gross = 0, transferTotal = 0, transferCount = 0;
+  filteredData.forEach(d => {
+    gross += d.amount;
+    if (d.isTransfer) { transferTotal += d.amount; transferCount++; }
+  });
+  const total = gross - transferTotal;
   const count = filteredData.length;
-  const avg = count ? total/count : 0;
+  const avg = count ? gross/count : 0;
 
   const parishTotals = {};
   filteredData.forEach(d => {
@@ -2571,7 +2578,7 @@ function renderStats() {
   const topParish = Object.entries(parishTotals).sort((a,b)=>b[1]-a[1])[0];
 
   const oosTotal = filteredData.filter(d => d.parish === 'Out of State').reduce((s,d) => s+d.amount, 0);
-  const oosPct   = total ? ((oosTotal / total) * 100).toFixed(1) : '0.0';
+  const oosPct   = gross ? ((oosTotal / gross) * 100).toFixed(1) : '0.0';
 
   // Animated count-up for numeric stats
   countUp(document.getElementById('stat-total'), total, formatMoney);
@@ -2579,7 +2586,20 @@ function renderStats() {
   countUp(document.getElementById('stat-avg'),   avg,   formatMoney);
   countUp(document.getElementById('stat-oos-total'), oosTotal, formatMoney);
 
-  document.getElementById('stat-total-sub').textContent = `from ${count.toLocaleString()} records`;
+  const subEl = document.getElementById('stat-total-sub');
+  if (transferTotal > 0) {
+    subEl.textContent = `${count.toLocaleString()} records · excl. ${formatMoney(transferTotal)} transfers`;
+    subEl.title = `${transferCount.toLocaleString()} committee-to-committee transfers totaling ` +
+      `${formatMoney(transferTotal)} are excluded from the headline so the same dollar isn't ` +
+      `counted at both the giving and receiving committee. Detected by matching contributor ` +
+      `names against known PACs/committees; transfers from person-named candidate committees ` +
+      `cannot be distinguished from personal donations and remain included.`;
+    subEl.style.cursor = 'help';
+  } else {
+    subEl.textContent = `from ${count.toLocaleString()} records`;
+    subEl.title = '';
+    subEl.style.cursor = '';
+  }
   document.getElementById('stat-top-parish').textContent = topParish ? topParish[0] : '—';
   document.getElementById('stat-top-parish-sub').textContent = topParish ? formatMoney(topParish[1]) : 'No data';
   document.getElementById('stat-oos-sub').textContent = `${oosPct}% of total raised`;
