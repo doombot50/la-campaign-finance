@@ -738,7 +738,7 @@ def _bust_stale_caches():
     if busted:
         print(f'  Cache: removed {busted} old/stale file(s) - will re-download as needed')
 
-def lookup_party(name: str) -> str:
+def lookup_party(name: str, _depth: int = 0) -> str:
     """Return DEM/REP/OTH for a filer name using the politician lookup.
 
     Matching strategy (requires >= 2 tokens to avoid false positives):
@@ -747,6 +747,9 @@ def lookup_party(name: str) -> str:
       2. First token + last token           ("AIMEE ADATTO FREEMAN" → "AIMEE FREEMAN")
       3. Skip leading single-letter token   ("J CAMERON HENRY" → "CAMERON HENRY")
       4. Strip single-letter middle tokens  ("ALAN T SEABAUGH" → "ALAN SEABAUGH")
+      5. Committee unwrap: extract the person from committee-style names
+         ("John Bel Edwards for Louisiana Leadership PAC, LLC",
+          "Friends of Jane Doe", "Committee to Elect John Smith") and retry.
     """
     if not name or name == 'Unknown':
         return 'OTH'
@@ -827,6 +830,31 @@ def lookup_party(name: str) -> str:
             entry = _POLITICIAN_LOOKUP.get(key)
             if entry:
                 return entry.get('party', 'OTH')
+
+    # 5. Committee unwrap — candidate-affiliated committees embed the person's
+    #    name in boilerplate ("X for Y", "Friends of X", "Committee to Elect X").
+    #    Strip org suffixes, extract the person candidates, and retry once.
+    #    The >=2-token rule above makes junk extractions ("Citizens") fail safe.
+    if _depth < 2:
+        base = name.strip()
+        while True:
+            nb = re.sub(r'[,\s]+(LLC|L\.L\.C\.?|INC\.?|PAC)\s*$', '', base, flags=re.I)
+            if nb == base:
+                break
+            base = nb
+        extracted = []
+        m = re.match(r'(?i)^(?:friends\s+(?:of|for)|committee\s+to\s+(?:re-?)?elect|'
+                     r'committee\s+for|campaign\s+(?:fund\s+)?(?:of|for))\s+(.+)$', base)
+        if m:
+            extracted.append(m.group(1))
+        if re.search(r'(?i)\s+for\s+', base):
+            before, after = re.split(r'(?i)\s+for\s+', base, maxsplit=1)
+            extracted.extend([before, after])
+        for cand in extracted:
+            if cand.strip() and cand.strip() != name.strip():
+                p = lookup_party(cand, _depth + 1)
+                if p != 'OTH':
+                    return p
 
     return 'OTH'
 

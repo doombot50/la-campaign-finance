@@ -58,6 +58,12 @@ jobs:
       - name: Refresh contribution/expenditure/loan caches
         run: python refresh_la_cache.py
 
+      - name: Re-tag party labels on cached records
+        # lookup_party improvements and la_politicians_lookup.json corrections
+        # propagate to ALL year files (incl. old cycles seeded from the release,
+        # which are otherwise never re-parsed).
+        run: python retag_caches.py
+
       - name: Upload cache snapshots to release
         run: gh release upload data-cache .la_cache/*.json.gz --clobber
 
