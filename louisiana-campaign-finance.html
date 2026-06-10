@@ -5841,6 +5841,7 @@ function renderCampElection(name, party) {
 }
 
 function showCampaignProfile(name, openTab) {
+  _restoreChartProxies();   // heal stale print-proxy images from a failed restore
   _campName     = name;
   _campContribs = allData.filter(d => d.candidate === name)
                     .sort((a,b) => b.date.localeCompare(a.date));
@@ -6208,6 +6209,9 @@ function printCampaignProfile() {
     const canvasIds = ['camp-cashflow-chart', 'camp-career-chart'];
     const swapped = [];
 
+    // Heal any stale proxies from a previous print whose restore never ran
+    _restoreChartProxies();
+
     canvasIds.forEach(id => {
       const canvas = document.getElementById(id);
       if (!canvas || !canvas.width || !canvas.height) return;
@@ -6228,14 +6232,26 @@ function printCampaignProfile() {
     window.print();
 
     // ── Restore canvases after the print dialog closes ─────────────────
-    window.addEventListener('afterprint', () => {
-      document.body.classList.remove('printing-profile');
-      swapped.forEach(({ canvas, img }) => {
-        canvas.style.display = '';
-        img.remove();
-      });
-    }, { once: true });
+    // afterprint is unreliable in some environments (embedded webviews never
+    // fire it), which used to leave the stale <img> proxy in the DOM — the
+    // next chart re-render then showed BOTH copies stacked. Belt & braces:
+    // afterprint, plus a timer after window.print() returns (print blocks JS
+    // in desktop browsers, so this runs right after the dialog closes), plus
+    // heal-on-open in showCampaignProfile. _restoreChartProxies is idempotent.
+    window.addEventListener('afterprint', _restoreChartProxies, { once: true });
+    setTimeout(_restoreChartProxies, 500);
   }, 120)));
+}
+
+// Remove ALL chart-proxy images and unhide their canvases. Idempotent — safe
+// to call any time, from any of the print-restore paths or modal open.
+function _restoreChartProxies() {
+  document.body.classList.remove('printing-profile');
+  document.querySelectorAll('img[data-chart-proxy]').forEach(img => {
+    const canvas = document.getElementById(img.dataset.chartProxy);
+    if (canvas) canvas.style.display = '';
+    img.remove();
+  });
 }
 
 function campSwitchTab(tab) {
