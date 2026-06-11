@@ -16,7 +16,10 @@
     --border: #30363d;
     --dem: #2166ac;
     --rep: #d73027;
-    --oth: #4dac26;
+    --oth: #888888;            /* Other party: neutral — green is reserved for certified figures */
+    --flow-in:  #39b3a6;       /* money in (teal) — never party colors for flows */
+    --flow-out: #e8833a;       /* money out (orange) */
+    --certified:#4caf7d;       /* green = came from a certified filing, nothing else */
     --text: #e6edf3;
     --muted: #8b949e;
     --purple: #7b5ea7;
@@ -26,12 +29,15 @@
     --btn-active-text: #000;
     --badge-dem-text: #9fc8ff;   --badge-dem-bg: rgba(33,102,172,0.18);
     --badge-rep-text: #ff8888;   --badge-rep-bg: rgba(215,48,39,0.18);
-    --badge-oth-text: #80e040;   --badge-oth-bg: rgba(77,172,38,0.18);
+    --badge-oth-text: #b8c0c8;   --badge-oth-bg: rgba(140,140,140,0.18);
     --badge-pac-text: #bf9fff;   --badge-pac-bg: rgba(153,102,255,0.18);
     --badge-org-text: #ffcc66;   --badge-org-bg: rgba(255,165,0,0.15);
     --badge-bus-text: #aaaaaa;   --badge-bus-bg: rgba(100,100,100,0.18);
     --badge-ind-text: #80c8a0;   --badge-ind-bg: rgba(80,180,120,0.15);
-    --amount-color: #4caf7d;
+    --amount-color: var(--flow-in);
+    /* Type scale */
+    --fs-xs: 10px; --fs-sm: 12px; --fs-base: 14px;
+    --fs-lg: 17px; --fs-xl: 22px; --fs-hero: 28px;
     --tile-url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
   }
   [data-theme="light"] {
@@ -46,14 +52,29 @@
     --btn-active-text: #fff;
     --badge-dem-text: #1565c0;   --badge-dem-bg: rgba(33,102,172,0.12);
     --badge-rep-text: #b71c1c;   --badge-rep-bg: rgba(215,48,39,0.12);
-    --badge-oth-text: #2e7d32;   --badge-oth-bg: rgba(77,172,38,0.12);
+    --badge-oth-text: #57606a;   --badge-oth-bg: rgba(100,100,100,0.12);
     --badge-pac-text: #6a1b9a;   --badge-pac-bg: rgba(153,102,255,0.12);
     --badge-org-text: #e65100;   --badge-org-bg: rgba(255,165,0,0.12);
     --badge-bus-text: #424242;   --badge-bus-bg: rgba(100,100,100,0.12);
     --badge-ind-text: #1b5e20;   --badge-ind-bg: rgba(80,180,120,0.12);
-    --amount-color: #1a7a45;
+    --amount-color: var(--flow-in);
+    --flow-in:  #0d7d72;
+    --flow-out: #c05d21;
+    --certified:#1a7a45;
   }
   html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  /* Tabular numerals: equal-width digits make money columns scannable */
+  .num, td.num, .stat-value, .stat-sub, .cp-stat-val, .cmp-stat-val,
+  .ov-stat-val, .ov-top-amt, .gs-result-amt, .race-cand-table td {
+    font-variant-numeric: tabular-nums;
+  }
   body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; }
   a { color: var(--gold); text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -187,9 +208,9 @@
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
     padding: 18px 20px;
   }
-  .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-  .stat-value { font-size: 28px; font-weight: 700; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; }
-  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .stat-label { font-size: var(--fs-sm); color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .stat-value { font-size: var(--fs-hero); font-weight: 700; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat-sub { font-size: var(--fs-sm); color: var(--muted); margin-top: 4px; }
   .stat-delta { font-size: 11px; margin-top: 3px; font-weight: 600; letter-spacing: 0.2px; }
   .stat-delta.up   { color: #4caf7d; }
   .stat-delta.down { color: #e05c5c; }
@@ -320,7 +341,7 @@
   .table-header-row {
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
   }
-  .table-title { font-size: 13px; font-weight: 600; color: var(--gold); }
+  .table-title { font-size: var(--fs-sm); font-weight: 600; color: var(--gold); }
   .table-actions { display: flex; gap: 8px; align-items: center; }
   .upload-btn {
     background: transparent; color: var(--gold); border: 1px solid var(--gold);
@@ -546,7 +567,7 @@
     text-align: center;
   }
   .cp-stat:last-child { border-right: none; }
-  .cp-stat-val { font-size: 22px; font-weight: 700; color: var(--text); }
+  .cp-stat-val { font-size: var(--fs-xl); font-weight: 700; color: var(--text); }
   .cp-stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
   .cp-details {
     display: flex; gap: 24px; padding: 14px 24px;
@@ -665,7 +686,7 @@
     .header-title { font-size: 15px; }
     .controls-inner { gap: 8px; }
     .ctrl-input.search { width: 140px; }
-    .stat-value { font-size: 22px; }
+    .stat-value { font-size: var(--fs-xl); }
   }
   @media (max-width: 480px) {
     .stats-row { grid-template-columns: 1fr 1fr; }
@@ -1016,7 +1037,7 @@
 
 <!-- PROXY BANNER (scrolls away) -->
 <div id="proxy-banner">
-  <span>⚡</span>
+  <span></span>
   <span><strong>Enable live Louisiana Ethics data:</strong> run <code>python la_ethics_server.py</code> in this folder, then reload. Downloads real contribution data directly from <strong>ethics.la.gov</strong> — updated daily.</span>
   <button class="dismiss-btn" onclick="document.getElementById('proxy-banner').style.display='none'">Dismiss</button>
 </div>
@@ -1056,7 +1077,7 @@
       <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle light or dark mode"
         style="background:transparent;border:1px solid var(--border);
                color:var(--muted);border-radius:6px;padding:5px 10px;cursor:pointer;
-               font-size:16px;line-height:1;transition:all 0.2s"><span aria-hidden="true">🌙</span></button>
+               font-size:11px;font-weight:600;letter-spacing:0.3px;line-height:1;transition:all 0.2s">Dark</button>
     </div>
   </div>
 </header>
@@ -1067,7 +1088,7 @@
   padding: 6px 24px; font-size: 12px; color: var(--muted);
   display: flex; align-items: center; gap: 8px; justify-content: space-between;
 ">
-  <span>⏳ <strong style="color:var(--gold)">Heads up:</strong> first load for each cycle downloads from ethics.la.gov and may take 20–60 seconds.</span>
+  <span><strong style="color:var(--gold)">Heads up:</strong> first load for each cycle downloads from ethics.la.gov and may take 20–60 seconds.</span>
   <button onclick="document.getElementById('data-notice').style.display='none'"
     style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0">✕</button>
 </div>
@@ -1220,18 +1241,18 @@
 
 <!-- SECTION TABS -->
 <div class="section-tabs" role="tablist" aria-label="Dashboard sections">
-  <button class="section-tab active" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview-view" onclick="switchTab('overview')">🏠 Overview</button>
-  <button class="section-tab" id="tab-contributions" role="tab" aria-selected="false" tabindex="-1" aria-controls="contributions-view" onclick="switchTab('contributions')">💰 Money</button>
-  <button class="section-tab" id="tab-loans" role="tab" aria-selected="false" tabindex="-1" aria-controls="loans-view" onclick="switchTab('loans')">🏦 Loans</button>
-  <button class="section-tab" id="tab-donors" role="tab" aria-selected="false" tabindex="-1" aria-controls="donors-view" onclick="switchTab('donors')">🏆 Top Donors</button>
-  <button class="section-tab" id="tab-compare" role="tab" aria-selected="false" tabindex="-1" aria-controls="compare-view" onclick="switchTab('compare')">⚖️ Compare</button>
-  <button class="section-tab" id="tab-races" role="tab" aria-selected="false" tabindex="-1" aria-controls="races-view" onclick="switchTab('races')">🏛️ Races</button>
+  <button class="section-tab active" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview-view" onclick="switchTab('overview')">Overview</button>
+  <button class="section-tab" id="tab-contributions" role="tab" aria-selected="false" tabindex="-1" aria-controls="contributions-view" onclick="switchTab('contributions')">Money</button>
+  <button class="section-tab" id="tab-loans" role="tab" aria-selected="false" tabindex="-1" aria-controls="loans-view" onclick="switchTab('loans')">Loans</button>
+  <button class="section-tab" id="tab-donors" role="tab" aria-selected="false" tabindex="-1" aria-controls="donors-view" onclick="switchTab('donors')">Top Donors</button>
+  <button class="section-tab" id="tab-compare" role="tab" aria-selected="false" tabindex="-1" aria-controls="compare-view" onclick="switchTab('compare')">Compare</button>
+  <button class="section-tab" id="tab-races" role="tab" aria-selected="false" tabindex="-1" aria-controls="races-view" onclick="switchTab('races')">Races</button>
 </div>
 
 <!-- MONEY IN/OUT SUB-TOGGLE (shown only on Money tab, sits between tabs and content) -->
 <div class="money-subtabs" id="money-subtabs" role="group" aria-label="Money direction">
-  <button class="money-subtab active" id="money-tab-in"  onclick="switchMoneyView('in')">📥 In</button>
-  <button class="money-subtab"        id="money-tab-out" onclick="switchMoneyView('out')">📤 Out</button>
+  <button class="money-subtab active" id="money-tab-in"  onclick="switchMoneyView('in')">Money In</button>
+  <button class="money-subtab"        id="money-tab-out" onclick="switchMoneyView('out')">Money Out</button>
 </div>
 
 <!-- FILTER CHIPS -->
@@ -1251,21 +1272,21 @@
       <div class="ov-hero" id="ov-hero"></div>
       <div class="ov-grid">
         <div>
-          <div class="ov-section-title">🗳️ <span id="ov-elec-heading">Recent Elections</span></div>
+          <div class="ov-section-title"><span id="ov-elec-heading">Recent Elections</span></div>
           <div id="ov-elections"></div>
         </div>
         <div>
-          <div class="ov-section-title">💰 Top All-Time Fundraisers</div>
+          <div class="ov-section-title">Top All-Time Fundraisers</div>
           <div id="ov-top"></div>
         </div>
         <div id="ov-warchests-wrap" style="display:none">
-          <div class="ov-section-title">🏦 Biggest War Chests
+          <div class="ov-section-title">Biggest War Chests
             <span id="ov-warchests-help" style="font-size:11px;font-weight:400;color:var(--muted);cursor:help" title="">(?)</span>
           </div>
           <div id="ov-warchests"></div>
         </div>
         <div id="ov-donors-wrap" style="display:none">
-          <div class="ov-section-title">🤝 Top Donors
+          <div class="ov-section-title">Top Donors
             <span id="ov-donors-help" style="font-size:11px;font-weight:400;color:var(--muted);cursor:help" title="">(?)</span>
           </div>
           <div id="ov-donors"></div>
@@ -1298,41 +1319,36 @@
       Load <span id="empty-state-cycle">2025–2026</span> Data
     </button>
     <p id="empty-state-proxy" style="display:none;color:var(--muted);margin-top:24px;font-size:12px">
-      ⚡ For live data, run <code style="background:rgba(200,169,81,0.12);padding:2px 6px;border-radius:4px">python la_ethics_server.py</code> in this folder, then reload.
+      For live data, run <code style="background:rgba(200,169,81,0.12);padding:2px 6px;border-radius:4px">python la_ethics_server.py</code> in this folder, then reload.
     </p>
   </div>
 
   <!-- STATS ROW -->
   <div class="stats-row">
     <div class="stat-card accent-green">
-      <span class="stat-icon">💰</span>
       <div class="stat-label" style="cursor:help" title="Total receipts: every contribution reported to the LA Ethics Administration Program for the selected cycle, minus disclosed committee-to-committee transfers.">Total Raised</div>
       <div class="stat-value" id="stat-total">—</div>
       <div class="stat-sub" id="stat-total-sub">Loading...</div>
       <div class="stat-delta" id="stat-total-delta"></div>
     </div>
     <div class="stat-card accent-blue">
-      <span class="stat-icon">#</span>
       <div class="stat-label"># Donations</div>
       <div class="stat-value" id="stat-count">—</div>
       <div class="stat-sub" id="stat-count-sub">across all sources</div>
       <div class="stat-delta" id="stat-count-delta"></div>
     </div>
     <div class="stat-card accent-purple">
-      <span class="stat-icon">⌀</span>
       <div class="stat-label">Avg Donation</div>
       <div class="stat-value" id="stat-avg">—</div>
       <div class="stat-sub" id="stat-avg-sub">per contribution</div>
       <div class="stat-delta" id="stat-avg-delta"></div>
     </div>
     <div class="stat-card accent-gold">
-      <span class="stat-icon">📍</span>
       <div class="stat-label">Top Parish</div>
       <div class="stat-value" id="stat-top-parish" style="font-size:20px;">—</div>
       <div class="stat-sub" id="stat-top-parish-sub">by total raised</div>
     </div>
     <div class="stat-card accent-muted">
-      <span class="stat-icon">✈️</span>
       <div class="stat-label">Out-of-State</div>
       <div class="stat-value" id="stat-oos-total">—</div>
       <div class="stat-sub" id="stat-oos-sub">of total raised</div>
@@ -1469,7 +1485,6 @@
       </table>
     </div>
     <div class="empty-state" id="empty-state" style="display:none;">
-      <div class="empty-icon">🔍</div>
       <div>No records match the current filters</div>
     </div>
     <div class="pagination" id="pagination"></div>
@@ -1537,31 +1552,26 @@
     <!-- Expenditure stats -->
     <div class="stats-row">
       <div class="stat-card accent-red">
-        <span class="stat-icon">💸</span>
         <div class="stat-label" style="cursor:help" title="Total disbursements: every expenditure reported to the LA Ethics Administration Program for the selected cycle.">Total Spent</div>
         <div class="stat-value" id="exp-stat-total">—</div>
         <div class="stat-sub" id="exp-stat-total-sub">across all campaigns</div>
       </div>
       <div class="stat-card accent-blue">
-        <span class="stat-icon">#</span>
         <div class="stat-label"># Expenditures</div>
         <div class="stat-value" id="exp-stat-count">—</div>
         <div class="stat-sub">individual payments</div>
       </div>
       <div class="stat-card accent-purple">
-        <span class="stat-icon">∅</span>
         <div class="stat-label">Avg Payment</div>
         <div class="stat-value" id="exp-stat-avg">—</div>
         <div class="stat-sub">per expenditure</div>
       </div>
       <div class="stat-card accent-gold">
-        <span class="stat-icon">🏆</span>
         <div class="stat-label">Top Campaign</div>
         <div class="stat-value" id="exp-stat-top-campaign" style="font-size:16px">—</div>
         <div class="stat-sub" id="exp-stat-top-campaign-sub">by total spent</div>
       </div>
       <div class="stat-card accent-muted">
-        <span class="stat-icon">📂</span>
         <div class="stat-label">Top Category</div>
         <div class="stat-value" id="exp-stat-top-cat" style="font-size:16px">—</div>
         <div class="stat-sub" id="exp-stat-top-cat-sub">by total spent</div>
@@ -1669,7 +1679,6 @@
         </table>
       </div>
       <div class="table-no-results" id="exp-no-results" style="display:none">
-        <div class="no-res-icon">🔍</div>
         No expenditures match the current filters
       </div>
       <div class="pagination" id="exp-pagination"></div>
@@ -1687,31 +1696,26 @@
     <!-- Stats row -->
     <div class="stats-row" style="margin-bottom:20px">
       <div class="stat-card accent-blue">
-        <span class="stat-icon">🏦</span>
         <div class="stat-label" style="cursor:help" title="Total loans reported to the LA Ethics Administration Program for the selected cycle, including candidate self-loans.">Total Borrowed</div>
         <div class="stat-value" id="loan-stat-total">—</div>
         <div class="stat-sub" id="loan-stat-total-sub">—</div>
       </div>
       <div class="stat-card accent-purple">
-        <span class="stat-icon">#</span>
         <div class="stat-label"># of Loans</div>
         <div class="stat-value" id="loan-stat-count">—</div>
         <div class="stat-sub" id="loan-stat-count-sub">—</div>
       </div>
       <div class="stat-card accent-gold">
-        <span class="stat-icon">∅</span>
         <div class="stat-label">Avg Loan</div>
         <div class="stat-value" id="loan-stat-avg">—</div>
         <div class="stat-sub" id="loan-stat-avg-sub">—</div>
       </div>
       <div class="stat-card accent-muted">
-        <span class="stat-icon">👤</span>
         <div class="stat-label">Self-Loans</div>
         <div class="stat-value" id="loan-stat-self-pct">—</div>
         <div class="stat-sub" id="loan-stat-self-sub">candidate financing own race</div>
       </div>
       <div class="stat-card accent-green">
-        <span class="stat-icon">🏆</span>
         <div class="stat-label">Top Borrower</div>
         <div class="stat-value" id="loan-stat-top" style="font-size:20px">—</div>
         <div class="stat-sub" id="loan-stat-top-sub">—</div>
@@ -1813,7 +1817,6 @@
       </table>
     </div>
     <div class="table-no-results" id="loan-no-results" style="display:none">
-      <div class="no-res-icon">🔍</div>
       No loans match the current filters
     </div>
     <div class="pagination" id="loan-pagination"></div>
@@ -1826,7 +1829,7 @@
   <div class="main">
     <div class="table-card">
       <div class="table-header-row">
-        <div class="table-title">🏆 Top Donors — All Committees This Cycle</div>
+        <div class="table-title">Top Donors — All Committees This Cycle</div>
         <div class="table-actions">
           <input type="text" class="ctrl-input search" id="donors-search" placeholder="Search donor…" style="width:200px" aria-label="Search top donors">
           <label class="per-page-wrap">Rows
@@ -1867,7 +1870,7 @@
   <div class="main">
     <div class="table-card">
       <div class="table-header-row">
-        <div class="table-title">⚖️ Compare Campaigns</div>
+        <div class="table-title">Compare Campaigns</div>
       </div>
       <p style="font-size:12px;color:var(--muted);padding:0 4px 12px">
         Compare up to three campaigns side by side — full profile stats, all-time totals,
@@ -1884,7 +1887,7 @@
   <div class="main">
     <div class="table-card">
       <div class="table-header-row">
-        <div class="table-title">🏛️ Races &amp; Candidates</div>
+        <div class="table-title">Races &amp; Candidates</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select id="races-office-filter" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text)" onchange="loadRaces()">
             <option value="major">Major Offices</option>
@@ -1921,14 +1924,14 @@
     <div class="status-dot ok" id="status-dot" aria-hidden="true"></div>
     <div class="status-text" id="status-text">Ready · <span id="status-records">0</span> records loaded · Last updated: <span id="status-updated">—</span></div>
     <div class="status-text" style="margin-left:auto;">
-      <span id="data-freshness" style="display:none;cursor:help" title="Records refresh nightly from ethics.la.gov data downloads. Certified Cash-on-Hand figures come from annual filings and update as they are scraped.">📅 Data as of <span id="data-freshness-date" style="font-weight:600"></span> · </span>LA Ethics: <span id="la-status">Sample data</span></div>
+      <span id="data-freshness" style="display:none;cursor:help" title="Records refresh nightly from ethics.la.gov data downloads. Certified Cash-on-Hand figures come from annual filings and update as they are scraped.">Data as of <span id="data-freshness-date" style="font-weight:600"></span> · </span>LA Ethics: <span id="la-status">Sample data</span></div>
   </div>
 </div>
 
 <!-- FOOTER -->
 <footer>
   <p style="font-size:13px;letter-spacing:1px;color:var(--gold);font-weight:600;margin-bottom:6px;">
-    ⚜️ Union, Justice, and Confidence ⚜️
+    ⚜ Union, Justice, and Confidence ⚜
   </p>
   <p style="font-size:11px;color:var(--muted);margin-bottom:10px;">Louisiana State Motto · The Pelican State</p>
   <p><strong style="color:var(--gold);">Data Source:</strong>
@@ -2121,10 +2124,10 @@ const PARTY_SLICE_META = {
 };
 const PARTY_SLICE_ORDER = ['DEM','REP','IND','LBT','GRN','OTH'];
 
-function applyTheme(theme) {
+function applyTheme(theme, persist) {
   document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('theme-toggle').textContent = theme === 'light' ? '🌙' : '☀️';
-  localStorage.setItem('cf-theme', theme);
+  document.getElementById('theme-toggle').textContent = theme === 'light' ? 'Dark' : 'Light';
+  if (persist) localStorage.setItem('cf-theme', theme);
   // Swap map tiles
   if (tileLayer) map.removeLayer(tileLayer);
   tileLayer = L.tileLayer(theme === 'light' ? TILE_LIGHT : TILE_DARK, {
@@ -2136,6 +2139,9 @@ function applyTheme(theme) {
   const textColor = theme === 'light' ? '#57606a' : '#8b949e';
   if (window.Chart) {
     Chart.defaults.color = textColor;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      Chart.defaults.animation = false;
+    }
     // Only re-render charts if they've already been initialised
     if (typeof renderPartyChart   === 'function') renderPartyChart();
     if (typeof renderDonorTypeChart === 'function') renderDonorTypeChart();
@@ -2144,8 +2150,8 @@ function applyTheme(theme) {
 }
 
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
-  applyTheme(current === 'dark' ? 'light' : 'dark');
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark', true);   // explicit choice persists
 }
 
 // ============================================================
@@ -2153,8 +2159,13 @@ function toggleTheme() {
 // ============================================================
 const map = L.map('map', {zoomControl: true}).setView([31.0, -91.8], 7);
 // Tile layer initialised by applyTheme() below
-let _savedTheme = localStorage.getItem('cf-theme') || 'dark';
+const _osDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+let _savedTheme = localStorage.getItem('cf-theme') || (_osDark && _osDark.matches ? 'dark' : 'light');
 applyTheme(_savedTheme);
+// Keep following the OS until the user makes an explicit choice
+if (_osDark && _osDark.addEventListener) _osDark.addEventListener('change', e => {
+  if (!localStorage.getItem('cf-theme')) applyTheme(e.matches ? 'dark' : 'light');
+});
 
 // Legend
 const legend = L.control({position:'bottomright'});
@@ -2163,7 +2174,7 @@ legend.onAdd = function() {
   div.innerHTML = `<div class="legend-title">Party Dominance</div>
     <div><span class="legend-swatch" style="background:#2166ac;opacity:0.8;"></span> Democrat (&gt;60%)</div>
     <div><span class="legend-swatch" style="background:#d73027;opacity:0.8;"></span> Republican (&gt;60%)</div>
-    <div><span class="legend-swatch" style="background:#7b5ea7;opacity:0.8;"></span> Mixed</div>
+    <div><span class="legend-swatch" style="background:#888888;opacity:0.8;"></span> Mixed / Other</div>
     <div style="margin-top:8px;font-size:11px;color:#8b949e;">Circle size = total raised</div>`;
   return div;
 };
@@ -2408,6 +2419,15 @@ async function loadData() {
   showMapSpinner(false);
   setStatus('ok');
   _loadedCycle = cycle;
+  // Refresh an open campaign profile with the newly loaded contributions —
+  // the exps/loans loaders already do this; without it a profile opened
+  // before the cycle data arrived stayed frozen at empty tables and $0.
+  if (document.getElementById('camp-overlay').classList.contains('open') && _campName) {
+    _campContribs = allData.filter(d => d.candidate === _campName)
+                      .sort((a,b) => b.date.localeCompare(a.date));
+    _refreshCampStats();
+    if (_campTab === 'contribs') campSwitchTab('contribs');
+  }
   // A #/donor/ route opened before data existed can be satisfied now.
   if (typeof _pendingDonorRoute === 'string' && _pendingDonorRoute && allData.length) {
     const n = _pendingDonorRoute; _pendingDonorRoute = null;
@@ -2769,7 +2789,7 @@ function renderUSBubbles() {
     if (!coords) return;
 
     const dominant = s.dem > s.rep ? 'DEM' : s.rep > s.dem ? 'REP' : 'OTH';
-    const fillColor = dominant === 'DEM' ? '#2166ac' : dominant === 'REP' ? '#d73027' : '#4dac26';
+    const fillColor = dominant === 'DEM' ? '#2166ac' : dominant === 'REP' ? '#d73027' : '#888888';
     const pct = maxTotal ? s.total / maxTotal : 0;
     const radius = Math.max(7, Math.round(6 + pct * 44));  // 7–50 px
 
@@ -3024,7 +3044,7 @@ function renderPartyChart() {
 let _industryFilter = null;  // null = all; 'Law' = filter contributions to that industry
 
 const INDUSTRY_COLORS = {
-  'Individual':        '#4caf7d',
+  'Individual':        '#6b9e85',
   'PAC/Political':     '#9966ff',
   'Law':               '#4682b4',
   'Oil & Gas':         '#8B6914',
@@ -3240,7 +3260,7 @@ function renderTrendChart() {
       datasets: [
         {label:'Republican',data:months.map(m=>repByMonth[m]),borderColor:'#d73027',backgroundColor:'rgba(215,48,39,0.1)',tension:0.4,pointRadius:3,fill:true},
         {label:'Democrat',data:months.map(m=>demByMonth[m]),borderColor:'#2166ac',backgroundColor:'rgba(33,102,172,0.1)',tension:0.4,pointRadius:3,fill:true},
-        {label:'Other',data:months.map(m=>othByMonth[m]),borderColor:'#4dac26',backgroundColor:'rgba(77,172,38,0.08)',tension:0.4,pointRadius:3,fill:true},
+        {label:'Other',data:months.map(m=>othByMonth[m]),borderColor:'#888888',backgroundColor:'rgba(136,136,136,0.08)',tension:0.4,pointRadius:3,fill:true},
       ]
     },
     options: {
@@ -3768,7 +3788,7 @@ function buildDetailPanel(d) {
       <button class="btn-secondary" style="font-size:12px;padding:4px 12px"
         data-contributor="${escHtml(d.contributor)}"
         onclick="event.stopPropagation();showContributorProfile(this.dataset.contributor)">
-        👤 View all contributions by ${escHtml(d.contributor)} →
+        View all contributions by ${escHtml(d.contributor)} →
       </button>
     </div>
     <div class="detail-grid">
@@ -3829,22 +3849,11 @@ function escHtml(str) {
 // ============================================================
 // COUNT-UP ANIMATION
 // ============================================================
-function countUp(el, target, formatter, duration = 650) {
-  if (!el) return;
-  const start = performance.now();
-  const from  = 0;
-  function step(now) {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed / duration, 1);
-    // ease-out quad
-    const eased = 1 - (1 - progress) * (1 - progress);
-    const value = from + (target - from) * eased;
-    el.textContent = formatter(value);
-    if (progress < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
+function countUp(el, target, formatter) {
+  // Numbers render instantly: count-up animation undermined the
+  // public-record register and ignored prefers-reduced-motion.
+  if (el) el.textContent = formatter(target);
 }
-
 // ============================================================
 // CYCLE STATS — save/restore for delta calculation
 // ============================================================
@@ -4377,9 +4386,9 @@ function renderCashFlowChart() {
       labels,
       datasets: [
         { label: 'Contributions In', data: months.map(m => contribByMonth[m]),
-          backgroundColor: 'rgba(33,102,172,0.65)', order: 2 },
+          backgroundColor: 'rgba(32,154,142,0.7)', order: 2 },
         { label: 'Expenditures Out', data: months.map(m => expByMonth[m]),
-          backgroundColor: 'rgba(215,48,39,0.65)', order: 1 },
+          backgroundColor: 'rgba(214,113,38,0.75)', order: 1 },
       ]
     },
     options: {
@@ -4990,7 +4999,7 @@ function renderDonorsLeaderboard() {
   tbody.innerHTML = page.map((r, i) => {
     const rank = start + i + 1;
     const pct  = maxTotal ? (r.total / maxTotal * 100) : 0;
-    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    const medal = rank;   // rank number — no medal emoji; leaders read fine from order
     return `<tr>
       <td style="color:var(--muted);font-weight:700;text-align:center">${medal}</td>
       <td><span class="contributor-link" data-contributor="${escHtml(r.name)}" onclick="showContributorProfile(this.dataset.contributor)">${escHtml(r.name)}</span></td>
@@ -5117,7 +5126,7 @@ function renderCompare() {
 
   // Selected-campaign chips + add hint
   pickers.innerHTML =
-    `<div class="cmp-add-hint">🔍 Use the search bar above to add a campaign${_compareSel.length ? ` — ${_compareSel.length}/${CMP_MAX} selected` : ''}.</div>` +
+    `<div class="cmp-add-hint">Use the search bar above to add a campaign${_compareSel.length ? ` — ${_compareSel.length}/${CMP_MAX} selected` : ''}.</div>` +
     (_compareSel.length
       ? `<div class="cmp-chips">${_compareSel.map((n, i) =>
           `<span class="cmp-chip"><span class="cmp-chip-name">${escHtml(n)}</span><button class="cmp-chip-x" title="Remove" aria-label="Remove ${escHtml(n)}" onclick="removeCompareAt(${i})">✕</button></span>`).join('')}</div>`
@@ -5171,9 +5180,9 @@ function renderCompare() {
   const isLead = (v, max) => multi && max > 0 && v === max;
 
   const partyBadge = (p) => {
-    const m = { DEM: ['🔵 Dem', '#2166ac'], REP: ['🔴 Rep', '#d73027'], IND: ['⚪ Ind', '#888'],
-                LBT: ['🟡 Lib', '#c8a951'], GRN: ['🟢 Grn', '#4caf7d'],
-                PAC: ['🏛 PAC', '#888'] }[p] || ['⚪ Other', '#888'];
+    const m = { DEM: ['Dem', '#2166ac'], REP: ['Rep', '#d73027'], IND: ['Ind', '#888'],
+                LBT: ['Lib', '#d29922'], GRN: ['Grn', '#2da44e'],
+                PAC: ['PAC', '#888'] }[p] || ['Other', '#888'];
     return `<span class="cmp-badge" style="background:${m[1]}22;color:${m[1]}">${m[0]}</span>`;
   };
   const row = (lbl, val, leader) => `<div class="cmp-stat-row"><span class="cmp-stat-lbl">${lbl}</span><span class="cmp-stat-val${leader ? ' leader' : ''}">${val}</span></div>`;
@@ -5204,7 +5213,7 @@ function renderCompare() {
       ${row('Cycles of history', s.cycles ? num(s.cycles) : dash, false)}
       ${cohRow}
       <div class="cmp-chart-wrap">
-        <div class="cmp-chart-lbl">📈 Raised vs Spent (cumulative)</div>
+        <div class="cmp-chart-lbl">Raised vs Spent (cumulative)</div>
         <div class="cmp-chart-box"><canvas id="cmp-chart-${i}"></canvas></div>
       </div>
     </div>`;
@@ -5251,7 +5260,8 @@ function _renderCompareChart(canvasId, s) {
 
   const css   = getComputedStyle(document.documentElement);
   const muted = css.getPropertyValue('--muted').trim() || '#8b949e';
-  const green = '#4caf7d', red = '#d76b6b';
+  const green = css.getPropertyValue('--flow-in').trim()  || '#39b3a6';
+  const red   = css.getPropertyValue('--flow-out').trim() || '#e8833a';
 
   const chart = new Chart(canvas.getContext('2d'), {
     type: 'line',
@@ -5556,7 +5566,7 @@ function renderFilterChips() {
   const cycleVal = document.getElementById('cycle-select').value;
   const cycleOpt = (_allCycleOpts || []).find(o => o.value === cycleVal);
   const cycleLabel = cycleOpt ? cycleOpt.text.split('—')[0].trim() : cycleVal;
-  chips.push({ label: `📅 ${cycleLabel}`, type: 'cycle', permanent: true });
+  chips.push({ label: `${cycleLabel}`, type: 'cycle', permanent: true });
 
   // Effective tab for filter purposes (contributions = In, expenditures = Out)
   const effTab = (tab === 'contributions' && _moneyDir === 'out') ? 'expenditures' : tab;
@@ -5907,7 +5917,8 @@ function _raceAnchorId(date, office) {
 function _scrollToRace(date, office, attempt = 0) {
   const el = document.getElementById(_raceAnchorId(date, office));
   if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const _reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: _reduce ? 'auto' : 'smooth', block: 'start' });
     el.classList.add('race-highlight');
     setTimeout(() => el.classList.remove('race-highlight'), 2600);
   } else if (attempt < 24) {           // races load async — retry up to ~6s
@@ -6010,9 +6021,8 @@ function showCampaignProfile(name, openTab) {
   // Election result may load async on first open; re-render once available.
   const _p = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
   loadElectionResults().then(() => renderCampElection(name, _p));
-  // Reset certified COH + estimate stats (populated async by fetchCareerData)
-  const _cohStat = document.getElementById('camp-coh-stat');
-  if (_cohStat) _cohStat.style.display = 'none';
+  // Reset the estimate stat (repopulated async by fetchCareerData). The
+  // certified COH slot is always visible — fetchCareerData resets it itself.
   const _cohEstStat = document.getElementById('camp-coh-est-stat');
   if (_cohEstStat) _cohEstStat.style.display = 'none';
   fetchCareerData(name);  // pre-fetch career data in background (used if Career tab is opened)
@@ -6057,8 +6067,8 @@ function _refreshCampStats() {
   const borrowed = _campLoans.reduce((s,d) => s + d.amount, 0);
   const donors   = new Set(_campContribs.map(d => d.contributor)).size;
   const party    = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
-  const partyLabel = ({ DEM:'🔵 Democrat', REP:'🔴 Republican', IND:'⚪ Independent',
-                        LBT:'🟡 Libertarian', GRN:'🟢 Green' })[party] || '⚪ Other';
+  const partyLabel = ({ DEM:'Democrat', REP:'Republican', IND:'Independent',
+                        LBT:'Libertarian', GRN:'Green' })[party] || 'Other';
 
   const metaParts = [partyLabel];
   if (_campContribs.length) metaParts.push(`${_campContribs.length.toLocaleString()} contributions`);
@@ -6072,10 +6082,12 @@ function _refreshCampStats() {
   const periodEl = document.getElementById('camp-period-label');
   if (periodEl) periodEl.textContent = _cyclePeriodLabel(cycleVal);
 
-  document.getElementById('camp-raised').textContent   = fmt(raised);
-  document.getElementById('camp-spent').textContent    = fmt(spent);
-  document.getElementById('camp-borrowed').textContent = fmt(borrowed);
-  document.getElementById('camp-donors').textContent   = donors.toLocaleString();
+  // Show a dash, not a false $0, while the backing dataset is still loading.
+  // Once data is in, a real $0 means "no records this cycle" and is shown.
+  document.getElementById('camp-raised').textContent   = allData.length  ? fmt(raised)   : '\u2014';
+  document.getElementById('camp-spent').textContent    = expData.length  ? fmt(spent)    : '\u2014';
+  document.getElementById('camp-borrowed').textContent = loanData.length ? fmt(borrowed) : '\u2014';
+  document.getElementById('camp-donors').textContent   = allData.length  ? donors.toLocaleString() : '\u2014';
   renderCampCashFlow();
 }
 
@@ -6153,9 +6165,10 @@ function renderCampCashFlow() {
   });
 
   const css = getComputedStyle(document.documentElement);
-  const gold   = css.getPropertyValue('--gold').trim()   || '#c8a951';
-  const muted  = css.getPropertyValue('--muted').trim()  || '#8b949e';
-  const green  = '#4caf7d', red = '#d76b6b';
+  const muted     = css.getPropertyValue('--muted').trim()     || '#8b949e';
+  const flowIn    = css.getPropertyValue('--flow-in').trim()   || '#39b3a6';
+  const flowOut   = css.getPropertyValue('--flow-out').trim()  || '#e8833a';
+  const certified = css.getPropertyValue('--certified').trim() || '#4caf7d';
 
   // ── Cycle highlight band ─────────────────────────────────────────────────
   // Shade the exact date span of the currently-loaded transactions so the
@@ -6269,10 +6282,10 @@ function renderCampCashFlow() {
       labels,
       datasets: [
         { label: 'Cumul. Raised', data: raisedSeries, yAxisID: 'y2',
-          borderColor: green, backgroundColor: 'transparent',
+          borderColor: flowIn, backgroundColor: 'transparent',
           fill: false, tension: 0.3, borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 },
         { label: 'Cumul. Spent', data: spentSeries, yAxisID: 'y2',
-          borderColor: red, backgroundColor: 'transparent',
+          borderColor: flowOut, backgroundColor: 'transparent',
           fill: false, tension: 0.3, borderWidth: 2, borderDash: [5,3], pointRadius: 0, pointHoverRadius: 3 },
         ...(anchorData ? [{
           label: anchorLabel, data: anchorData, yAxisID: 'y',
@@ -6310,7 +6323,7 @@ function renderCampCashFlow() {
           position: 'left',
           display: !!anchorData,
           min: yLeftMin, max: yLeftMax,
-          ticks: { color: green, font: { size: 9 }, maxTicksLimit: 6,
+          ticks: { color: certified, font: { size: 9 }, maxTicksLimit: 6,
                    callback: fmtMoney },
           grid: { color: 'rgba(128,128,128,0.1)' }
         },
@@ -6411,6 +6424,14 @@ function campSwitchTab(tab) {
 
   const empty = document.getElementById('camp-empty');
   if (tab === 'contribs') {
+    // Cycle data still loading: show a loading row, not a false "no records".
+    // loadData() refreshes this tab when the contributions arrive.
+    if (allData.length === 0) {
+      empty.style.display = 'none';
+      document.getElementById('camp-tbody-contribs').innerHTML =
+        '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Loading contribution data…</td></tr>';
+      return;
+    }
     empty.style.display = _campContribs.length ? 'none' : '';
     document.getElementById('camp-tbody-contribs').innerHTML = _campContribs.map(d => `
       <tr>
@@ -6427,7 +6448,7 @@ function campSwitchTab(tab) {
     if (expData.length === 0) {
       empty.style.display = 'none';
       document.getElementById('camp-tbody-exps').innerHTML =
-        '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">⏳ Loading expenditure data…</td></tr>';
+        '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Loading expenditure data…</td></tr>';
       loadExpData();  // will refresh the modal tab once complete
     } else {
       empty.style.display = _campExps.length ? 'none' : '';
@@ -6446,7 +6467,7 @@ function campSwitchTab(tab) {
     if (loanData.length === 0) {
       empty.style.display = 'none';
       document.getElementById('camp-tbody-loans').innerHTML =
-        '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">⏳ Loading loan data…</td></tr>';
+        '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Loading loan data…</td></tr>';
       loadLoanData();  // will refresh the modal tab once complete
     } else {
     empty.style.display = _campLoans.length ? 'none' : '';
@@ -6512,7 +6533,7 @@ async function fetchCareerData(name) {
       const cohLink = document.getElementById('camp-coh-link');
       if (coh && coh.ending_coh != null) {
         cohEl.textContent = formatMoney(coh.ending_coh);
-        cohEl.style.color = 'var(--green,#2a7a3b)';
+        cohEl.style.color = 'var(--certified)';
         const yr   = coh.report_year || '';
         const date = coh.date_filed  || '';
         // FEC convention: a cash-on-hand figure is meaningless without its
@@ -6547,9 +6568,9 @@ async function fetchCareerData(name) {
       if (ent && ent.party) {
         const metaEl = document.getElementById('camp-meta');
         if (metaEl) {
-          const lbl = ({ DEM:'🔵 Democrat', REP:'🔴 Republican', IND:'⚪ Independent',
-                         LBT:'🟡 Libertarian', GRN:'🟢 Green' })[ent.party]
-                      || (ent.kind === 'committee' ? '🏛 PAC / Committee' : '⚪ Other');
+          const lbl = ({ DEM:'Democrat', REP:'Republican', IND:'Independent',
+                         LBT:'Libertarian', GRN:'Green' })[ent.party]
+                      || (ent.kind === 'committee' ? 'PAC / Committee' : 'Other');
           const prov = _partyProvenance(ent.party_source);
           const partyHtml = `<span title="${escHtml(prov.label)}" style="cursor:help">${lbl}` +
             (prov.mark ? ` <span style="font-size:9px;color:var(--muted)">${prov.mark}</span>` : '') + `</span>`;
@@ -6654,9 +6675,9 @@ function renderCampCareer() {
       labels: shortLabels,
       datasets: [
         { label: 'Raised', data: activeRaised,
-          backgroundColor: 'rgba(76,175,125,0.75)', borderColor: '#4caf7d', borderWidth: 1 },
+          backgroundColor: 'rgba(32,154,142,0.7)',  borderColor: '#209a8e', borderWidth: 1 },
         { label: 'Spent',  data: activeSpent,
-          backgroundColor: 'rgba(224,92,92,0.65)',  borderColor: '#e05c5c', borderWidth: 1 },
+          backgroundColor: 'rgba(214,113,38,0.65)', borderColor: '#d67126', borderWidth: 1 },
       ]
     },
     options: {
@@ -6862,11 +6883,11 @@ function renderRaceCard(race) {
     const won   = (c.outcome||'').toUpperCase().includes('ELECT');
     const rowBg = won ? 'background:rgba(22,163,74,.04)' : '';
     const profileBtn = c.filer_number
-      ? `<button class="race-finance-btn" onclick="toggleRaceInd(this,'${c.filer_number}','${race.office.replace(/'/g,'')}','${c.cycle}')" title="Industry breakdown">📊</button>`
+      ? `<button class="race-finance-btn" onclick="toggleRaceInd(this,'${c.filer_number}','${race.office.replace(/'/g,'')}','${c.cycle}')" title="Industry breakdown">▤</button>`
       : '';
     const cohCell = hasCoh
       ? (c.coh_ending != null
-          ? `<a href="${c.coh_pdf_url||'#'}" target="_blank" style="color:var(--green,#16a34a);text-decoration:none;font-weight:600" title="Certified ${c.coh_year||''} annual filing">${fmtRaisedShort(c.coh_ending)}</a><span class="coh-certified">${c.coh_year||''}</span>`
+          ? `<a href="${c.coh_pdf_url||'#'}" target="_blank" style="color:var(--certified);text-decoration:none;font-weight:600" title="Certified ${c.coh_year||''} annual filing">${fmtRaisedShort(c.coh_ending)}</a><span class="coh-certified">${c.coh_year||''}</span>`
           : `<span style="color:var(--muted)">—</span>`)
       : '';
     return `<tr style="${rowBg}">
@@ -6874,8 +6895,8 @@ function renderRaceCard(race) {
       <td>${partyBadge(c.party)}</td>
       <td class="${outcomeClass(c.outcome)}">${outcomeLabel(c.outcome)}</td>
       <td style="text-align:right">${pct}</td>
-      <td style="text-align:right">${fmtRaisedShort(c.raised)}</td>
-      <td style="text-align:right">${fmtRaisedShort(c.spent)}</td>
+      <td style="text-align:right" title="$${Math.round(c.raised||0).toLocaleString()}">${fmtRaisedShort(c.raised)}</td>
+      <td style="text-align:right" title="$${Math.round(c.spent||0).toLocaleString()}">${fmtRaisedShort(c.spent)}</td>
       ${hasCoh ? `<td style="text-align:right">${cohCell}</td>` : ''}
       <td style="text-align:center">${profileBtn}</td>
     </tr>
@@ -6889,7 +6910,7 @@ function renderRaceCard(race) {
       <span><span class="race-office">${race.office}</span><span class="race-date">${race.date}</span></span>
       <span style="font-size:10px;color:var(--muted)">${cands.length} candidate${cands.length!==1?'s':''}
         <a href="#/race/${encodeURIComponent(race.date)}/${encodeURIComponent(race.office)}"
-           style="text-decoration:none;margin-left:6px" title="Permanent link to this race — copy the URL to share">🔗</a>
+           style="margin-left:6px;color:var(--muted);font-size:9px;text-decoration:underline dotted" title="Permanent link to this race — copy the URL to share">permalink</a>
       </span>
     </div>
     <table class="race-cand-table">
@@ -7483,7 +7504,7 @@ function renderOverview() {
       <div class="ov-top-row" onclick="_ovOpenWarchest(${i})" role="button" tabindex="0">
         <span class="ov-top-rank">${i+1}</span>
         <span class="ov-top-name">${escHtml(w.name)}</span>
-        <span class="ov-top-amt" style="color:var(--green,#2a7a3b)">
+        <span class="ov-top-amt" style="color:var(--certified)">
           ${_gsFmt(w.ending)}<a href="${escHtml(w.pdf_url || '#')}" target="_blank" rel="noopener noreferrer"
             onclick="event.stopPropagation()" title="Certified ${w.year} annual filing — view source PDF"
             style="font-size:9px;color:var(--muted);text-decoration:none;margin-left:4px">${w.year}↗</a>
@@ -7549,7 +7570,7 @@ function _ovOpenElection(year) {
   <div class="cp-modal" id="help-modal" style="max-width:660px" role="dialog" aria-modal="true" aria-labelledby="help-title">
     <div class="cp-header">
       <div>
-        <div class="cp-name" id="help-title">🔍 Search &amp; Filter Guide</div>
+        <div class="cp-name" id="help-title">Search &amp; Filter Guide</div>
         <div class="cp-meta">Type any of these in the search box, then press <strong>Enter</strong> to apply. The available filters change with the active tab.</div>
       </div>
       <button class="cp-close" onclick="closeFilterHelp()" aria-label="Close filter guide">✕</button>
@@ -7563,7 +7584,7 @@ function _ovOpenElection(year) {
       </div>
 
       <div class="fh-group">
-        <div class="fh-group-title">Money In <span class="fh-group-note">— contributions (💰 Money → In)</span></div>
+        <div class="fh-group-title">Money In <span class="fh-group-note">— contributions (Money → In)</span></div>
         <div class="fh-row"><span class="fh-token">donor:exxon</span><div class="fh-desc">Donor / contributor name.</div></div>
         <div class="fh-row"><span class="fh-token">zip:70801</span><div class="fh-desc">Donor ZIP code (prefix match).</div></div>
         <div class="fh-row"><span class="fh-token">party:rep</span><div class="fh-desc">Party. <small>rep, dem, ind, lbt, grn, pac, pac-rep, pac-dem, oth</small></div></div>
@@ -7576,7 +7597,7 @@ function _ovOpenElection(year) {
       </div>
 
       <div class="fh-group">
-        <div class="fh-group-title">Money Out <span class="fh-group-note">— expenditures (💰 Money → Out)</span></div>
+        <div class="fh-group-title">Money Out <span class="fh-group-note">— expenditures (Money → Out)</span></div>
         <div class="fh-row"><span class="fh-token">recipient:acme</span><div class="fh-desc">Payee / recipient name.</div></div>
         <div class="fh-row"><span class="fh-token">category:media</span><div class="fh-desc">Spending category. <small>Suggestions appear as you type.</small></div></div>
         <div class="fh-row"><span class="fh-token">desc:consulting</span><div class="fh-desc">Search the expenditure description.</div></div>
@@ -7606,13 +7627,13 @@ function _ovOpenElection(year) {
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="exportCampaignCSV()">⬇ CSV</button>
-        <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="printCampaignProfile()" title="Print / Export PDF">🖨 Print</button>
+        <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="printCampaignProfile()" title="Print / Export PDF">Print</button>
         <button class="cp-close" onclick="closeCampaignProfile()" aria-label="Close campaign profile">✕</button>
       </div>
     </div>
     <!-- Stats period banner: cycle label (left) + all-time totals (right, once career data loads) -->
     <div style="padding:5px 24px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-      <span>📊 <span id="camp-period-label">Loaded cycle</span> — <button style="background:none;border:none;color:var(--gold);font-size:10px;cursor:pointer;padding:0" onclick="campSwitchTab('career')">View all cycles →</button></span>
+      <span><span id="camp-period-label">Loaded cycle</span> — <button style="background:none;border:none;color:var(--gold);font-size:10px;cursor:pointer;padding:0" onclick="campSwitchTab('career')">View all cycles →</button></span>
       <span id="camp-career-strip" style="display:none;color:var(--muted)">All-time: <strong id="camp-ct-raised" style="color:var(--text)">—</strong> raised · <strong id="camp-ct-spent" style="color:var(--text)">—</strong> spent · <em id="camp-ct-cycles"></em></span>
     </div>
     <!-- Stats -->
@@ -7623,7 +7644,7 @@ function _ovOpenElection(year) {
            after Spent and is ALWAYS shown — with an explicit empty state when
            no annual filing has been scraped, rather than silently hiding. -->
       <div class="cp-stat" id="camp-coh-stat">
-        <div class="cp-stat-val" id="camp-coh" style="color:var(--green,#2a7a3b)">—</div>
+        <div class="cp-stat-val" id="camp-coh" style="color:var(--certified)">—</div>
         <div class="cp-stat-lbl">Cash on Hand <a id="camp-coh-link" href="#" target="_blank" style="font-size:9px;font-weight:600;color:var(--muted);text-decoration:none;letter-spacing:0.3px" title="Certified per LA Ethics annual filing"></a></div>
       </div>
       <div class="cp-stat" id="camp-coh-est-stat" style="display:none">
@@ -7636,17 +7657,17 @@ function _ovOpenElection(year) {
     <!-- Cash on hand over time -->
     <div id="camp-cashflow-wrap" style="padding:14px 24px;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">📈 Raised vs Spent Over Time <span style="text-transform:none;font-weight:400;color:var(--muted)" title="Cumulative contributions and expenditures across all of this candidate's committees — these are flows, not a bank balance. The green dots are certified Cash on Hand from annual ethics filings: the only true balance figures shown.">(?)</span></div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Raised vs Spent Over Time <span style="text-transform:none;font-weight:400;color:var(--muted)" title="Cumulative contributions and expenditures across all of this candidate's committees — these are flows, not a bank balance. The green dots are certified Cash on Hand from annual ethics filings: the only true balance figures shown.">(?)</span></div>
         <div id="camp-cashflow-note" style="font-size:10px;color:var(--muted)"></div>
       </div>
       <div style="position:relative;height:170px"><canvas id="camp-cashflow-chart"></canvas></div>
     </div>
     <!-- Sub-tabs -->
     <div style="display:flex;border-bottom:1px solid var(--border);background:var(--card);overflow-x:auto">
-      <button class="section-tab active" id="camp-tab-contribs"  onclick="campSwitchTab('contribs')"  style="font-size:13px;padding:9px 20px;white-space:nowrap">💰 Contributions</button>
-      <button class="section-tab"        id="camp-tab-exps"      onclick="campSwitchTab('exps')"      style="font-size:13px;padding:9px 20px;white-space:nowrap">💸 Expenditures</button>
-      <button class="section-tab"        id="camp-tab-loans"     onclick="campSwitchTab('loans')"     style="font-size:13px;padding:9px 20px;white-space:nowrap">🏦 Loans</button>
-      <button class="section-tab"        id="camp-tab-career"    onclick="campSwitchTab('career')"    style="font-size:13px;padding:9px 20px;white-space:nowrap">📊 Career</button>
+      <button class="section-tab active" id="camp-tab-contribs"  onclick="campSwitchTab('contribs')"  style="font-size:13px;padding:9px 20px;white-space:nowrap">Contributions</button>
+      <button class="section-tab"        id="camp-tab-exps"      onclick="campSwitchTab('exps')"      style="font-size:13px;padding:9px 20px;white-space:nowrap">Expenditures</button>
+      <button class="section-tab"        id="camp-tab-loans"     onclick="campSwitchTab('loans')"     style="font-size:13px;padding:9px 20px;white-space:nowrap">Loans</button>
+      <button class="section-tab"        id="camp-tab-career"    onclick="campSwitchTab('career')"    style="font-size:13px;padding:9px 20px;white-space:nowrap">Career</button>
     </div>
     <!-- Content -->
     <div class="cp-table-wrap">
