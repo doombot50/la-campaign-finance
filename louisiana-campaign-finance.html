@@ -2434,8 +2434,12 @@ async function fetchLAEthicsLive(cycle) {
 
   // Poll until the server has finished downloading and caching the CSV.
   // On first deploy the server pre-fetches in the background; we just need to wait.
-  const MAX_POLLS = 40;   // up to ~3.5 minutes
-  const POLL_MS   = 5000; // check every 5 seconds
+  // Transient errors (free-tier cold starts answer the first requests with
+  // 502s) are retried with backoff instead of aborting the whole load.
+  const MAX_POLLS   = 40;   // up to ~3.5 minutes
+  const POLL_MS     = 5000; // check every 5 seconds
+  const MAX_RETRIES = 4;    // backoff: 2s, 4s, 8s, 16s
+  let retries = 0;
 
   for (let attempt = 0; attempt <= MAX_POLLS; attempt++) {
     try {
@@ -2443,6 +2447,7 @@ async function fetchLAEthicsLive(cycle) {
 
       if (resp.status === 202) {
         // Server is still downloading — show progress and wait
+        retries = 0;
         const info = await resp.json().catch(() => ({}));
         const elapsed = attempt * (POLL_MS / 1000);
         document.getElementById('la-status').textContent =
@@ -2467,6 +2472,14 @@ async function fetchLAEthicsLive(cycle) {
 
     } catch(err) {
       console.warn('LA Ethics fetch error:', err);
+      if (retries < MAX_RETRIES) {
+        retries++;
+        const delay = 2000 * Math.pow(2, retries - 1);
+        document.getElementById('la-status').textContent =
+          `Connection hiccup — retrying (${retries}/${MAX_RETRIES})…`;
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
       document.getElementById('la-status').textContent =
         `Error loading data: ${err.message}`;
       return;
@@ -4081,6 +4094,11 @@ async function loadExpData() {
     return;
   }
 
+  // Transient failures (free-tier cold starts, proxy 502s, network blips) are
+  // retried with backoff instead of abandoning the poll and leaving spinners
+  // stuck on "Loading…" forever.
+  let retries = 0;
+  const MAX_RETRIES = 4;
   const poll = async () => {
     try {
       const url = `${API_BASE}/api/la-expenditures?cycle=${encodeURIComponent(cycle)}`;
@@ -4090,6 +4108,7 @@ async function loadExpData() {
         return;
       }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      retries = 0;
       expData = await r.json();
       // Tag each record with category
       expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
@@ -4105,7 +4124,20 @@ async function loadExpData() {
       }
     } catch(e) {
       console.error('Expenditure fetch error:', e);
-      document.getElementById('exp-loading-msg').style.display = 'none';
+      if (retries < MAX_RETRIES) {
+        retries++;
+        const delay = 3000 * Math.pow(2, retries - 1);   // 3s, 6s, 12s, 24s
+        document.getElementById('exp-loading-msg').textContent =
+          `Connection hiccup — retrying (${retries}/${MAX_RETRIES})…`;
+        setTimeout(poll, delay);
+        return;
+      }
+      document.getElementById('exp-loading-msg').textContent =
+        'Could not load expenditure data. The server may be waking up — try again in a minute.';
+      if (document.getElementById('camp-overlay').classList.contains('open') && _campTab === 'exps') {
+        document.getElementById('camp-tbody-exps').innerHTML =
+          '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Could not load expenditure data — the server may be waking up. Close and reopen this profile to retry.</td></tr>';
+      }
     }
   };
   poll();
@@ -4581,12 +4613,17 @@ async function loadLoanData() {
     return;
   }
 
+  // Same retry-with-backoff as loadExpData: don't let one cold-start 502
+  // strand the loans tab on a dead spinner.
+  let retries = 0;
+  const MAX_RETRIES = 4;
   const poll = async () => {
     try {
       const url = `${API_BASE}/api/la-loans?cycle=${encodeURIComponent(cycle)}`;
       const r = await fetch(url);
       if (r.status === 202) { setTimeout(poll, 3000); return; }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      retries = 0;
       const raw = await r.json();
       loanData = raw.map(d => {
         // detect self-loan: lender name closely matches candidate name
@@ -4607,7 +4644,21 @@ async function loadLoanData() {
         if (_campTab === 'loans') campSwitchTab('loans');
       }
     } catch (e) {
-      document.getElementById('loan-loading-msg').textContent = 'Error loading loan data.';
+      console.error('Loan fetch error:', e);
+      if (retries < MAX_RETRIES) {
+        retries++;
+        const delay = 3000 * Math.pow(2, retries - 1);   // 3s, 6s, 12s, 24s
+        document.getElementById('loan-loading-msg').textContent =
+          `Connection hiccup — retrying (${retries}/${MAX_RETRIES})…`;
+        setTimeout(poll, delay);
+        return;
+      }
+      document.getElementById('loan-loading-msg').textContent =
+        'Could not load loan data. The server may be waking up — try again in a minute.';
+      if (document.getElementById('camp-overlay').classList.contains('open') && _campTab === 'loans') {
+        document.getElementById('camp-tbody-loans').innerHTML =
+          '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Could not load loan data — the server may be waking up. Close and reopen this profile to retry.</td></tr>';
+      }
     }
   };
   poll();
@@ -5085,7 +5136,9 @@ function renderCompare() {
       party: (c[0] || e[0] || {}).party || _cmpCareerParty(cd) || 'OTH',
       lastRace: _cmpLastRace(cd),
       raised, spent, net: raised - spent, donors,
-      atRaised: fin.total_raised || 0, atSpent: fin.total_spent || 0,
+      // All-time raised net of committee-to-committee transfers (headline rule)
+      atRaised: (fin.total_raised || 0) - (fin.total_transfers_in || 0),
+      atSpent: fin.total_spent || 0,
       cycles: Object.keys(fin.cycles || {}).length,
       coh: cd?.ethics_coh?.ending_coh,
       monthly: fin.monthly, loadedTx: { c, e, l },
@@ -6331,7 +6384,22 @@ async function fetchCareerData(name) {
       const n   = Object.keys(fin.cycles || {}).length;
       const strip = document.getElementById('camp-career-strip');
       if (strip && n > 0) {
-        document.getElementById('camp-ct-raised').textContent  = formatMoney(fin.total_raised || 0);
+        // Raised is net of committee-to-committee transfers (same rule as the
+        // headline Total Raised stat), with the excluded amount disclosed.
+        const xferIn = fin.total_transfers_in || 0;
+        const raisedEl = document.getElementById('camp-ct-raised');
+        raisedEl.textContent = formatMoney((fin.total_raised || 0) - xferIn);
+        if (xferIn > 0) {
+          raisedEl.title = `Excludes ${formatMoney(xferIn)} received as committee-to-committee ` +
+            `transfers, so the same dollar isn't counted at both committees. ` +
+            `Gross including transfers: ${formatMoney(fin.total_raised || 0)}.`;
+          raisedEl.style.cursor = 'help';
+          raisedEl.style.textDecoration = 'underline dotted';
+        } else {
+          raisedEl.title = '';
+          raisedEl.style.cursor = '';
+          raisedEl.style.textDecoration = '';
+        }
         document.getElementById('camp-ct-spent').textContent   = formatMoney(fin.total_spent  || 0);
         document.getElementById('camp-ct-cycles').textContent  = `${n} cycle${n === 1 ? '' : 's'} of history`;
         strip.style.display = '';

@@ -129,7 +129,7 @@ the underlying source data changes meaningfully.
 | Script | Output | When to re-run |
 |---|---|---|
 | `fetch_historical_data.py` | seeds `.la_cache/` with all 4-year CSV bundles | once per project setup, or to add historical years |
-| `build_candidate_index.py` | `la_candidate_index.json.gz` | after a `.la_cache/` refresh; aggregates per-candidate career data + monthly buckets |
+| `build_candidate_index.py` | `.la_cache/la_candidate_index.json.gz` | nightly (workflow) after `retag_caches.py`; aggregates per-candidate career data + monthly buckets, transfer-aware. The committed repo-root copy is only a cold-boot fallback — the server prefers the `.la_cache/` copy when newer |
 | `build_filer_lookup.py` | `la_filer_lookup.json` | after a `.la_cache/` refresh |
 | `build_election_lookup.py` | `la_election_lookup.json` | when state election dates change |
 | `build_election_results.py` | `la_election_results.json` | after new races complete |
@@ -176,9 +176,14 @@ Deployed on [Render](https://render.com) via `render.yaml`:
   Render; defaults to 8765 locally).
 - Health check at `/health`.
 
-Static data files (`.json`, `.json.gz`) are committed and shipped to Render;
-`.la_cache/` is rebuilt at runtime on first request per CSV bundle (cached on
-the instance's disk between requests).
+Static data files (`.json`, `.json.gz`) are committed and shipped to Render.
+`.la_cache/` is seeded at build time from the rolling `data-cache` GitHub
+release (see `fetch_cache_assets.py`), which the nightly workflow keeps
+populated with **every** cycle's contribution / expenditure / loan files plus
+the derived artifacts (`la_entities.json.gz`, `la_insights.json.gz`,
+`la_candidate_index.json.gz`) — so the free instance never has to download a
+100MB CSV from ethics.la.gov at request time. Anything still missing is
+downloaded on demand and cached on the instance's disk between requests.
 
 ## Known limitations
 
