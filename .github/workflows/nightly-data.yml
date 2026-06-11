@@ -2,9 +2,13 @@
 #
 #   1. Seeds .la_cache/ from the rolling `data-cache` GitHub release
 #   2. Re-downloads the current-cycle contributions/expenditures/loans
-#   3. Runs an incremental COH scrape (new filers + 30-day stale recheck)
+#      (plus any missing historical bundles — one-time backfill)
+#   3. Builds the entity table, then retags records (party + isTransfer),
+#      then rebuilds the candidate career index and insight blocks from the
+#      freshly tagged records — totals recalculated nightly, transfer-aware
 #   4. Uploads refreshed cache snapshots back to the release (--clobber)
-#   5. Commits ethics_coh_cache.json if changed -> push -> Render auto-deploys,
+#   5. Runs an incremental COH scrape (new filers + 30-day stale recheck)
+#   6. Commits ethics_coh_cache.json if changed -> push -> Render auto-deploys,
 #      and the deploy's buildCommand re-bakes the warm cache into the image.
 #
 # The COH step is self-completing: it processes top-raised-first and saves
@@ -58,19 +62,32 @@ jobs:
       - name: Refresh contribution/expenditure/loan caches
         run: python refresh_la_cache.py
 
-      - name: Re-tag party labels on cached records
-        # lookup_party improvements and la_politicians_lookup.json corrections
-        # propagate to ALL year files (incl. old cycles seeded from the release,
-        # which are otherwise never re-parsed).
-        run: python retag_caches.py
-
       - name: Build canonical entity table
         # Joins the fresh records to party/COH/career/race data once, centrally.
+        # Runs BEFORE retag_caches.py so the transfer-flagging pass always has
+        # a same-night entity table (it used to read the previous night's copy
+        # from the release seed — which never existed on the first runs, so no
+        # records ever got isTransfer flags).
         # Output la_entities.json.gz ships with the upload glob below.
         run: python build_entities.py
 
+      - name: Re-tag party labels + flag transfers on cached records
+        # lookup_party improvements and la_politicians_lookup.json corrections
+        # propagate to ALL year files (incl. old cycles seeded from the release,
+        # which are otherwise never re-parsed). Also sets isTransfer on
+        # committee-to-committee contributions using the entity table built above.
+        run: python retag_caches.py
+
+      - name: Rebuild candidate career index
+        # Recalculates per-candidate/committee totals from the freshly retagged
+        # records (transfer-aware). Output .la_cache/la_candidate_index.json.gz
+        # ships with the upload glob below and overrides the committed copy on
+        # the server, so search/profile totals stay in sync with the records.
+        run: python build_candidate_index.py
+
       - name: Build precomputed insight blocks
         # War chests, top donors, party totals, monthly flow, transfer rollup.
+        # Runs after retag so isTransfer flags are visible to the rollups.
         run: python build_insights.py
 
       - name: Upload cache snapshots to release

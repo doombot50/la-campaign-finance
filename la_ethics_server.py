@@ -237,10 +237,13 @@ def _build_search_index():
                 'n_cycles':     0,
             }
 
-        # Anyone with Ethics finance records (adds committees/PACs + $ totals)
+        # Anyone with Ethics finance records (adds committees/PACs + $ totals).
+        # Net of committee-to-committee transfers, matching the dashboard's
+        # headline Total Raised semantics.
         for name, idx in (_CAND_INDEX or {}).items():
             cycles = idx.get('cycles', {})
-            total  = sum(c.get('raised', 0) for c in cycles.values())
+            total  = sum(c.get('raised', 0) - c.get('transfers_in', 0)
+                         for c in cycles.values())
             e = entries.get(name)
             if e is None:
                 e = entries[name] = {
@@ -278,9 +281,20 @@ def _norm_name(name):
     n = _re.sub(r'[^A-Z\s]', ' ', n)
     return ' '.join(n.split())
 
+def _career_index_path():
+    """Freshest available candidate index: the nightly-rebuilt copy seeded into
+    .la_cache/ from the data-cache release wins over the committed repo-root
+    fallback when both exist and the cache copy is at least as new."""
+    cache_p = os.path.join(CACHE_DIR, 'la_candidate_index.json.gz')
+    repo_p  = os.path.join(BASE_DIR,  'la_candidate_index.json.gz')
+    if os.path.exists(cache_p):
+        if not os.path.exists(repo_p) or os.path.getmtime(cache_p) >= os.path.getmtime(repo_p):
+            return cache_p
+    return repo_p
+
 def _load_career_data():
     global _CAND_INDEX, _CAND_RACES, _CAND_IDX_MTIME
-    idx_path   = os.path.join(BASE_DIR, 'la_candidate_index.json.gz')
+    idx_path   = _career_index_path()
     races_path = os.path.join(BASE_DIR, 'la_candidacies_raw.json.gz')
     # Check if file has changed since last load (allows hot-reload after rebuild)
     current_mtime = os.path.getmtime(idx_path) if os.path.exists(idx_path) else 0

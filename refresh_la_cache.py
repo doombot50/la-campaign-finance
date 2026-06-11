@@ -22,12 +22,16 @@ import time
 
 import la_ethics_server as srv
 
-# What the dashboard serves. Keep in sync with the server's boot prefetch
-# and the cycle selector in louisiana-campaign-finance.html.
+# Every bundle the dashboard can serve (cycle selector goes back to 2000).
+# Older keys are a one-time download — after the first run they live in the
+# release and get seeded, so each night only re-downloads the current cycle.
+# Carrying the full history in the release means Render's build seeds every
+# cycle, and the free instance never has to pull a 100MB CSV from
+# ethics.la.gov at request time.
 REQUIRED = {
-    'contributions': ['2020-2023', '2024-2027'],
-    'expenditures':  ['2024-2027'],
-    'loans':         ['2024-2027'],
+    'contributions': sorted(srv.CSV_URLS),
+    'expenditures':  sorted(srv.EXPENDITURE_URLS),
+    'loans':         sorted(srv.LOAN_URLS),
 }
 CURRENT_KEY = srv.get_csv_key(time.localtime().tm_year)
 

@@ -167,6 +167,7 @@ def main():
             ci = cand_index[index_by_norm[idx_key]]
             career = {'total_raised': ci.get('total_raised'),
                       'total_spent':  ci.get('total_spent'),
+                      'total_transfers_in': ci.get('total_transfers_in', 0),
                       'first_cycle':  ci.get('first_cycle'),
                       'last_cycle':   ci.get('last_cycle'),
                       'n_cycles':     ci.get('n_cycles')}

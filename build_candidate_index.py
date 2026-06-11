@@ -4,23 +4,34 @@ plus monthly in/out buckets for the cross-cycle cash-on-hand chart.
 
   "JEFF LANDRY": {
     "cycles": {
-      "2024-2027": {"raised":6618001,"spent":0,"borrowed":0,"n_c":3527,"n_e":0,"n_l":0,"donors":2780},
+      "2024-2027": {"raised":6618001,"spent":0,"borrowed":0,"n_c":3527,"n_e":0,"n_l":0,"donors":2780,"transfers_in":50000,"n_t":4},
       "2020-2023": {...}
     },
-    "monthly": {                         ← NEW: keyed YYYY-MM
+    "monthly": {                         ← keyed YYYY-MM
       "2016-03": {"in":5000,"out":0},
       "2020-09": {"in":120000,"out":45000},
       ...
     },
     "total_raised": ..., "total_spent": ..., "total_borrowed": ...,
+    "total_transfers_in": ...,
     "first_cycle": "2016-2019", "last_cycle": "2024-2027", "n_cycles": 3
   }
+
+`raised` stays GROSS (all contribution records). `transfers_in` is the slice of
+`raised` that came from committee-to-committee transfers (records flagged
+isTransfer by retag_caches.py), so consumers can disclose net = raised −
+transfers_in, matching the dashboard's headline Total Raised semantics.
+
+Run nightly by .github/workflows/nightly-data.yml after retag_caches.py.
+Output goes to .la_cache/ so it ships with the data-cache release upload glob;
+the server prefers that copy over the committed repo-root fallback when newer.
 """
 import json, gzip, os, re, time
 from collections import defaultdict
 
-CACHE = '.la_cache'
-OUT   = 'la_candidate_index.json.gz'
+BASE  = os.path.dirname(os.path.abspath(__file__))
+CACHE = os.path.join(BASE, '.la_cache')
+OUT   = os.path.join(CACHE, 'la_candidate_index.json.gz')
 
 def get_cycle(year):
     y = int(year)
@@ -45,8 +56,9 @@ def month_key(date_str):
         return d[:7]
     return None
 
-# norm_name -> cycle -> {raised, spent, borrowed, n_c, n_e, n_l, donors: set}
-_empty = lambda: {'raised':0,'spent':0,'borrowed':0,'n_c':0,'n_e':0,'n_l':0,'donors':set()}
+# norm_name -> cycle -> {raised, spent, borrowed, n_c, n_e, n_l, donors: set, ...}
+_empty = lambda: {'raised':0,'spent':0,'borrowed':0,'transfers_in':0,
+                  'n_c':0,'n_e':0,'n_l':0,'n_t':0,'donors':set()}
 index  = defaultdict(lambda: defaultdict(_empty))
 
 # norm_name -> month_key -> {in: float, out: float}
@@ -72,6 +84,8 @@ def ingest(path, kind):
                 e = index[norm][cycle]
                 if kind == 'c':
                     e['raised'] += amt; e['n_c'] += 1
+                    if r.get('isTransfer'):
+                        e['transfers_in'] += amt; e['n_t'] += 1
                     donor = (r.get('contributor') or '').strip()
                     if donor: e['donors'].add(donor)
                     if mk: monthly[norm][mk]['in'] += amt
@@ -104,21 +118,26 @@ CYCLE_ORDER = ['2000-2003','2004-2007','2008-2011','2012-2015',
 out = {}
 for norm, cycles in index.items():
     cycle_data = {}
-    total_raised = total_spent = total_borrowed = 0
+    total_raised = total_spent = total_borrowed = total_transfers = 0
     for cycle_label in CYCLE_ORDER:
         if cycle_label not in cycles: continue
         d = cycles[cycle_label]
-        raised    = round(d['raised'],    2)
-        spent     = round(d['spent'],     2)
-        borrowed  = round(d['borrowed'],  2)
-        total_raised   += raised
-        total_spent    += spent
-        total_borrowed += borrowed
+        raised    = round(d['raised'],       2)
+        spent     = round(d['spent'],        2)
+        borrowed  = round(d['borrowed'],     2)
+        xfer      = round(d['transfers_in'], 2)
+        total_raised    += raised
+        total_spent     += spent
+        total_borrowed  += borrowed
+        total_transfers += xfer
         cycle_data[cycle_label] = {
             'raised': raised, 'spent': spent, 'borrowed': borrowed,
             'n_c': d['n_c'], 'n_e': d['n_e'], 'n_l': d['n_l'],
             'donors': len(d['donors']),
         }
+        if xfer:
+            cycle_data[cycle_label]['transfers_in'] = xfer
+            cycle_data[cycle_label]['n_t'] = d['n_t']
     if not cycle_data: continue
     labels = list(cycle_data.keys())
 
@@ -140,9 +159,16 @@ for norm, cycles in index.items():
         'last_cycle':      labels[-1],
         'n_cycles':        len(labels),
     }
+    if total_transfers:
+        out[norm]['total_transfers_in'] = round(total_transfers, 2)
 
-with gzip.open(OUT, 'wt', encoding='utf-8') as f:
+tmp = OUT + '.tmp'
+with gzip.open(tmp, 'wt', encoding='utf-8') as f:
     json.dump(out, f, separators=(',',':'))
+os.replace(tmp, OUT)
 
 sz = os.path.getsize(OUT) / 1024
+n_xf = sum(1 for v in out.values() if v.get('total_transfers_in'))
+xf_total = sum(v.get('total_transfers_in', 0) for v in out.values())
 print(f'Wrote {OUT}: {len(out):,} candidates, {sz:.0f} KB')
+print(f'  transfer-aware: {n_xf:,} entities with transfers_in totaling ${xf_total:,.0f}')

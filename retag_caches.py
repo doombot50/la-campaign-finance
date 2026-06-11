@@ -11,9 +11,10 @@
    politician's personal donation apart from their committee's transfer — and
    false-flagging personal money would be worse than missing some transfers.
 
-Note: in the nightly workflow this runs BEFORE build_entities.py, so it uses
-the previous night's entity table (seeded from the release). Committee names
-are stable, so the one-night lag is immaterial.
+Note: in the nightly workflow this runs AFTER build_entities.py, so the
+transfer pass always has a same-night entity table. (It used to run before,
+relying on the previous night's table seeded from the release — which didn't
+exist on the first runs, so no records ever got flagged.)
 
 Rewrites each cache in place (mtime becomes 'now', which is newer than the
 lookup file, so _bust_stale_caches leaves them and the 24h TTL resets).
