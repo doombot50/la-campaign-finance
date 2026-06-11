@@ -57,15 +57,15 @@ Browser (louisiana-campaign-finance.html)
     ▼
 la_ethics_server.py  (ThreadingHTTPServer, stdlib only)
     │
-    ├── .la_cache/              per-year NDJSON.gz — lazy-downloaded from ethics.la.gov
-    ├── la_candidate_index.json.gz   per-candidate career summaries (built offline)
-    ├── la_candidacies_raw.json.gz   SoS ballot appearances
-    ├── la_entities.json.gz          canonical filer table (built offline)
-    ├── la_insights.json.gz          precomputed aggregates (built offline)
-    ├── la_filer_lookup.json         name → filer_number
-    ├── la_donor_industries.json     donor → industry
-    ├── la_politicians_lookup.json   party + bio enrichment
-    └── ethics_coh_cache.json        certified F102/F202 COH (scraped by fetch_ethics_coh.py)
+    ├── .la_cache/                       per-year NDJSON.gz — lazy-downloaded from ethics.la.gov
+    │   ├── la_entities.json.gz          canonical filer table (built offline, ships via data-cache release)
+    │   └── la_insights.json.gz          precomputed aggregates (built offline, ships via data-cache release)
+    ├── la_candidate_index.json.gz       per-candidate career summaries (committed)
+    ├── la_candidacies_raw.json.gz       SoS ballot appearances (committed)
+    ├── la_filer_lookup.json             name → filer_number (committed)
+    ├── la_donor_industries.json         donor → industry (committed)
+    ├── la_politicians_lookup.json       party + bio enrichment (committed)
+    └── ethics_coh_cache.json            certified F102/F202 COH, scraped by fetch_ethics_coh.py (committed)
 ```
 
 ### Server Module-Level Cache (la_ethics_server.py)
@@ -108,6 +108,7 @@ The Net Cash Flow chart shows `contributions − expenditures`, not actual cash 
 | `/api/races` | Elections grouped by (date, office) |
 | `/api/industry-breakdown` | Donor industry breakdown per filer |
 | `/api/election-results` | Full election dates + results lookup |
+| `/api/data-status` | Cache download progress (browser polls this while a cycle loads) |
 | `/health` | Health check (used by Render.com) |
 
 ### Deployment & CI
@@ -120,4 +121,4 @@ The Net Cash Flow chart shows `contributions − expenditures`, not actual cash 
 - **No third-party packages** for `la_ethics_server.py` or the dashboard — stdlib only. `pdfplumber` is the sole external dep, used only by `fetch_ethics_coh.py`.
 - **No build step** for the frontend — edit `louisiana-campaign-finance.html` directly.
 - **No test suite** — filter/search logic bugs must be caught by running the dashboard manually.
-- Static data files (`.json`, `.json.gz`) are **committed to the repo** and shipped to Render. `.la_cache/` and `.ethics_pdf_cache/` are gitignored (rebuilt at runtime).
+- Static data files (`.json`, `.json.gz`) in the repo root are **committed** and shipped to Render. `.la_cache/` and `.ethics_pdf_cache/` are gitignored — `.la_cache/` contents (including `la_entities.json.gz` and `la_insights.json.gz`) are distributed via the `data-cache` GitHub release and rebuilt/pulled at deploy time.
