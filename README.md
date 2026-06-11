@@ -54,6 +54,12 @@ parsed records in IndexedDB so subsequent loads are instant.
   PNG before printing so layout doesn't reflow mid-render.
 - **URL state persistence** — cycle, tab, sub-tab, and every active filter
   serialize to the URL so dashboards are shareable.
+- **Permanent profile URLs** — every campaign profile, donor profile, and race
+  has a citable hash route (`#/campaign/NAME`, `#/donor/NAME`,
+  `#/race/DATE/OFFICE`). Opening a profile updates the URL; the browser Back
+  button closes it; loading the link reopens it.
+- **Data-freshness stamp** in the header on every view — the nightly build
+  timestamp, so any cited number carries its currency.
 - **IndexedDB** caching of the loaded cycle (90 MB+ contributions payload is
   fetched once per cycle and persisted).
 

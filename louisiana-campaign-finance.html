@@ -855,6 +855,7 @@
   }
 
   /* ── Races view ────────────────────────────────────────────── */
+  .race-highlight { outline: 2px solid var(--gold); outline-offset: 2px; transition: outline-color 0.6s; }
   .race-card {
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -1305,7 +1306,7 @@
   <div class="stats-row">
     <div class="stat-card accent-green">
       <span class="stat-icon">💰</span>
-      <div class="stat-label">Total Raised</div>
+      <div class="stat-label" style="cursor:help" title="Total receipts: every contribution reported to the LA Ethics Administration Program for the selected cycle, minus disclosed committee-to-committee transfers.">Total Raised</div>
       <div class="stat-value" id="stat-total">—</div>
       <div class="stat-sub" id="stat-total-sub">Loading...</div>
       <div class="stat-delta" id="stat-total-delta"></div>
@@ -1408,13 +1409,13 @@
   <!-- TOP CONTRIBUTORS -->
   <div class="top-contributors-card" id="top-contributors-card">
     <div class="table-header-row">
-      <div class="table-title">Top Contributors</div>
+      <div class="table-title">Top Donors</div>
     </div>
     <table class="tc-table">
       <thead>
         <tr>
           <th style="width:28px"></th>
-          <th>Contributor</th>
+          <th>Donor</th>
           <th>Type</th>
           <th class="num">Gifts</th>
           <th class="tc-bar-cell"></th>
@@ -1453,7 +1454,7 @@
           <tr>
             <th style="width:28px;cursor:default"></th>
             <th data-col="date">Date</th>
-            <th data-col="contributor">Contributor</th>
+            <th data-col="contributor">Donor</th>
             <th data-col="contributorState" style="width:52px">State</th>
             <th data-col="parish">Parish</th>
             <th data-col="candidate">Candidate</th>
@@ -1537,7 +1538,7 @@
     <div class="stats-row">
       <div class="stat-card accent-red">
         <span class="stat-icon">💸</span>
-        <div class="stat-label">Total Spent</div>
+        <div class="stat-label" style="cursor:help" title="Total disbursements: every expenditure reported to the LA Ethics Administration Program for the selected cycle.">Total Spent</div>
         <div class="stat-value" id="exp-stat-total">—</div>
         <div class="stat-sub" id="exp-stat-total-sub">across all campaigns</div>
       </div>
@@ -1687,7 +1688,7 @@
     <div class="stats-row" style="margin-bottom:20px">
       <div class="stat-card accent-blue">
         <span class="stat-icon">🏦</span>
-        <div class="stat-label">Total Borrowed</div>
+        <div class="stat-label" style="cursor:help" title="Total loans reported to the LA Ethics Administration Program for the selected cycle, including candidate self-loans.">Total Borrowed</div>
         <div class="stat-value" id="loan-stat-total">—</div>
         <div class="stat-sub" id="loan-stat-total-sub">—</div>
       </div>
@@ -1919,7 +1920,8 @@
   <div class="status-inner">
     <div class="status-dot ok" id="status-dot" aria-hidden="true"></div>
     <div class="status-text" id="status-text">Ready · <span id="status-records">0</span> records loaded · Last updated: <span id="status-updated">—</span></div>
-    <div class="status-text" style="margin-left:auto;">LA Ethics: <span id="la-status">Sample data</span></div>
+    <div class="status-text" style="margin-left:auto;">
+      <span id="data-freshness" style="display:none;cursor:help" title="Records refresh nightly from ethics.la.gov data downloads. Certified Cash-on-Hand figures come from annual filings and update as they are scraped.">📅 Data as of <span id="data-freshness-date" style="font-weight:600"></span> · </span>LA Ethics: <span id="la-status">Sample data</span></div>
   </div>
 </div>
 
@@ -2406,6 +2408,11 @@ async function loadData() {
   showMapSpinner(false);
   setStatus('ok');
   _loadedCycle = cycle;
+  // A #/donor/ route opened before data existed can be satisfied now.
+  if (typeof _pendingDonorRoute === 'string' && _pendingDonorRoute && allData.length) {
+    const n = _pendingDonorRoute; _pendingDonorRoute = null;
+    showContributorProfile(n);
+  }
   if (btn) { btn.disabled = false; }
   updateLoadBtn();
   updateEmptyState();   // re-check now that loading has finished
@@ -2612,9 +2619,11 @@ function renderStats() {
   countUp(document.getElementById('stat-avg'),   avg,   formatMoney);
   countUp(document.getElementById('stat-oos-total'), oosTotal, formatMoney);
 
+  // FEC convention: money figures state their time scope right where they appear.
+  const _scope = _cyclePeriodLabel(document.getElementById('cycle-select').value);
   const subEl = document.getElementById('stat-total-sub');
   if (transferTotal > 0) {
-    subEl.textContent = `${count.toLocaleString()} records · excl. ${formatMoney(transferTotal)} transfers`;
+    subEl.textContent = `${_scope} · ${count.toLocaleString()} records · excl. ${formatMoney(transferTotal)} transfers`;
     subEl.title = `${transferCount.toLocaleString()} committee-to-committee transfers totaling ` +
       `${formatMoney(transferTotal)} are excluded from the headline so the same dollar isn't ` +
       `counted at both the giving and receiving committee. Detected by matching contributor ` +
@@ -2622,7 +2631,7 @@ function renderStats() {
       `cannot be distinguished from personal donations and remain included.`;
     subEl.style.cursor = 'help';
   } else {
-    subEl.textContent = `from ${count.toLocaleString()} records`;
+    subEl.textContent = `${_scope} · ${count.toLocaleString()} records`;
     subEl.title = '';
     subEl.style.cursor = '';
   }
@@ -3491,7 +3500,7 @@ function downloadCSV() {
 
   const cols = [
     ['Date',          d => d.date],
-    ['Contributor',   d => d.contributor],
+    ['Donor',         d => d.contributor],
     ['State',         d => d.contributorState || ''],
     ['Address',       d => [d.contributorAddress, d.city, d.contributorState, d.contributorZip].filter(Boolean).join(', ')],
     ['Employer',      d => d.employer || ''],
@@ -3765,7 +3774,7 @@ function buildDetailPanel(d) {
     <div class="detail-grid">
 
       <div class="detail-section">
-        <h4>Contributor</h4>
+        <h4>Donor</h4>
         ${df('Name', d.contributor)}
         ${df('Address', fullAddr)}
         ${df('Employer', d.employer)}
@@ -4216,7 +4225,8 @@ function renderExpStats() {
   const total = expFiltered.reduce((s, r) => s + r.amount, 0);
   const count = expFiltered.length;
   document.getElementById('exp-stat-total').textContent = fmt(total);
-  document.getElementById('exp-stat-total-sub').textContent = `${count.toLocaleString()} payments`;
+  document.getElementById('exp-stat-total-sub').textContent =
+    `${_cyclePeriodLabel(document.getElementById('cycle-select').value)} · ${count.toLocaleString()} payments`;
   document.getElementById('exp-stat-count').textContent = count.toLocaleString();
   document.getElementById('exp-stat-avg').textContent = count ? fmt(total / count) : '—';
 
@@ -4712,7 +4722,8 @@ function renderLoanStats() {
   const count = loanFiltered.length;
   const selfTotal = loanFiltered.filter(r => r._isSelf).reduce((s, r) => s + r.amount, 0);
   document.getElementById('loan-stat-total').textContent = fmt(total);
-  document.getElementById('loan-stat-total-sub').textContent = `${count.toLocaleString()} loans`;
+  document.getElementById('loan-stat-total-sub').textContent =
+    `${_cyclePeriodLabel(document.getElementById('cycle-select').value)} · ${count.toLocaleString()} loans`;
   document.getElementById('loan-stat-count').textContent = count.toLocaleString();
   document.getElementById('loan-stat-count-sub').textContent = `${loanFiltered.filter(r => r._isSelf).length} self-loans`;
   document.getElementById('loan-stat-avg').textContent = count ? fmt(total / count) : '—';
@@ -5376,12 +5387,14 @@ function showContributorProfile(name) {
   document.getElementById('cp-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   document.querySelector('#cp-modal .cp-close')?.focus();
+  _setRouteHash('#/donor/' + encodeURIComponent(name));   // permanent, shareable URL
 }
 
 function closeContributorProfile() {
   document.getElementById('cp-overlay').classList.remove('open');
   document.body.style.overflow = '';
   if (_modalReturnFocus && _modalReturnFocus.focus) { _modalReturnFocus.focus(); _modalReturnFocus = null; }
+  _clearRouteHash('#/donor/');
 }
 
 function exportContributorProfileCSV() {
@@ -5389,7 +5402,7 @@ function exportContributorProfileCSV() {
 
   const cols = [
     ['Date',          d => d.date],
-    ['Contributor',   d => d.contributor],
+    ['Donor',         d => d.contributor],
     ['Employer',      d => d.employer || ''],
     ['Occupation',    d => d.occupation || ''],
     ['State',         d => d.contributorState || ''],
@@ -5750,7 +5763,8 @@ function _saveUrlState() {
   if (lamax) p.set('lamax', lamax);
 
   const qs = p.toString();
-  history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+  // Preserve any #/campaign|donor|race route — filters and routes coexist.
+  history.replaceState(null, '', (qs ? `?${qs}` : window.location.pathname) + window.location.hash);
 }
 
 function _restoreUrlState() {
@@ -5852,7 +5866,77 @@ let _overviewData = null;
   }
 
   loadData();   // heavy contributions pre-load runs in the background
+
+  // Global data-freshness stamp (every view, not just Overview) — a number is
+  // only citable if the reader knows how current it is.
+  fetch(`${API_BASE}/api/insights`).then(r => r.ok ? r.json() : null).then(ins => {
+    if (ins && ins.built_at) {
+      const dt = new Date(ins.built_at);
+      if (!isNaN(dt)) {
+        document.getElementById('data-freshness-date').textContent =
+          dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        document.getElementById('data-freshness').style.display = '';
+      }
+    }
+  }).catch(() => {});
+
+  // Apply any permanent-URL route (#/campaign/…, #/donor/…, #/race/…) after
+  // init settles so tab switches from _restoreUrlState don't race it.
+  setTimeout(_applyRoute, 0);
 })();
+
+// ============================================================
+// PERMANENT URLS — #/campaign/NAME · #/donor/NAME · #/race/DATE/OFFICE
+// Profiles and races are citable artifacts: every one gets a shareable,
+// bookmarkable URL (VPAP/FEC pattern). Opening a profile pushes the route;
+// the browser Back button closes it again.
+// ============================================================
+let _pendingDonorRoute = null;   // donor routes need contribution data loaded first
+
+function _setRouteHash(hash) {
+  if (location.hash === hash) return;
+  history.pushState(null, '', hash);   // pushState: Back = close, no hashchange echo
+}
+function _clearRouteHash(prefix) {
+  if (prefix && !location.hash.startsWith(prefix)) return;
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+}
+function _raceAnchorId(date, office) {
+  return 'race-' + (date + '-' + office).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+function _scrollToRace(date, office, attempt = 0) {
+  const el = document.getElementById(_raceAnchorId(date, office));
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.classList.add('race-highlight');
+    setTimeout(() => el.classList.remove('race-highlight'), 2600);
+  } else if (attempt < 24) {           // races load async — retry up to ~6s
+    setTimeout(() => _scrollToRace(date, office, attempt + 1), 250);
+  }
+}
+function _applyRoute() {
+  const m = location.hash.match(/^#\/(campaign|donor|race)\/(.+)$/);
+  if (!m) {
+    // Route cleared (e.g. Back button) — close whichever profile is open.
+    if (document.getElementById('camp-overlay').classList.contains('open')) closeCampaignProfile();
+    if (document.getElementById('cp-overlay').classList.contains('open'))   closeContributorProfile();
+    return;
+  }
+  if (m[1] === 'campaign') {
+    showCampaignProfile(decodeURIComponent(m[2]));
+  } else if (m[1] === 'donor') {
+    const name = decodeURIComponent(m[2]);
+    if (allData.length) showContributorProfile(name);
+    else _pendingDonorRoute = name;    // applied once contributions finish loading
+  } else if (m[1] === 'race') {
+    const parts = m[2].split('/');
+    const date = decodeURIComponent(parts[0] || ''), office = decodeURIComponent(parts.slice(1).join('/') || '');
+    if (_currentTab() !== 'races') switchTab('races');
+    _scrollToRace(date, office);
+  }
+}
+window.addEventListener('popstate', _applyRoute);
+window.addEventListener('hashchange', _applyRoute);
 
 // ============================================================
 // CAMPAIGN PROFILE MODAL
@@ -5941,6 +6025,7 @@ function showCampaignProfile(name, openTab) {
   requestAnimationFrame(() => requestAnimationFrame(() => renderCampCashFlow()));
   // Move focus into the dialog
   document.querySelector('#camp-modal .cp-close')?.focus();
+  _setRouteHash('#/campaign/' + encodeURIComponent(name));   // permanent, shareable URL
 }
 
 function _cyclePeriodLabel(cycleYear) {
@@ -6248,6 +6333,7 @@ function closeCampaignProfile() {
   if (_careerChart) { _careerChart.destroy(); _careerChart = null; }
   _careerData = null;
   if (_modalReturnFocus && _modalReturnFocus.focus) { _modalReturnFocus.focus(); _modalReturnFocus = null; }
+  _clearRouteHash('#/campaign/');
 }
 
 function printCampaignProfile() {
@@ -6798,10 +6884,13 @@ function renderRaceCard(race) {
     </tr>`;
   }).join('');
 
-  return `<div class="race-card">
+  return `<div class="race-card" id="${_raceAnchorId(race.date, race.office)}">
     <div class="race-card-header">
       <span><span class="race-office">${race.office}</span><span class="race-date">${race.date}</span></span>
-      <span style="font-size:10px;color:var(--muted)">${cands.length} candidate${cands.length!==1?'s':''}</span>
+      <span style="font-size:10px;color:var(--muted)">${cands.length} candidate${cands.length!==1?'s':''}
+        <a href="#/race/${encodeURIComponent(race.date)}/${encodeURIComponent(race.office)}"
+           style="text-decoration:none;margin-left:6px" title="Permanent link to this race — copy the URL to share">🔗</a>
+      </span>
     </div>
     <table class="race-cand-table">
       <thead><tr>
