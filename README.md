@@ -34,11 +34,12 @@ parsed records in IndexedDB so subsequent loads are instant.
   `min:5k`, `max:1.5m`, … Available tokens change with the active tab —
   contributions tokens on Money In, expenditure tokens on Money Out. The **?**
   button next to the search bar opens a full guide.
-- **Campaign profile** modal (any campaign name → click) — header stats,
-  party + most recent election result, full contribution / expenditure / loan
-  tables, a multi-cycle career chart, and a **Net Cash Flow** chart annotated
-  with certified Cash-on-Hand anchor dots from F102 (candidate) and F202
-  (PAC) Annual filings.
+- **Campaign profile** modal (any campaign name → click) — header stats with
+  certified Cash-on-Hand front and center (always shown, with an explicit
+  "not yet scraped" state), party + most recent election result, full
+  contribution / expenditure / loan tables, a multi-cycle career chart, and a
+  **Raised vs Spent** chart annotated with certified Cash-on-Hand anchor dots
+  from F102 (candidate) and F202 (PAC) Annual filings.
 - **Contributor profile** modal — every committee a donor gave to in the
   selected cycle, with totals.
 - **Compare** — add up to three campaigns via the unified search; each becomes
@@ -58,16 +59,18 @@ parsed records in IndexedDB so subsequent loads are instant.
 
 ## Reading the chart, honestly
 
-The **Net Cash Flow** chart on each campaign profile plots cumulative
-`contributions − expenditures` over time. It is **not** the campaign's actual
-Cash on Hand. Real CoH also reflects loans, loan repayments, refunds,
-in-kind contributions (which inflate "raised" but produce no cash), and
-transfers between committees — none of which sit in the contribution /
-expenditure streams that drive the line.
+The **Raised vs Spent** chart on each campaign profile plots cumulative
+contributions and cumulative expenditures over time. These are **flows, not a
+bank balance** — the dashboard deliberately does not chart a computed
+"net cash" line, because real Cash on Hand also reflects loans, loan
+repayments, refunds, in-kind contributions (which inflate "raised" but
+produce no cash), and transfers between committees, none of which sit in the
+contribution / expenditure streams.
 
-The **green dots** on top of that line are the only ground-truth values: each
-is a certified ending balance reported on an F102 Annual filing by that
-filer. Where the gold line and green dots disagree, the dots are right.
+The **green dots** are the only balance figures shown anywhere: each is a
+certified ending balance reported on an F102/F202 Annual filing by that
+filer, labeled with its as-of date. Where intuition from the flow lines and
+the green dots disagree, the dots are right.
 
 The chart aggregates by *candidate name string*, so a candidate with multiple
 committees (e.g., a personal campaign committee + a leadership PAC) is shown
@@ -207,6 +210,6 @@ downloaded on demand and cached on the instance's disk between requests.
   logic — the most common bug surface.
 - Filer-keyed candidate index rebuild (fixes the 0.3% multi-committee
   roll-up).
-- Optional F101 / F201 campaign-period anchors on the Net Cash Flow chart
+- Optional F101 / F201 campaign-period anchors on the Raised vs Spent chart
   (denser dots during active campaigns and PAC pushes).
 - Independent-expenditure / super-PAC attribution view.

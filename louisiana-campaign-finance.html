@@ -5142,7 +5142,7 @@ function renderCompare() {
              || _cmpCareerParty(cd)
              || (ent?.kind === 'committee' ? 'PAC' : 'OTH'),
       lastRace: _cmpLastRace(cd),
-      raised, spent, net: raised - spent, donors,
+      raised, spent, donors,
       // All-time raised net of committee-to-committee transfers (headline rule)
       atRaised: (fin.total_raised || 0) - (fin.total_transfers_in || 0),
       atSpent: fin.total_spent || 0,
@@ -5154,7 +5154,7 @@ function renderCompare() {
 
   // Per-metric leader (for gold highlight) — only when >1 card and value > 0.
   const lead = key => Math.max(...cards.map(c => c[key] || 0), 0);
-  const L = { raised: lead('raised'), spent: lead('spent'), net: lead('net'), donors: lead('donors'),
+  const L = { raised: lead('raised'), spent: lead('spent'), donors: lead('donors'),
               atRaised: lead('atRaised'), atSpent: lead('atSpent'), coh: lead('coh') };
   const multi = cards.length > 1;
   const isLead = (v, max) => multi && max > 0 && v === max;
@@ -5186,7 +5186,6 @@ function renderCompare() {
       <div class="cmp-section-lbl">This cycle · ${_cyclePeriodLabel(cycleYear)}</div>
       ${row('Raised', fmt(s.raised), isLead(s.raised, L.raised))}
       ${row('Spent', fmt(s.spent), isLead(s.spent, L.spent))}
-      ${row('Net (Raised − Spent)', fmt(s.net), isLead(s.net, L.net))}
       ${row('Unique Donors', num(s.donors), isLead(s.donors, L.donors))}
       <div class="cmp-section-lbl">All-time${loading ? ' <span style="color:var(--muted);font-weight:400">(loading…)</span>' : ''}</div>
       ${row('Raised', s.atRaised ? fmt(s.atRaised) : dash, isLead(s.atRaised, L.atRaised))}
@@ -5194,7 +5193,7 @@ function renderCompare() {
       ${row('Cycles of history', s.cycles ? num(s.cycles) : dash, false)}
       ${cohRow}
       <div class="cmp-chart-wrap">
-        <div class="cmp-chart-lbl">📈 Net Cash Flow (Raised − Spent)</div>
+        <div class="cmp-chart-lbl">📈 Raised vs Spent (cumulative)</div>
         <div class="cmp-chart-box"><canvas id="cmp-chart-${i}"></canvas></div>
       </div>
     </div>`;
@@ -5232,20 +5231,27 @@ function _renderCompareChart(canvasId, s) {
     return;
   }
 
-  let cum = 0;
-  const data = keys.map(k => { cum += (months[k].in || 0) - (months[k].out || 0); return Math.round(cum); });
+  // Two cumulative flow lines (same series as the profile chart) — no
+  // pseudo-balance "net" line; flows are facts, net-as-cash is not.
+  let cumIn = 0, cumOut = 0;
+  const inData  = keys.map(k => { cumIn  += (months[k].in  || 0); return Math.round(cumIn);  });
+  const outData = keys.map(k => { cumOut += (months[k].out || 0); return Math.round(cumOut); });
   const labels = keys.map(k => { const [y, mo] = k.split('-'); return new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }); });
 
   const css   = getComputedStyle(document.documentElement);
-  const gold  = css.getPropertyValue('--gold').trim()  || '#c8a951';
   const muted = css.getPropertyValue('--muted').trim() || '#8b949e';
+  const green = '#4caf7d', red = '#d76b6b';
 
   const chart = new Chart(canvas.getContext('2d'), {
     type: 'line',
-    data: { labels, datasets: [{ data, borderColor: gold, backgroundColor: gold + '22', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 }] },
+    data: { labels, datasets: [
+      { label: 'Raised', data: inData,  borderColor: green, backgroundColor: 'transparent', fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2 },
+      { label: 'Spent',  data: outData, borderColor: red,   backgroundColor: 'transparent', fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2, borderDash: [5,3] },
+    ] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => 'Net: $' + c.parsed.y.toLocaleString() } } },
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.dataset.label}: $` + c.parsed.y.toLocaleString() } } },
       scales: {
         x: { ticks: { color: muted, font: { size: 9 }, maxTicksLimit: 5 }, grid: { display: false } },
         y: { ticks: { color: muted, font: { size: 9 }, callback: v => '$' + (Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : Math.abs(v) >= 1e3 ? Math.round(v / 1e3) + 'k' : v) }, grid: { color: 'rgba(255,255,255,.05)' } },
@@ -5984,7 +5990,6 @@ function _refreshCampStats() {
   document.getElementById('camp-raised').textContent   = fmt(raised);
   document.getElementById('camp-spent').textContent    = fmt(spent);
   document.getElementById('camp-borrowed').textContent = fmt(borrowed);
-  document.getElementById('camp-net').textContent      = fmt(raised - spent);
   document.getElementById('camp-donors').textContent   = donors.toLocaleString();
   renderCampCashFlow();
 }
@@ -6024,13 +6029,13 @@ function renderCampCashFlow() {
 
   const keys = Object.keys(months).sort();
 
-  // Data-coverage note — also surface the categorical caveat so users don't
-  // mistake the gold line for an actual bank balance.
+  // Data-coverage note — flows only, no pseudo-balance line; certified COH
+  // dots are the only balance figures on this chart.
   if (usingCareerData) {
     const first = keys[0]?.replace('-', ' ') || '';
     const last  = keys[keys.length - 1]?.replace('-', ' ') || '';
     const span  = first && last ? `${first} – ${last}` : 'all available data';
-    note.textContent = `${span} · excludes loans, refunds, transfers, in-kind`;
+    note.textContent = `${span} · excludes loans, refunds, in-kind`;
     note.style.color = '';
   } else {
     const parts = [];
@@ -6038,7 +6043,7 @@ function renderCampCashFlow() {
     if (_campLoans.length === 0) parts.push('loans not loaded');
     note.textContent = parts.length
       ? '⚠ ' + parts.join(' · ')
-      : 'Net (Raised − Spent) · excludes loans, refunds, transfers, in-kind';
+      : 'Cumulative flows · excludes refunds, in-kind';
     note.style.color = parts.length ? 'var(--muted)' : '';
   }
 
@@ -6049,13 +6054,12 @@ function renderCampCashFlow() {
 
   // Cumulative series
   let cumIn = 0, cumOut = 0;
-  const raisedSeries = [], spentSeries = [], cashSeries = [];
+  const raisedSeries = [], spentSeries = [];
   keys.forEach(k => {
     cumIn  += months[k].in;
     cumOut += months[k].out;
     raisedSeries.push(Math.round(cumIn));
     spentSeries.push(Math.round(cumOut));
-    cashSeries.push(Math.round(cumIn - cumOut));
   });
 
   const labels = keys.map(k => {
@@ -6123,17 +6127,9 @@ function renderCampCashFlow() {
     return sign + '$' + a.toFixed(0);
   }
 
-  // Compute cash-on-hand range (left axis) and cumulative range (right axis) separately.
-  const cashMin   = cashSeries.length  ? Math.min(...cashSeries)   : 0;
-  const cashMax   = cashSeries.length  ? Math.max(...cashSeries)   : 0;
-  const cumMax    = raisedSeries.length ? Math.max(...raisedSeries) : 0;
-  const cashSpan  = Math.max(cashMax - cashMin, 1);
-
-  // Left axis: cash on hand — add ~15% headroom, floor at 0 unless cash went negative.
-  const yLeftMin  = cashMin < 0 ? cashMin - cashSpan * 0.12 : 0;
-  const yLeftMax  = cashMax + cashSpan * 0.18;
-
   // Right axis: cumulative raised/spent — always 0-based, 10% headroom.
+  const cumMax    = Math.max(raisedSeries.length ? Math.max(...raisedSeries) : 0,
+                             spentSeries.length  ? Math.max(...spentSeries)  : 0);
   const yRightMax = cumMax > 0 ? cumMax * 1.1 : 1;
 
   // X-axis: limit tick density based on number of data points.
@@ -6141,11 +6137,9 @@ function renderCampCashFlow() {
   const xMaxTicks = nPts > 120 ? 10 : nPts > 48 ? 12 : nPts > 24 ? 10 : 8;
 
   // Certified COH anchors: plot every official ending-CoH point we have from
-  // F102 Annual filings on top of the Net line. Between-anchor balance is
-  // unknown so we use a thin dashed line, not interpolation. Real CoH also
-  // reflects loans, refunds, transfers, and in-kind activity that we don't
-  // track per-month — the gold line is fundraising velocity, the dots are
-  // the ground truth.
+  // F102/F202 Annual filings. Between-anchor balance is unknown so we use a
+  // thin dashed connector, not interpolation. These dots are the ONLY balance
+  // figures on this chart — the cumulative lines are flows.
   const cohEntry = _careerData?.ethics_coh;
   // Multi-year list if the new scraper has run; fall back to a single record
   // built from the flat top-level fields for older cache entries.
@@ -6174,6 +6168,14 @@ function renderCampCashFlow() {
     }
   }
 
+  // Left axis ranges on the certified anchors alone (hidden when none exist).
+  const anchorVals = (anchorData || []).filter(v => v != null);
+  const aMin = anchorVals.length ? Math.min(...anchorVals, 0) : 0;
+  const aMax = anchorVals.length ? Math.max(...anchorVals) : 0;
+  const aSpan = Math.max(aMax - aMin, 1);
+  const yLeftMin = aMin < 0 ? aMin - aSpan * 0.12 : 0;
+  const yLeftMax = aMax + aSpan * 0.18;
+
   if (_campCashChart) _campCashChart.destroy();
   _campCashChart = new Chart(canvas.getContext('2d'), {
     type: 'line',
@@ -6181,15 +6183,12 @@ function renderCampCashFlow() {
     data: {
       labels,
       datasets: [
-        { label: 'Net (Raised − Spent)', data: cashSeries, yAxisID: 'y',
-          borderColor: gold, backgroundColor: 'rgba(200,169,81,0.13)',
-          fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 4 },
         { label: 'Cumul. Raised', data: raisedSeries, yAxisID: 'y2',
           borderColor: green, backgroundColor: 'transparent',
-          fill: false, tension: 0.3, borderWidth: 1.5, borderDash: [5,3], pointRadius: 0, pointHoverRadius: 3 },
+          fill: false, tension: 0.3, borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 },
         { label: 'Cumul. Spent', data: spentSeries, yAxisID: 'y2',
           borderColor: red, backgroundColor: 'transparent',
-          fill: false, tension: 0.3, borderWidth: 1.5, borderDash: [5,3], pointRadius: 0, pointHoverRadius: 3 },
+          fill: false, tension: 0.3, borderWidth: 2, borderDash: [5,3], pointRadius: 0, pointHoverRadius: 3 },
         ...(anchorData ? [{
           label: anchorLabel, data: anchorData, yAxisID: 'y',
           // Thin dashed connector between anchors so the trajectory is readable
@@ -6224,8 +6223,9 @@ function renderCampCashFlow() {
         },
         y: {
           position: 'left',
+          display: !!anchorData,
           min: yLeftMin, max: yLeftMax,
-          ticks: { color: gold, font: { size: 9 }, maxTicksLimit: 6,
+          ticks: { color: green, font: { size: 9 }, maxTicksLimit: 6,
                    callback: fmtMoney },
           grid: { color: 'rgba(128,128,128,0.1)' }
         },
@@ -6383,6 +6383,12 @@ let _careerChart = null;
 
 async function fetchCareerData(name) {
   _careerData = null;
+  // Reset the always-visible certified COH slot so the previous profile's
+  // number never lingers while this one loads.
+  const _cohEl = document.getElementById('camp-coh');
+  const _cohLk = document.getElementById('camp-coh-link');
+  if (_cohEl) { _cohEl.textContent = '—'; _cohEl.style.color = 'var(--muted)'; }
+  if (_cohLk) { _cohLk.textContent = ''; _cohLk.removeAttribute('href'); _cohLk.title = ''; }
   try {
     const r = await fetch(`${API_BASE}/api/candidate-history?name=${encodeURIComponent(name)}`);
     if (r.ok) {
@@ -6412,27 +6418,38 @@ async function fetchCareerData(name) {
         document.getElementById('camp-ct-cycles').textContent  = `${n} cycle${n === 1 ? '' : 's'} of history`;
         strip.style.display = '';
       }
-      // Certified COH from ethics annual filing
+      // Certified COH from ethics annual filing. The stat is always visible:
+      // when no filing has been scraped we say so explicitly — absence of a
+      // certified number is information, not something to hide.
       const coh = _careerData.ethics_coh;
-      const cohStat = document.getElementById('camp-coh-stat');
+      const cohEl   = document.getElementById('camp-coh');
+      const cohLink = document.getElementById('camp-coh-link');
       if (coh && coh.ending_coh != null) {
-        document.getElementById('camp-coh').textContent = formatMoney(coh.ending_coh);
-        const link = document.getElementById('camp-coh-link');
+        cohEl.textContent = formatMoney(coh.ending_coh);
+        cohEl.style.color = 'var(--green,#2a7a3b)';
         const yr   = coh.report_year || '';
         const date = coh.date_filed  || '';
-        link.textContent = `certified ${yr ? yr + ' ' : ''}filing`;
+        // FEC convention: a cash-on-hand figure is meaningless without its
+        // as-of date — balances are end-of-period, not "now".
+        cohLink.textContent = yr ? `as of 12/31/${yr} · certified` : 'certified filing';
         // Prefer the LA Ethics public report viewer (ShowEForm.aspx) — it's the
         // user-facing report page that links to the PDF and renders in-browser.
         // Fall back to the raw PDF if we don't have a report_id.
-        link.href = coh.report_id
+        cohLink.href = coh.report_id
           ? `https://www.ethics.la.gov/CampaignFinanceSearch/ShowEForm.aspx?ReportID=${coh.report_id}`
           : (coh.pdf_url || '#');
-        link.target = '_blank';
-        link.rel    = 'noopener noreferrer';
-        link.title  = `Certified per LA Ethics annual filing${date ? ' filed ' + date : ''}. Click to view the official report.`;
-        if (cohStat) cohStat.style.display = '';
+        cohLink.target = '_blank';
+        cohLink.rel    = 'noopener noreferrer';
+        cohLink.style.pointerEvents = '';
+        cohLink.title  = `Certified per LA Ethics annual filing${date ? ' filed ' + date : ''}. Click to view the official report.`;
       } else {
-        if (cohStat) cohStat.style.display = 'none';
+        cohEl.textContent = '—';
+        cohEl.style.color = 'var(--muted)';
+        cohLink.textContent = 'no annual filing scraped yet';
+        cohLink.removeAttribute('href');
+        cohLink.style.pointerEvents = 'none';
+        cohLink.title = 'No certified Cash-on-Hand available for this filer yet — the annual ' +
+          'report (F102 candidate / F202 PAC) has not been scraped, or none was filed.';
       }
       // Hybrid live-cash estimate: certified base + net flows since the filing.
       // Only shown when there are actual post-filing flows — otherwise it would
@@ -7513,10 +7530,10 @@ function _ovOpenElection(year) {
     <div class="cp-stats">
       <div class="cp-stat"><div class="cp-stat-val" id="camp-raised">—</div><div class="cp-stat-lbl">Raised</div></div>
       <div class="cp-stat"><div class="cp-stat-val" id="camp-spent">—</div><div class="cp-stat-lbl">Spent</div></div>
-      <div class="cp-stat"><div class="cp-stat-val" id="camp-borrowed">—</div><div class="cp-stat-lbl">Borrowed</div></div>
-      <div class="cp-stat"><div class="cp-stat-val" id="camp-net">—</div><div class="cp-stat-lbl">Net (Raised − Spent)</div></div>
-      <div class="cp-stat"><div class="cp-stat-val" id="camp-donors">—</div><div class="cp-stat-lbl">Unique Donors</div></div>
-      <div class="cp-stat" id="camp-coh-stat" style="display:none">
+      <!-- Certified COH is the only true balance figure, so it gets the slot
+           after Spent and is ALWAYS shown — with an explicit empty state when
+           no annual filing has been scraped, rather than silently hiding. -->
+      <div class="cp-stat" id="camp-coh-stat">
         <div class="cp-stat-val" id="camp-coh" style="color:var(--green,#2a7a3b)">—</div>
         <div class="cp-stat-lbl">Cash on Hand <a id="camp-coh-link" href="#" target="_blank" style="font-size:9px;font-weight:600;color:var(--muted);text-decoration:none;letter-spacing:0.3px" title="Certified per LA Ethics annual filing"></a></div>
       </div>
@@ -7524,11 +7541,13 @@ function _ovOpenElection(year) {
         <div class="cp-stat-val" id="camp-coh-est" style="color:var(--gold,#c8a951)">—</div>
         <div class="cp-stat-lbl">Est. Current Cash <span id="camp-coh-est-help" style="cursor:help;color:var(--muted)" title="">(?)</span></div>
       </div>
+      <div class="cp-stat"><div class="cp-stat-val" id="camp-borrowed">—</div><div class="cp-stat-lbl">Borrowed</div></div>
+      <div class="cp-stat"><div class="cp-stat-val" id="camp-donors">—</div><div class="cp-stat-lbl">Unique Donors</div></div>
     </div>
     <!-- Cash on hand over time -->
     <div id="camp-cashflow-wrap" style="padding:14px 24px;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">📈 Net Cash Flow Over Time <span style="text-transform:none;font-weight:400;color:var(--muted)" title="Cumulative contributions minus expenditures across all of this candidate's committees. Does not reflect loans, refunds, transfers, or in-kind value. Certified Cash on Hand is shown as a dot when available — the gap between line and dot is real, not a bug.">(?)</span></div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">📈 Raised vs Spent Over Time <span style="text-transform:none;font-weight:400;color:var(--muted)" title="Cumulative contributions and expenditures across all of this candidate's committees — these are flows, not a bank balance. The green dots are certified Cash on Hand from annual ethics filings: the only true balance figures shown.">(?)</span></div>
         <div id="camp-cashflow-note" style="font-size:10px;color:var(--muted)"></div>
       </div>
       <div style="position:relative;height:170px"><canvas id="camp-cashflow-chart"></canvas></div>
