@@ -5131,9 +5131,16 @@ function renderCompare() {
     const career = _compareCareer[name];
     const cd  = (career && career !== 'loading' && career !== 'error') ? career : null;
     const fin = cd?.financial || {};
+    // Canonical entity (same source as the profile modal): party with
+    // provenance beats the record-baked name match; committee kind gets the
+    // PAC badge instead of falling through to "Other".
+    const ent = cd?.entity;
     return {
       name, careerState: career,
-      party: (c[0] || e[0] || {}).party || _cmpCareerParty(cd) || 'OTH',
+      party: (ent?.party && ent.party !== 'OTH' ? ent.party : null)
+             || (c[0] || e[0] || {}).party
+             || _cmpCareerParty(cd)
+             || (ent?.kind === 'committee' ? 'PAC' : 'OTH'),
       lastRace: _cmpLastRace(cd),
       raised, spent, net: raised - spent, donors,
       // All-time raised net of committee-to-committee transfers (headline rule)
@@ -5154,7 +5161,8 @@ function renderCompare() {
 
   const partyBadge = (p) => {
     const m = { DEM: ['🔵 Dem', '#2166ac'], REP: ['🔴 Rep', '#d73027'], IND: ['⚪ Ind', '#888'],
-                LBT: ['🟡 Lib', '#c8a951'], GRN: ['🟢 Grn', '#4caf7d'] }[p] || ['⚪ Other', '#888'];
+                LBT: ['🟡 Lib', '#c8a951'], GRN: ['🟢 Grn', '#4caf7d'],
+                PAC: ['🏛 PAC', '#888'] }[p] || ['⚪ Other', '#888'];
     return `<span class="cmp-badge" style="background:${m[1]}22;color:${m[1]}">${m[0]}</span>`;
   };
   const row = (lbl, val, leader) => `<div class="cmp-stat-row"><span class="cmp-stat-lbl">${lbl}</span><span class="cmp-stat-val${leader ? ' leader' : ''}">${val}</span></div>`;
