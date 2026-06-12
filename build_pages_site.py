@@ -6,6 +6,7 @@ Lays out _site/ for actions/upload-pages-artifact:
 
   _site/index.html        ← louisiana-campaign-finance.html, verbatim
   _site/static_api.js     ← the static data layer, verbatim
+  _site/manifest.json + icons  ← PWA assets (committed, see build_pwa_icons.py)
   _site/.nojekyll
   _site/data/             ← every .la_cache/*.json.gz (records + nightly
                             artifacts, seeded from the data-cache release by
@@ -89,6 +90,9 @@ def main():
     shutil.copy2(os.path.join(BASE, 'louisiana-campaign-finance.html'),
                  os.path.join(SITE, 'index.html'))
     shutil.copy2(os.path.join(BASE, 'static_api.js'), SITE)
+    for name in ('manifest.json', 'icon-192.png', 'icon-512.png',
+                 'apple-touch-icon.png'):
+        shutil.copy2(os.path.join(BASE, name), SITE)
     open(os.path.join(SITE, '.nojekyll'), 'w').close()
 
     n = 0
