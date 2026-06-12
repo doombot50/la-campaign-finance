@@ -455,6 +455,7 @@
   .party-badge.filing-fee {
     background: rgba(224,120,42,0.2); color: #f0a060; border: 1px solid rgba(224,120,42,0.5);
   }
+  .party-badge.transfer { background: var(--badge-pac-bg); color: var(--badge-pac-text); cursor: help; }
   /* Contributor state badges */
   .state-badge {
     display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
@@ -1242,6 +1243,7 @@
     <div class="ctrl-group">
       <label>&nbsp;</label>
       <button class="btn-secondary" id="btn-excl-ff" title="Toggle to hide contributions restricted to filing/qualifying fees">Exclude Filing Fees</button>
+      <button class="btn-secondary" id="btn-only-transfers" title="Show only committee-to-committee transfers — the records excluded from the headline Total Raised. Donor = giving committee, Committee = receiving committee.">Transfers Only</button>
     </div>
     </div><!-- /ctrl-filters -->
   </div><!-- /controls-inner -->
@@ -2304,6 +2306,7 @@ document.getElementById('btn-clear-filters').addEventListener('click', () => {
   document.getElementById('zip-search').value      = '';
   document.getElementById('notes-search').value    = '';
   document.getElementById('btn-excl-ff').classList.remove('active');
+  document.getElementById('btn-only-transfers').classList.remove('active');
   applyFiltersAndRender();
 });
 
@@ -2401,6 +2404,11 @@ document.getElementById('candidate-search').addEventListener('input', debounceFi
 document.getElementById('donor-search').addEventListener('input', debounceFilter);
 document.getElementById('zip-search').addEventListener('input', debounceFilter);
 document.getElementById('notes-search').addEventListener('input', debounceFilter);
+document.getElementById('btn-only-transfers').addEventListener('click', function() {
+  this.classList.toggle('active');
+  applyFiltersAndRender();
+  _syncUrlState();
+});
 document.getElementById('btn-excl-ff').addEventListener('click', function() {
   this.classList.toggle('active');
   applyFiltersAndRender();
@@ -2761,6 +2769,7 @@ function applyFiltersAndRender() {
   const notesSearch = document.getElementById('notes-search').value.toLowerCase().trim();
   const origin = document.getElementById('origin-select').value;
   const exclFilingFees = document.getElementById('btn-excl-ff').classList.contains('active');
+  const onlyTransfers  = document.getElementById('btn-only-transfers').classList.contains('active');
   const cycleYear = parseInt(cycle);  // even year; show full 2-year cycle [cycleYear-1, cycleYear]
   const cycleYearPrev = cycleYear - 1;
 
@@ -2787,6 +2796,7 @@ function applyFiltersAndRender() {
       if ((d.contributorState || '').toUpperCase() === 'LA') return false;
     }
     if (exclFilingFees && d.isFilingFee) return false;
+    if (onlyTransfers && !d.isTransfer) return false;
     if (_industryFilter !== null && _getIndustry(d) !== _industryFilter) return false;
     return true;
   });
@@ -2870,7 +2880,10 @@ function renderStats() {
   const _scope = _cyclePeriodLabel(document.getElementById('cycle-select').value);
   const subEl = document.getElementById('stat-total-sub');
   if (transferTotal > 0) {
-    subEl.textContent = `${_scope} · ${count.toLocaleString()} records · excl. ${formatMoney(transferTotal)} transfers`;
+    subEl.innerHTML = `${_scope} · ${count.toLocaleString()} records · excl. ` +
+      `<button style="background:none;border:none;padding:0;color:var(--gold);cursor:pointer;font-size:inherit;text-decoration:underline dotted" ` +
+      `onclick="document.getElementById('btn-only-transfers').classList.add('active');applyFiltersAndRender();_syncUrlState();renderFilterChips();" ` +
+      `title="Click to view the excluded transfer records — who sent money to whom">${formatMoney(transferTotal)} transfers</button>`;
     subEl.title = `${transferCount.toLocaleString()} committee-to-committee transfers totaling ` +
       `${formatMoney(transferTotal)} are excluded from the headline so the same dollar isn't ` +
       `counted at both the giving and receiving committee. Detected by matching contributor ` +
@@ -3641,11 +3654,14 @@ function renderTable() {
       const ffBadge = d.isFilingFee
         ? `<span class="party-badge filing-fee" title="Restricted: may only be used to pay qualifying/filing fee">⚠ Filing Fee</span> `
         : '';
+      const xferBadge = d.isTransfer
+        ? `<span class="party-badge transfer" title="Committee-to-committee transfer — excluded from the headline Total Raised so the same dollar isn't counted at both committees. The donor column is the giving committee; the committee column is the recipient.">Transfer</span> `
+        : '';
       return `
       <tr class="data-row${d.isFilingFee ? ' filing-fee-row' : ''}" onclick="toggleDetail('${rid}')">
         <td class="expand-cell"><span class="expand-icon">▶</span></td>
         <td>${d.date}</td>
-        <td>${ffBadge}<span class="contributor-link" data-contributor="${escHtml(d.contributor)}" onclick="event.stopPropagation();showContributorProfile(this.dataset.contributor)">${escHtml(d.contributor)}</span></td>
+        <td>${ffBadge}${xferBadge}<span class="contributor-link" data-contributor="${escHtml(d.contributor)}" onclick="event.stopPropagation();showContributorProfile(this.dataset.contributor)">${escHtml(d.contributor)}</span></td>
         <td>${stateCell(d.contributorState)}</td>
         <td>${escHtml(d.parish)}</td>
         <td><span class="contributor-link" data-candidate="${escHtml(d.candidate)}" onclick="event.stopPropagation();showCampaignProfile(this.dataset.candidate)">${escHtml(d.candidate)}</span></td>
@@ -5872,6 +5888,8 @@ function renderFilterChips() {
 
     if (document.getElementById('btn-excl-ff').classList.contains('active'))
       chips.push({ label: 'Excl. Filing Fees', field: 'btn-excl-ff', reset: '', type: 'toggle' });
+    if (document.getElementById('btn-only-transfers').classList.contains('active'))
+      chips.push({ label: 'Transfers Only', field: 'btn-only-transfers', reset: '', type: 'toggle' });
 
   } else if (effTab === 'expenditures') {
     const camp = document.getElementById('exp-campaign-select').value;
@@ -6007,6 +6025,7 @@ function _saveUrlState() {
   if (notes) p.set('notes', notes);
 
   if (document.getElementById('btn-excl-ff').classList.contains('active')) p.set('xff', '1');
+  if (document.getElementById('btn-only-transfers').classList.contains('active')) p.set('xfer', '1');
 
   // ── Expenditure filters ────────────────────────────────────
   const ecamp = document.getElementById('exp-campaign-select').value;
@@ -6073,6 +6092,7 @@ function _restoreUrlState() {
   const zip = p.get('zip');     if (zip) document.getElementById('zip-search').value = zip;
   const notes = p.get('notes'); if (notes) document.getElementById('notes-search').value = notes;
   if (p.get('xff') === '1') document.getElementById('btn-excl-ff').classList.add('active');
+  if (p.get('xfer') === '1') document.getElementById('btn-only-transfers').classList.add('active');
 
   // ── Expenditure static filters ─────────────────────────────
   const ecat = p.get('ecat');   if (ecat) document.getElementById('exp-category-select').value = ecat;
@@ -6712,7 +6732,7 @@ function campSwitchTab(tab) {
     document.getElementById('camp-tbody-contribs').innerHTML = _campContribs.map(d => `
       <tr>
         <td>${d.date||'—'}</td>
-        <td>${escHtml(d.contributor||'—')}</td>
+        <td>${d.isTransfer ? '<span class="party-badge transfer" title="Committee-to-committee transfer — excluded from headline totals">Transfer</span> ' : ''}${escHtml(d.contributor||'—')}</td>
         <td>${d.contributorState||'—'}</td>
         <td>${escHtml(d.parish||'—')}</td>
         <td style="font-size:11px;color:var(--muted)">${escHtml(d.donorType||'')}</td>
