@@ -313,6 +313,267 @@ def _load_career_data():
         else:
             _CAND_RACES = {}
 
+# ── Shared API payload builders ────────────────────────────────────────────────
+# One computation site per payload: the live endpoints AND the nightly static
+# dump (build_static_api.py) call these, so the static artifacts served in
+# server-less mode cannot drift from what the API would have said.
+
+def _industry_years(cycle):
+    """Cycle param ('YYYY-YYYY' or '') -> list of record years, or None if bad."""
+    if cycle:
+        try:
+            y0, y1 = [int(p) for p in cycle.split('-')]
+            return list(range(y0, y1 + 1))
+        except Exception:
+            return None
+    return list(range(2000, date.today().year + 2))
+
+
+def _classify_industry(rec):
+    """Industry for one contribution record. Prefers the value baked onto the
+    record by the nightly retag pass (normalized-name lookup); falls back to
+    the raw-name lookup for records written before baking existed."""
+    baked = rec.get('industry')
+    if baked:
+        return baked
+    donor = (rec.get('contributor') or '').strip()
+    return (_DONOR_IND.get(donor) if _DONOR_IND else None) or 'Other'
+
+
+def _industry_bucket_add(bucket, rec):
+    """Accumulate one record into a {totals, counts, top_donors} bucket."""
+    amount = float(rec.get('amount') or 0)
+    if amount <= 0:
+        return
+    industry = _classify_industry(rec)
+    donor = (rec.get('contributor') or '').strip()
+    bucket['totals'][industry] = bucket['totals'].get(industry, 0.0) + amount
+    bucket['counts'][industry] = bucket['counts'].get(industry, 0) + 1
+    bucket['top_donors'].setdefault(industry, []).append((amount, donor))
+
+
+def _industry_bucket_payload(bucket):
+    """Bucket -> sorted breakdown list (top-5 donors per industry)."""
+    totals, counts, top_donors = bucket['totals'], bucket['counts'], bucket['top_donors']
+    top5 = {ind: sorted(d, key=lambda x: -x[0])[:5] for ind, d in top_donors.items()}
+    return [
+        {
+            'industry': ind,
+            'total': round(totals[ind], 2),
+            'count': counts[ind],
+            'top_donors': [{'amount': a, 'name': n} for a, n in top5.get(ind, [])],
+        }
+        for ind in sorted(totals, key=lambda i: -totals[i])
+    ]
+
+
+def build_industry_breakdown(filer, cycle=''):
+    """Per-filer industry breakdown — payload of /api/industry-breakdown."""
+    _load_donor_industries()
+    year_range = _industry_years(cycle)
+    if year_range is None:
+        return {'error': 'invalid cycle format; use YYYY-YYYY'}
+    bucket = {'totals': {}, 'counts': {}, 'top_donors': {}}
+    for yr in year_range:
+        fp = os.path.join(CACHE_DIR, f'contributions_yr{yr}.json.gz')
+        if not os.path.exists(fp):
+            continue
+        with gzip.open(fp, 'rt', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if str(rec.get('filerNumber', '')) != filer:
+                    continue
+                _industry_bucket_add(bucket, rec)
+    return {
+        'filer': filer,
+        'cycle': cycle or 'all',
+        'has_industry_data': bool(_DONOR_IND),
+        'breakdown': _industry_bucket_payload(bucket),
+    }
+
+
+def build_races_payload(office_filter='major', year_filter=''):
+    """All races grouped by (date, office) with candidate finance —
+    payload of /api/races."""
+    _load_career_data()
+    _load_filer_lookup()
+    _load_ethics_coh()
+
+    office_filter = (office_filter or 'major').lower()
+    year_filter   = (year_filter or '').strip()
+
+    MAJOR_TYPES    = {'governor','us_senate','us_house','statewide','lt_governor'}
+    STATE_TYPES    = {'state_senate','state_house'}
+    BOARD_TYPES    = {'board','supreme_court'}
+    JUDICIAL_TYPES = {'judicial'}
+    LOCAL_TYPES    = {'local'}
+
+    races_by_key = {}
+
+    if _CAND_RACES:
+        for cand_name, candidacies in _CAND_RACES.items():
+            for c in candidacies:
+                if c.get('party_office'):
+                    continue
+                race_date = c.get('date', '')
+                office    = c.get('office', '')
+                if not race_date or not office:
+                    continue
+                parts = race_date.split('/')
+                try:
+                    yr = int(parts[2]) if len(parts) == 3 else 0
+                except Exception:
+                    yr = 0
+
+                otype = _office_type(office)
+
+                # Apply office type filter
+                if office_filter == 'major':
+                    if otype not in MAJOR_TYPES: continue
+                elif office_filter == 'state':
+                    if otype not in STATE_TYPES: continue
+                elif office_filter == 'board':
+                    if otype not in BOARD_TYPES: continue
+                elif office_filter == 'judicial':
+                    if otype not in JUDICIAL_TYPES: continue
+                elif office_filter == 'local':
+                    if otype not in LOCAL_TYPES: continue
+                elif office_filter != 'all':
+                    # treat as a specific office_type string
+                    if otype != office_filter: continue
+
+                if year_filter and str(yr) != year_filter:
+                    continue
+
+                key = (race_date, office)
+                if key not in races_by_key:
+                    races_by_key[key] = {
+                        'date': race_date,
+                        'year': yr,
+                        'office': office,
+                        'office_type': otype,
+                        'candidates': [],
+                    }
+
+                # Match to Ethics finance data
+                norm_name = _norm_name(cand_name)
+                filer_num = (_FILER_NUM.get(norm_name) or
+                             _FILER_NUM.get(cand_name.upper(), ''))
+                cycle_key = _cycle_for_year(yr)
+                raised = spent = 0
+                if _CAND_INDEX and cand_name in _CAND_INDEX:
+                    cyc = _CAND_INDEX[cand_name].get('cycles', {}).get(cycle_key, {})
+                    raised = cyc.get('raised', 0)
+                    spent  = cyc.get('spent',  0)
+
+                # Certified COH from ethics annual filing
+                coh_entry   = _get_ethics_coh(cand_name)
+                coh_ending  = coh_entry.get('ending_coh')  if coh_entry else None
+                coh_year    = coh_entry.get('report_year') if coh_entry else None
+                coh_pdf_url = coh_entry.get('pdf_url')     if coh_entry else None
+
+                races_by_key[key]['candidates'].append({
+                    'name':         cand_name,
+                    'party':        c.get('party', ''),
+                    'outcome':      c.get('outcome', ''),
+                    'vote_pct':     c.get('vote_pct'),
+                    'filer_number': filer_num,
+                    'cycle':        cycle_key,
+                    'raised':       raised,
+                    'spent':        spent,
+                    'coh_ending':   coh_ending,
+                    'coh_year':     coh_year,
+                    'coh_pdf_url':  coh_pdf_url,
+                })
+
+    race_list = sorted(races_by_key.values(),
+                       key=lambda r: r['date'], reverse=True)
+    for race in race_list:
+        race['candidates'].sort(
+            key=lambda c: (c.get('vote_pct') or 0), reverse=True)
+
+    all_years = sorted({r['year'] for r in race_list if r['year'] > 0},
+                       reverse=True)
+    return {'races': race_list, 'total': len(race_list), 'years': all_years}
+
+
+def build_overview_payload():
+    """Landing-page aggregate stats — payload of /api/overview."""
+    _build_search_index()
+    today_iso = time.strftime('%Y-%m-%d')
+
+    total_raised = sum(e['total_raised'] for e in _SEARCH_INDEX)
+    n_candidates = sum(1 for e in _SEARCH_INDEX if e['is_candidate'])
+    n_committees = sum(1 for e in _SEARCH_INDEX if not e['is_candidate'])
+
+    # Elections: races (distinct offices) + candidate counts per date
+    date_races, date_cands = {}, {}
+    for name, cands in (_CAND_RACES or {}).items():
+        for c in cands:
+            if c.get('party_office'):
+                continue
+            d = c.get('date', '')
+            if not d:
+                continue
+            date_races.setdefault(d, set()).add(c.get('office', ''))
+            date_cands[d] = date_cands.get(d, 0) + 1
+
+    elections = []
+    for d in date_races:
+        iso = _iso_date(d)
+        elections.append({
+            'date':       d,
+            'iso':        iso,
+            'n_races':    len(date_races[d]),
+            'n_cands':    date_cands.get(d, 0),
+            'upcoming':   bool(iso and iso > today_iso),
+            '_k':         _date_key(d),
+        })
+    elections.sort(key=lambda x: x['_k'], reverse=True)
+    upcoming = [e for e in elections if e['upcoming']]
+    upcoming.sort(key=lambda x: x['_k'])   # soonest first
+    recent   = [e for e in elections if not e['upcoming']][:8]
+    for e in elections:
+        e.pop('_k', None)
+
+    years = sorted({d.split('/')[-1] for d in date_races if len(d.split('/')) == 3},
+                   reverse=True)
+
+    top = sorted(_SEARCH_INDEX, key=lambda e: -e['total_raised'])[:12]
+    top_fundraisers = [{
+        'name':         e['name'],
+        'total_raised': e['total_raised'],
+        'filer_number': e['filer_number'],
+        'last_office':  e['last_office'],
+        'is_candidate': e['is_candidate'],
+    } for e in top]
+
+    return {
+        'total_raised':    total_raised,
+        'n_candidates':    n_candidates,
+        'n_committees':    n_committees,
+        'n_elections':     len(date_races),
+        'years':           years,
+        'upcoming_elections': upcoming[:6],
+        'recent_elections':   recent,
+        'top_fundraisers':    top_fundraisers,
+    }
+
+
+def build_search_entries():
+    """The full search index entries (with name_upper) — the static client
+    runs the same two-tier ranking over this dump that /api/search runs
+    server-side."""
+    _build_search_index()
+    return _SEARCH_INDEX
+
+
 # ── Download status tracker ────────────────────────────────────────────────────
 # Maps cache_key -> {'status': 'idle'|'downloading'|'ready'|'error', 'message': str}
 _dl_status: dict = {}
@@ -1427,175 +1688,15 @@ class Handler(BaseHTTPRequestHandler):
             if not filer:
                 self._json({'error': 'filer required'}); return
             cycle = params.get('cycle', [''])[0].strip()  # e.g. "2024-2027" or ""
-
-            _load_donor_industries()
-
-            # Decide which year files to read
-            if cycle:
-                try:
-                    y0, y1 = [int(p) for p in cycle.split('-')]
-                    year_range = list(range(y0, y1 + 1))
-                except Exception:
-                    self._json({'error': 'invalid cycle format; use YYYY-YYYY'}); return
-            else:
-                year_range = list(range(2000, date.today().year + 2))
-
-            CACHE = os.path.join(BASE_DIR, '.la_cache')
-            totals: dict = {}     # industry → total_amount
-            counts: dict = {}     # industry → contribution_count
-            top_donors: dict = {} # industry → [(amount, donor)]
-
-            for yr in year_range:
-                fp = os.path.join(CACHE, f'contributions_yr{yr}.json.gz')
-                if not os.path.exists(fp):
-                    continue
-                with gzip.open(fp, 'rt', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line:
-                            continue
-                        try:
-                            rec = json.loads(line)
-                        except json.JSONDecodeError:
-                            continue
-                        if str(rec.get('filerNumber', '')) != filer:
-                            continue
-                        donor  = (rec.get('contributor') or '').strip()
-                        amount = float(rec.get('amount') or 0)
-                        if amount <= 0:
-                            continue
-                        industry = (_DONOR_IND.get(donor) if _DONOR_IND else None) or 'Other'
-                        totals[industry] = totals.get(industry, 0.0) + amount
-                        counts[industry] = counts.get(industry, 0) + 1
-                        heap = top_donors.setdefault(industry, [])
-                        heap.append((amount, donor))
-
-            # Trim top donors to top-5 by amount per bucket
-            top5 = {
-                ind: sorted(donors, key=lambda x: -x[0])[:5]
-                for ind, donors in top_donors.items()
-            }
-            self._json({
-                'filer': filer,
-                'cycle': cycle or 'all',
-                'has_industry_data': bool(_DONOR_IND),
-                'breakdown': [
-                    {
-                        'industry': ind,
-                        'total': round(totals[ind], 2),
-                        'count': counts[ind],
-                        'top_donors': [{'amount': a, 'name': n} for a, n in top5.get(ind, [])],
-                    }
-                    for ind in sorted(totals, key=lambda i: -totals[i])
-                ],
-            })
+            payload = build_industry_breakdown(filer, cycle)
+            self._json(payload)
             return
 
         # ── /api/races — all races grouped by (date, office), with candidate finance ─
         if parsed.path == '/api/races':
-            _load_career_data()
-            _load_filer_lookup()
-            _load_ethics_coh()
-
             office_filter = params.get('office', ['major'])[0].lower()
             year_filter   = params.get('year',   [''])[0].strip()
-
-            MAJOR_TYPES    = {'governor','us_senate','us_house','statewide','lt_governor'}
-            STATE_TYPES    = {'state_senate','state_house'}
-            BOARD_TYPES    = {'board','supreme_court'}
-            JUDICIAL_TYPES = {'judicial'}
-            LOCAL_TYPES    = {'local'}
-
-            races_by_key = {}
-
-            if _CAND_RACES:
-                for cand_name, candidacies in _CAND_RACES.items():
-                    for c in candidacies:
-                        if c.get('party_office'):
-                            continue
-                        # NB: named race_date, not `date` — a bare `date` local
-                        # would shadow datetime.date for ALL of do_GET and break
-                        # every earlier `date.today()` call with UnboundLocalError.
-                        race_date = c.get('date', '')
-                        office    = c.get('office', '')
-                        if not race_date or not office:
-                            continue
-                        parts = race_date.split('/')
-                        try:
-                            yr = int(parts[2]) if len(parts) == 3 else 0
-                        except Exception:
-                            yr = 0
-
-                        otype = _office_type(office)
-
-                        # Apply office type filter
-                        if office_filter == 'major':
-                            if otype not in MAJOR_TYPES: continue
-                        elif office_filter == 'state':
-                            if otype not in STATE_TYPES: continue
-                        elif office_filter == 'board':
-                            if otype not in BOARD_TYPES: continue
-                        elif office_filter == 'judicial':
-                            if otype not in JUDICIAL_TYPES: continue
-                        elif office_filter == 'local':
-                            if otype not in LOCAL_TYPES: continue
-                        elif office_filter != 'all':
-                            # treat as a specific office_type string
-                            if otype != office_filter: continue
-
-                        if year_filter and str(yr) != year_filter:
-                            continue
-
-                        key = (race_date, office)
-                        if key not in races_by_key:
-                            races_by_key[key] = {
-                                'date': race_date,
-                                'year': yr,
-                                'office': office,
-                                'office_type': otype,
-                                'candidates': [],
-                            }
-
-                        # Match to Ethics finance data
-                        norm_name = _norm_name(cand_name)
-                        filer_num = (_FILER_NUM.get(norm_name) or
-                                     _FILER_NUM.get(cand_name.upper(), ''))
-                        cycle_key = _cycle_for_year(yr)
-                        raised = spent = 0
-                        if _CAND_INDEX and cand_name in _CAND_INDEX:
-                            cyc = _CAND_INDEX[cand_name].get('cycles', {}).get(cycle_key, {})
-                            raised = cyc.get('raised', 0)
-                            spent  = cyc.get('spent',  0)
-
-                        # Certified COH from ethics annual filing
-                        coh_entry   = _get_ethics_coh(cand_name)
-                        coh_ending  = coh_entry.get('ending_coh')  if coh_entry else None
-                        coh_year    = coh_entry.get('report_year') if coh_entry else None
-                        coh_pdf_url = coh_entry.get('pdf_url')     if coh_entry else None
-
-                        races_by_key[key]['candidates'].append({
-                            'name':         cand_name,
-                            'party':        c.get('party', ''),
-                            'outcome':      c.get('outcome', ''),
-                            'vote_pct':     c.get('vote_pct'),
-                            'filer_number': filer_num,
-                            'cycle':        cycle_key,
-                            'raised':       raised,
-                            'spent':        spent,
-                            'coh_ending':   coh_ending,
-                            'coh_year':     coh_year,
-                            'coh_pdf_url':  coh_pdf_url,
-                        })
-
-            race_list = sorted(races_by_key.values(),
-                               key=lambda r: r['date'], reverse=True)
-            for race in race_list:
-                race['candidates'].sort(
-                    key=lambda c: (c.get('vote_pct') or 0), reverse=True)
-
-            all_years = sorted({r['year'] for r in race_list if r['year'] > 0},
-                               reverse=True)
-            self._json({'races': race_list, 'total': len(race_list), 'years': all_years})
+            self._json(build_races_payload(office_filter, year_filter))
             return
 
         # ── /api/search — unified candidate/committee lookup ─────────────────
@@ -1635,67 +1736,7 @@ class Handler(BaseHTTPRequestHandler):
 
         # ── /api/overview — landing-page aggregate stats ─────────────────────
         if parsed.path == '/api/overview':
-            _build_search_index()
-            # NB: do_GET uses `date` as a local elsewhere, which shadows the
-            # module-level `from datetime import date`; use time.strftime here.
-            today_iso = time.strftime('%Y-%m-%d')
-
-            total_raised = sum(e['total_raised'] for e in _SEARCH_INDEX)
-            n_candidates = sum(1 for e in _SEARCH_INDEX if e['is_candidate'])
-            n_committees = sum(1 for e in _SEARCH_INDEX if not e['is_candidate'])
-
-            # Elections: races (distinct offices) + candidate counts per date
-            date_races, date_cands = {}, {}
-            for name, cands in (_CAND_RACES or {}).items():
-                for c in cands:
-                    if c.get('party_office'):
-                        continue
-                    d = c.get('date', '')
-                    if not d:
-                        continue
-                    date_races.setdefault(d, set()).add(c.get('office', ''))
-                    date_cands[d] = date_cands.get(d, 0) + 1
-
-            elections = []
-            for d in date_races:
-                iso = _iso_date(d)
-                elections.append({
-                    'date':       d,
-                    'iso':        iso,
-                    'n_races':    len(date_races[d]),
-                    'n_cands':    date_cands.get(d, 0),
-                    'upcoming':   bool(iso and iso > today_iso),
-                    '_k':         _date_key(d),
-                })
-            elections.sort(key=lambda x: x['_k'], reverse=True)
-            upcoming = [e for e in elections if e['upcoming']]
-            upcoming.sort(key=lambda x: x['_k'])   # soonest first
-            recent   = [e for e in elections if not e['upcoming']][:8]
-            for e in elections:
-                e.pop('_k', None)
-
-            years = sorted({d.split('/')[-1] for d in date_races if len(d.split('/')) == 3},
-                           reverse=True)
-
-            top = sorted(_SEARCH_INDEX, key=lambda e: -e['total_raised'])[:12]
-            top_fundraisers = [{
-                'name':         e['name'],
-                'total_raised': e['total_raised'],
-                'filer_number': e['filer_number'],
-                'last_office':  e['last_office'],
-                'is_candidate': e['is_candidate'],
-            } for e in top]
-
-            self._json({
-                'total_raised':    total_raised,
-                'n_candidates':    n_candidates,
-                'n_committees':    n_committees,
-                'n_elections':     len(date_races),
-                'years':           years,
-                'upcoming_elections': upcoming[:6],
-                'recent_elections':   recent,
-                'top_fundraisers':    top_fundraisers,
-            })
+            self._json(build_overview_payload())
             return
 
         # Static data files — serve gzip-encoded JSON directly so the browser can

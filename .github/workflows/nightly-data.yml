@@ -90,13 +90,31 @@ jobs:
         # Runs after retag so isTransfer flags are visible to the rollups.
         run: python build_insights.py
 
+      - name: Build static API artifacts
+        # Static twins of /api/search, /api/races, /api/overview, and
+        # /api/industry-breakdown — the foundation of the server-less
+        # deployment. Built from the same functions the live endpoints call.
+        run: python build_static_api.py
+
+      - name: Static parity gate
+        # Boots the server against this run's caches and asserts the static
+        # artifacts match the live API byte-for-byte. A mismatch fails the
+        # run BEFORE upload, so a drifted artifact can never ship.
+        run: python test_static_parity.py
+
       - name: Upload cache snapshots to release
         run: gh release upload data-cache .la_cache/*.json.gz --clobber
 
       - name: Incremental COH scrape
-        timeout-minutes: 120
+        timeout-minutes: 125      # backstop only — the inner timeout fires first
         continue-on-error: true   # partial progress is saved + committed below
-        run: python fetch_ethics_coh.py --recheck 30
+        # coreutils timeout guarantees the python process is DEAD before the
+        # commit step runs. The Actions step timeout alone left it alive as an
+        # orphan that kept rewriting ethics_coh_cache.json mid-commit, which
+        # made `git pull --rebase` refuse ("unstaged changes") and threw away
+        # the whole night's scrape progress. The scraper saves incrementally
+        # with atomic writes, so a TERM here loses at most the in-flight filer.
+        run: timeout --signal=TERM --kill-after=60 115m python fetch_ethics_coh.py --recheck 30 || true
 
       - name: Commit COH cache if changed
         if: always()
@@ -112,6 +130,8 @@ jobs:
             echo "COH cache unchanged — nothing to commit."
           else
             git commit -m "Nightly COH cache refresh"
-            git pull --rebase origin main
+            # --autostash: tolerate any stray working-tree changes so a push
+            # race with daytime merges can't strand the night's progress again
+            git pull --rebase --autostash origin main
             git push
           fi
