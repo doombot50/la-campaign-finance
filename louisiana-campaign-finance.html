@@ -2439,7 +2439,7 @@ async function loadData() {
   // the exps/loans loaders already do this; without it a profile opened
   // before the cycle data arrived stayed frozen at empty tables and $0.
   if (document.getElementById('camp-overlay').classList.contains('open') && _campName) {
-    _campContribs = allData.filter(d => d.candidate === _campName)
+    _campContribs = allData.filter(_campaignMatch(_campName))
                       .sort((a,b) => b.date.localeCompare(a.date));
     _refreshCampStats();
     if (_campTab === 'contribs') campSwitchTab('contribs');
@@ -2563,6 +2563,22 @@ async function fetchLAEthicsLive(cycle) {
       return;
     }
   }
+}
+
+// JS mirror of the server's _norm_name() — the join key used across all
+// datasets. Search results carry this normalized form ("ABC MERIT PAC")
+// while records carry names as filed ("ABC Merit PAC"); 90% differ, so
+// exact-equality filters silently matched nothing for search-opened
+// profiles. Records cache their normalized key on first use (_nc).
+function _normNameJS(s) {
+  return (s || '').toUpperCase()
+    .replace(/\b(DR|MR|MRS|MS|JR|SR|II|III|IV|ESQ|PHD|MD)\.?\b/g, '')
+    .replace(/[^A-Z\s]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+function _campaignMatch(name) {
+  const t = _normNameJS(name);
+  return d => (d._nc !== undefined ? d._nc : (d._nc = _normNameJS(d.candidate || ''))) === t;
 }
 
 function mergeAndRender() {
@@ -4155,7 +4171,7 @@ async function loadExpData() {
     renderExpAll();
     // Refresh open campaign profile modal if it's for this data
     if (document.getElementById('camp-overlay').classList.contains('open')) {
-      _campExps = expData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _campExps = expData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
       _refreshCampStats();
       if (_campTab === 'exps') campSwitchTab('exps');
     }
@@ -4191,7 +4207,7 @@ async function loadExpData() {
       renderExpAll();
       // Refresh open campaign profile modal
       if (document.getElementById('camp-overlay').classList.contains('open')) {
-        _campExps = expData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        _campExps = expData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
         _refreshCampStats();
         if (_campTab === 'exps') campSwitchTab('exps');
       }
@@ -4675,7 +4691,7 @@ async function loadLoanData() {
     renderLoanAll();
     // Refresh open campaign profile modal
     if (document.getElementById('camp-overlay').classList.contains('open')) {
-      _campLoans = loanData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _campLoans = loanData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
       _refreshCampStats();
       if (_campTab === 'loans') campSwitchTab('loans');
     }
@@ -4713,7 +4729,7 @@ async function loadLoanData() {
       renderLoanAll();
       // Refresh open campaign profile modal
       if (document.getElementById('camp-overlay').classList.contains('open')) {
-        _campLoans = loanData.filter(d => d.candidate === _campName).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        _campLoans = loanData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
         _refreshCampStats();
         if (_campTab === 'loans') campSwitchTab('loans');
       }
@@ -5197,9 +5213,10 @@ function renderCompare() {
   const inCycle = (d) => { const yr = new Date(d.date).getFullYear(); return yr === cycleYear || yr === prev; };
 
   const cards = _compareSel.map(name => {
-    const c = allData.filter(d => d.candidate === name && inCycle(d));
-    const e = expData.filter(d => d.candidate === name && inCycle(d));
-    const l = loanData.filter(d => d.candidate === name && inCycle(d));
+    const _cm = _campaignMatch(name);   // normalized join — search names vs as-filed records
+    const c = allData.filter(d => _cm(d) && inCycle(d));
+    const e = expData.filter(d => _cm(d) && inCycle(d));
+    const l = loanData.filter(d => _cm(d) && inCycle(d));
     const raised = c.reduce((s, d) => s + d.amount, 0);
     const spent  = e.reduce((s, d) => s + d.amount, 0);
     const donors = new Set(c.map(d => d.contributor)).size;
@@ -6060,11 +6077,12 @@ function renderCampElection(name, party) {
 function showCampaignProfile(name, openTab) {
   _restoreChartProxies();   // heal stale print-proxy images from a failed restore
   _campName     = name;
-  _campContribs = allData.filter(d => d.candidate === name)
+  const _cm     = _campaignMatch(name);   // normalized join — matches records as filed
+  _campContribs = allData.filter(_cm)
                     .sort((a,b) => b.date.localeCompare(a.date));
-  _campExps     = expData.filter(d => d.candidate === name)
+  _campExps     = expData.filter(_cm)
                     .sort((a,b) => (b.date||'').localeCompare(a.date||''));
-  _campLoans    = loanData.filter(d => d.candidate === name)
+  _campLoans    = loanData.filter(_cm)
                     .sort((a,b) => (b.date||'').localeCompare(a.date||''));
 
   document.getElementById('camp-name').textContent = name;
