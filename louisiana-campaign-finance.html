@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Louisiana Campaign Finance Dashboard</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -1941,6 +1939,10 @@
   <p style="margin-top:8px;">Built with <a href="https://claude.ai" target="_blank">Claude</a> by Charlie Stephens</p>
 </footer>
 
+<!-- Libraries load here (not <head>) so the shell paints immediately;
+     the app script below depends on L and Chart, so order is preserved. -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ============================================================
 // CONSTANTS & DATA
@@ -2022,6 +2024,7 @@ const LA_SAMPLE_DATA = [  /* empty — sample data removed */
 // ============================================================
 let allData = [];
 let filteredData = [];
+let _partialLoad = false;   // true during mid-stream partial paints
 let laEthicsData = [];
 // When served from the Python server itself, use relative URLs.
 // When opened as a local file://, fall back to explicit localhost.
@@ -2128,12 +2131,15 @@ function applyTheme(theme, persist) {
   document.documentElement.setAttribute('data-theme', theme);
   document.getElementById('theme-toggle').textContent = theme === 'light' ? 'Dark' : 'Light';
   if (persist) localStorage.setItem('cf-theme', theme);
-  // Swap map tiles
-  if (tileLayer) map.removeLayer(tileLayer);
-  tileLayer = L.tileLayer(theme === 'light' ? TILE_LIGHT : TILE_DARK, {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 19
-  }).addTo(map);
+  // Swap map tiles (map is created lazily on first Money-tab view;
+  // initMap reads the current theme, so nothing to do before then)
+  if (map) {
+    if (tileLayer) map.removeLayer(tileLayer);
+    tileLayer = L.tileLayer(theme === 'light' ? TILE_LIGHT : TILE_DARK, {
+      attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd', maxZoom: 19
+    }).addTo(map);
+  }
   // Update Chart.js default text colour and re-render charts only
   // (CSS variables handle all other element colours automatically)
   const textColor = theme === 'light' ? '#57606a' : '#8b949e';
@@ -2155,10 +2161,20 @@ function toggleTheme() {
 }
 
 // ============================================================
-// INIT MAP
+// INIT MAP — lazy: created on first Money-tab activation so the Overview
+// landing doesn't pay for Leaflet setup or CARTO tile downloads.
 // ============================================================
-const map = L.map('map', {zoomControl: true}).setView([31.0, -91.8], 7);
-// Tile layer initialised by applyTheme() below
+let map = null;
+function initMap() {
+  if (map) return;
+  map = L.map('map', {zoomControl: true}).setView([31.0, -91.8], 7);
+  const theme = document.documentElement.getAttribute('data-theme') || 'light';
+  tileLayer = L.tileLayer(theme === 'light' ? TILE_LIGHT : TILE_DARK, {
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(map);
+  legend.addTo(map);
+}
 const _osDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
 let _savedTheme = localStorage.getItem('cf-theme') || (_osDark && _osDark.matches ? 'dark' : 'light');
 applyTheme(_savedTheme);
@@ -2178,7 +2194,7 @@ legend.onAdd = function() {
     <div style="margin-top:8px;font-size:11px;color:#8b949e;">Circle size = total raised</div>`;
   return div;
 };
-legend.addTo(map);
+// (legend is added to the map by initMap)
 
 // ============================================================
 // POPULATE PARISH DROPDOWN
@@ -2470,7 +2486,7 @@ async function fetchLAEthicsLive(cycle) {
 
   for (let attempt = 0; attempt <= MAX_POLLS; attempt++) {
     try {
-      const resp = await fetch(`${API_BASE}/api/la-ethics?cycle=${cycle}`);
+      const resp = await fetch(`${API_BASE}/api/la-ethics?cycle=${cycle}&format=ndjson`);
 
       if (resp.status === 202) {
         // Server is still downloading — show progress and wait
@@ -2488,10 +2504,45 @@ async function fetchLAEthicsLive(cycle) {
 
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-      laEthicsData = await resp.json();
-      laEthicsData.forEach(d => {
-        if (!d.donorType) d.donorType = detectDonorType(d.contributor);
-      });
+      // Progressive NDJSON stream: parse records as bytes arrive and paint
+      // the dashboard twice mid-stream, so first content shows in seconds
+      // instead of after the full payload. Partial paints are flagged so
+      // cycle-delta stats are never saved from incomplete data.
+      laEthicsData = [];
+      const reader  = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '', lastTick = 0;
+      const PARTIAL_RENDER_AT = [15000, 60000];
+      let renderIdx = 0;
+      const ingestLine = (ln) => {
+        if (!ln) return;
+        try {
+          const d = JSON.parse(ln);
+          if (!d.donorType) d.donorType = detectDonorType(d.contributor);
+          laEthicsData.push(d);
+        } catch (e) { /* torn line — ignore */ }
+      };
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();   // keep the trailing partial line
+        for (const ln of lines) ingestLine(ln);
+        const now = performance.now();
+        if (now - lastTick > 300) {
+          lastTick = now;
+          document.getElementById('la-status').textContent =
+            `Loading… ${laEthicsData.length.toLocaleString()} records so far`;
+        }
+        if (renderIdx < PARTIAL_RENDER_AT.length &&
+            laEthicsData.length >= PARTIAL_RENDER_AT[renderIdx]) {
+          renderIdx++;
+          _partialLoad = true;
+          try { mergeAndRender(); } finally { _partialLoad = false; }
+        }
+      }
+      ingestLine(buf.trim());
       idbSet(cacheKey, laEthicsData);   // persist (fire-and-forget)
       document.getElementById('la-status').textContent =
         `${laEthicsData.length.toLocaleString()} LA Ethics records`;
@@ -2659,9 +2710,11 @@ function renderStats() {
   document.getElementById('stat-top-parish-sub').textContent = topParish ? formatMoney(topParish[1]) : 'No data';
   document.getElementById('stat-oos-sub').textContent = `${oosPct}% of total raised`;
 
-  // Save full-dataset stats for delta comparison (only when unfiltered)
+  // Save full-dataset stats for delta comparison (only when unfiltered, and
+  // never from a mid-stream partial paint — incomplete totals would poison
+  // the "vs previous cycle" deltas)
   const cycleVal = document.getElementById('cycle-select').value;
-  if (filteredData.length === allData.length && allData.length > 0) {
+  if (!_partialLoad && filteredData.length === allData.length && allData.length > 0) {
     saveCycleStats(cycleVal, { total, count, avg, oosTotal });
   }
 
@@ -2690,6 +2743,7 @@ const LA_BOUNDS = [[28.9, -94.1], [33.0, -88.8]];
 const US_BOUNDS = [[24.5, -125], [49.5, -66]];
 
 function renderMap() {
+  if (!map) return;   // map view not opened yet — nothing to draw on
   clearMapLayers();
   if (mapMode === 'us-states') {
     map.fitBounds(US_BOUNDS);
@@ -4008,7 +4062,8 @@ function switchTab(tab) {
   // Leaflet computes a 0×0 size when its container is hidden (the map lives in
   // contributions-view, which is display:none on load). Re-measure + redraw once
   // the Money tab is actually visible, otherwise the map renders as a gray box.
-  if (tab === 'contributions' && typeof map !== 'undefined') {
+  if (tab === 'contributions') {
+    initMap();   // first activation creates the map; no-op afterwards
     setTimeout(() => { map.invalidateSize(); renderMap(); }, 0);
   }
   if (tab === 'loans'   && loanData.length === 0) loadLoanData();

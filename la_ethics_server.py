@@ -1780,15 +1780,19 @@ class Handler(BaseHTTPRequestHandler):
 
         # Both years are on disk — stream them
         years_to_serve = [yr for yr in years_wanted if _year_is_fresh(yr, report_type)]
+        ndjson = params.get('format', [''])[0] == 'ndjson'
         try:
-            self._stream_years_json(years_to_serve, report_type)
+            self._stream_years_json(years_to_serve, report_type, ndjson=ndjson)
         except Exception as e:
             import traceback
             traceback.print_exc()
             print(f'  Streaming error for {report_type} cycle={cycle}: {e}')
 
-    def _stream_years_json(self, years, report_type):
-        """Stream per-year NDJSON cache files as a JSON array via chunked transfer-encoding.
+    def _stream_years_json(self, years, report_type, ndjson=False):
+        """Stream per-year NDJSON cache files via chunked transfer-encoding —
+        as one JSON array by default, or as newline-delimited JSON when the
+        client asks (?format=ndjson) so it can parse and render records
+        progressively instead of waiting for the full payload.
 
         Peak RAM = O(1) per record.  No in-memory list, no json.dumps of the full dataset.
         All modern browsers reassemble chunked responses transparently before calling .json().
@@ -1800,7 +1804,9 @@ class Handler(BaseHTTPRequestHandler):
         """
         accepts_gzip = 'gzip' in (self.headers.get('Accept-Encoding') or '')
         self.send_response(200)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Type',
+                         'application/x-ndjson; charset=utf-8' if ndjson
+                         else 'application/json; charset=utf-8')
         self.send_header('Transfer-Encoding', 'chunked')
         if accepts_gzip:
             self.send_header('Content-Encoding', 'gzip')
@@ -1833,7 +1839,8 @@ class Handler(BaseHTTPRequestHandler):
             _load_donor_industries()
 
         try:
-            out.write(b'[')
+            if not ndjson:
+                out.write(b'[')
             first = True
             for year in years:
                 p = _year_cache_path(year, report_type)
@@ -1859,9 +1866,13 @@ class Handler(BaseHTTPRequestHandler):
                                 raw = json.dumps(rec, separators=(',', ':'))
                             except Exception:
                                 pass
-                        out.write((b'' if first else b',') + raw.encode('utf-8'))
+                        if ndjson:
+                            out.write(raw.encode('utf-8') + b'\n')
+                        else:
+                            out.write((b'' if first else b',') + raw.encode('utf-8'))
                         first = False
-            out.write(b']')
+            if not ndjson:
+                out.write(b']')
             out.close()   # flushes the gzip trailer through the chunk writer
             # Terminating chunk signals end of chunked body
             self.wfile.write(b'0\r\n\r\n')
