@@ -2050,6 +2050,29 @@ const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8765' 
 const STATIC_MODE = /\.github\.io$/.test(window.location.hostname) ||
                     new URLSearchParams(window.location.search).has('static');
 
+// The nightly build stamp, fetched once. Used by the header freshness chip
+// and by cycle-cache revalidation: IndexedDB data cached before the latest
+// nightly build is stale and must be refreshed — otherwise a returning
+// visitor's tables silently diverge from the freshness stamp (and from any
+// re-tagging the nightly applied, e.g. transfer flags).
+let _builtAtPromise = null;
+function getDataBuiltAt() {
+  if (!_builtAtPromise) {
+    _builtAtPromise = apiFetch('/api/insights')
+      .then(r => r.ok ? r.json() : null)
+      .then(ins => (ins && ins.built_at) ? new Date(ins.built_at).getTime() : null)
+      .catch(() => null);
+  }
+  return _builtAtPromise;
+}
+async function _cachedCycleStale(asofKey) {
+  try {
+    const [asof, builtAt] = await Promise.all([idbGet(asofKey), getDataBuiltAt()]);
+    if (!builtAt) return false;           // can't tell — keep the cache
+    return !asof || builtAt > asof;       // data rebuilt after we cached it
+  } catch (e) { return false; }
+}
+
 // fetch()-shaped router: call sites keep their resp.ok / resp.json() shape.
 async function apiFetch(pathAndQuery) {
   if (!STATIC_MODE) return fetch(`${API_BASE}${pathAndQuery}`);
@@ -2544,7 +2567,14 @@ async function fetchLAEthicsLive(cycle) {
   if (cached) {
     laEthicsData = cached;
     document.getElementById('la-status').textContent = `${laEthicsData.length.toLocaleString()} LA Ethics records (cached)`;
-    return;
+    if (!await _cachedCycleStale(cacheKey + ':asof')) {
+      return;
+    }
+    // Cache predates the latest nightly build: show it instantly, then fall
+    // through to the normal fetch to replace it — visibly, via the strip.
+    _partialLoad = true;
+    try { mergeAndRender(); } finally { _partialLoad = false; }
+    _loadStrip(true, 'Newer nightly data available — updating…', null, true);
   }
 
   if (STATIC_MODE) {
@@ -2581,6 +2611,7 @@ async function fetchLAEthicsLive(cycle) {
         }
       }
       idbSet(cacheKey, laEthicsData);   // persist (fire-and-forget)
+      idbSet(cacheKey + ':asof', Date.now());
       document.getElementById('la-status').textContent =
         `${laEthicsData.length.toLocaleString()} LA Ethics records`;
       _loadStrip(false);
@@ -2667,6 +2698,7 @@ async function fetchLAEthicsLive(cycle) {
       }
       ingestLine(buf.trim());
       idbSet(cacheKey, laEthicsData);   // persist (fire-and-forget)
+      idbSet(cacheKey + ':asof', Date.now());
       document.getElementById('la-status').textContent =
         `${laEthicsData.length.toLocaleString()} LA Ethics records`;
       _loadStrip(false);
@@ -4303,7 +4335,10 @@ async function loadExpData() {
       _refreshCampStats();
       if (_campTab === 'exps') campSwitchTab('exps');
     }
-    return;
+    if (!await _cachedCycleStale(expCacheKey + ':asof')) {
+      return;
+    }
+    // else fall through: the cached view stays up while fresh data loads
   }
 
   if (!proxyAvailable) {
@@ -4317,6 +4352,7 @@ async function loadExpData() {
     // Tag each record with category
     expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
     idbSet(expCacheKey, expData);   // persist (fire-and-forget)
+    idbSet(expCacheKey + ':asof', Date.now());
     document.getElementById('exp-loading-msg').style.display = 'none';
     populateExpCampaignDropdown();
     renderExpAll();
@@ -4839,7 +4875,10 @@ async function loadLoanData() {
       _refreshCampStats();
       if (_campTab === 'loans') campSwitchTab('loans');
     }
-    return;
+    if (!await _cachedCycleStale(loanCacheKey + ':asof')) {
+      return;
+    }
+    // else fall through: the cached view stays up while fresh data loads
   }
 
   if (!proxyAvailable) {
@@ -4858,6 +4897,7 @@ async function loadLoanData() {
       return d;
     });
     idbSet(loanCacheKey, loanData);   // persist (fire-and-forget)
+    idbSet(loanCacheKey + ':asof', Date.now());
     document.getElementById('loan-loading-msg').style.display = 'none';
     populateLoanCampaignDropdown();
     renderLoanAll();
@@ -6117,16 +6157,13 @@ let _overviewData = null;
 
   // Global data-freshness stamp (every view, not just Overview) — a number is
   // only citable if the reader knows how current it is.
-  apiFetch(`/api/insights`).then(r => r.ok ? r.json() : null).then(ins => {
-    if (ins && ins.built_at) {
-      const dt = new Date(ins.built_at);
-      if (!isNaN(dt)) {
-        document.getElementById('data-freshness-date').textContent =
-          dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        document.getElementById('data-freshness').style.display = '';
-      }
+  getDataBuiltAt().then(builtAt => {
+    if (builtAt) {
+      document.getElementById('data-freshness-date').textContent =
+        new Date(builtAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      document.getElementById('data-freshness').style.display = '';
     }
-  }).catch(() => {});
+  });
 
   // Apply any permanent-URL route (#/campaign/…, #/donor/…, #/race/…) after
   // init settles so tab switches from _restoreUrlState don't race it.
