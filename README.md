@@ -128,6 +128,8 @@ one filer ID — for those, the chart over-rolls-up.
 | `la_politicians_lookup.json` | party + bio enrichment for known politicians |
 | `la_donor_industries.json` | donor → industry classification |
 | `ethics_coh_cache.json` | Certified Cash-on-Hand from F102 Annual reports (scraped per filer; multi-year `reports` list) |
+| `static_api.js` | Server-less data layer: mirrors every read-only `/api/*` endpoint over the nightly static artifacts. Active on GitHub Pages or with `?static=1` against the local server |
+| `test_static_parity.py` / `test_static_client_parity.mjs` | Nightly parity gates: static artifacts == live API, and the shipped JS data layer == live API, asserted before every upload |
 | `.ethics_pdf_cache/` | Local PDF cache for the COH scraper |
 
 ## Build & maintenance scripts
@@ -181,7 +183,22 @@ doesn't leave half-written PDFs in the cache.
 
 ## Deployment
 
-Deployed on [Render](https://render.com) via `render.yaml`:
+**GitHub Pages (server-less, primary once enabled):**
+`.github/workflows/deploy-pages.yml` assembles the SPA + `static_api.js` +
+every data artifact into a same-origin static site and deploys it via the
+Pages API — no cold starts, no runtime computation, nothing to fail at
+request time. It redeploys after every successful nightly refresh (fresh
+data) and on every push to main (fresh code). `build_pages_site.py` refuses
+to assemble an incomplete site, so a flaky download can never publish a
+broken deploy. One-time setup: **Settings → Pages → Source: GitHub Actions**.
+
+Two parity gates run nightly before any data ships: the static artifacts
+must equal the live API (`test_static_parity.py`), and the shipped
+`static_api.js` consuming them must reproduce the API end-to-end
+(`test_static_client_parity.mjs`). Test server-less mode locally at
+`http://localhost:8765/?static=1`.
+
+**Render (legacy/fallback during transition)** via `render.yaml`:
 
 - `python3 la_ethics_server.py` (the server binds to `$PORT` from env on
   Render; defaults to 8765 locally).

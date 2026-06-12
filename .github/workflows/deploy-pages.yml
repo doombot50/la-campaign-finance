@@ -1,0 +1,63 @@
+# Deploy the server-less dashboard to GitHub Pages.
+#
+# The site is the SPA + static_api.js + every data artifact, served same-origin
+# from Pages' CDN — no cold starts, no runtime computation, nothing to fail at
+# request time. Data freshness comes from re-deploying after each nightly
+# refresh (workflow_run); code freshness from deploying on push to main.
+#
+# ONE-TIME SETUP (repo owner): Settings → Pages → Source: "GitHub Actions".
+# Until that's flipped, deploys fail with "Pages site not found" — harmless.
+#
+# build_pages_site.py refuses to assemble an incomplete site (missing year
+# files or artifacts), so a flaky release download can never publish a
+# silently-broken deploy — the previous good deploy just stays live.
+
+name: Deploy Pages site
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Nightly data refresh"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: deploy-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # For workflow_run triggers, only deploy after a SUCCESSFUL nightly —
+    # a failed refresh keeps the previous good site live.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Seed data from the data-cache release
+        run: python fetch_cache_assets.py
+
+      - name: Assemble site (with completeness gate)
+        run: python build_pages_site.py
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
