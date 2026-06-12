@@ -1357,11 +1357,12 @@ class Handler(BaseHTTPRequestHandler):
             ethics_coh = _get_ethics_coh(name)
 
             # Hybrid live-cash estimate: certified Dec-31 balance + net flows since.
-            # The per-year cache files are partitioned by record year, so "flows
-            # since the filing's close" is exactly the sum of whole year-files for
-            # years after the filing year. Matching mirrors the client (exact
-            # candidate-field equality, case-insensitive). Loans excluded — noted
-            # in the UI tooltip.
+            # Flows come from the nightly index's monthly buckets — the same
+            # normalized-name aggregation as every other number on the profile —
+            # instead of the old per-request scan of whole year files, which cost
+            # seconds per profile open on the free tier. Monthly buckets contain
+            # contributions in / expenditures out only; loans excluded — noted in
+            # the UI tooltip.
             coh_estimate = None
             if ethics_coh and ethics_coh.get('ending_coh') is not None:
                 try:
@@ -1369,29 +1370,12 @@ class Handler(BaseHTTPRequestHandler):
                 except (TypeError, ValueError):
                     base_year = None
                 if base_year and base_year < date.today().year:
-                    target = name.strip().upper()
+                    cutoff = f'{base_year}-12'   # filing certifies through Dec 31
                     raised_since = spent_since = 0.0
-                    for yr in range(base_year + 1, date.today().year + 1):
-                        for rtype in ('contributions', 'expenditures'):
-                            p = _year_cache_path(yr, rtype)
-                            if not os.path.exists(p):
-                                continue
-                            with gzip.open(p, 'rt', encoding='utf-8') as gf:
-                                for line in gf:
-                                    line = line.strip()
-                                    if not line:
-                                        continue
-                                    try:
-                                        rec = json.loads(line)
-                                    except json.JSONDecodeError:
-                                        continue
-                                    if (rec.get('candidate') or '').strip().upper() != target:
-                                        continue
-                                    amt = float(rec.get('amount') or 0)
-                                    if rtype == 'contributions':
-                                        raised_since += amt
-                                    else:
-                                        spent_since += amt
+                    for mk, flows in (financial.get('monthly') or {}).items():
+                        if mk > cutoff:
+                            raised_since += flows.get('in', 0) or 0
+                            spent_since  += flows.get('out', 0) or 0
                     coh_estimate = {
                         'base':         ethics_coh['ending_coh'],
                         'base_year':    base_year,
@@ -1808,10 +1792,18 @@ class Handler(BaseHTTPRequestHandler):
 
         Peak RAM = O(1) per record.  No in-memory list, no json.dumps of the full dataset.
         All modern browsers reassemble chunked responses transparently before calling .json().
+
+        Responses are gzip-encoded when the client accepts it (every browser does):
+        these are the dashboard's multi-megabyte payloads, and shipping them as
+        plain text was the single biggest first-load cost. compresslevel=1 keeps
+        CPU negligible while still cutting the transfer ~75-80%.
         """
+        accepts_gzip = 'gzip' in (self.headers.get('Accept-Encoding') or '')
         self.send_response(200)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Transfer-Encoding', 'chunked')
+        if accepts_gzip:
+            self.send_header('Content-Encoding', 'gzip')
         self.send_header('Connection', 'close')
         self._cors_headers()
         self.end_headers()
@@ -1824,11 +1816,24 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(data)
             self.wfile.write(b'\r\n')
 
+        # Sink for the payload: either a streaming gzip wrapper around the
+        # chunk writer, or the chunk writer itself.
+        if accepts_gzip:
+            class _ChunkSink:
+                def write(self, data):  wc(data); return len(data)
+                def flush(self):        pass
+            out = gzip.GzipFile(fileobj=_ChunkSink(), mode='wb', compresslevel=1)
+        else:
+            class _PlainSink:
+                def write(self, data):  wc(data); return len(data)
+                def close(self):        pass
+            out = _PlainSink()
+
         if report_type == 'contributions':
             _load_donor_industries()
 
         try:
-            wc(b'[')
+            out.write(b'[')
             first = True
             for year in years:
                 p = _year_cache_path(year, report_type)
@@ -1839,8 +1844,11 @@ class Handler(BaseHTTPRequestHandler):
                         raw = raw.strip()
                         if not raw:
                             continue
-                        # Inject industry classification for contributions
-                        if report_type == 'contributions' and _DONOR_IND is not None:
+                        # Industry classification is baked into the cache files
+                        # by the nightly retag pass; this per-record fallback
+                        # only runs for records written before that change.
+                        if (report_type == 'contributions' and _DONOR_IND is not None
+                                and '"industry":' not in raw):
                             try:
                                 rec = json.loads(raw)
                                 donor = (rec.get('contributor') or '').strip()
@@ -1851,9 +1859,10 @@ class Handler(BaseHTTPRequestHandler):
                                 raw = json.dumps(rec, separators=(',', ':'))
                             except Exception:
                                 pass
-                        wc((b'' if first else b',') + raw.encode('utf-8'))
+                        out.write((b'' if first else b',') + raw.encode('utf-8'))
                         first = False
-            wc(b']')
+            out.write(b']')
+            out.close()   # flushes the gzip trailer through the chunk writer
             # Terminating chunk signals end of chunked body
             self.wfile.write(b'0\r\n\r\n')
             self.wfile.flush()
@@ -1866,9 +1875,17 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
     def _json(self, data):
-        body = json.dumps(data, indent=2).encode('utf-8')
+        # Compact separators (indent=2 inflated every response 20-40%) and
+        # gzip anything non-trivial — candidate-history monthly buckets and
+        # search results run to hundreds of KB.
+        body = json.dumps(data, separators=(',', ':')).encode('utf-8')
+        gzipped = len(body) > 1024 and 'gzip' in (self.headers.get('Accept-Encoding') or '')
+        if gzipped:
+            body = gzip.compress(body, compresslevel=3)
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
+        if gzipped:
+            self.send_header('Content-Encoding', 'gzip')
         self.send_header('Content-Length', str(len(body)))
         self._cors_headers()
         self.end_headers()

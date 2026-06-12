@@ -10,6 +10,9 @@
    a candidate committee files under the person's name, so we cannot tell a
    politician's personal donation apart from their committee's transfer — and
    false-flagging personal money would be worse than missing some transfers.
+3. Industry tagging (contributions only) — bakes the donor→industry
+   classification into each record so the server streams cache bytes without
+   re-parsing every record per request (it used to inject this on the fly).
 
 Note: in the nightly workflow this runs AFTER build_entities.py, so the
 transfer pass always has a same-night entity table. (It used to run before,
@@ -24,6 +27,8 @@ from collections import Counter
 import la_ethics_server as srv
 
 srv._load_politician_lookup()
+srv._load_donor_industries()
+_IND = srv._DONOR_IND or {}
 CACHE = srv.CACHE_DIR
 
 # Committee-entity name set for transfer detection (empty if no entity table yet)
@@ -74,6 +79,11 @@ for path in sorted(paths):
                     transfer_amt += float(r.get('amount') or 0)
                 else:
                     r.pop('isTransfer', None)
+            if is_contrib and _IND:
+                # Same lookup the server used to run per record, per request
+                donor = (r.get('contributor') or '').strip()
+                r['industry'] = (_IND.get(srv._norm_name(donor))
+                                 or _IND.get(donor) or 'Other')
             recs.append(r)
     tmp = path + '.tmp'
     with gzip.open(tmp, 'wt', encoding='utf-8', compresslevel=1) as f:
