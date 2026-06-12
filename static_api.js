@@ -14,7 +14,10 @@
 (function (global) {
   'use strict';
 
-  const base = () => (global.STATIC_DATA_BASE || '/data');
+  // Relative by default: on a GitHub Pages *project* site the app lives under
+  // /<repo>/, so 'data/…' resolves correctly there AND at the local server's
+  // root. Node tests override via STATIC_DATA_BASE.
+  const base = () => (global.STATIC_DATA_BASE || 'data');
 
   // ── fetch + gzip plumbing ─────────────────────────────────────────────────
   const _cache = {};   // name -> Promise<parsed JSON>
