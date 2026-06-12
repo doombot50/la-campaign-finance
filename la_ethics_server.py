@@ -1771,6 +1771,27 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
+        # PWA assets (manifest + icons referenced from the dashboard <head>)
+        _PWA_ASSETS = {
+            '/manifest.json':        'application/manifest+json',
+            '/icon-192.png':         'image/png',
+            '/icon-512.png':         'image/png',
+            '/apple-touch-icon.png': 'image/png',
+        }
+        if parsed.path in _PWA_ASSETS:
+            fpath = os.path.join(BASE_DIR, parsed.path.lstrip('/'))
+            if os.path.exists(fpath):
+                with open(fpath, 'rb') as fh:
+                    body = fh.read()
+                self.send_response(200)
+                self.send_header('Content-Type', _PWA_ASSETS[parsed.path])
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self._empty(404)
+            return
+
         # The static data layer itself (loaded by the dashboard's script tag)
         if parsed.path == '/static_api.js':
             fpath = os.path.join(BASE_DIR, 'static_api.js')

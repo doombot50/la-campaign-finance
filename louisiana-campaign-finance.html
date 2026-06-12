@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Louisiana Campaign Finance Dashboard</title>
+<!-- PWA: installable from the browser menu; theme-color is kept in sync with
+     the light/dark toggle by applyTheme() -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#161b22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LA CampFin">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1035,6 +1044,130 @@
   .ov-top-rank { font-size: 12px; color: var(--muted); width: 22px; flex-shrink: 0; }
   .ov-top-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ov-top-amt { font-size: 13px; font-weight: 700; color: var(--gold); flex-shrink: 0; }
+
+  /* ══════════════════════════════════════════════════════════════
+     MOBILE & TOUCH
+     Kept at the end of the stylesheet so these rules win the
+     cascade over the desktop defaults above.
+     ══════════════════════════════════════════════════════════════ */
+
+  /* Header tools (search / help / theme) — class replaces an old inline style
+     so the phone layout below can re-flow it onto its own row */
+  .header-tools { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  /* Tap-to-show tooltip — touch replacement for title= hover hints */
+  .tap-tip {
+    position: fixed; z-index: 10050; max-width: 300px;
+    background: var(--tooltip-bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 10px 12px; font-size: 12px; line-height: 1.5;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.4); white-space: normal; text-align: left;
+    font-weight: 400; text-transform: none; letter-spacing: normal;
+  }
+  [data-taptip] { cursor: pointer; }
+
+  /* Two-finger map hint — only ever shown on touch devices (see initMap) */
+  #map-touch-hint {
+    display: none; position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+    z-index: 600; background: var(--tooltip-bg); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--text);
+    pointer-events: none; white-space: nowrap; transition: opacity 0.5s;
+  }
+  #map-touch-hint.fade { opacity: 0; }
+
+  /* ── Bigger hit areas on touch devices (44px-ish guideline) ── */
+  @media (pointer: coarse) {
+    #map-touch-hint.show { display: block; }
+    .page-btn { min-width: 40px; height: 40px; }
+    .pag-jump { height: 38px; }
+    .cp-close { width: 40px; height: 40px; font-size: 18px; }
+    .help-btn { width: 40px; height: 40px; }
+    .chip-x { font-size: 18px; padding: 0 4px; }
+    .filter-chip { padding: 6px 10px 6px 12px; font-size: 12px; max-width: 260px; }
+    .chip-clear-all { padding: 6px 12px; }
+    .density-btn { padding: 8px 12px; }
+    .map-toggle-btn { padding: 8px 14px; }
+    .tp-sort-btn, .tp-view-btn { padding: 6px 11px; }
+    .money-subtab { padding: 9px 20px; }
+    .upload-btn, .btn-secondary { padding: 8px 14px; }
+    .cmp-chip-x { width: 28px; height: 28px; font-size: 16px; }
+  }
+
+  /* ── Phone layout ──────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    /* Inputs at 16px so iOS Safari doesn't force-zoom the page on focus */
+    input[type="text"], input[type="number"], input[type="search"], select { font-size: 16px; }
+
+    /* Header: search row gets the full width; no focus-grow jump */
+    .header-inner { gap: 8px; padding: 10px 0; }
+    .header-tools { flex: 1 1 100%; margin-left: 0; }
+    .global-search-wrap { flex: 1 1 auto; min-width: 0; }
+    #global-search, #global-search:focus { width: 100%; }
+
+    /* Only the section tabs stay pinned — the header chrome scrolls away
+       instead of permanently eating half the viewport. display:contents
+       dissolves the wrapper box so the tabs' sticky containing block is the
+       page, not the wrapper (a sticky child can never escape its parent). */
+    .sticky-top { display: contents; }
+    .section-tabs { position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 12px rgba(0,0,0,0.22); }
+    .section-tab { padding: 12px 16px; font-size: 13px; }
+
+    /* Tighter gutters everywhere (desktop uses 24px) */
+    header, .controls-bar, #data-notice, .exp-controls-bar, footer { padding-left: 12px; padding-right: 12px; }
+    .section-tabs { padding: 0 8px; }
+    #filter-chips-bar { padding: 6px 12px; }
+    #load-strip { padding: 5px 12px 4px; }
+    .money-subtabs { padding: 8px 12px 0; }
+    .main { padding: 14px 12px; }
+    .content-inner { padding: 14px 12px !important; }
+    .table-card, .trend-card, .top-contributors-card { padding: 12px; }
+
+    /* Map: shorter, so the page (not the map) owns the screen */
+    .map-card, #map { min-height: 320px; }
+
+    /* Tables: page scroll instead of a nested 70vh scroll box; sticky
+       column headers only make sense inside that scroll box, so unpin them */
+    .table-scroll-wrap { max-height: none; overflow: visible; }
+    thead th { position: static; }
+    table { min-width: 0; }
+    .tc-bar-cell { display: none; }
+    .tc-name { white-space: normal; }
+    /* Races: dense result grids keep sideways scroll inside their card */
+    .race-card { overflow-x: auto; }
+    .race-cand-table { min-width: 540px; }
+
+    /* m-cards: record tables collapse into stacked label/value cards.
+       Cells carry their column name in data-label; cells without one
+       render as plain full-width blocks (detail panels, loading rows). */
+    table.m-cards thead { display: none; }
+    table.m-cards, table.m-cards tbody, table.m-cards tr, table.m-cards td { display: block; width: 100%; }
+    table.m-cards tr {
+      border: 1px solid var(--border); border-radius: 10px;
+      margin-bottom: 10px; padding: 8px 12px; background: var(--bg);
+    }
+    table.m-cards td {
+      border: none !important; padding: 4px 0 !important;
+      max-width: none !important; white-space: normal !important;
+      overflow: visible !important; text-align: left;
+    }
+    table.m-cards td[data-label] { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+    table.m-cards td[data-label]::before {
+      content: attr(data-label); width: 84px; flex-shrink: 0;
+      font-size: 10px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    table.m-cards td[data-label]:empty { display: none; }
+    table.m-cards .expand-cell, table.m-cards .m-hide { display: none !important; }
+
+    /* Profile modals go full-screen */
+    .cp-overlay { padding: 0; }
+    .cp-modal { border-radius: 0; border-left: none; border-right: none; min-height: 100vh; min-height: 100dvh; }
+    .cp-header { flex-wrap: wrap; padding: 14px 14px 12px; }
+    .cp-stats { flex-wrap: wrap; }
+    .cp-stat { flex: 1 1 33.33%; min-width: 33.33%; padding: 10px 6px; border-top: 1px solid var(--border); }
+    .cp-stat-val { font-size: 17px; }
+    .cp-details { padding: 12px 14px; gap: 14px; }
+    .cp-table-wrap { padding: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -1071,7 +1204,7 @@
     <div>
       <div class="header-title">Louisiana Campaign Finance Dashboard</div>
     </div>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <div class="header-tools">
       <div class="global-search-wrap">
         <input type="text" id="global-search" autocomplete="off" spellcheck="false"
                placeholder="Search or filter — try cycle:2024 party:rep donor:exxon…"
@@ -1295,13 +1428,13 @@
         </div>
         <div id="ov-warchests-wrap" style="display:none">
           <div class="ov-section-title">Biggest War Chests
-            <span id="ov-warchests-help" style="font-size:11px;font-weight:400;color:var(--muted);cursor:help" title="">(?)</span>
+            <span id="ov-warchests-help" style="font-size:11px;font-weight:400;color:var(--muted)" title="" data-taptip role="button" tabindex="0" aria-label="What counts as a war chest" onclick="_tapTip(this,event)" onkeydown="_tapTipKey(event,this)">(?)</span>
           </div>
           <div id="ov-warchests"></div>
         </div>
         <div id="ov-donors-wrap" style="display:none">
           <div class="ov-section-title">Top Donors
-            <span id="ov-donors-help" style="font-size:11px;font-weight:400;color:var(--muted);cursor:help" title="">(?)</span>
+            <span id="ov-donors-help" style="font-size:11px;font-weight:400;color:var(--muted)" title="" data-taptip role="button" tabindex="0" aria-label="How top donors are counted" onclick="_tapTip(this,event)" onkeydown="_tapTipKey(event,this)">(?)</span>
           </div>
           <div id="ov-donors"></div>
         </div>
@@ -1382,6 +1515,7 @@
         </div>
       </div>
       <div id="map"></div>
+      <div id="map-touch-hint" aria-hidden="true">Use two fingers to move the map</div>
       <div class="map-spinner" id="map-spinner">
         <div class="spinner-ring"></div>
         <div style="font-size:12px;">Loading data...</div>
@@ -1479,7 +1613,7 @@
       </div>
     </div>
     <div class="table-scroll-wrap" id="main-table-scroll">
-      <table id="data-table">
+      <table id="data-table" class="m-cards">
         <thead>
           <tr>
             <th style="width:28px;cursor:default"></th>
@@ -1676,7 +1810,7 @@
         Expenditure data is only available from 2016 onward.
       </div>
       <div class="table-scroll-wrap" id="exp-table-scroll">
-        <table class="data-table" id="exp-table" style="width:100%">
+        <table class="data-table m-cards" id="exp-table" style="width:100%">
           <thead>
             <tr>
               <th data-col="date">Date</th>
@@ -1817,7 +1951,7 @@
       </label>
     </div>
     <div class="table-scroll-wrap" id="loan-table-scroll">
-      <table class="data-table" id="loan-table" style="width:100%">
+      <table class="data-table m-cards" id="loan-table" style="width:100%">
         <thead><tr>
           <th data-col="date">Date</th>
           <th data-col="candidate">Campaign</th>
@@ -1861,7 +1995,7 @@
         Biggest givers across every committee in the selected cycle. Click any donor to see everywhere they gave.
       </p>
       <div class="table-scroll-wrap" id="donors-table-scroll">
-        <table class="data-table" id="donors-table" style="width:100%">
+        <table class="data-table m-cards" id="donors-table" style="width:100%">
           <thead><tr>
             <th style="width:48px" data-dcol="rank">#</th>
             <th data-dcol="name">Donor</th>
@@ -2202,6 +2336,9 @@ function applyTheme(theme, persist) {
   document.documentElement.setAttribute('data-theme', theme);
   document.getElementById('theme-toggle').textContent = theme === 'light' ? 'Dark' : 'Light';
   if (persist) localStorage.setItem('cf-theme', theme);
+  // Keep the browser/OS chrome color in step (PWA + mobile address bar)
+  const tc = document.querySelector('meta[name="theme-color"]');
+  if (tc) tc.setAttribute('content', theme === 'light' ? '#ffffff' : '#161b22');
   // Swap map tiles (map is created lazily on first Money-tab view;
   // initMap reads the current theme, so nothing to do before then)
   if (map) {
@@ -2238,7 +2375,20 @@ function toggleTheme() {
 let map = null;
 function initMap() {
   if (map) return;
-  map = L.map('map', {zoomControl: true}).setView([31.0, -91.8], 7);
+  // Touch devices: one-finger swipes must scroll the page, not pan the map —
+  // otherwise the map becomes a scroll trap on phones. Two-finger pinch
+  // (touchZoom) still zooms AND pans, like embedded Google Maps.
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  map = L.map('map', {zoomControl: true, dragging: !coarse}).setView([31.0, -91.8], 7);
+  if (coarse) {
+    const hint = document.getElementById('map-touch-hint');
+    if (hint) {
+      hint.classList.add('show');
+      const dismiss = () => { hint.classList.add('fade'); map.off('zoomstart', dismiss); };
+      map.on('zoomstart', dismiss);
+      setTimeout(dismiss, 8000);
+    }
+  }
   const theme = document.documentElement.getAttribute('data-theme') || 'light';
   tileLayer = L.tileLayer(theme === 'light' ? TILE_LIGHT : TILE_DARK, {
     attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
@@ -2332,11 +2482,50 @@ document.getElementById('btn-clear-loan-filters').addEventListener('click', () =
 // Escape key closes any open modal
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
+  if (_tapTipEl) { _hideTapTip(); return; }
   const campOverlay = document.getElementById('camp-overlay');
   if (campOverlay && campOverlay.classList.contains('open')) { closeCampaignProfile(); return; }
   const cpOverlay = document.getElementById('cp-overlay');
   if (cpOverlay && cpOverlay.classList.contains('open')) { closeContributorProfile(); return; }
 });
+
+// ── Tap-to-show tooltips ─────────────────────────────────────
+// title= hints never fire on touch screens. Elements that exist purely to
+// explain something (the "(?)" helps, filing-fee/transfer badges) get an
+// onclick="_tapTip(this, event)" that shows the title text in a popover.
+// Desktop hover behaviour is unchanged — the title attribute stays.
+let _tapTipEl = null, _tapTipAnchor = null;
+function _hideTapTip() {
+  if (_tapTipEl) { _tapTipEl.remove(); _tapTipEl = null; _tapTipAnchor = null; }
+}
+function _tapTip(el, ev) {
+  if (ev) ev.stopPropagation();           // don't also trigger row expand etc.
+  if (_tapTipAnchor === el) { _hideTapTip(); return; }   // second tap toggles off
+  _hideTapTip();
+  const text = el.getAttribute('title') || '';
+  if (!text) return;
+  const tip = document.createElement('div');
+  tip.className = 'tap-tip';
+  tip.setAttribute('role', 'tooltip');
+  tip.textContent = text;
+  tip.style.left = '-9999px';             // off-screen first so it can be measured
+  document.body.appendChild(tip);
+  const r = el.getBoundingClientRect();
+  const left = Math.min(Math.max(8, r.left), window.innerWidth - tip.offsetWidth - 8);
+  let top = r.bottom + 8;
+  if (top + tip.offsetHeight > window.innerHeight - 8) top = Math.max(8, r.top - tip.offsetHeight - 8);
+  tip.style.left = left + 'px';
+  tip.style.top = top + 'px';
+  _tapTipEl = tip; _tapTipAnchor = el;
+}
+function _tapTipKey(ev, el) {
+  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); _tapTip(el, ev); }
+}
+document.addEventListener('click', e => {
+  if (_tapTipEl && !_tapTipEl.contains(e.target) &&
+      !(_tapTipAnchor && _tapTipAnchor.contains(e.target))) _hideTapTip();
+});
+window.addEventListener('scroll', _hideTapTip, { passive: true, capture: true });
 
 document.getElementById('btn-bubbles').addEventListener('click', () => {
   mapMode = 'bubbles';
@@ -3652,24 +3841,24 @@ function renderTable() {
     tbody.innerHTML = pageData.map((d, i) => {
       const rid = `dr-${currentPage}-${i}`;
       const ffBadge = d.isFilingFee
-        ? `<span class="party-badge filing-fee" title="Restricted: may only be used to pay qualifying/filing fee">⚠ Filing Fee</span> `
+        ? `<span class="party-badge filing-fee" data-taptip onclick="_tapTip(this,event)" title="Restricted: may only be used to pay qualifying/filing fee">⚠ Filing Fee</span> `
         : '';
       const xferBadge = d.isTransfer
-        ? `<span class="party-badge transfer" title="Committee-to-committee transfer — excluded from the headline Total Raised so the same dollar isn't counted at both committees. The donor column is the giving committee; the committee column is the recipient.">Transfer</span> `
+        ? `<span class="party-badge transfer" data-taptip onclick="_tapTip(this,event)" title="Committee-to-committee transfer — excluded from the headline Total Raised so the same dollar isn't counted at both committees. The donor column is the giving committee; the committee column is the recipient.">Transfer</span> `
         : '';
       return `
       <tr class="data-row${d.isFilingFee ? ' filing-fee-row' : ''}" onclick="toggleDetail('${rid}')">
         <td class="expand-cell"><span class="expand-icon">▶</span></td>
-        <td>${d.date}</td>
-        <td>${ffBadge}${xferBadge}<span class="contributor-link" data-contributor="${escHtml(d.contributor)}" onclick="event.stopPropagation();showContributorProfile(this.dataset.contributor)">${escHtml(d.contributor)}</span></td>
-        <td>${stateCell(d.contributorState)}</td>
-        <td>${escHtml(d.parish)}</td>
-        <td><span class="contributor-link" data-candidate="${escHtml(d.candidate)}" onclick="event.stopPropagation();showCampaignProfile(this.dataset.candidate)">${escHtml(d.candidate)}</span></td>
-        <td>${partyBadgeHtml(d)}</td>
-        <td>${industryBadgeHtml(d)}</td>
-        <td class="amount-cell">${formatMoney(d.amount)}</td>
-        <td style="font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(d.notes||'')}">${escHtml((d.notes||'').slice(0,60))}</td>
-        <td><span class="source-badge la">LA Ethics</span></td>
+        <td data-label="Date">${d.date}</td>
+        <td data-label="Donor">${ffBadge}${xferBadge}<span class="contributor-link" data-contributor="${escHtml(d.contributor)}" onclick="event.stopPropagation();showContributorProfile(this.dataset.contributor)">${escHtml(d.contributor)}</span></td>
+        <td data-label="State">${stateCell(d.contributorState)}</td>
+        <td data-label="Parish">${escHtml(d.parish)}</td>
+        <td data-label="Candidate"><span class="contributor-link" data-candidate="${escHtml(d.candidate)}" onclick="event.stopPropagation();showCampaignProfile(this.dataset.candidate)">${escHtml(d.candidate)}</span></td>
+        <td data-label="Party">${partyBadgeHtml(d)}</td>
+        <td data-label="Industry">${industryBadgeHtml(d)}</td>
+        <td data-label="Amount" class="amount-cell">${formatMoney(d.amount)}</td>
+        <td data-label="Notes" style="font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(d.notes||'')}">${escHtml((d.notes||'').slice(0,60))}</td>
+        <td class="m-hide"><span class="source-badge la">LA Ethics</span></td>
       </tr>
       <tr class="detail-row${d.isFilingFee ? ' filing-fee-row' : ''}" id="${rid}" style="display:none">
         <td colspan="11">${buildDetailPanel(d)}</td>
@@ -4797,14 +4986,14 @@ function renderExpTable() {
 
   tbody.innerHTML = page.map(r => `
     <tr>
-      <td>${r.date || '—'}</td>
-      <td><span class="contributor-link" data-candidate="${escHtml(r.candidate||'')}" onclick="showCampaignProfile(this.dataset.candidate)">${escHtml(r.candidate || '—')}</span></td>
-      <td>${escHtml(r.contributor || '—')}</td>
-      <td><span style="font-size:11px;color:var(--muted)">${r._cat}</span></td>
-      <td>${r.recipientState || '—'}</td>
-      <td>${r.parish === 'Out of State' ? '<span style="color:var(--muted);font-size:11px">Out of State</span>' : (r.parish || '—')}</td>
-      <td class="num">$${Math.round(r.amount).toLocaleString()}</td>
-      <td style="max-width:260px;font-size:12px;color:var(--muted)">${escHtml((r.description || '').slice(0,120))}</td>
+      <td data-label="Date">${r.date || '—'}</td>
+      <td data-label="Campaign"><span class="contributor-link" data-candidate="${escHtml(r.candidate||'')}" onclick="showCampaignProfile(this.dataset.candidate)">${escHtml(r.candidate || '—')}</span></td>
+      <td data-label="Recipient">${escHtml(r.contributor || '—')}</td>
+      <td data-label="Category"><span style="font-size:11px;color:var(--muted)">${r._cat}</span></td>
+      <td data-label="State">${r.recipientState || '—'}</td>
+      <td data-label="Parish">${r.parish === 'Out of State' ? '<span style="color:var(--muted);font-size:11px">Out of State</span>' : (r.parish || '—')}</td>
+      <td data-label="Amount" class="num">$${Math.round(r.amount).toLocaleString()}</td>
+      <td data-label="Description" style="max-width:260px;font-size:12px;color:var(--muted)">${escHtml((r.description || '').slice(0,120))}</td>
     </tr>
   `).join('');
 
@@ -5167,13 +5356,13 @@ function renderLoanTable() {
 
   tbody.innerHTML = page.map(r => `
     <tr>
-      <td>${r.date || '—'}</td>
-      <td><span class="contributor-link" data-candidate="${escHtml(r.candidate||'')}" onclick="showCampaignProfile(this.dataset.candidate)">${escHtml(r.candidate || '—')}</span></td>
-      <td>${escHtml(r.contributor || '—')}${r._isSelf ? ' <span style="font-size:10px;color:var(--gold);font-weight:600">SELF</span>' : ''}</td>
-      <td>${r.lenderState || '—'}</td>
-      <td>${r.parish === 'Out of State' ? '<span style="color:var(--muted);font-size:11px">Out of State</span>' : (r.parish || '—')}</td>
-      <td class="num">${r.rate ? r.rate.toFixed(2) + '%' : '0%'}</td>
-      <td class="num">$${Math.round(r.amount).toLocaleString()}</td>
+      <td data-label="Date">${r.date || '—'}</td>
+      <td data-label="Campaign"><span class="contributor-link" data-candidate="${escHtml(r.candidate||'')}" onclick="showCampaignProfile(this.dataset.candidate)">${escHtml(r.candidate || '—')}</span></td>
+      <td data-label="Lender">${escHtml(r.contributor || '—')}${r._isSelf ? ' <span style="font-size:10px;color:var(--gold);font-weight:600">SELF</span>' : ''}</td>
+      <td data-label="State">${r.lenderState || '—'}</td>
+      <td data-label="Parish">${r.parish === 'Out of State' ? '<span style="color:var(--muted);font-size:11px">Out of State</span>' : (r.parish || '—')}</td>
+      <td data-label="Rate" class="num">${r.rate ? r.rate.toFixed(2) + '%' : '0%'}</td>
+      <td data-label="Amount" class="num">$${Math.round(r.amount).toLocaleString()}</td>
     </tr>
   `).join('');
   buildPagination({
@@ -5287,12 +5476,12 @@ function renderDonorsLeaderboard() {
     const pct  = maxTotal ? (r.total / maxTotal * 100) : 0;
     const medal = rank;   // rank number — no medal emoji; leaders read fine from order
     return `<tr>
-      <td style="color:var(--muted);font-weight:700;text-align:center">${medal}</td>
-      <td><span class="contributor-link" data-contributor="${escHtml(r.name)}" onclick="showContributorProfile(this.dataset.contributor)">${escHtml(r.name)}</span></td>
-      <td><span style="font-size:11px;color:var(--muted)">${escHtml(r.type)}</span></td>
-      <td class="num">${r.committees}</td>
-      <td class="num">${r.count.toLocaleString()}</td>
-      <td class="num" style="font-weight:700;color:var(--gold);position:relative">
+      <td data-label="Rank" style="color:var(--muted);font-weight:700;text-align:center">${medal}</td>
+      <td data-label="Donor"><span class="contributor-link" data-contributor="${escHtml(r.name)}" onclick="showContributorProfile(this.dataset.contributor)">${escHtml(r.name)}</span></td>
+      <td data-label="Type"><span style="font-size:11px;color:var(--muted)">${escHtml(r.type)}</span></td>
+      <td data-label="Committees" class="num">${r.committees}</td>
+      <td data-label="Gifts" class="num">${r.count.toLocaleString()}</td>
+      <td data-label="Total" class="num" style="font-weight:700;color:var(--gold);position:relative">
         <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:rgba(200,169,81,0.10);z-index:0"></div>
         <span style="position:relative;z-index:1">$${Math.round(r.total).toLocaleString()}</span>
       </td>
@@ -5666,12 +5855,12 @@ function showContributorProfile(name) {
     const ffWarn = d.isFilingFee
       ? `<span class="party-badge filing-fee" style="font-size:10px">⚠ Fee</span> ` : '';
     return `<tr>
-      <td style="color:var(--muted);white-space:nowrap">${d.date}</td>
-      <td>${escHtml(d.candidate || '—')}</td>
-      <td>${partyBadgeHtml(d)}</td>
-      <td style="color:var(--muted);font-size:12px">${escHtml(d.type || '—')}</td>
-      <td class="cp-amount">${formatMoney(d.amount)}</td>
-      <td style="color:var(--muted);font-size:12px">${ffWarn}${escHtml(d.notes || '')}</td>
+      <td data-label="Date" style="color:var(--muted);white-space:nowrap">${d.date}</td>
+      <td data-label="Committee">${escHtml(d.candidate || '—')}</td>
+      <td data-label="Party">${partyBadgeHtml(d)}</td>
+      <td data-label="Type" style="color:var(--muted);font-size:12px">${escHtml(d.type || '—')}</td>
+      <td data-label="Amount" class="cp-amount">${formatMoney(d.amount)}</td>
+      <td data-label="Notes" style="color:var(--muted);font-size:12px">${ffWarn}${escHtml(d.notes || '')}</td>
     </tr>`;
   }).join('');
 
@@ -6768,13 +6957,13 @@ function campSwitchTab(tab) {
     empty.style.display = _campContribs.length ? 'none' : '';
     document.getElementById('camp-tbody-contribs').innerHTML = _campContribs.map(d => `
       <tr>
-        <td>${d.date||'—'}</td>
-        <td>${d.isTransfer ? '<span class="party-badge transfer" title="Committee-to-committee transfer — excluded from headline totals">Transfer</span> ' : ''}${escHtml(d.contributor||'—')}</td>
-        <td>${d.contributorState||'—'}</td>
-        <td>${escHtml(d.parish||'—')}</td>
-        <td style="font-size:11px;color:var(--muted)">${escHtml(d.donorType||'')}</td>
-        <td class="num">$${Math.round(d.amount).toLocaleString()}</td>
-        <td style="font-size:11px;color:var(--muted);max-width:180px">${escHtml((d.notes||'').slice(0,80))}</td>
+        <td data-label="Date">${d.date||'—'}</td>
+        <td data-label="Donor">${d.isTransfer ? '<span class="party-badge transfer" data-taptip onclick="_tapTip(this,event)" title="Committee-to-committee transfer — excluded from headline totals">Transfer</span> ' : ''}${escHtml(d.contributor||'—')}</td>
+        <td data-label="State">${d.contributorState||'—'}</td>
+        <td data-label="Parish">${escHtml(d.parish||'—')}</td>
+        <td data-label="Type" style="font-size:11px;color:var(--muted)">${escHtml(d.donorType||'')}</td>
+        <td data-label="Amount" class="num">$${Math.round(d.amount).toLocaleString()}</td>
+        <td data-label="Notes" style="font-size:11px;color:var(--muted);max-width:180px">${escHtml((d.notes||'').slice(0,80))}</td>
       </tr>`).join('');
   } else if (tab === 'exps') {
     // If expenditure data hasn't been loaded yet, trigger a load and show a message
@@ -6787,12 +6976,12 @@ function campSwitchTab(tab) {
       empty.style.display = _campExps.length ? 'none' : '';
       document.getElementById('camp-tbody-exps').innerHTML = _campExps.map(d => `
         <tr>
-          <td>${d.date||'—'}</td>
-          <td>${escHtml(d.contributor||'—')}</td>
-          <td>${d.recipientState||'—'}</td>
-          <td style="font-size:11px;color:var(--muted)">${escHtml(d._cat||'')}</td>
-          <td class="num">$${Math.round(d.amount).toLocaleString()}</td>
-          <td style="font-size:11px;color:var(--muted);max-width:200px">${escHtml((d.description||'').slice(0,100))}</td>
+          <td data-label="Date">${d.date||'—'}</td>
+          <td data-label="Recipient">${escHtml(d.contributor||'—')}</td>
+          <td data-label="State">${d.recipientState||'—'}</td>
+          <td data-label="Category" style="font-size:11px;color:var(--muted)">${escHtml(d._cat||'')}</td>
+          <td data-label="Amount" class="num">$${Math.round(d.amount).toLocaleString()}</td>
+          <td data-label="Description" style="font-size:11px;color:var(--muted);max-width:200px">${escHtml((d.description||'').slice(0,100))}</td>
         </tr>`).join('');
     }
   } else {
@@ -6806,12 +6995,12 @@ function campSwitchTab(tab) {
     empty.style.display = _campLoans.length ? 'none' : '';
     document.getElementById('camp-tbody-loans').innerHTML = _campLoans.map(d => `
       <tr>
-        <td>${d.date||'—'}</td>
-        <td>${escHtml(d.contributor||'—')}${d._isSelf?' <span style="font-size:10px;color:var(--gold);font-weight:600">SELF</span>':''}</td>
-        <td>${d.lenderState||'—'}</td>
-        <td>${escHtml(d.parish||'—')}</td>
-        <td class="num">${d.rate?d.rate.toFixed(2)+'%':'0%'}</td>
-        <td class="num">$${Math.round(d.amount).toLocaleString()}</td>
+        <td data-label="Date">${d.date||'—'}</td>
+        <td data-label="Lender">${escHtml(d.contributor||'—')}${d._isSelf?' <span style="font-size:10px;color:var(--gold);font-weight:600">SELF</span>':''}</td>
+        <td data-label="State">${d.lenderState||'—'}</td>
+        <td data-label="Parish">${escHtml(d.parish||'—')}</td>
+        <td data-label="Rate" class="num">${d.rate?d.rate.toFixed(2)+'%':'0%'}</td>
+        <td data-label="Amount" class="num">$${Math.round(d.amount).toLocaleString()}</td>
       </tr>`).join('');
     }  // end else (loanData loaded)
   }
@@ -7966,7 +8155,7 @@ function _ovOpenElection(year) {
     </div>
     <!-- Stats -->
     <div class="cp-stats">
-      <div class="cp-stat"><div class="cp-stat-val" id="camp-raised">—</div><div class="cp-stat-lbl">Raised</div></div>
+      <div class="cp-stat"><div class="cp-stat-val" id="camp-raised" onclick="_tapTip(this,event)">—</div><div class="cp-stat-lbl">Raised</div></div>
       <div class="cp-stat"><div class="cp-stat-val" id="camp-spent">—</div><div class="cp-stat-lbl">Spent</div></div>
       <!-- Certified COH is the only true balance figure, so it gets the slot
            after Spent and is ALWAYS shown — with an explicit empty state when
@@ -7977,7 +8166,7 @@ function _ovOpenElection(year) {
       </div>
       <div class="cp-stat" id="camp-coh-est-stat" style="display:none">
         <div class="cp-stat-val" id="camp-coh-est" style="color:var(--gold,#c8a951)">—</div>
-        <div class="cp-stat-lbl">Est. Current Cash <span id="camp-coh-est-help" style="cursor:help;color:var(--muted)" title="">(?)</span></div>
+        <div class="cp-stat-lbl">Est. Current Cash <span id="camp-coh-est-help" style="color:var(--muted)" title="" data-taptip role="button" tabindex="0" aria-label="How this estimate is calculated" onclick="_tapTip(this,event)" onkeydown="_tapTipKey(event,this)">(?)</span></div>
       </div>
       <div class="cp-stat"><div class="cp-stat-val" id="camp-borrowed">—</div><div class="cp-stat-lbl">Borrowed</div></div>
       <div class="cp-stat"><div class="cp-stat-val" id="camp-donors">—</div><div class="cp-stat-lbl">Unique Donors</div></div>
@@ -7985,7 +8174,7 @@ function _ovOpenElection(year) {
     <!-- Cash on hand over time -->
     <div id="camp-cashflow-wrap" style="padding:14px 24px;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Raised vs Spent Over Time <span style="text-transform:none;font-weight:400;color:var(--muted)" title="Cumulative contributions and expenditures across all of this candidate's committees — these are flows, not a bank balance. The green dots are certified Cash on Hand from annual ethics filings: the only true balance figures shown.">(?)</span></div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Raised vs Spent Over Time <span style="text-transform:none;font-weight:400;color:var(--muted)" data-taptip role="button" tabindex="0" aria-label="How this chart is calculated" onclick="_tapTip(this,event)" onkeydown="_tapTipKey(event,this)" title="Cumulative contributions and expenditures across all of this candidate's committees — these are flows, not a bank balance. The green dots are certified Cash on Hand from annual ethics filings: the only true balance figures shown.">(?)</span></div>
         <div id="camp-cashflow-note" style="font-size:10px;color:var(--muted)"></div>
       </div>
       <div style="position:relative;height:170px"><canvas id="camp-cashflow-chart"></canvas></div>
@@ -8000,15 +8189,15 @@ function _ovOpenElection(year) {
     <!-- Content -->
     <div class="cp-table-wrap">
       <div id="camp-content-contribs">
-        <table class="cp-table"><thead><tr><th>Date</th><th>Donor</th><th>State</th><th>Parish</th><th>Type</th><th class="num">Amount</th><th>Notes</th></tr></thead>
+        <table class="cp-table m-cards"><thead><tr><th>Date</th><th>Donor</th><th>State</th><th>Parish</th><th>Type</th><th class="num">Amount</th><th>Notes</th></tr></thead>
         <tbody id="camp-tbody-contribs"></tbody></table>
       </div>
       <div id="camp-content-exps" style="display:none">
-        <table class="cp-table"><thead><tr><th>Date</th><th>Recipient</th><th>State</th><th>Category</th><th class="num">Amount</th><th>Description</th></tr></thead>
+        <table class="cp-table m-cards"><thead><tr><th>Date</th><th>Recipient</th><th>State</th><th>Category</th><th class="num">Amount</th><th>Description</th></tr></thead>
         <tbody id="camp-tbody-exps"></tbody></table>
       </div>
       <div id="camp-content-loans" style="display:none">
-        <table class="cp-table"><thead><tr><th>Date</th><th>Lender</th><th>State</th><th>Parish</th><th class="num">Rate %</th><th class="num">Amount</th></tr></thead>
+        <table class="cp-table m-cards"><thead><tr><th>Date</th><th>Lender</th><th>State</th><th>Parish</th><th class="num">Rate %</th><th class="num">Amount</th></tr></thead>
         <tbody id="camp-tbody-loans"></tbody></table>
       </div>
       <!-- Career tab — multi-cycle financials + race history -->
@@ -8045,7 +8234,7 @@ function _ovOpenElection(year) {
     </div>
     <div class="cp-details" id="cp-details"></div>
     <div class="cp-table-wrap">
-      <table class="cp-table">
+      <table class="cp-table m-cards">
         <thead>
           <tr>
             <th>Date</th>

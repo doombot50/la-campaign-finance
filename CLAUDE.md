@@ -38,6 +38,7 @@ python3 build_static_api.py          # static twins of /api/search, races, overv
 python3 test_static_parity.py        # gate: static artifacts == live API (runs nightly before upload)
 node test_static_client_parity.mjs   # gate: shipped static_api.js == live API end-to-end
 python3 fetch_historical_data.py     # seed .la_cache/ with 4-year historical bundles (one-time setup)
+python3 build_pwa_icons.py           # regenerate committed PWA icons (only if the design changes)
 ```
 
 COH scraper (requires `pip install pdfplumber`):
