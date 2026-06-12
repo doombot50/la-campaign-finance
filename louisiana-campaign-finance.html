@@ -717,6 +717,16 @@
   /* ── Section tabs ─────────────────────────────────────────── */
   .section-tabs { display:flex; gap:0; background:var(--card); border-bottom:2px solid var(--border); padding:0 24px; border-top:1px solid var(--border); overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
   .section-tabs::-webkit-scrollbar { display:none; }
+  /* Progressive-load strip: progress lives where attention is (under the
+     tabs, above the content), not in the bottom status bar. */
+  #load-strip { position:relative; background:var(--card); border-bottom:1px solid var(--border);
+                padding:5px 24px 4px; font-size:11px; color:var(--muted); overflow:hidden; }
+  #load-strip-bar { position:absolute; left:0; bottom:0; height:2px; background:var(--gold);
+                    width:0%; transition:width .3s ease; }
+  #load-strip-bar.indet { width:100%;
+                          background:linear-gradient(90deg, transparent, var(--gold), transparent);
+                          animation: loadstrip-slide 1.2s linear infinite; }
+  @keyframes loadstrip-slide { from { transform:translateX(-100%); } to { transform:translateX(100%); } }
   .section-tab { padding:11px 28px; background:none; border:none; border-bottom:3px solid transparent; margin-bottom:-2px; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; transition:color .15s,border-color .15s; letter-spacing:.01em; flex-shrink:0; white-space:nowrap; }
   .section-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
   .section-tab:hover:not(.active) { color:var(--text); }
@@ -1238,6 +1248,10 @@
 </div><!-- /controls-bar -->
 
 <!-- SECTION TABS -->
+<div id="load-strip" style="display:none" role="status">
+  <div id="load-strip-bar" aria-hidden="true"></div>
+  <span id="load-strip-text"></span>
+</div>
 <div class="section-tabs" role="tablist" aria-label="Dashboard sections">
   <button class="section-tab active" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview-view" onclick="switchTab('overview')">Overview</button>
   <button class="section-tab" id="tab-contributions" role="tab" aria-selected="false" tabindex="-1" aria-controls="contributions-view" onclick="switchTab('contributions')">Money</button>
@@ -2466,6 +2480,32 @@ async function loadData() {
   }
 }
 
+// Top-of-page loading strip: progress lives where attention is. The bar
+// fills against the previous session's record count for this cycle when we
+// have one (saved cycle stats); otherwise it shows an indeterminate sweep.
+// The live-region text updates are throttled so screen readers aren't
+// flooded by the per-chunk counter.
+let _stripAnnounce = 0;
+function _loadStrip(show, text, frac, force) {
+  const el = document.getElementById('load-strip');
+  if (!el) return;
+  el.style.display = show ? '' : 'none';
+  if (!show) return;
+  const now = performance.now();
+  if (force || now - _stripAnnounce > 1500) {
+    _stripAnnounce = now;
+    document.getElementById('load-strip-text').textContent = text;
+  }
+  const bar = document.getElementById('load-strip-bar');
+  if (frac != null && isFinite(frac) && frac > 0) {
+    bar.classList.remove('indet');
+    bar.style.width = Math.min(99, Math.round(frac * 100)) + '%';
+  } else {
+    bar.classList.add('indet');
+    bar.style.width = '100%';
+  }
+}
+
 async function fetchLAEthicsLive(cycle) {
   const cacheKey = `live_${cycle}`;
   const cached = await idbGet(cacheKey);
@@ -2495,6 +2535,8 @@ async function fetchLAEthicsLive(cycle) {
         const elapsed = attempt * (POLL_MS / 1000);
         document.getElementById('la-status').textContent =
           `Downloading data from ethics.la.gov… (${elapsed}s elapsed — this happens once)`;
+        _loadStrip(true, `Preparing ${_cyclePeriodLabel(cycle)} data on the server… ` +
+          `${elapsed}s elapsed — this happens once per cycle`, null, true);
         if (attempt < MAX_POLLS) {
           await new Promise(r => setTimeout(r, POLL_MS));
           continue;
@@ -2509,6 +2551,7 @@ async function fetchLAEthicsLive(cycle) {
       // instead of after the full payload. Partial paints are flagged so
       // cycle-delta stats are never saved from incomplete data.
       laEthicsData = [];
+      const _expected = (typeof getCycleStats === 'function' && getCycleStats(cycle)?.count) || null;
       const reader  = resp.body.getReader();
       const decoder = new TextDecoder();
       let buf = '', lastTick = 0;
@@ -2532,8 +2575,11 @@ async function fetchLAEthicsLive(cycle) {
         const now = performance.now();
         if (now - lastTick > 300) {
           lastTick = now;
+          const n = laEthicsData.length.toLocaleString();
           document.getElementById('la-status').textContent =
-            `Loading… ${laEthicsData.length.toLocaleString()} records so far`;
+            `Loading… ${n} records so far`;
+          _loadStrip(true, `Loading ${_cyclePeriodLabel(cycle)} contributions… ${n} records so far`,
+                     _expected ? laEthicsData.length / _expected : null);
         }
         if (renderIdx < PARTIAL_RENDER_AT.length &&
             laEthicsData.length >= PARTIAL_RENDER_AT[renderIdx]) {
@@ -2546,6 +2592,7 @@ async function fetchLAEthicsLive(cycle) {
       idbSet(cacheKey, laEthicsData);   // persist (fire-and-forget)
       document.getElementById('la-status').textContent =
         `${laEthicsData.length.toLocaleString()} LA Ethics records`;
+      _loadStrip(false);
       return;
 
     } catch(err) {
@@ -2555,11 +2602,15 @@ async function fetchLAEthicsLive(cycle) {
         const delay = 2000 * Math.pow(2, retries - 1);
         document.getElementById('la-status').textContent =
           `Connection hiccup — retrying (${retries}/${MAX_RETRIES})…`;
+        _loadStrip(true, `Connection hiccup — retrying (${retries}/${MAX_RETRIES})…`, null, true);
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
       document.getElementById('la-status').textContent =
         `Error loading data: ${err.message}`;
+      _loadStrip(true, `⚠ Could not load data: ${err.message} — reload the page to retry`, null, true);
+      document.getElementById('load-strip-bar').classList.remove('indet');
+      document.getElementById('load-strip-bar').style.width = '0%';
       return;
     }
   }
