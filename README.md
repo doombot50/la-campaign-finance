@@ -146,6 +146,8 @@ the underlying source data changes meaningfully.
 | `build_politician_lookup.py` | `la_politicians_lookup.json` | when party / bio data needs refresh |
 | `fetch_ethics_coh.py` | `ethics_coh_cache.json` (+ `.ethics_pdf_cache/` PDFs) | to add/refresh certified COH anchors |
 | `retag_caches.py` | re-tags existing `.la_cache/` records | after a server-side parser change |
+| `build_static_api.py` | `.la_cache/la_{search_index,races,overview,industry_breakdown}.json.gz` | nightly (workflow); static twins of the read-only API payloads, built from the same functions the endpoints call |
+| `test_static_parity.py` | — | nightly gate: asserts the static artifacts match the live API before upload |
 
 ### Running the COH scraper
 

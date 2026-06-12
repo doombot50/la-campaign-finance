@@ -7075,15 +7075,15 @@ async function toggleRaceInd(btn, filerNum, office, cycle) {
     const res = await fetch(`${API_BASE}/api/industry-breakdown${qs}`);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    const industries = data.industries || [];
+    const industries = data.breakdown || [];
     const top = industries.slice(0, 8);
-    const maxAmt = top[0] ? top[0].amount : 1;
+    const maxAmt = top[0] ? top[0].total : 1;
     if (!top.length) { panel.innerHTML = '<span style="font-size:11px;color:var(--muted)">No industry data</span>'; return; }
     panel.innerHTML = '<div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Industry Breakdown</div>' +
       top.map(ind => {
-        const pct = maxAmt > 0 ? (ind.amount / maxAmt * 100).toFixed(0) : 0;
+        const pct = maxAmt > 0 ? (ind.total / maxAmt * 100).toFixed(0) : 0;
         return `<div class="race-ind-bar-wrap">
-          <div class="race-ind-label"><span>${ind.industry}</span><span>${fmtRaisedShort(ind.amount)}</span></div>
+          <div class="race-ind-label"><span>${ind.industry}</span><span>${fmtRaisedShort(ind.total)}</span></div>
           <div class="race-ind-bar" style="width:${pct}%"></div>
         </div>`;
       }).join('');
