@@ -477,6 +477,7 @@ def build_races_payload(office_filter='major', year_filter=''):
                 coh_ending  = coh_entry.get('ending_coh')  if coh_entry else None
                 coh_year    = coh_entry.get('report_year') if coh_entry else None
                 coh_pdf_url = coh_entry.get('pdf_url')     if coh_entry else None
+                coh_report_id = coh_entry.get('report_id') if coh_entry else None
 
                 races_by_key[key]['candidates'].append({
                     'name':         cand_name,
@@ -490,6 +491,7 @@ def build_races_payload(office_filter='major', year_filter=''):
                     'coh_ending':   coh_ending,
                     'coh_year':     coh_year,
                     'coh_pdf_url':  coh_pdf_url,
+                    'coh_report_id': coh_report_id,
                 })
 
     race_list = sorted(races_by_key.values(),

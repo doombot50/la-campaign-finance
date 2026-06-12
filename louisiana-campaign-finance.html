@@ -5455,6 +5455,8 @@ function renderCompare() {
       atSpent: fin.total_spent || 0,
       cycles: Object.keys(fin.cycles || {}).length,
       coh: cd?.ethics_coh?.ending_coh,
+      cohSrc: _cohSourceUrl(cd?.ethics_coh),
+      cohYear: cd?.ethics_coh?.report_year || '',
       monthly: fin.monthly, loadedTx: { c, e, l },
     };
   });
@@ -5481,7 +5483,13 @@ function renderCompare() {
     const raceHtml = s.lastRace
       ? `<span class="${s.lastRace.won ? 'cmp-win' : 'cmp-loss'}">${s.lastRace.won ? '✓ Won' : '✗ Lost'} ${s.lastRace.year || ''}</span>` : '';
     const cohRow = (s.coh != null)
-      ? row('Certified Cash on Hand', fmt(s.coh), isLead(s.coh, L.coh))
+      ? row('Certified Cash on Hand',
+            s.cohSrc
+              ? `<a href="${escHtml(s.cohSrc)}" target="_blank" rel="noopener noreferrer" style="color:inherit" ` +
+                `title="Certified ${s.cohYear} annual filing — view the official source">${fmt(s.coh)} ` +
+                `<span style="font-size:9px;color:var(--muted)">↗</span></a>`
+              : fmt(s.coh),
+            isLead(s.coh, L.coh))
       : row('Certified Cash on Hand', dash, false);
     return `<div class="cmp-card">
       <div class="cmp-card-head">
@@ -6342,6 +6350,15 @@ function _cyclePeriodLabel(cycleYear) {
   return `${y - 1}–${String(ends).slice(2)} cycle`;
 }
 
+// Official source URL for a certified COH figure: prefer the LA Ethics
+// report viewer (renders in-browser and links the PDF), fall back to the
+// raw PDF. One rule, used everywhere a certified number is shown.
+function _cohSourceUrl(e) {
+  if (!e) return null;
+  if (e.report_id) return `https://www.ethics.la.gov/CampaignFinanceSearch/ShowEForm.aspx?ReportID=${e.report_id}`;
+  return e.pdf_url || null;
+}
+
 // Map an entity's party_source to a provenance mark + tooltip. The mark
 // distinguishes official records (✓) from heuristic name matches (~).
 function _partyProvenance(src) {
@@ -6542,9 +6559,10 @@ function renderCampCashFlow() {
     : (cohEntry && cohEntry.ending_coh != null && cohEntry.report_year
         ? [{ ending_coh: cohEntry.ending_coh, report_year: cohEntry.report_year }]
         : []);
-  let anchorData = null, anchorLabel = '';
+  let anchorData = null, anchorLabel = '', anchorUrls = null;
   if (cohReports.length) {
     const data = new Array(keys.length).fill(null);
+    const urls = new Array(keys.length).fill(null);
     let plotted = 0;
     cohReports.forEach(r => {
       const yr = String(r.report_year || '');
@@ -6554,13 +6572,15 @@ function renderCampCashFlow() {
       for (let i = keys.length - 1; i >= 0; i--) {
         if (keys[i] <= target) { idx = i; break; }
       }
-      if (idx >= 0) { data[idx] = r.ending_coh; plotted++; }
+      if (idx >= 0) { data[idx] = r.ending_coh; urls[idx] = _cohSourceUrl(r); plotted++; }
     });
     if (plotted) {
       anchorData = data;
+      anchorUrls = urls;
       anchorLabel = `Certified CoH (${plotted} filing${plotted > 1 ? 's' : ''})`;
     }
   }
+  const ANCHOR_DS = 2;   // datasets: raised(0), spent(1), certified anchors(2)
 
   // Left axis ranges on the certified anchors alone (hidden when none exist).
   const anchorVals = (anchorData || []).filter(v => v != null);
@@ -6597,6 +6617,20 @@ function renderCampCashFlow() {
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
+      // Anchor dots ARE filings: clicking one opens the certified report.
+      onClick: (e, els) => {
+        if (!anchorUrls) return;
+        for (const el of els) {
+          if (el.datasetIndex === ANCHOR_DS && anchorUrls[el.index]) {
+            window.open(anchorUrls[el.index], '_blank', 'noopener');
+            return;
+          }
+        }
+      },
+      onHover: (e, els) => {
+        const over = !!anchorUrls && els.some(el => el.datasetIndex === ANCHOR_DS && anchorUrls[el.index]);
+        if (e.native && e.native.target) e.native.target.style.cursor = over ? 'pointer' : '';
+      },
       plugins: {
         legend: { labels: { color: muted, boxWidth: 10, font: { size: 9 },
           filter: item => item.text !== 'Cumul. Raised' || cumMax > 0 } },
@@ -6604,7 +6638,10 @@ function renderCampCashFlow() {
           callbacks: {
             label: c => {
               const v = c.parsed.y;
-              return `${c.dataset.label}: ${fmtMoney(v)}`;
+              const base = `${c.dataset.label}: ${fmtMoney(v)}`;
+              return (c.datasetIndex === ANCHOR_DS && anchorUrls && anchorUrls[c.dataIndex])
+                ? base + ' — click dot to view the certified filing'
+                : base;
             }
           }
         }
@@ -6835,12 +6872,7 @@ async function fetchCareerData(name) {
         // FEC convention: a cash-on-hand figure is meaningless without its
         // as-of date — balances are end-of-period, not "now".
         cohLink.textContent = yr ? `as of 12/31/${yr} · certified` : 'certified filing';
-        // Prefer the LA Ethics public report viewer (ShowEForm.aspx) — it's the
-        // user-facing report page that links to the PDF and renders in-browser.
-        // Fall back to the raw PDF if we don't have a report_id.
-        cohLink.href = coh.report_id
-          ? `https://www.ethics.la.gov/CampaignFinanceSearch/ShowEForm.aspx?ReportID=${coh.report_id}`
-          : (coh.pdf_url || '#');
+        cohLink.href = _cohSourceUrl(coh) || '#';
         cohLink.target = '_blank';
         cohLink.rel    = 'noopener noreferrer';
         cohLink.style.pointerEvents = '';
@@ -7183,7 +7215,7 @@ function renderRaceCard(race) {
       : '';
     const cohCell = hasCoh
       ? (c.coh_ending != null
-          ? `<a href="${c.coh_pdf_url||'#'}" target="_blank" style="color:var(--certified);text-decoration:none;font-weight:600" title="Certified ${c.coh_year||''} annual filing">${fmtRaisedShort(c.coh_ending)}</a><span class="coh-certified">${c.coh_year||''}</span>`
+          ? `<a href="${_cohSourceUrl({report_id: c.coh_report_id, pdf_url: c.coh_pdf_url})||'#'}" target="_blank" rel="noopener noreferrer" style="color:var(--certified);text-decoration:none;font-weight:600" title="Certified ${c.coh_year||''} annual filing — view the official source">${fmtRaisedShort(c.coh_ending)}</a><span class="coh-certified">${c.coh_year||''}</span>`
           : `<span style="color:var(--muted)">—</span>`)
       : '';
     return `<tr style="${rowBg}">
