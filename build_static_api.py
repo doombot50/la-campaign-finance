@@ -116,10 +116,11 @@ def main():
         **srv.build_overview_payload(),
     })
 
+    filers = build_industry_dump()   # loads the donor-industry table as a side effect
     _write('la_industry_breakdown.json.gz', {
         'built_at': built_at,
         'has_industry_data': bool(srv._DONOR_IND),
-        'filers': build_industry_dump(),
+        'filers': filers,
     })
 
     print('Done.')

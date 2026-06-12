@@ -1957,6 +1957,7 @@
      the app script below depends on L and Chart, so order is preserved. -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="static_api.js"></script>
 <script>
 // ============================================================
 // CONSTANTS & DATA
@@ -2043,6 +2044,37 @@ let laEthicsData = [];
 // When served from the Python server itself, use relative URLs.
 // When opened as a local file://, fall back to explicit localhost.
 const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8765' : '';
+// Server-less mode: on GitHub Pages (or ?static=1 against the local server,
+// whose /data/ routes emulate Pages) every /api/* read is answered by
+// StaticAPI from the nightly artifacts instead of a server.
+const STATIC_MODE = /\.github\.io$/.test(window.location.hostname) ||
+                    new URLSearchParams(window.location.search).has('static');
+
+// fetch()-shaped router: call sites keep their resp.ok / resp.json() shape.
+async function apiFetch(pathAndQuery) {
+  if (!STATIC_MODE) return fetch(`${API_BASE}${pathAndQuery}`);
+  const [path, qs] = pathAndQuery.split('?');
+  const p = new URLSearchParams(qs || '');
+  try {
+    let data;
+    switch (path) {
+      case '/api/search':             data = await StaticAPI.search(p.get('q') || ''); break;
+      case '/api/overview':           data = await StaticAPI.overview(); break;
+      case '/api/insights':           data = await StaticAPI.insights(); break;
+      case '/api/election-results':   data = await StaticAPI.electionResults(); break;
+      case '/api/races':              data = await StaticAPI.races(p.get('office'), p.get('year')); break;
+      case '/api/industry-breakdown': data = await StaticAPI.industryBreakdown(p.get('filer'), p.get('cycle') || ''); break;
+      case '/api/candidate-history':  data = await StaticAPI.candidateHistory(p.get('name') || ''); break;
+      case '/api/coh':                data = await StaticAPI.coh(p.get('name') || ''); break;
+      case '/api/entity':             data = await StaticAPI.entity({ name: p.get('name'), filer: p.get('filer') }); break;
+      default: return { ok: false, status: 404, json: async () => ({}) };
+    }
+    return { ok: true, status: 200, json: async () => data };
+  } catch (e) {
+    console.warn('StaticAPI error for', pathAndQuery, e);
+    return { ok: false, status: 0, json: async () => ({}) };
+  }
+}
 let proxyAvailable = false;
 let currentPage = 1;
 let PAGE_SIZE = parseInt(localStorage.getItem('pref_pageSize') || '20');
@@ -2512,6 +2544,51 @@ async function fetchLAEthicsLive(cycle) {
   if (cached) {
     laEthicsData = cached;
     document.getElementById('la-status').textContent = `${laEthicsData.length.toLocaleString()} LA Ethics records (cached)`;
+    return;
+  }
+
+  if (STATIC_MODE) {
+    // Server-less: stream the per-year artifacts through the same progressive
+    // ingestion as the live path. Files always exist (published nightly), so
+    // there is no 202 wait state.
+    laEthicsData = [];
+    const _expected = (typeof getCycleStats === 'function' && getCycleStats(cycle)?.count) || null;
+    let lastTick = 0;
+    const PARTIAL_RENDER_AT = [15000, 60000];
+    let renderIdx = 0;
+    try {
+      for await (const ln of StaticAPI.streamRecordLines('contributions', cycle)) {
+        try {
+          const d = JSON.parse(ln);
+          if (!d.donorType) d.donorType = detectDonorType(d.contributor);
+          laEthicsData.push(d);
+        } catch (e) { /* torn line */ }
+        if ((laEthicsData.length & 1023) === 0) {
+          const now = performance.now();
+          if (now - lastTick > 300) {
+            lastTick = now;
+            const n = laEthicsData.length.toLocaleString();
+            document.getElementById('la-status').textContent = `Loading… ${n} records so far`;
+            _loadStrip(true, `Loading ${_cyclePeriodLabel(cycle)} contributions… ${n} records so far`,
+                       _expected ? laEthicsData.length / _expected : null);
+          }
+          if (renderIdx < PARTIAL_RENDER_AT.length &&
+              laEthicsData.length >= PARTIAL_RENDER_AT[renderIdx]) {
+            renderIdx++;
+            _partialLoad = true;
+            try { mergeAndRender(); } finally { _partialLoad = false; }
+          }
+        }
+      }
+      idbSet(cacheKey, laEthicsData);   // persist (fire-and-forget)
+      document.getElementById('la-status').textContent =
+        `${laEthicsData.length.toLocaleString()} LA Ethics records`;
+      _loadStrip(false);
+    } catch (err) {
+      console.warn('Static data load error:', err);
+      document.getElementById('la-status').textContent = `Error loading data: ${err.message}`;
+      _loadStrip(true, `⚠ Could not load data: ${err.message} — reload the page to retry`, null, true);
+    }
     return;
   }
 
@@ -4234,6 +4311,34 @@ async function loadExpData() {
     return;
   }
 
+  // Shared by the live poll and the static path so behavior can't diverge.
+  const applyExpData = (raw) => {
+    expData = raw;
+    // Tag each record with category
+    expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
+    idbSet(expCacheKey, expData);   // persist (fire-and-forget)
+    document.getElementById('exp-loading-msg').style.display = 'none';
+    populateExpCampaignDropdown();
+    renderExpAll();
+    // Refresh open campaign profile modal
+    if (document.getElementById('camp-overlay').classList.contains('open')) {
+      _campExps = expData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _refreshCampStats();
+      if (_campTab === 'exps') campSwitchTab('exps');
+    }
+  };
+
+  if (STATIC_MODE) {
+    try {
+      applyExpData(await StaticAPI.records('expenditures', cycle));
+    } catch (e) {
+      console.error('Expenditure static load error:', e);
+      document.getElementById('exp-loading-msg').textContent =
+        'Could not load expenditure data — reload the page to retry.';
+    }
+    return;
+  }
+
   // Transient failures (free-tier cold starts, proxy 502s, network blips) are
   // retried with backoff instead of abandoning the poll and leaving spinners
   // stuck on "Loading…" forever.
@@ -4249,19 +4354,7 @@ async function loadExpData() {
       }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       retries = 0;
-      expData = await r.json();
-      // Tag each record with category
-      expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
-      idbSet(expCacheKey, expData);   // persist (fire-and-forget)
-      document.getElementById('exp-loading-msg').style.display = 'none';
-      populateExpCampaignDropdown();
-      renderExpAll();
-      // Refresh open campaign profile modal
-      if (document.getElementById('camp-overlay').classList.contains('open')) {
-        _campExps = expData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
-        _refreshCampStats();
-        if (_campTab === 'exps') campSwitchTab('exps');
-      }
+      applyExpData(await r.json());
     } catch(e) {
       console.error('Expenditure fetch error:', e);
       if (retries < MAX_RETRIES) {
@@ -4754,6 +4847,39 @@ async function loadLoanData() {
     return;
   }
 
+  // Shared by the live poll and the static path so behavior can't diverge.
+  const applyLoanData = (raw) => {
+    loanData = raw.map(d => {
+      // detect self-loan: lender name closely matches candidate name
+      const lender = (d.contributor || '').toUpperCase();
+      const cand   = (d.candidate   || '').toUpperCase();
+      const parts  = cand.split(' ');
+      d._isSelf = parts.some(p => p.length > 2 && lender.includes(p));
+      return d;
+    });
+    idbSet(loanCacheKey, loanData);   // persist (fire-and-forget)
+    document.getElementById('loan-loading-msg').style.display = 'none';
+    populateLoanCampaignDropdown();
+    renderLoanAll();
+    // Refresh open campaign profile modal
+    if (document.getElementById('camp-overlay').classList.contains('open')) {
+      _campLoans = loanData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _refreshCampStats();
+      if (_campTab === 'loans') campSwitchTab('loans');
+    }
+  };
+
+  if (STATIC_MODE) {
+    try {
+      applyLoanData(await StaticAPI.records('loans', cycle));
+    } catch (e) {
+      console.error('Loan static load error:', e);
+      document.getElementById('loan-loading-msg').textContent =
+        'Could not load loan data — reload the page to retry.';
+    }
+    return;
+  }
+
   // Same retry-with-backoff as loadExpData: don't let one cold-start 502
   // strand the loans tab on a dead spinner.
   let retries = 0;
@@ -4765,25 +4891,7 @@ async function loadLoanData() {
       if (r.status === 202) { setTimeout(poll, 3000); return; }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       retries = 0;
-      const raw = await r.json();
-      loanData = raw.map(d => {
-        // detect self-loan: lender name closely matches candidate name
-        const lender = (d.contributor || '').toUpperCase();
-        const cand   = (d.candidate   || '').toUpperCase();
-        const parts  = cand.split(' ');
-        d._isSelf = parts.some(p => p.length > 2 && lender.includes(p));
-        return d;
-      });
-      idbSet(loanCacheKey, loanData);   // persist (fire-and-forget)
-      document.getElementById('loan-loading-msg').style.display = 'none';
-      populateLoanCampaignDropdown();
-      renderLoanAll();
-      // Refresh open campaign profile modal
-      if (document.getElementById('camp-overlay').classList.contains('open')) {
-        _campLoans = loanData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
-        _refreshCampStats();
-        if (_campTab === 'loans') campSwitchTab('loans');
-      }
+      applyLoanData(await r.json());
     } catch (e) {
       console.error('Loan fetch error:', e);
       if (retries < MAX_RETRIES) {
@@ -5210,7 +5318,7 @@ async function _fetchCompareCareer(name) {
   if (_compareCareer[name] && _compareCareer[name] !== 'error') return;
   _compareCareer[name] = 'loading';
   try {
-    const r = await fetch(`${API_BASE}/api/candidate-history?name=${encodeURIComponent(name)}`);
+    const r = await apiFetch(`/api/candidate-history?name=${encodeURIComponent(name)}`);
     _compareCareer[name] = r.ok ? await r.json() : 'error';
   } catch (e) { _compareCareer[name] = 'error'; }
   if (_currentTab() === 'compare') renderCompare();
@@ -5962,7 +6070,14 @@ let _overviewData = null;
 (async function init() {
   document.getElementById('la-status').textContent = 'No data loaded';
 
-  if (API_BASE === '') {
+  if (STATIC_MODE) {
+    // Server-less: all reads come from the nightly static artifacts.
+    proxyAvailable = true;
+    document.getElementById('proxy-banner').style.display = 'none';
+    const badge = document.getElementById('proxy-live-badge');
+    badge.style.display = 'inline-flex';
+    badge.title = 'Server-less mode: data served from nightly-published static files';
+  } else if (API_BASE === '') {
     // Page is being served directly by the Python server — proxy is always available.
     proxyAvailable = true;
     document.getElementById('proxy-banner').style.display = 'none';
@@ -6002,7 +6117,7 @@ let _overviewData = null;
 
   // Global data-freshness stamp (every view, not just Overview) — a number is
   // only citable if the reader knows how current it is.
-  fetch(`${API_BASE}/api/insights`).then(r => r.ok ? r.json() : null).then(ins => {
+  apiFetch(`/api/insights`).then(r => r.ok ? r.json() : null).then(ins => {
     if (ins && ins.built_at) {
       const dt = new Date(ins.built_at);
       if (!isNaN(dt)) {
@@ -6087,7 +6202,7 @@ let _electionResultsLoaded = false;
 async function loadElectionResults() {
   if (_electionResultsLoaded) return;
   try {
-    const resp = await fetch(`${API_BASE}/api/election-results`);
+    const resp = await apiFetch(`/api/election-results`);
     if (resp.ok) electionResults = await resp.json();
   } catch (e) { /* offline / not built — badges simply won't show */ }
   _electionResultsLoaded = true;
@@ -6621,7 +6736,7 @@ async function fetchCareerData(name) {
   if (_cohEl) { _cohEl.textContent = '—'; _cohEl.style.color = 'var(--muted)'; }
   if (_cohLk) { _cohLk.textContent = ''; _cohLk.removeAttribute('href'); _cohLk.title = ''; }
   try {
-    const r = await fetch(`${API_BASE}/api/candidate-history?name=${encodeURIComponent(name)}`);
+    const r = await apiFetch(`/api/candidate-history?name=${encodeURIComponent(name)}`);
     if (r.ok) {
       _careerData = await r.json();
       // Populate all-time career totals strip
@@ -6979,7 +7094,7 @@ async function loadRaces(force) {
 
   try {
     const qs = `?office=${encodeURIComponent(officeFilter)}&year=${encodeURIComponent(yearFilter)}`;
-    const res = await fetch(`${API_BASE}/api/races${qs}`);
+    const res = await apiFetch(`/api/races${qs}`);
     if (!res.ok) throw new Error('Server error ' + res.status);
     _racesData = await res.json();
 
@@ -7072,7 +7187,7 @@ async function toggleRaceInd(btn, filerNum, office, cycle) {
 
   try {
     const qs = `?filer=${encodeURIComponent(filerNum)}&cycle=${encodeURIComponent(cycle)}`;
-    const res = await fetch(`${API_BASE}/api/industry-breakdown${qs}`);
+    const res = await apiFetch(`/api/industry-breakdown${qs}`);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const industries = data.breakdown || [];
@@ -7414,7 +7529,7 @@ async function _doGlobalSearch(q) {
     return;
   }
   try {
-    const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q.trim())}`);
+    const res = await apiFetch(`/api/search?q=${encodeURIComponent(q.trim())}`);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     _gsResults = data.results || [];
@@ -7557,8 +7672,8 @@ async function loadOverview() {
   try {
     // Insights are optional enrichment — fetch in parallel, tolerate absence
     const [res, insRes] = await Promise.all([
-      fetch(`${API_BASE}/api/overview`),
-      fetch(`${API_BASE}/api/insights`).catch(() => null),
+      apiFetch(`/api/overview`),
+      apiFetch(`/api/insights`).catch(() => null),
     ]);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     _overviewData = await res.json();

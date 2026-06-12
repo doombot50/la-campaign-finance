@@ -128,6 +128,8 @@ one filer ID — for those, the chart over-rolls-up.
 | `la_politicians_lookup.json` | party + bio enrichment for known politicians |
 | `la_donor_industries.json` | donor → industry classification |
 | `ethics_coh_cache.json` | Certified Cash-on-Hand from F102 Annual reports (scraped per filer; multi-year `reports` list) |
+| `static_api.js` | Server-less data layer: mirrors every read-only `/api/*` endpoint over the nightly static artifacts. Active on GitHub Pages or with `?static=1` against the local server |
+| `test_static_parity.py` / `test_static_client_parity.mjs` | Nightly parity gates: static artifacts == live API, and the shipped JS data layer == live API, asserted before every upload |
 | `.ethics_pdf_cache/` | Local PDF cache for the COH scraper |
 
 ## Build & maintenance scripts

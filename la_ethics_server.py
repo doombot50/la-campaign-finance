@@ -1739,6 +1739,52 @@ class Handler(BaseHTTPRequestHandler):
             self._json(build_overview_payload())
             return
 
+        # ── /data/<name> — GitHub Pages emulation for STATIC_MODE testing ────
+        # Serves the nightly artifacts exactly as Pages will: .gz files as raw
+        # gzip bytes with NO Content-Encoding (the client decompresses via
+        # DecompressionStream), .json as plain JSON. Prefers the fresh
+        # .la_cache/ copy, falls back to the committed repo-root file.
+        # test_static_client_parity.mjs runs the shipped static_api.js against
+        # these routes and asserts equality with the live /api/* endpoints.
+        if parsed.path.startswith('/data/'):
+            name = os.path.basename(parsed.path)
+            if not re.fullmatch(r'[A-Za-z0-9_.\-]+\.(json|json\.gz)', name):
+                self._empty(404); return
+            fpath = None
+            for base in (CACHE_DIR, BASE_DIR):
+                cand = os.path.join(base, name)
+                if os.path.exists(cand):
+                    fpath = cand
+                    break
+            if not fpath:
+                self._empty(404); return
+            with open(fpath, 'rb') as fh:
+                body = fh.read()
+            self.send_response(200)
+            self._cors_headers()
+            self.send_header('Content-Type',
+                             'application/gzip' if name.endswith('.gz') else 'application/json')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        # The static data layer itself (loaded by the dashboard's script tag)
+        if parsed.path == '/static_api.js':
+            fpath = os.path.join(BASE_DIR, 'static_api.js')
+            if os.path.exists(fpath):
+                with open(fpath, 'rb') as fh:
+                    body = fh.read()
+                self.send_response(200)
+                self._cors_headers()
+                self.send_header('Content-Type', 'application/javascript; charset=utf-8')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self._empty(404)
+            return
+
         # Static data files — serve gzip-encoded JSON directly so the browser can
         # load them client-side without going through the candidate-history API.
         _STATIC_DATA = {
@@ -1925,6 +1971,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+
+    def _empty(self, status):
+        # Keep-alive safe: a status with no Content-Length leaves HTTP/1.1
+        # clients waiting for a body that never comes.
+        self.send_response(status)
+        self._cors_headers()
+        self.send_header('Content-Length', '0')
+        self.end_headers()
 
     def _json(self, data):
         # Compact separators (indent=2 inflated every response 20-40%) and

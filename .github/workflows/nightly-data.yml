@@ -102,6 +102,12 @@ jobs:
         # run BEFORE upload, so a drifted artifact can never ship.
         run: python test_static_parity.py
 
+      - name: Static client parity gate
+        # Runs the SHIPPED static_api.js in Node against the live server and
+        # asserts the client-side joins (candidate-history, search ranking,
+        # races filtering, record streams) reproduce the API exactly.
+        run: node test_static_client_parity.mjs
+
       - name: Upload cache snapshots to release
         run: gh release upload data-cache .la_cache/*.json.gz --clobber
 
