@@ -207,6 +207,14 @@
     text-decoration: none; white-space: nowrap; transition: all 0.2s;
   }
   .verify-link:hover { background: rgba(200,169,81,0.1); }
+  /* Year picker that sits left of the Verify pill when a filer has filed more
+     than one certified annual report. Defaults to the latest year. */
+  .verify-year {
+    background: var(--surface); color: var(--gold); border: 1px solid var(--gold);
+    border-radius: 6px; padding: 4px 6px; font-size: 12px; font-weight: 600;
+    cursor: pointer; max-width: 120px;
+  }
+  .verify-year:focus { outline: none; border-color: var(--gold); }
   @media (max-width: 560px) { .header-provenance .prov-cadence { display: none; } }
 
   /* PROXY BANNER */
@@ -883,6 +891,7 @@
     body.printing-profile .cp-close,
     body.printing-profile .camp-close-btn,
     body.printing-profile .verify-link,
+    body.printing-profile .verify-year,
     body.printing-profile [onclick="closeCampaignProfile()"],
     body.printing-profile [onclick="printCampaignProfile()"],
     body.printing-profile [onclick*="exportCampaign"] { display:none !important; }
@@ -6508,6 +6517,7 @@ let _campName    = '';
 let _campFiler   = '';   // exact filer number when the profile was opened from a search result/entity
 let _campTab     = 'contribs';
 let _campContribs = [], _campExps = [], _campLoans = [];
+let _campCohReports = [];   // certified annual reports (newest first) for the verify picker
 
 // ============================================================
 // ELECTION RESULTS (win/loss badges)
@@ -6573,12 +6583,15 @@ function showCampaignProfile(name, openTab, filer) {
   // Reset the "Verify" link to the generic official search. fetchCareerData
   // upgrades it to a direct ShowEForm report link once a certified filing
   // (with its ReportID) is known — so it never lingers on the prior candidate.
+  _campCohReports = [];
   const _vl = document.getElementById('camp-verify-link');
   if (_vl) {
     _vl.href = LA_ETHICS_SEARCH_URL;
     _vl.textContent = 'Verify on ethics.la.gov ↗';
     _vl.title = "Verify against the official Louisiana Board of Ethics record — search this candidate's name on ethics.la.gov";
   }
+  const _vy = document.getElementById('camp-verify-year');
+  if (_vy) { _vy.style.display = 'none'; _vy.innerHTML = ''; }
   _refreshCampStats();
   // When opened from search/overview the current cycle's transactions usually
   // aren't loaded — default to the Career tab so all-cycle data shows. Callers
@@ -6624,6 +6637,56 @@ function _cohSourceUrl(e) {
   if (!e) return null;
   if (e.report_id) return `https://www.ethics.la.gov/CampaignFinanceSearch/ShowEForm.aspx?ReportID=${e.report_id}`;
   return e.pdf_url || null;
+}
+
+// Wire the header "Verify" control from a filer's certified COH entry.
+// One usable report → a direct link to it. Several → a year picker (newest
+// first, latest selected) that re-points the link. None → the generic search
+// fallback already set by showCampaignProfile is left in place.
+function _renderCampVerify(coh) {
+  const link = document.getElementById('camp-verify-link');
+  const sel  = document.getElementById('camp-verify-year');
+  if (!link || !sel) return;
+  // Reports that actually resolve to an official URL, newest year first.
+  const reports = ((coh && coh.reports) || [])
+    .map(r => Object.assign({}, r, { _url: _cohSourceUrl(r) }))
+    .filter(r => r._url)
+    .sort((a, b) => (b.report_year || 0) - (a.report_year || 0) ||
+                    String(b.date_filed || '').localeCompare(String(a.date_filed || '')));
+  // Static/serverless mode may omit the array — fall back to the flattened entry.
+  if (!reports.length) {
+    const u = _cohSourceUrl(coh);
+    if (u) reports.push(Object.assign({}, coh, { _url: u }));
+  }
+  _campCohReports = reports;
+  if (!reports.length) { sel.style.display = 'none'; sel.innerHTML = ''; return; }
+  if (reports.length > 1) {
+    sel.innerHTML = reports.map((r, i) =>
+      `<option value="${i}">${r.report_year || '—'} report</option>`).join('');
+    sel.selectedIndex = 0;          // default to the latest year
+    sel.style.display = '';
+  } else {
+    sel.style.display = 'none';
+    sel.innerHTML = '';
+  }
+  _applyCampVerify(0);
+}
+
+function _campVerifySelectYear() {
+  const sel = document.getElementById('camp-verify-year');
+  _applyCampVerify(sel ? (parseInt(sel.value) || 0) : 0);
+}
+
+function _applyCampVerify(i) {
+  const link = document.getElementById('camp-verify-link');
+  const r = _campCohReports[i];
+  if (!link || !r) return;
+  link.href = r._url;
+  link.textContent = `Verify: ${r.report_year || 'certified'} report ↗`;
+  link.title = `Open this filer's certified ${r.report_year || ''} year-end report ` +
+    `(${r.form_type || 'F102/F202'})${r.date_filed ? ' filed ' + r.date_filed : ''} on ethics.la.gov — ` +
+    `the official source for the Cash-on-Hand figure. Itemized contributions and expenditures come ` +
+    `from the Board of Ethics bulk data and aren't tied to a single report.`;
 }
 
 // Map an entity's party_source to a provenance mark + tooltip. The mark
@@ -7145,16 +7208,10 @@ async function fetchCareerData(name) {
         cohLink.rel    = 'noopener noreferrer';
         cohLink.style.pointerEvents = '';
         cohLink.title  = `Certified per LA Ethics annual filing${date ? ' filed ' + date : ''}. Click to view the official report.`;
-        // Upgrade the header "Verify" pill to a DIRECT link to this filer's
-        // certified report (ShowEForm) — the same F102/F202 filing the search
-        // results list. A real deep link beats the generic search page.
-        const _vl = document.getElementById('camp-verify-link');
-        const _repUrl = _cohSourceUrl(coh);
-        if (_vl && _repUrl) {
-          _vl.href = _repUrl;
-          _vl.textContent = 'Verify: certified report ↗';
-          _vl.title = `Open this filer's certified ${yr || ''} year-end report (F102/F202) on ethics.la.gov — the official source for the Cash-on-Hand figure. Itemized contributions and expenditures come from the Board of Ethics bulk data and aren't tied to a single report.`;
-        }
+        // Upgrade the header "Verify" control to a DIRECT link to this filer's
+        // certified report(s) (ShowEForm) — the same F102/F202 filings the
+        // committee search lists. Multiple years get a picker, latest first.
+        _renderCampVerify(coh);
       } else {
         cohEl.textContent = '—';
         cohEl.style.color = 'var(--muted)';
@@ -8232,6 +8289,7 @@ function _ovOpenElection(year) {
         <div id="camp-election" class="camp-election" style="display:none"></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+        <select id="camp-verify-year" class="verify-year" style="display:none" aria-label="Choose which certified report year to open" onchange="_campVerifySelectYear()"></select>
         <a class="verify-link" id="camp-verify-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener" title="Verify these figures against the official Louisiana Board of Ethics record — search this candidate's name on ethics.la.gov">Verify on ethics.la.gov ↗</a>
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="exportCampaignCSV()">⬇ CSV</button>
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="printCampaignProfile()" title="Print / Export PDF">Print</button>
