@@ -2244,7 +2244,7 @@ async function apiFetch(pathAndQuery) {
       case '/api/election-results':   data = await StaticAPI.electionResults(); break;
       case '/api/races':              data = await StaticAPI.races(p.get('office'), p.get('year')); break;
       case '/api/industry-breakdown': data = await StaticAPI.industryBreakdown(p.get('filer'), p.get('cycle') || ''); break;
-      case '/api/candidate-history':  data = await StaticAPI.candidateHistory(p.get('name') || ''); break;
+      case '/api/candidate-history':  data = await StaticAPI.candidateHistory(p.get('name') || '', p.get('filer') || ''); break;
       case '/api/coh':                data = await StaticAPI.coh(p.get('name') || ''); break;
       case '/api/entity':             data = await StaticAPI.entity({ name: p.get('name'), filer: p.get('filer') }); break;
       default: return { ok: false, status: 404, json: async () => ({}) };

@@ -86,6 +86,18 @@ try {
     check(`candidate-history ${name}`, !d, d);
   }
 
+  // candidate-history with an explicit filer number: must resolve to that one
+  // filer's career on both sides (the filer-keyed index), never a name merge.
+  {
+    const fn = '4919';
+    const ent = await getJSON(`/api/entity?filer=${fn}`);
+    const nm = (ent && ent.name) ? ent.name : 'X';
+    const live = await getJSON(`/api/candidate-history?name=${encodeURIComponent(nm)}&filer=${fn}`);
+    const mine = await S.candidateHistory(nm, fn);
+    const d = diff(live, mine, `ch[filer ${fn}]`);
+    check(`candidate-history filer=${fn}`, !d, d);
+  }
+
   // industry breakdown for sampled filers (cycle-specific, as the UI calls it)
   for (const [fn, cyc] of [['4919', '2020-2023'], ['4919', '2024-2027']]) {
     const d = diff(await getJSON(`/api/industry-breakdown?filer=${fn}&cycle=${cyc}`),
