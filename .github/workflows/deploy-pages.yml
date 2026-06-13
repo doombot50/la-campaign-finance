@@ -19,7 +19,7 @@ on:
   push:
     branches: [main]
   workflow_run:
-    workflows: ["Nightly data refresh"]
+    workflows: ["Nightly data refresh", "Re-scrape elections (parish-qualified)"]
     types: [completed]
 
 permissions:

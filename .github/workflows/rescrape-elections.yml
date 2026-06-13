@@ -1,0 +1,107 @@
+# One-off, manually-triggered full re-scrape of the SoS election portal.
+#
+# Why this exists: local race offices (Sheriff, Assessor, "School Board --
+# District N", council districts, ...) carry no parish in their SoS title, so
+# every parish's copy collapsed into one race. build_election_results.py now
+# qualifies them with the parish each per-parish file was scraped from
+# ("Vermilion Parish Sheriff"), but the qualification only applies to dates it
+# actually scrapes. The committed la_candidacies_raw.json.gz already discarded
+# the parish, and the scrape is incremental, so re-qualifying the full history
+# means deleting the raw cache and scraping every date fresh.
+#
+# That's a ~1-3 hour, ~22k-request job that doesn't belong on the nightly path,
+# so it lives here behind a manual Run-workflow button. On success it commits
+# the regenerated data to main, rebuilds the Races static artifact, and its
+# completion triggers the Pages deploy (see deploy-pages.yml's workflow_run).
+
+name: Re-scrape elections (parish-qualified)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rescrape-elections
+  cancel-in-progress: false
+
+jobs:
+  rescrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONUNBUFFERED: "1"   # live log lines, not minutes-late chunks
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Full re-scrape (delete raw cache to re-qualify all history)
+        # No raw cache => already_seen is empty => every election date is
+        # scraped fresh, so all local offices get parish-qualified. Rewrites
+        # both la_candidacies_raw.json.gz and la_election_results.json.
+        run: |
+          rm -f la_candidacies_raw.json.gz
+          python build_election_results.py
+
+      - name: Guard against a flaky / partial scrape
+        # A transient SoS failure makes fetch() return None and silently drops
+        # candidacies. Refuse to commit a regression: bail if the new dataset
+        # lost >5% of its rows, or if parish qualification didn't take effect.
+        run: |
+          python - <<'PY'
+          import gzip, json, io, subprocess, sys, collections
+          new = json.load(gzip.open('la_candidacies_raw.json.gz', 'rt'))
+          n_new = sum(len(v) for v in new.values())
+          old_bytes = subprocess.run(
+              ['git', 'show', 'HEAD:la_candidacies_raw.json.gz'],
+              capture_output=True).stdout
+          old = json.load(gzip.open(io.BytesIO(old_bytes), 'rt'))
+          n_old = sum(len(v) for v in old.values())
+          print(f'candidacies: old={n_old:,}  new={n_new:,}')
+          if n_new < 0.95 * n_old:
+              sys.exit(f'ABORT: candidacy count dropped >5% ({n_old:,} -> {n_new:,}); '
+                       'likely a flaky scrape — not committing.')
+          offs = collections.Counter(c['office'] for v in new.values() for c in v)
+          qual = sum(n for o, n in offs.items() if 'Parish Sheriff' in o)
+          print(f'parish-qualified Sheriff entries: {qual}')
+          if qual < 30:
+              sys.exit('ABORT: parish qualification did not take effect.')
+          print('OK — safe to commit.')
+          PY
+
+      - name: Commit regenerated election data to main
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add la_candidacies_raw.json.gz la_election_results.json
+          if git diff --cached --quiet; then
+            echo "No change to commit."; exit 0
+          fi
+          git commit -m "Re-scrape elections: parish-qualified local offices"
+          git pull --rebase --autostash origin main
+          git push
+
+      - name: Rebuild the Races static artifact + ship it to the data-cache release
+        # The Races tab serves the prebuilt la_races.json.gz from the data-cache
+        # release; profile race rows read la_candidacies_raw.json.gz directly.
+        # Rebuilding just the races twin needs only committed files (candidate
+        # index + candidacies + filer lookup + COH), not the heavy contribution
+        # cache. Best-effort: the data is already committed and the nightly job
+        # rebuilds this artifact regardless, so a hiccup here mustn't fail the run.
+        continue-on-error: true
+        run: |
+          mkdir -p .la_cache
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import build_static_api as bsa
+          built_at = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+          bsa._write('la_races.json.gz',
+                     {'built_at': built_at, **bsa.srv.build_races_payload('all', '')})
+          print('rebuilt la_races.json.gz')
+          PY
+          gh release upload data-cache .la_cache/la_races.json.gz --clobber
