@@ -184,6 +184,31 @@
   .btn-secondary:hover { background: rgba(200,169,81,0.1); }
   .btn-secondary.active { background: rgba(200,169,81,0.15); }
 
+  /* PROVENANCE — persistent "where the data comes from" affordance under the
+     header title, plus the matching "Verify on ethics.la.gov" links on every
+     profile. The whole trust promise of this dashboard is that any figure can
+     be traced back to the official Board of Ethics record. */
+  .header-provenance {
+    font-size: 11px; color: var(--muted); margin-top: 2px;
+    line-height: 1.3; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  }
+  .header-provenance .sep { color: var(--border); }
+  .source-link {
+    color: var(--gold); text-decoration: none; font-weight: 600;
+    border-bottom: 1px dotted rgba(200,169,81,0.5); white-space: nowrap;
+  }
+  .source-link:hover { border-bottom-style: solid; }
+  /* Verify pill on profiles — reads like btn-secondary but flags that it
+     leaves the app for the authoritative source. */
+  .verify-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: transparent; color: var(--gold); border: 1px solid var(--gold);
+    padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    text-decoration: none; white-space: nowrap; transition: all 0.2s;
+  }
+  .verify-link:hover { background: rgba(200,169,81,0.1); }
+  @media (max-width: 560px) { .header-provenance .prov-cadence { display: none; } }
+
   /* PROXY BANNER */
   #proxy-banner {
     display: none; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -857,6 +882,7 @@
     /* Hide modal controls that make no sense on paper */
     body.printing-profile .cp-close,
     body.printing-profile .camp-close-btn,
+    body.printing-profile .verify-link,
     body.printing-profile [onclick="closeCampaignProfile()"],
     body.printing-profile [onclick="printCampaignProfile()"],
     body.printing-profile [onclick*="exportCampaign"] { display:none !important; }
@@ -1222,8 +1248,13 @@
         <ellipse cx="48" cy="14.5" rx="9" ry="3.5" opacity="0.55"/>
       </svg>
     </div>
-    <div>
+    <div style="flex:1;min-width:0">
       <div class="header-title">Louisiana Campaign Finance Dashboard</div>
+      <div class="header-provenance">
+        <span>Source: <a class="source-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener" title="Open the official Louisiana Board of Ethics campaign finance search">Louisiana Board of Ethics ↗</a></span>
+        <span class="sep prov-cadence" aria-hidden="true">·</span>
+        <span class="prov-cadence">refreshed nightly from ethics.la.gov</span>
+      </div>
     </div>
     <div class="header-tools">
       <div class="global-search-wrap">
@@ -8177,6 +8208,7 @@ function _ovOpenElection(year) {
         <div id="camp-election" class="camp-election" style="display:none"></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+        <a class="verify-link" id="camp-verify-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener" title="Verify these figures against the official Louisiana Board of Ethics record — search this candidate's name on ethics.la.gov">Verify on ethics.la.gov ↗</a>
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="exportCampaignCSV()">⬇ CSV</button>
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="printCampaignProfile()" title="Print / Export PDF">Print</button>
         <button class="cp-close" onclick="closeCampaignProfile()" aria-label="Close campaign profile">✕</button>
@@ -8256,6 +8288,7 @@ function _ovOpenElection(year) {
         <div class="cp-meta" id="cp-meta"></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+        <a class="verify-link" id="cp-verify-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener" title="Verify these contributions against the official Louisiana Board of Ethics record — search this donor's name on ethics.la.gov">Verify on ethics.la.gov ↗</a>
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px;white-space:nowrap" onclick="exportContributorProfileCSV()">⬇ Export CSV</button>
         <button class="cp-close" onclick="closeContributorProfile()" aria-label="Close contributor profile">✕</button>
       </div>
