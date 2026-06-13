@@ -43,8 +43,10 @@ function diff(a, b, path = '$') {
 const getJSON = async (p) => (await fetch(`${API}${p}`)).json();
 
 // ── boot server ──────────────────────────────────────────────────────────────
+// LA_OFFLINE: serve the on-disk snapshot as-is (no prefetch / re-download), so
+// the live API can't drift from the static artifacts mid-comparison.
 const srv = spawn('python3', ['la_ethics_server.py'], {
-  env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore',
+  env: { ...process.env, PORT: String(PORT), LA_OFFLINE: '1' }, stdio: 'ignore',
 });
 try {
   let up = false;
