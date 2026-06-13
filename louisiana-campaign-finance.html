@@ -830,6 +830,13 @@
   .race-row { display:flex; align-items:flex-start; gap:12px; padding:8px 0;
     border-bottom:1px solid var(--border); font-size:13px; }
   .race-row:last-child { border-bottom:none; }
+  /* Career race rows link back to the full race (opponents) in the Races tab */
+  a.race-row { text-decoration:none; color:inherit; cursor:pointer;
+    border-radius:6px; transition:background .12s; padding-left:6px; padding-right:6px; margin:0 -6px; }
+  a.race-row:hover { background:rgba(200,169,81,.08); }
+  a.race-row .race-office::after { content:'›'; color:var(--gold); opacity:0;
+    margin-left:6px; font-weight:700; transition:opacity .12s; }
+  a.race-row:hover .race-office::after { opacity:1; }
   .race-year { font-size:11px; color:var(--muted); width:38px; flex-shrink:0; padding-top:2px; }
   .race-office { flex:1; color:var(--text); line-height:1.3; }
   .race-office-sub { font-size:11px; color:var(--muted); margin-top:1px; }
@@ -966,6 +973,17 @@
 
   /* ── Races view ────────────────────────────────────────────── */
   .race-highlight { outline: 2px solid var(--gold); outline-offset: 2px; transition: outline-color 0.6s; }
+  /* Races-tab grouping headers — year, then each election date within it */
+  .races-year-header {
+    font-size: 18px; font-weight: 700; color: var(--text);
+    margin: 22px 0 4px; padding-bottom: 4px;
+  }
+  .races-year-header:first-child { margin-top: 2px; }
+  .races-election-header {
+    font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--muted); margin: 14px 0 8px; padding-bottom: 5px;
+    border-bottom: 1px solid var(--border);
+  }
   .race-card {
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -2160,7 +2178,7 @@
             <option value="local">Local</option>
             <option value="all">All Offices</option>
           </select>
-          <select id="races-year-filter" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text)" onchange="loadRaces()">
+          <select id="races-year-filter" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text)" onchange="_renderRacesData(_racesData)">
             <option value="">All Years</option>
           </select>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)">
@@ -6561,9 +6579,31 @@ function _applyRoute() {
   } else if (m[1] === 'race') {
     const parts = m[2].split('/');
     const date = decodeURIComponent(parts[0] || ''), office = decodeURIComponent(parts.slice(1).join('/') || '');
-    if (_currentTab() !== 'races') switchTab('races');
-    _scrollToRace(date, office);
+    _openRace(date, office);
   }
+}
+
+// Open the Races tab focused on one specific race: widen the filters so the
+// target race is actually rendered (all offices, its own year), then scroll to
+// it. Used by race permalinks and the career-tab race rows.
+function _openRace(date, office) {
+  const yr = (date.split('/')[2] || '');
+  if (document.getElementById('camp-overlay').classList.contains('open')) closeCampaignProfile();
+  if (document.getElementById('cp-overlay').classList.contains('open'))   closeContributorProfile();
+  const offSel = document.getElementById('races-office-filter');
+  offSel.value = 'all';
+  if (_currentTab() !== 'races') switchTab('races');   // switchTab triggers loadRaces()
+  else loadRaces();
+  const yearSel = document.getElementById('races-year-filter');
+  let tries = 0;
+  (function focus() {
+    if (_racesData && (!yr || yearSel.querySelector(`option[value="${yr}"]`))) {
+      if (yr) { yearSel.value = yr; _renderRacesData(_racesData); }
+      _scrollToRace(date, office);
+    } else if (tries++ < 40) {
+      setTimeout(focus, 150);
+    }
+  })();
 }
 window.addEventListener('popstate', _applyRoute);
 window.addEventListener('hashchange', _applyRoute);
@@ -7471,7 +7511,14 @@ function renderCampCareer() {
     const pct = terminal.vote_pct != null ? `${terminal.vote_pct}%` : '';
     const via = hadRunoff && terminal.outcome !== 'Runoff'
       ? `<span style="font-size:10px;color:var(--muted);margin-left:6px;font-style:italic">via runoff</span>` : '';
-    return `<div class="race-row">
+    // Link back to the full race in the Races tab so you can see the opponents.
+    // Use the terminal step's exact date+office — it matches the race-card anchor.
+    const canLink = terminal.date && terminal.office;
+    const tag  = canLink ? 'a' : 'div';
+    const href = canLink
+      ? ` href="#/race/${encodeURIComponent(terminal.date)}/${encodeURIComponent(terminal.office)}" title="View this race and its candidates"`
+      : '';
+    return `<${tag} class="race-row"${href}>
       <div class="race-year">${g.yr}</div>
       <div class="race-office">
         <div>${escHtml(g.base)}</div>
@@ -7481,7 +7528,7 @@ function renderCampCareer() {
         <div><span class="wl-badge ${cls}">${label}</span>${via}</div>
         ${pct ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${pct}</div>` : ''}
       </div>
-    </div>`;
+    </${tag}>`;
   }).join('');
 }
 
@@ -7539,13 +7586,94 @@ function outcomeLabel(o) {
   return o;
 }
 
+// ── Office-importance ranking ─────────────────────────────────────────────────
+// Races within a single election are ordered by the *significance* of the
+// office (federal → statewide → boards → judicial → legislature → local →
+// ballot measures), and within an office tier by district number. This mirrors
+// how a ballot is laid out, rather than an arbitrary alphabetical/date order.
+function _raceDistrictNum(office) {
+  const o = (office || '').toUpperCase();
+  let m = o.match(/DISTRICT\s+(\d+)/) || o.match(/(\d+)(?:ST|ND|RD|TH)\b/) || o.match(/\bDIVISION\s+(\d+)/);
+  if (m) return parseInt(m[1], 10);
+  m = o.match(/DISTRICT\s+([A-Z])\b/);            // lettered seats (e.g. PSC "District E")
+  if (m) return m[1].charCodeAt(0) - 64;
+  return 9999;                                     // at-large / unnumbered sorts last in its tier
+}
+function _officeRank(office) {
+  const o = (office || '').toUpperCase();
+  const d = _raceDistrictNum(office);
+  // Ballot measures / propositions sink to the very bottom
+  if (/CONSTITUTIONAL AMENDMENT/.test(o))                          return [90, d];
+  if (/CHARTER/.test(o) && /(AMENDMENT|PROPOSITION|CHANGE)/.test(o)) return [91, d];
+  if (/PROPOSITION|MILLAGE|\bTAX\b|\bBOND\b|RENEWAL/.test(o))      return [92, d];
+  // Federal
+  if (/PRESIDENT/.test(o) && /UNITED STATES|U\.?\s*S\.?|ELECTOR|NOMINEE|PREFERENCE/.test(o)) return [1, d];
+  if (/U\.?\s*S\.?\s+SENAT|UNITED STATES SENAT/.test(o))           return [2, d];
+  if (/U\.?\s*S\.?\s+REP|UNITED STATES REP|CONGRESS/.test(o))      return [3, d];
+  // Statewide executive (constitutional officers)
+  if (/GOVERNOR/.test(o) && !/LT|LIEUTENANT/.test(o))              return [4, d];
+  if (/LIEUTENANT GOVERNOR|LT\.?\s*GOVERNOR/.test(o))              return [5, d];
+  if (/ATTORNEY GENERAL/.test(o))                                  return [6, d];
+  if (/SECRETARY OF STATE/.test(o))                                return [7, d];
+  if (/TREASURER/.test(o))                                         return [8, d];
+  if (/COMMISSIONER OF AGRICULTURE|AGRICULTURE AND FOREST/.test(o)) return [9, d];
+  if (/INSURANCE COMMISSIONER|COMMISSIONER OF INSURANCE/.test(o))  return [10, d];
+  if (/COMMISSIONER OF/.test(o))                                   return [11, d];
+  // Boards / commissions
+  if (/PUBLIC SERVICE|\bP\.?\s*S\.?\s*C\.?\b/.test(o))             return [12, d];
+  if (/\bBESE\b|ELEMENTARY AND SECONDARY/.test(o))                 return [13, d];
+  // Judicial
+  if (/SUPREME COURT/.test(o))                                     return [14, d];
+  if (/COURT OF APPEAL|APPEALS/.test(o))                           return [15, d];
+  if (/JUSTICE OF THE PEACE/.test(o))                              return [29, d];   // a minor local office, not a court
+  if (/DISTRICT (JUDGE|COURT)|\bJUDGE\b|\bJUSTICE\b/.test(o))      return [16, d];
+  // State legislature
+  if (/STATE SENATOR|STATE SENATE/.test(o))                        return [17, d];
+  if (/STATE REPRESENTATIVE|STATE HOUSE/.test(o))                  return [18, d];
+  // Local executives
+  if (/MAYOR-?\s*PRESIDENT|PARISH PRESIDENT/.test(o))              return [19, d];
+  if (/\bMAYOR\b/.test(o))                                         return [20, d];
+  if (/SHERIFF/.test(o))                                           return [21, d];
+  if (/DISTRICT ATTORNEY/.test(o))                                 return [22, d];
+  if (/CLERK OF (COURT|DISTRICT)/.test(o))                         return [23, d];
+  if (/ASSESSOR/.test(o))                                          return [24, d];
+  if (/CORONER/.test(o))                                           return [25, d];
+  if (/REGISTRAR/.test(o))                                         return [26, d];
+  if (/CHIEF OF POLICE/.test(o))                                   return [27, d];
+  if (/MARSHAL/.test(o))                                           return [28, d];
+  if (/CONSTABLE|JUSTICE OF THE PEACE/.test(o))                    return [29, d];
+  // Local legislative / boards
+  if (/COUNCIL|ALDERM[AE]N|POLICE JUR|SELECTMAN|TRUSTEE|COMMISSION/.test(o)) return [30, d];
+  if (/SCHOOL BOARD/.test(o))                                      return [31, d];
+  return [50, d];                                  // anything else, but above ballot measures
+}
+function _raceDateSortKey(date) {
+  const p = (date || '').split('/');
+  if (p.length !== 3) return '00000000';
+  return p[2] + p[0].padStart(2, '0') + p[1].padStart(2, '0');
+}
+function _electionDateLabel(date) {
+  const p = (date || '').split('/');
+  if (p.length !== 3) return date || '';
+  const months = ['January','February','March','April','May','June','July',
+                  'August','September','October','November','December'];
+  return `${months[parseInt(p[0],10)-1] || p[0]} ${parseInt(p[1],10)}, ${p[2]}`;
+}
+
 function _renderRacesData(data) {
   const body  = document.getElementById('races-body');
   const empty = document.getElementById('races-empty');
-  if (!data.races || !data.races.length) { empty.style.display = 'block'; body.innerHTML = ''; return; }
+  if (!data || !data.races || !data.races.length) { empty.style.display = 'block'; body.innerHTML = ''; return; }
 
-  // Sort candidates within each race by the active sort key
-  const sortedRaces = data.races.map(race => {
+  // Year is filtered client-side (the fetched payload holds every year for the
+  // selected office), so the dropdown re-renders instantly with no refetch.
+  const yearFilter = document.getElementById('races-year-filter').value;
+  let races = yearFilter ? data.races.filter(r => String(r.year) === yearFilter) : data.races;
+  if (!races.length) { empty.style.display = 'block'; body.innerHTML = ''; return; }
+  empty.style.display = 'none';
+
+  // Sort candidates within each race by the active sort key; tag office rank.
+  races = races.map(race => {
     const cands = [...race.candidates].sort((a, b) => {
       if (_racesSort === 'coh') {
         // Candidates with COH data float up; ties broken by raised
@@ -7554,24 +7682,38 @@ function _renderRacesData(data) {
       }
       return (b.raised || 0) - (a.raised || 0);
     });
-    return { ...race, candidates: cands };
+    return { ...race, candidates: cands, _rank: _officeRank(race.office) };
   });
 
-  // When sorting by COH, bubble races that have at least one COH entry to the top
-  if (_racesSort === 'coh') {
-    sortedRaces.sort((a, b) => {
-      const aMax = Math.max(...a.candidates.map(c => c.coh_ending ?? -1));
-      const bMax = Math.max(...b.candidates.map(c => c.coh_ending ?? -1));
-      return bMax - aMax;
-    });
+  // Group by election date, ordering races within each election by office
+  // importance (then district, then name). Election dates run newest-first,
+  // grouped under year headers when more than one year is in view.
+  const byDate = {};
+  for (const r of races) (byDate[r.date] = byDate[r.date] || []).push(r);
+  for (const list of Object.values(byDate)) {
+    list.sort((a, b) => a._rank[0] - b._rank[0] || a._rank[1] - b._rank[1]
+                        || a.office.localeCompare(b.office));
   }
+  const dates = Object.keys(byDate).sort((a, b) =>
+    _raceDateSortKey(b).localeCompare(_raceDateSortKey(a)));
 
-  body.innerHTML = sortedRaces.map(race => renderRaceCard(race)).join('');
+  const showYearHeaders = !yearFilter;   // a single selected year needs no banner
+  let html = '', curYear = null;
+  for (const date of dates) {
+    const yr = byDate[date][0].year;
+    if (showYearHeaders && yr !== curYear) { html += `<div class="races-year-header">${yr}</div>`; curYear = yr; }
+    html += `<div class="races-election-header">${_electionDateLabel(date)}</div>`;
+    html += byDate[date].map(renderRaceCard).join('');
+  }
+  body.innerHTML = html;
 }
+
+let _racesYearInit = false;   // first load defaults the year dropdown to the latest year
 
 async function loadRaces(force) {
   const officeFilter = document.getElementById('races-office-filter').value;
-  const yearFilter   = document.getElementById('races-year-filter').value;
+  const yearSel      = document.getElementById('races-year-filter');
+  const desiredYear  = yearSel.value;   // preserve the user's pick across office changes
 
   const loading = document.getElementById('races-loading');
   const empty   = document.getElementById('races-empty');
@@ -7582,16 +7724,22 @@ async function loadRaces(force) {
   body.innerHTML        = '';
 
   try {
-    const qs = `?office=${encodeURIComponent(officeFilter)}&year=${encodeURIComponent(yearFilter)}`;
-    const res = await apiFetch(`/api/races${qs}`);
+    // Always fetch the office's full history; year is filtered client-side so
+    // switching years is instant and we can default to the most recent one.
+    const res = await apiFetch(`/api/races?office=${encodeURIComponent(officeFilter)}&year=`);
     if (!res.ok) throw new Error('Server error ' + res.status);
     _racesData = await res.json();
 
-    // Populate year filter if not yet populated
-    const yearSel = document.getElementById('races-year-filter');
-    if (yearSel.options.length <= 1 && _racesData.years && _racesData.years.length) {
-      _racesData.years.forEach(y => yearSel.add(new Option(y, y)));
-    }
+    // Rebuild the year dropdown from this office's available years.
+    const years = (_racesData.years || []).map(String);
+    yearSel.innerHTML = '<option value="">All Years</option>' +
+      years.map(y => `<option value="${y}">${y}</option>`).join('');
+    // Default to the latest year on first load; otherwise keep the current pick
+    // (falling back to the latest year if it isn't available for this office).
+    let sel = desiredYear;
+    if (!_racesYearInit) { sel = years[0] || ''; _racesYearInit = true; }
+    else if (sel && !years.includes(sel)) { sel = years[0] || ''; }
+    yearSel.value = sel;
 
     loading.style.display = 'none';
     _renderRacesData(_racesData);
@@ -8300,17 +8448,17 @@ function _ovOpenTop(i) {
 
 function _ovOpenElection(year) {
   // Jump to the Races tab filtered to that year + all offices
-  switchTab('races');
+  const offSel = document.getElementById('races-office-filter');
+  offSel.value = 'all';
+  if (_currentTab() !== 'races') switchTab('races');   // switchTab triggers loadRaces()
+  else loadRaces();
   const yearSel = document.getElementById('races-year-filter');
-  const offSel  = document.getElementById('races-office-filter');
-  // races year filter populates async on first load; retry briefly until ready
   let tries = 0;
   (function setYear() {
-    if (yearSel.querySelector(`option[value="${year}"]`)) {
-      offSel.value = 'all';
-      yearSel.value = year;
-      loadRaces();
-    } else if (tries++ < 20) {
+    if (_racesData && yearSel.querySelector(`option[value="${year}"]`)) {
+      yearSel.value = String(year);
+      _renderRacesData(_racesData);
+    } else if (tries++ < 30) {
       setTimeout(setYear, 100);
     }
   })();
