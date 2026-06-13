@@ -4583,6 +4583,18 @@ function switchTab(tab, opts) {
     sel.value = cur;
   }
 
+  // The global search bar means something different on each tab (entity search,
+  // token filters, or the Races free-text filter), so reset it on every switch
+  // to keep a query typed on one tab from silently carrying into the next.
+  const _gs = document.getElementById('global-search');
+  if (_gs && _gs.value) {
+    _gs.value = '';
+    _gs.setAttribute('aria-expanded', 'false');
+    const _gsBox = document.getElementById('global-search-results');
+    if (_gsBox) _gsBox.style.display = 'none';
+  }
+  _racesTextFilter = '';
+
   // Leaflet computes a 0×0 size when its container is hidden (the map lives in
   // contributions-view, which is display:none on load). Re-measure + redraw once
   // the Money tab is actually visible, otherwise the map renders as a gray box.
@@ -7548,11 +7560,21 @@ function exportCampaignCSV() {
 // ── Races view ────────────────────────────────────────────────────────────────
 let _racesData  = null;   // cached fetch result
 let _racesSort  = 'raised'; // 'raised' | 'coh'
+let _racesTextFilter = '';  // free-text filter from the global search bar (office/candidate)
 
 function _setRacesSort(btn) {
   _racesSort = btn.dataset.rsort;
   document.querySelectorAll('.races-sort-btn').forEach(b => b.classList.toggle('active', b === btn));
   // Re-render current data with new sort (no refetch needed)
+  if (_racesData) _renderRacesData(_racesData);
+}
+
+// The global search bar doubles as a live race filter on the Races tab: typing
+// "vermilion sheriff" or "school board" narrows the rendered cards by office or
+// candidate name (parish included, since offices are parish-qualified). The
+// office/year dropdowns still handle structured narrowing.
+function _filterRaces(q) {
+  _racesTextFilter = (q || '').trim().toLowerCase();
   if (_racesData) _renderRacesData(_racesData);
 }
 
@@ -7670,13 +7692,31 @@ function _electionDateShort(date) {
 function _renderRacesData(data) {
   const body  = document.getElementById('races-body');
   const empty = document.getElementById('races-empty');
-  if (!data || !data.races || !data.races.length) { empty.style.display = 'block'; body.innerHTML = ''; return; }
+  if (!data || !data.races || !data.races.length) { empty.textContent = 'No races found.'; empty.style.display = 'block'; body.innerHTML = ''; return; }
 
   // Year is filtered client-side (the fetched payload holds every year for the
   // selected office), so the dropdown re-renders instantly with no refetch.
   const yearFilter = document.getElementById('races-year-filter').value;
   let races = yearFilter ? data.races.filter(r => String(r.year) === yearFilter) : data.races;
-  if (!races.length) { empty.style.display = 'block'; body.innerHTML = ''; return; }
+
+  // Free-text filter from the global search bar: match the office (parish
+  // included) or any candidate's name. Every whitespace-separated term must
+  // hit, so "vermilion sheriff" narrows to that race.
+  if (_racesTextFilter) {
+    const terms = _racesTextFilter.split(/\s+/);
+    races = races.filter(r => {
+      const hay = ((r.office || '') + ' ' +
+                   (r.candidates || []).map(c => c.name || '').join(' ')).toLowerCase();
+      return terms.every(t => hay.includes(t));
+    });
+  }
+
+  if (!races.length) {
+    empty.textContent = _racesTextFilter ? `No races match “${_racesTextFilter}”.` : 'No races found.';
+    empty.style.display = 'block';
+    body.innerHTML = '';
+    return;
+  }
   empty.style.display = 'none';
 
   // Sort candidates within each race by the active sort key; tag office rank.
@@ -7932,6 +7972,8 @@ function _updateSearchPlaceholder() {
     input.placeholder = 'Search or filter — try zip:70801 party:rep donor:exxon…';
   else if (_currentTab() === 'compare')
     input.placeholder = 'Search a campaign to add to the comparison…';
+  else if (_currentTab() === 'races')
+    input.placeholder = 'Filter races — try vermilion sheriff, school board, governor…';
   else
     input.placeholder = 'Search candidates & committees — or try cycle:2024…';
 }
@@ -8162,6 +8204,7 @@ async function _doGlobalSearch(q) {
     box.style.display = 'none';
     document.getElementById('global-search').setAttribute('aria-expanded', 'false');
     _tokenSuggestions = [];
+    if (_currentTab() === 'races') _filterRaces('');   // cleared box → show all races
     return;
   }
 
@@ -8175,7 +8218,17 @@ async function _doGlobalSearch(q) {
       _renderTokenSuggestions(key, completions);
       return;
     }
-    // Unknown key — fall through to entity search
+    // Unknown key — fall through to entity search (or races filter below)
+  }
+
+  // Races tab: the search bar live-filters the race cards rather than opening
+  // the entity dropdown. (Token keys above still work if Races ever defines any.)
+  if (_currentTab() === 'races') {
+    _tokenSuggestions = [];
+    box.style.display = 'none';
+    document.getElementById('global-search').setAttribute('aria-expanded', 'false');
+    _filterRaces(q);
+    return;
   }
 
   // Detect partial token key (e.g., "cyc", "par") — show filter key suggestions
