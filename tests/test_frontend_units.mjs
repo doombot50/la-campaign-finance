@@ -12,8 +12,8 @@ const fe = extract(HTML, {
   consts: ['PARTY_CSS'],
   fns: [
     '_raceDistrictNum', '_officeRank', '_raceDateSortKey', '_electionDateLabel',
-    '_raceAnchorId', '_cmpRaceYear', 'fmtRaisedShort', 'outcomeClass',
-    'outcomeLabel', 'escHtml', 'partyBadge',
+    '_electionDateShort', '_raceAnchorId', '_cmpRaceYear', 'fmtRaisedShort',
+    'outcomeClass', 'outcomeLabel', 'escHtml', 'partyBadge',
   ],
 });
 
@@ -96,6 +96,12 @@ test('_electionDateLabel: humanizes the date', () => {
   assert.equal(fe._electionDateLabel('11/05/2024'), 'November 5, 2024');
   assert.equal(fe._electionDateLabel('03/01/2023'), 'March 1, 2023');
   assert.equal(fe._electionDateLabel('bad'), 'bad');
+});
+
+test('_electionDateShort: compact date for the career timeline', () => {
+  assert.equal(fe._electionDateShort('10/12/2019'), 'Oct 12, 2019');
+  assert.equal(fe._electionDateShort('11/05/2024'), 'Nov 5, 2024');
+  assert.equal(fe._electionDateShort('bad'), 'bad');
 });
 
 test('_cmpRaceYear: extracts the year', () => {
