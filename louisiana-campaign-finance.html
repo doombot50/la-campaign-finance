@@ -198,6 +198,7 @@
     border-bottom: 1px dotted rgba(200,169,81,0.5); white-space: nowrap;
   }
   .source-link:hover { border-bottom-style: solid; }
+  button.source-link { background: none; padding: 0; font: inherit; cursor: pointer; }
   /* Verify pill on profiles — reads like btn-secondary but flags that it
      leaves the app for the authoritative source. */
   .verify-link {
@@ -600,6 +601,38 @@
   .fh-tips { margin-top: 20px; font-size: 12px; color: var(--muted); line-height: 1.6; }
   .fh-tips li { margin-bottom: 3px; }
   @media (max-width: 560px) { .fh-row { grid-template-columns: 1fr; gap: 3px; } }
+
+  /* ── About & Methodology ───────────────────────────────────── */
+  .about-body { padding: 8px 24px 24px; }
+  .about-toc {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 12px 0 4px; position: sticky; top: 0; background: var(--card); z-index: 1;
+    border-bottom: 1px solid var(--border); margin-bottom: 6px;
+  }
+  .about-toc button {
+    background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 4px 11px; font-size: 11.5px; cursor: pointer;
+    transition: all .15s; font-weight: 600;
+  }
+  .about-toc button:hover { border-color: var(--gold); color: var(--gold); }
+  .about-section { margin-top: 22px; scroll-margin-top: 48px; }
+  .about-section h3 {
+    font-size: 14px; font-weight: 700; color: var(--gold); margin: 0 0 8px;
+  }
+  .about-section p { font-size: 13px; color: var(--text); line-height: 1.55; margin-bottom: 8px; }
+  .about-section a { color: var(--gold); }
+  .about-disclaimer {
+    border: 1px solid rgba(200,169,81,0.35); background: rgba(200,169,81,0.07);
+    border-left: 3px solid var(--gold); border-radius: 8px; padding: 12px 14px;
+  }
+  .about-disclaimer p { margin-bottom: 8px; }
+  .about-disclaimer ul { margin: 0; padding-left: 18px; }
+  .about-disclaimer li { font-size: 12.5px; color: var(--text); line-height: 1.5; margin-bottom: 6px; }
+  .about-credits {
+    margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border);
+    font-size: 11.5px; color: var(--muted); line-height: 1.5;
+  }
+  .about-credits a { color: var(--gold); }
   .cp-stats {
     display: flex; gap: 0; border-bottom: 1px solid var(--border);
   }
@@ -1263,6 +1296,8 @@
         <span>Source: <a class="source-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener" title="Open the official Louisiana Board of Ethics campaign finance search">Louisiana Board of Ethics ↗</a></span>
         <span class="sep prov-cadence" aria-hidden="true">·</span>
         <span class="prov-cadence">refreshed nightly from ethics.la.gov</span>
+        <span class="sep" aria-hidden="true">·</span>
+        <button type="button" class="source-link" onclick="openAbout()">About &amp; methodology</button>
       </div>
     </div>
     <div class="header-tools">
@@ -2146,7 +2181,7 @@
   <p><strong style="color:var(--gold);">Data Source:</strong>
     <a href="https://ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank">Louisiana Ethics Administration Campaign Finance</a>
   </p>
-  <p>This dashboard is for informational and research purposes.</p>
+  <p><a href="#/about" onclick="openAbout();return false;">About &amp; Methodology</a> · This dashboard is for informational and research purposes.</p>
   <p style="margin-top:8px;">Built with <a href="https://claude.ai" target="_blank">Claude</a> by Charlie Stephens</p>
 </footer>
 
@@ -2544,6 +2579,8 @@ document.getElementById('btn-clear-loan-filters').addEventListener('click', () =
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (_tapTipEl) { _hideTapTip(); return; }
+  const aboutOverlay = document.getElementById('about-overlay');
+  if (aboutOverlay && aboutOverlay.classList.contains('open')) { closeAbout(); return; }
   const campOverlay = document.getElementById('camp-overlay');
   if (campOverlay && campOverlay.classList.contains('open')) { closeCampaignProfile(); return; }
   const cpOverlay = document.getElementById('cp-overlay');
@@ -6487,11 +6524,13 @@ function _scrollToRace(date, office, attempt = 0) {
   }
 }
 function _applyRoute() {
+  if (location.hash === '#/about') { openAbout(); return; }
   const m = location.hash.match(/^#\/(campaign|donor|race)\/(.+)$/);
   if (!m) {
     // Route cleared (e.g. Back button) — close whichever profile is open.
     if (document.getElementById('camp-overlay').classList.contains('open')) closeCampaignProfile();
     if (document.getElementById('cp-overlay').classList.contains('open'))   closeContributorProfile();
+    if (document.getElementById('about-overlay').classList.contains('open')) closeAbout();
     return;
   }
   if (m[1] === 'campaign') {
@@ -7725,6 +7764,30 @@ function closeFilterHelp() {
   document.getElementById('help-overlay').classList.remove('open');
 }
 
+// About & Methodology — deep-linkable at #/about, with focus management and
+// back-button close, mirroring the profile modals.
+function openAbout() {
+  const ov = document.getElementById('about-overlay');
+  if (!ov.classList.contains('open')) _modalReturnFocus = document.activeElement;
+  ov.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.querySelector('#about-modal .cp-close')?.focus();
+  _setRouteHash('#/about');   // idempotent: no-op when arriving via the route
+}
+function closeAbout() {
+  document.getElementById('about-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  if (_modalReturnFocus && _modalReturnFocus.focus) { _modalReturnFocus.focus(); _modalReturnFocus = null; }
+  _clearRouteHash('#/about');
+}
+// Scroll a section into view within the (scrollable) overlay, honoring reduced motion.
+function _aboutJump(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+}
+
 // Static completions for token keys that have known option sets
 function _tokenCompletions(key, partial) {
   const p = (partial || '').toLowerCase();
@@ -8274,6 +8337,97 @@ function _ovOpenElection(year) {
         <li>Active filters show as chips below the tabs — click <strong>×</strong> to remove one, or <strong>Clear all</strong>.</li>
         <li>Combine filters: apply several in a row to narrow results.</li>
       </ul>
+
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT & METHODOLOGY — deep-linkable at #/about. Consolidates data
+     sourcing, how each headline number is computed, limitations/disclaimer,
+     and a glossary, so trust information lives in one discoverable place
+     instead of scattered tooltips. -->
+<div class="cp-overlay" id="about-overlay" onclick="if(event.target===this)closeAbout()">
+  <div class="cp-modal" id="about-modal" style="max-width:760px" role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <div class="cp-header">
+      <div>
+        <h2 class="cp-name" id="about-title" style="margin:0">About &amp; Methodology</h2>
+        <div class="cp-meta">How this dashboard is built, where the numbers come from, and what they do — and don't — mean.</div>
+      </div>
+      <button class="cp-close" onclick="closeAbout()" aria-label="Close about and methodology">✕</button>
+    </div>
+    <div class="about-body">
+
+      <nav class="about-toc" aria-label="Sections">
+        <button onclick="_aboutJump('about-what')">What this is</button>
+        <button onclick="_aboutJump('about-sources')">Data sources</button>
+        <button onclick="_aboutJump('about-updates')">Updates</button>
+        <button onclick="_aboutJump('about-methods')">How the numbers are calculated</button>
+        <button onclick="_aboutJump('about-limits')">Limitations</button>
+        <button onclick="_aboutJump('about-glossary')">Glossary</button>
+      </nav>
+
+      <section class="about-section" id="about-what">
+        <h3>What this is</h3>
+        <p>An independent, public-interest dashboard for exploring Louisiana campaign
+        contributions, expenditures, and loans. It is <strong>not</strong> an official
+        government site and is not affiliated with the Louisiana Board of Ethics. It
+        re-presents public records to make them easier to search and understand. For
+        official records, always consult
+        <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener">ethics.la.gov</a>.</p>
+      </section>
+
+      <section class="about-section" id="about-sources">
+        <h3>Where the data comes from</h3>
+        <div class="fh-row"><span class="fh-token">Board of Ethics</span><div class="fh-desc">Contributions, expenditures, and loans come from the Louisiana Board of Ethics bulk campaign-finance <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener">data downloads</a> (filers report electronically).</div></div>
+        <div class="fh-row"><span class="fh-token">Certified reports</span><div class="fh-desc">Cash-on-Hand figures are read from each filer's certified annual reports (F102 candidate / F202 PAC). These are the only true balance figures shown, and each links back to its source filing.</div></div>
+        <div class="fh-row"><span class="fh-token">Secretary of State</span><div class="fh-desc">Candidate party, ballot appearances, and election results are enriched from Louisiana Secretary of State records.</div></div>
+      </section>
+
+      <section class="about-section" id="about-updates">
+        <h3>How often it updates</h3>
+        <p>Transaction data refreshes <strong>nightly</strong> from the Board of Ethics
+        downloads; certified Cash-on-Hand is scraped incrementally as new annual
+        reports are filed. The “Data as of” date in the status bar reflects the most
+        recent refresh. Filings can post or be amended at any time, so very recent
+        activity may not yet appear.</p>
+      </section>
+
+      <section class="about-section" id="about-methods">
+        <h3>How the headline numbers are calculated</h3>
+        <div class="fh-row"><span class="fh-token">Total Raised</span><div class="fh-desc">Sum of contributions reported for the period, <strong>net of committee-to-committee transfers</strong> so the same dollar isn't counted at two committees. The excluded transfer amount is disclosed on hover.</div></div>
+        <div class="fh-row"><span class="fh-token">Total Spent / Borrowed</span><div class="fh-desc">Sum of reported expenditures / loans for the period.</div></div>
+        <div class="fh-row"><span class="fh-token">Raised vs Spent chart</span><div class="fh-desc">Cumulative contributions and expenditures over time — these are <strong>flows, not a bank balance</strong>. The green dots are certified Cash on Hand and are the only true balance points.</div></div>
+        <div class="fh-row"><span class="fh-token">Cash on Hand</span><div class="fh-desc">The certified end-of-year balance from a filer's annual report (F102/F202). A balance is meaningless without its as-of date, so it is always shown “as of 12/31/&lt;year&gt;.”</div></div>
+        <div class="fh-row"><span class="fh-token">Est. Current Cash</span><div class="fh-desc">A hybrid estimate: the certified balance plus contributions and minus expenditures reported since that filing. Excludes loans, refunds, transfers, and in-kind. An estimate, not a certified figure.</div></div>
+        <div class="fh-row"><span class="fh-token">Party label</span><div class="fh-desc">Marked <strong>✓</strong> when verified against Secretary of State records and <strong>~</strong> when matched heuristically by name (may be imperfect).</div></div>
+      </section>
+
+      <section class="about-section" id="about-limits">
+        <h3>Limitations &amp; disclaimer</h3>
+        <div class="about-disclaimer">
+          <p>These figures are <strong>self-reported</strong> by candidates and committees to the Louisiana Board of Ethics. They reflect what was reported — amendments, late filings, and any records not filed electronically may not be included.</p>
+          <ul>
+            <li>The bulk data publishes the same contribution once per report filing; figures here are de-duplicated and are <strong>approximations, not audited totals</strong>.</li>
+            <li>About 0.3% of names map to more than one filer (two people sharing a name, or one person with several committees). We use exact filer identity where it's known; bare-name links and a few in-cycle lists may still merge them.</li>
+            <li>The “Raised vs Spent” line is a cumulative flow, <strong>not</strong> cash on hand. Only the certified green dots are true balances.</li>
+            <li>This is not an official record. <strong>Always verify against <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener">ethics.la.gov</a></strong> before relying on any figure. Each profile's “Verify” button links to the official source.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="about-section" id="about-glossary">
+        <h3>Glossary</h3>
+        <div class="fh-row"><span class="fh-token">Cash on Hand (COH)</span><div class="fh-desc">Money a committee has available at the end of a reporting period, per its certified filing.</div></div>
+        <div class="fh-row"><span class="fh-token">War chest</span><div class="fh-desc">A large balance of unspent campaign cash a filer can deploy.</div></div>
+        <div class="fh-row"><span class="fh-token">In-kind</span><div class="fh-desc">A non-cash contribution of goods or services, valued at fair-market price.</div></div>
+        <div class="fh-row"><span class="fh-token">Transfer</span><div class="fh-desc">Money moved between committees. Excluded from headline “Raised” to avoid double-counting.</div></div>
+        <div class="fh-row"><span class="fh-token">PAC / Committee</span><div class="fh-desc">A political action committee or campaign committee that files campaign-finance reports.</div></div>
+        <div class="fh-row"><span class="fh-token">F102 / F202</span><div class="fh-desc">The Board of Ethics annual report forms (F102 for candidates, F202 for PACs) that certify Cash on Hand.</div></div>
+        <div class="fh-row"><span class="fh-token">Filer number</span><div class="fh-desc">The Board of Ethics' unique ID for a committee/filer — the most reliable identity, since names collide.</div></div>
+        <div class="fh-row"><span class="fh-token">Cycle</span><div class="fh-desc">A four-year election period; figures and filters are grouped by cycle.</div></div>
+      </section>
+
+      <p class="about-credits">Data: <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener">Louisiana Board of Ethics</a> · Louisiana Secretary of State. For informational and research purposes only.</p>
 
     </div>
   </div>
