@@ -803,7 +803,10 @@
   .exp-controls-bar { background:var(--card); border-bottom:1px solid var(--border); padding:10px 24px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
   /* ── Expenditure charts row ───────────────────────────────── */
   .exp-charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
-  @media(max-width:900px){ .exp-charts-row { grid-template-columns:1fr; } }
+  /* !important so this beats the inline grid-template-columns some rows set for
+     their desktop layout (3-up / weighted) — otherwise the charts stay jammed
+     side-by-side and unreadable on a phone. */
+  @media(max-width:900px){ .exp-charts-row { grid-template-columns:1fr !important; } }
 
   /* ── Print stylesheet — default (full page) ────────────────── */
   @media print {
@@ -1146,8 +1149,9 @@
     .table-scroll-wrap { max-height: none; overflow: visible; }
     thead th { position: static; }
     table { min-width: 0; }
+    /* Top Donors / Recipients / Lenders cards stack via .m-cards (see below);
+       hide the inline bar column there. */
     .tc-bar-cell { display: none; }
-    .tc-name { white-space: normal; }
     /* Races: dense result grids keep sideways scroll inside their card */
     .race-card { overflow-x: auto; }
     .race-cand-table { min-width: 540px; }
@@ -1592,7 +1596,7 @@
     <div class="table-header-row">
       <div class="table-title">Top Donors</div>
     </div>
-    <table class="tc-table">
+    <table class="tc-table m-cards">
       <thead>
         <tr>
           <th style="width:28px"></th>
@@ -1787,7 +1791,7 @@
         <div class="table-title">Top Recipients</div>
         <div class="table-actions" id="exp-top-recipients-pagination"></div>
       </div>
-      <table class="tc-table">
+      <table class="tc-table m-cards">
         <thead>
           <tr>
             <th style="width:28px"></th>
@@ -1905,7 +1909,7 @@
         <div class="table-title">Top Lenders</div>
         <div class="table-actions" id="loan-lenders-pagination"></div>
       </div>
-      <table class="tc-table">
+      <table class="tc-table m-cards">
         <thead><tr>
           <th style="width:28px"></th>
           <th>Lender</th>
@@ -3792,20 +3796,20 @@ function _renderTCPage() {
     const color = typeColor[type] || '#5a5a5a';
     const label = typeLabel[type] || type;
     return `<tr>
-      <td class="tc-rank">${rank}</td>
-      <td>
+      <td class="tc-rank" data-label="Rank">${rank}</td>
+      <td data-label="Donor">
         <button class="tc-name-btn"
           data-contributor="${escHtml(c.name)}"
           onclick="showContributorProfile(this.dataset.contributor)">${escHtml(c.name)}</button>
       </td>
-      <td><span class="tc-type">${escHtml(label)}</span></td>
-      <td class="tc-count">${c.count.toLocaleString()}</td>
+      <td data-label="Type"><span class="tc-type">${escHtml(label)}</span></td>
+      <td class="tc-count" data-label="Gifts">${c.count.toLocaleString()}</td>
       <td class="tc-bar-cell">
         <div class="tc-bar-wrap">
           <div class="tc-bar-fill" style="width:${pct}%;background:${color}"></div>
         </div>
       </td>
-      <td class="tc-amount">$${c.total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
+      <td class="tc-amount" data-label="Total">$${c.total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
     </tr>`;
   }).join('');
 
@@ -4950,12 +4954,12 @@ function _renderExpTRPage() {
 
   tbody.innerHTML = pageRows.map(([name, v], i) => `
     <tr>
-      <td style="color:var(--muted);font-size:12px;width:28px">${start + i + 1}</td>
-      <td><strong>${escHtml(name)}</strong></td>
-      <td style="color:var(--muted);font-size:12px">${v.cat}</td>
-      <td class="num">${v.count.toLocaleString()}</td>
+      <td style="color:var(--muted);font-size:12px;width:28px" data-label="Rank">${start + i + 1}</td>
+      <td data-label="Recipient"><strong>${escHtml(name)}</strong></td>
+      <td style="color:var(--muted);font-size:12px" data-label="Category">${v.cat}</td>
+      <td class="num" data-label="Payments">${v.count.toLocaleString()}</td>
       <td class="tc-bar-cell"><div class="tc-bar" style="width:${Math.round(100*v.amount/maxAmt)}%"></div></td>
-      <td class="num"><strong>$${Math.round(v.amount).toLocaleString()}</strong></td>
+      <td class="num" data-label="Total"><strong>$${Math.round(v.amount).toLocaleString()}</strong></td>
     </tr>
   `).join('');
 
@@ -5323,12 +5327,12 @@ function _renderLoanLenderPage() {
   const pageRows = _loanLenderSorted.slice(start, start + LOAN_LENDER_PAGE_SIZE);
   tbody.innerHTML = pageRows.map(([name, v], i) => `
     <tr>
-      <td style="color:var(--muted);font-size:12px;width:28px">${start + i + 1}</td>
-      <td><strong>${escHtml(name)}</strong></td>
-      <td style="color:var(--muted);font-size:12px">${v.state || '—'}</td>
-      <td class="num">${v.count.toLocaleString()}</td>
+      <td style="color:var(--muted);font-size:12px;width:28px" data-label="Rank">${start + i + 1}</td>
+      <td data-label="Lender"><strong>${escHtml(name)}</strong></td>
+      <td style="color:var(--muted);font-size:12px" data-label="State">${v.state || '—'}</td>
+      <td class="num" data-label="Loans">${v.count.toLocaleString()}</td>
       <td class="tc-bar-cell"><div class="tc-bar" style="width:${Math.round(100*v.amount/maxAmt)}%"></div></td>
-      <td class="num"><strong>$${Math.round(v.amount).toLocaleString()}</strong></td>
+      <td class="num" data-label="Total"><strong>$${Math.round(v.amount).toLocaleString()}</strong></td>
     </tr>
   `).join('');
   const totalPages = Math.ceil(_loanLenderSorted.length / LOAN_LENDER_PAGE_SIZE);
