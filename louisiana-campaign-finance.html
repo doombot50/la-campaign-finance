@@ -2726,7 +2726,7 @@ async function loadData() {
   // the exps/loans loaders already do this; without it a profile opened
   // before the cycle data arrived stayed frozen at empty tables and $0.
   if (document.getElementById('camp-overlay').classList.contains('open') && _campName) {
-    _campContribs = allData.filter(_campaignMatch(_campName))
+    _campContribs = allData.filter(_campaignMatch(_campName, _campFiler))
                       .sort((a,b) => b.date.localeCompare(a.date));
     _refreshCampStats();
     if (_campTab === 'contribs') campSwitchTab('contribs');
@@ -2954,9 +2954,17 @@ function _normNameJS(s) {
     .replace(/[^A-Z\s]/g, ' ')
     .replace(/\s+/g, ' ').trim();
 }
-function _campaignMatch(name) {
+function _campaignMatch(name, filer) {
   const t = _normNameJS(name);
-  return d => (d._nc !== undefined ? d._nc : (d._nc = _normNameJS(d.candidate || ''))) === t;
+  const f = filer ? String(filer) : '';
+  return d => {
+    // Exact filer identity when known: a record naming a DIFFERENT filer is a
+    // same-name collision and must be excluded, so the profile's transaction
+    // lists match its filer-keyed career totals. Records without a filer number
+    // fall back to the normalized-name match.
+    if (f && d.filerNumber) return String(d.filerNumber) === f;
+    return (d._nc !== undefined ? d._nc : (d._nc = _normNameJS(d.candidate || ''))) === t;
+  };
 }
 
 function mergeAndRender() {
@@ -4557,7 +4565,7 @@ async function loadExpData() {
     renderExpAll();
     // Refresh open campaign profile modal if it's for this data
     if (document.getElementById('camp-overlay').classList.contains('open')) {
-      _campExps = expData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _campExps = expData.filter(_campaignMatch(_campName, _campFiler)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
       _refreshCampStats();
       if (_campTab === 'exps') campSwitchTab('exps');
     }
@@ -4584,7 +4592,7 @@ async function loadExpData() {
     renderExpAll();
     // Refresh open campaign profile modal
     if (document.getElementById('camp-overlay').classList.contains('open')) {
-      _campExps = expData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _campExps = expData.filter(_campaignMatch(_campName, _campFiler)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
       _refreshCampStats();
       if (_campTab === 'exps') campSwitchTab('exps');
     }
@@ -5097,7 +5105,7 @@ async function loadLoanData() {
     renderLoanAll();
     // Refresh open campaign profile modal
     if (document.getElementById('camp-overlay').classList.contains('open')) {
-      _campLoans = loanData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _campLoans = loanData.filter(_campaignMatch(_campName, _campFiler)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
       _refreshCampStats();
       if (_campTab === 'loans') campSwitchTab('loans');
     }
@@ -5129,7 +5137,7 @@ async function loadLoanData() {
     renderLoanAll();
     // Refresh open campaign profile modal
     if (document.getElementById('camp-overlay').classList.contains('open')) {
-      _campLoans = loanData.filter(_campaignMatch(_campName)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _campLoans = loanData.filter(_campaignMatch(_campName, _campFiler)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
       _refreshCampStats();
       if (_campTab === 'loans') campSwitchTab('loans');
     }
@@ -6522,7 +6530,7 @@ function showCampaignProfile(name, openTab, filer) {
   // Exact filer identity (from a search result / entity) disambiguates two
   // people who share a normalized name; omitted callers fall back to name join.
   _campFiler    = filer || '';
-  const _cm     = _campaignMatch(name);   // normalized join — matches records as filed
+  const _cm     = _campaignMatch(name, _campFiler);   // filer-exact when known, else normalized-name join
   _campContribs = allData.filter(_cm)
                     .sort((a,b) => b.date.localeCompare(a.date));
   _campExps     = expData.filter(_cm)
