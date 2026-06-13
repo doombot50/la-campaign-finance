@@ -7152,8 +7152,8 @@ async function fetchCareerData(name) {
         const _repUrl = _cohSourceUrl(coh);
         if (_vl && _repUrl) {
           _vl.href = _repUrl;
-          _vl.textContent = 'Verify: official report ↗';
-          _vl.title = `Open this filer's certified ${yr || ''} report (F102/F202) on ethics.la.gov — the official filing behind these figures.`;
+          _vl.textContent = 'Verify: certified report ↗';
+          _vl.title = `Open this filer's certified ${yr || ''} year-end report (F102/F202) on ethics.la.gov — the official source for the Cash-on-Hand figure. Itemized contributions and expenditures come from the Board of Ethics bulk data and aren't tied to a single report.`;
         }
       } else {
         cohEl.textContent = '—';
