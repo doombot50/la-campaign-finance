@@ -108,7 +108,12 @@
 
   async function entity({ name, filer } = {}) {
     const { entities } = await fetchJSON('la_entities.json.gz');
-    if (filer) return entities[String(filer)] || {};
+    if (filer) {
+      const e = entities[String(filer)];
+      if (e) return e;
+      // filer absent from the table — fall through to a name match (mirrors
+      // the server's _get_entity, which does the same).
+    }
     if (name) {
       const key = wsNorm(name);
       for (const e of Object.values(entities)) {
@@ -187,17 +192,27 @@
             'CENTRAL COMMITTEE', 'EXECUTIVE COMMITTEE', 'PARTY COMMITTEE']
       .some(x => o.includes(x));
   }
-  async function candidateHistory(name) {
+  async function candidateHistory(name, filer) {
     const [index, racesRaw, cohCache] = await Promise.all([
       fetchJSON('la_candidate_index.json.gz'),
       fetchJSON('la_candidacies_raw.json.gz'),
       fetchJSON('ethics_coh_cache.json'),
     ]);
+    // Exact identity when a filer number is supplied: mirror the server, which
+    // serves that one filer's career from the filer-keyed index and only falls
+    // back to the name-keyed index when the filer is unknown (or not built yet).
+    let filerEntry = null;
+    if (filer) {
+      try {
+        const filerIndex = await fetchJSON('la_filer_index.json.gz');
+        filerEntry = filerIndex[String(filer)] || null;
+      } catch (e) { /* artifact absent — fall back to the name index */ }
+    }
     const norm = normName(name);
     const toks = norm.split(' ');
     const t2 = toks.length >= 2 ? `${toks[0]} ${toks[toks.length - 1]}` : null;
 
-    const financial = index[norm] || (t2 && index[t2]) || {};
+    const financial = filerEntry || index[norm] || (t2 && index[t2]) || {};
     const racesList = racesRaw[norm] || (t2 && racesRaw[t2]) || [];
     // Mirror the endpoint: party-committee offices excluded, then sorted by
     // the raw M/D/YYYY date string (lexicographic — same as the server).
@@ -234,13 +249,13 @@
     return {
       financial, races, norm,
       ethics_coh, coh_estimate,
-      entity: (await entity({ name })) || null,
+      entity: (await entity({ filer, name })) || null,
     };
   }
 
   // /api/candidate-history returns entity:null (not {}) when unmatched
-  async function _candidateHistoryExact(name) {
-    const payload = await candidateHistory(name);
+  async function _candidateHistoryExact(name, filer) {
+    const payload = await candidateHistory(name, filer);
     if (payload.entity && Object.keys(payload.entity).length === 0) payload.entity = null;
     return payload;
   }

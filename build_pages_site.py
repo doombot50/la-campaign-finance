@@ -39,6 +39,7 @@ REQUIRED_ARTIFACTS = [
     'la_insights.json.gz',
     'la_entities.json.gz',
     'la_candidate_index.json.gz',
+    'la_filer_index.json.gz',
 ]
 # Committed repo-root files the layer also reads
 REQUIRED_ROOT = [

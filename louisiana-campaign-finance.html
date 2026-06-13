@@ -2244,7 +2244,7 @@ async function apiFetch(pathAndQuery) {
       case '/api/election-results':   data = await StaticAPI.electionResults(); break;
       case '/api/races':              data = await StaticAPI.races(p.get('office'), p.get('year')); break;
       case '/api/industry-breakdown': data = await StaticAPI.industryBreakdown(p.get('filer'), p.get('cycle') || ''); break;
-      case '/api/candidate-history':  data = await StaticAPI.candidateHistory(p.get('name') || ''); break;
+      case '/api/candidate-history':  data = await StaticAPI.candidateHistory(p.get('name') || '', p.get('filer') || ''); break;
       case '/api/coh':                data = await StaticAPI.coh(p.get('name') || ''); break;
       case '/api/entity':             data = await StaticAPI.entity({ name: p.get('name'), filer: p.get('filer') }); break;
       default: return { ok: false, status: 404, json: async () => ({}) };
@@ -6466,6 +6466,7 @@ window.addEventListener('hashchange', _applyRoute);
 // CAMPAIGN PROFILE MODAL
 // ============================================================
 let _campName    = '';
+let _campFiler   = '';   // exact filer number when the profile was opened from a search result/entity
 let _campTab     = 'contribs';
 let _campContribs = [], _campExps = [], _campLoans = [];
 
@@ -6515,9 +6516,12 @@ function renderCampElection(name, party) {
   el.innerHTML = `<span class="wl-badge ${m[0]}">${m[1]}</span>${pct}${race}`;
 }
 
-function showCampaignProfile(name, openTab) {
+function showCampaignProfile(name, openTab, filer) {
   _restoreChartProxies();   // heal stale print-proxy images from a failed restore
   _campName     = name;
+  // Exact filer identity (from a search result / entity) disambiguates two
+  // people who share a normalized name; omitted callers fall back to name join.
+  _campFiler    = filer || '';
   const _cm     = _campaignMatch(name);   // normalized join — matches records as filed
   _campContribs = allData.filter(_cm)
                     .sort((a,b) => b.date.localeCompare(a.date));
@@ -7040,7 +7044,8 @@ async function fetchCareerData(name) {
   if (_cohEl) { _cohEl.textContent = '—'; _cohEl.style.color = 'var(--muted)'; }
   if (_cohLk) { _cohLk.textContent = ''; _cohLk.removeAttribute('href'); _cohLk.title = ''; }
   try {
-    const r = await apiFetch(`/api/candidate-history?name=${encodeURIComponent(name)}`);
+    const _filerQ = _campFiler ? `&filer=${encodeURIComponent(_campFiler)}` : '';
+    const r = await apiFetch(`/api/candidate-history?name=${encodeURIComponent(name)}${_filerQ}`);
     if (r.ok) {
       _careerData = await r.json();
       // Populate all-time career totals strip
@@ -7880,7 +7885,7 @@ function _gsOpen(i) {
   // On the Compare tab, a search result is added to the comparison instead of
   // opening its profile modal.
   if (_currentTab() === 'compare') { addToCompare(r.name); return; }
-  showCampaignProfile(r.name, 'career');
+  showCampaignProfile(r.name, 'career', r.filer_number);
 }
 
 function _gsHighlight() {
