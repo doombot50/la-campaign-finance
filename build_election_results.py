@@ -16,6 +16,18 @@ Output entry per normalized name:
 Confirmed blob patterns:
   {date}/RacesCandidates_Multiparish.htm  +  {date}/Votes_Multiparish.htm
   {date}/RacesCandidates/ByParish_{pid}.htm + {date}/VotesParish/Votes_{pid}.htm
+
+Local offices (Sheriff, Assessor, School Board -- District N, ...) carry no
+parish in their SoS title, so the same title repeats in every parish and would
+collapse into a single race. We qualify them with the parish the per-parish file
+was scraped from -> "Vermilion Parish Sheriff". State/federal/legislative/
+judicial-district offices are left untouched (they span parishes and already
+carry a unique district; they also live only in the Multiparish file).
+
+NOTE: this runs incrementally — already-scraped election dates in
+la_candidacies_raw.json.gz are skipped, so the parish qualification only applies
+to NEW dates. To re-qualify the full history, delete la_candidacies_raw.json.gz
+first and re-scrape from scratch.
 """
 import urllib.request, json, re, time, sys, gzip
 from collections import defaultdict
@@ -89,6 +101,56 @@ def office_rank(office):
                             'CONSTABLE','MARSHAL','CHIEF OF POLICE','BOARD']): return 15
     return 20
 
+# Louisiana's 64 parishes are numbered alphabetically (01-64); the SoS per-parish
+# result files key off that number. Local race titles ("Sheriff", "Member of
+# School Board -- District 7") omit the parish, so the same title repeats in every
+# parish and collapses into one race unless we qualify it with where it was scraped.
+LA_PARISHES = {
+    '01':'Acadia','02':'Allen','03':'Ascension','04':'Assumption','05':'Avoyelles',
+    '06':'Beauregard','07':'Bienville','08':'Bossier','09':'Caddo','10':'Calcasieu',
+    '11':'Caldwell','12':'Cameron','13':'Catahoula','14':'Claiborne','15':'Concordia',
+    '16':'De Soto','17':'East Baton Rouge','18':'East Carroll','19':'East Feliciana',
+    '20':'Evangeline','21':'Franklin','22':'Grant','23':'Iberia','24':'Iberville',
+    '25':'Jackson','26':'Jefferson','27':'Jefferson Davis','28':'Lafayette',
+    '29':'Lafourche','30':'La Salle','31':'Lincoln','32':'Livingston','33':'Madison',
+    '34':'Morehouse','35':'Natchitoches','36':'Orleans','37':'Ouachita',
+    '38':'Plaquemines','39':'Pointe Coupee','40':'Rapides','41':'Red River',
+    '42':'Richland','43':'Sabine','44':'St. Bernard','45':'St. Charles',
+    '46':'St. Helena','47':'St. James','48':'St. John the Baptist','49':'St. Landry',
+    '50':'St. Martin','51':'St. Mary','52':'St. Tammany','53':'Tangipahoa',
+    '54':'Tensas','55':'Terrebonne','56':'Union','57':'Vermilion','58':'Vernon',
+    '59':'Washington','60':'Webster','61':'West Baton Rouge','62':'West Carroll',
+    '63':'West Feliciana','64':'Winn',
+}
+
+def is_local_office(office):
+    """Parish-contained local office whose title omits its parish (so the title
+    repeats across parishes). State/federal/legislative/judicial-district offices
+    carry their own unique district and span parishes, so they're excluded — and
+    because multi-parish races live only in the Multiparish file, single-parish
+    files never see them anyway."""
+    o = office.upper()
+    if is_party_office(o): return False
+    if 'JUSTICE OF THE PEACE' in o or 'CONSTABLE' in o: return True   # ward-level, not judges
+    if 'BESE' in o or 'PUBLIC SERVICE' in o or 'BOARD OF ELEMENTARY' in o:
+        return False                                                  # statewide board districts
+    return office_rank(o) in (10, 15, 20)   # parish/municipal offices + local "other"
+
+def has_municipality(office):
+    """True when the title already names its city/town/village, so it's already
+    distinct without a parish prefix."""
+    o = office.upper()
+    return any(k in o for k in ('CITY OF', 'TOWN OF', 'VILLAGE OF'))
+
+def qualify_office(office, parish):
+    """Prefix a local office with its parish: "Sheriff" -> "Vermilion Parish
+    Sheriff". Titles that start with "Parish " (e.g. "Parish President") absorb
+    the word so we don't double it -> "Vermilion Parish President"."""
+    if not parish: return office
+    if office.upper().startswith('PARISH '):
+        return f'{parish} {office}'
+    return f'{parish} Parish {office}'
+
 def date_key(ed):  # 'MM/DD/YYYY' -> 'YYYYMMDD'
     mm, dd, yy = ed.split('/')
     return yy + mm + dd
@@ -96,7 +158,7 @@ def date_key(ed):  # 'MM/DD/YYYY' -> 'YYYYMMDD'
 # ── Scrape: collect ALL candidacies per normalized name ─────────────────────
 candidacies = defaultdict(list)   # norm_name -> [ {party, office, outcome, vote_pct, date, rank, party_office} ]
 
-def ingest(cand_data, votes_data, ed):
+def ingest(cand_data, votes_data, ed, parish=''):
     if not cand_data: return 0
     vote_idx, race_tot = {}, defaultdict(int)
     for vr in as_list((votes_data or {}).get('Races', {}).get('Race')):
@@ -109,6 +171,10 @@ def ingest(cand_data, votes_data, ed):
     for r in as_list(cand_data.get('Races', {}).get('Race')):
         rid = r['ID']
         office = (r.get('SpecificTitle') or r.get('GeneralTitle') or '').strip()
+        # Per-parish files hold single-parish races; qualify local offices with
+        # the parish so e.g. every parish's "Sheriff" is its own race.
+        if parish and is_local_office(office) and not has_municipality(office):
+            office = qualify_office(office, parish)
         for ch in as_list(r.get('Choice')):
             name, party = parse_desc(ch.get('Desc', ''))
             if not name: continue
@@ -167,8 +233,9 @@ def main():
         pids = ([p['ParishValue'] for p in as_list(pe.get('ParishesInElection', {}).get('Parish'))]
                 if pe else [f'{p:02d}' for p in range(1, 65)])
         for pid in pids:
+            parish = LA_PARISHES.get(str(pid).zfill(2), '')
             n2 += ingest(fetch(f'{bd}/RacesCandidates/ByParish_{pid}.htm'),
-                         fetch(f'{bd}/VotesParish/Votes_{pid}.htm'), ed)
+                         fetch(f'{bd}/VotesParish/Votes_{pid}.htm'), ed, parish)
             time.sleep(0.04)
         if (i + 1) % 10 == 0 or i == len(dates) - 1:
             print(f'  {i+1}/{len(dates)} {ed}: +{n1}mp +{n2}parish | '
