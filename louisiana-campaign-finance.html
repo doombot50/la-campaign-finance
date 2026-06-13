@@ -1218,6 +1218,15 @@
     .cp-overlay { padding: 0; }
     .cp-modal { border-radius: 0; border-left: none; border-right: none; min-height: 100vh; min-height: 100dvh; }
     .cp-header { flex-wrap: wrap; padding: 14px 14px 12px; }
+    /* Action buttons can't fit beside the name on a phone, so drop the whole
+       group onto its own full-width second row and let it wrap internally
+       instead of overflowing off the right edge (where they were being clipped).
+       The Verify pill grows to absorb the slack; the rest stay touch-sized. */
+    .cp-header-actions {
+      flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-end;
+      gap: 8px; margin-top: 4px;
+    }
+    .cp-header-actions .verify-link { flex: 1 1 auto; justify-content: center; }
     .cp-stats { flex-wrap: wrap; }
     .cp-stat { flex: 1 1 33.33%; min-width: 33.33%; padding: 10px 6px; border-top: 1px solid var(--border); }
     .cp-stat-val { font-size: 17px; }
@@ -8288,7 +8297,7 @@ function _ovOpenElection(year) {
         <!-- Election result badge lives here, inside the header -->
         <div id="camp-election" class="camp-election" style="display:none"></div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+      <div class="cp-header-actions" style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         <select id="camp-verify-year" class="verify-year" style="display:none" aria-label="Choose which certified report year to open" onchange="_campVerifySelectYear()"></select>
         <a class="verify-link" id="camp-verify-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener" title="Verify these figures against the official Louisiana Board of Ethics record — search this candidate's name on ethics.la.gov">Verify on ethics.la.gov ↗</a>
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="exportCampaignCSV()">⬇ CSV</button>
