@@ -17,7 +17,9 @@ python3 la_ethics_server.py
 
 On first request the server lazily downloads the relevant 4-year CSV bundle from ethics.la.gov, splits it into per-year gzipped NDJSON under `.la_cache/`, and serves the dashboard. The browser caches parsed records in IndexedDB so subsequent loads are instant.
 
-No linter, no test suite, no build step. The HTML file is shipped as-is; the JS has no bundler.
+No linter, no build step. The HTML file is shipped as-is; the JS has no bundler.
+
+A dependency-free test suite lives under `tests/` (Python `unittest` + Node `node --test`, stdlib only). Run it with `./tests/run_tests.sh`; the unit layer needs no network or data release and runs in CI (`.github/workflows/ci.yml`) on every push/PR. See `tests/README.md`.
 
 ## Maintenance Scripts
 
@@ -132,5 +134,5 @@ The Net Cash Flow chart shows `contributions − expenditures`, not actual cash 
 
 - **No third-party packages** for `la_ethics_server.py` or the dashboard — stdlib only. `pdfplumber` is the sole external dep, used only by `fetch_ethics_coh.py`.
 - **No build step** for the frontend — edit `louisiana-campaign-finance.html` directly.
-- **No test suite** — filter/search logic bugs must be caught by running the dashboard manually.
+- **Tests** — `tests/` holds a stdlib-only unit suite (server helpers + payload builders in Python `unittest`; the dashboard's and `static_api.js`'s pure JS via `node --test`, extracted by name since there's no build step). It runs on every push/PR via CI. The live-vs-static **parity gates** (`test_static_parity.py`, `test_static_client_parity.mjs`) need the `.la_cache/` data release and run nightly. DOM-coupled frontend behavior (filters, rendering) still has no automated coverage — verify those by running the dashboard.
 - Static data files (`.json`, `.json.gz`) in the repo root are **committed** and shipped to Render. `.la_cache/` and `.ethics_pdf_cache/` are gitignored — `.la_cache/` contents (including `la_entities.json.gz` and `la_insights.json.gz`) are distributed via the `data-cache` GitHub release and rebuilt/pulled at deploy time.

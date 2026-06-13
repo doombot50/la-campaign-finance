@@ -1,0 +1,41 @@
+# CI — unit tests on every push / PR.
+#
+# Runs the dependency-free unit layer (Python server helpers + payload builders,
+# and the dashboard / static_api.js pure JS). These exercise only the committed
+# root artifacts, so no data-cache release or network is needed and the job is
+# fast. The live-vs-static parity gates stay in the nightly workflow, where the
+# full .la_cache/ release is seeded.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Python unit tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Node unit tests
+        run: node --test tests/test_frontend_units.mjs tests/test_static_api_units.mjs
