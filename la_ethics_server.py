@@ -30,6 +30,12 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_DIR = os.path.join(BASE_DIR, '.la_cache')
 os.makedirs(CACHE_DIR, exist_ok=True)
 CACHE_TTL = 86400  # 24 hours
+# Offline mode (LA_OFFLINE=1): never touch the network or mutate the record
+# cache — no stale-busting, no background prefetch, no on-demand re-download.
+# The parity gates set this so the live server serves the EXACT on-disk snapshot
+# build_static_api.py dumped, instead of re-downloading the volatile current
+# cycle mid-run and drifting from the static artifacts it's being compared to.
+OFFLINE = os.environ.get('LA_OFFLINE') == '1'
 HTML_FILE = os.path.join(BASE_DIR, 'louisiana-campaign-finance.html')
 
 # ── Candidate career data (lazy-loaded on first request) ──────────────────────
@@ -1082,6 +1088,8 @@ def _load_politician_lookup():
 
 def _bust_stale_caches():
     """Delete old-format or stale cache files so they are rebuilt in NDJSON format."""
+    if OFFLINE:
+        return   # parity/test mode: leave the on-disk snapshot exactly as-is
     busted = 0
     lookup_mtime = os.path.getmtime(LOOKUP_FILE) if os.path.exists(LOOKUP_FILE) else 0
     for fname in os.listdir(CACHE_DIR):
@@ -1270,6 +1278,8 @@ def _year_cache_path(year, report_type):
 
 def _year_is_fresh(year, report_type):
     p = _year_cache_path(year, report_type)
+    if OFFLINE:
+        return os.path.exists(p)   # any on-disk file counts as fresh — never re-download
     return os.path.exists(p) and (time.time() - os.path.getmtime(p)) < CACHE_TTL
 
 def _key_years(csv_key):
@@ -1455,6 +1465,12 @@ def download_and_cache(csv_key, report_type='contributions'):
 
     with get_lock(lock_key):
         if is_cached_fresh(csv_key, report_type):
+            set_status(status_key, 'ready', 'cached')
+            return
+        if OFFLINE:
+            # Never hit the network in parity/test mode — serve whatever year
+            # files are already on disk (missing ones stream empty, exactly as
+            # the static layer's 404 does).
             set_status(status_key, 'ready', 'cached')
             return
 
@@ -2066,20 +2082,25 @@ if __name__ == '__main__':
 
     # Warm the cache sequentially in one background thread — never two downloads at once.
     # Pre-warms contributions, expenditures, and loans for the most-recent cycle.
-    print('  Pre-fetching 2024-2027 data (contributions, expenditures, loans) in background...')
-    def _sequential_prefetch():
-        for report_type, csv_key in [
-            ('contributions', '2024-2027'),
-            ('expenditures',  '2024-2027'),
-            ('loans',         '2024-2027'),
-        ]:
-            if not is_cached_fresh(csv_key, report_type):
-                try:
-                    download_and_cache(csv_key, report_type)
-                except Exception as e:
-                    print(f'  Prefetch failed {report_type}/{csv_key}: {e}')
-            gc.collect()
-    threading.Thread(target=_sequential_prefetch, daemon=True).start()
+    # Skipped entirely in OFFLINE mode so the cache stays byte-identical to the
+    # static snapshot during parity runs.
+    if OFFLINE:
+        print('  OFFLINE mode — skipping background prefetch (serving on-disk cache as-is).')
+    else:
+        print('  Pre-fetching 2024-2027 data (contributions, expenditures, loans) in background...')
+        def _sequential_prefetch():
+            for report_type, csv_key in [
+                ('contributions', '2024-2027'),
+                ('expenditures',  '2024-2027'),
+                ('loans',         '2024-2027'),
+            ]:
+                if not is_cached_fresh(csv_key, report_type):
+                    try:
+                        download_and_cache(csv_key, report_type)
+                    except Exception as e:
+                        print(f'  Prefetch failed {report_type}/{csv_key}: {e}')
+                gc.collect()
+        threading.Thread(target=_sequential_prefetch, daemon=True).start()
 
     print()
     print('  Endpoints:')

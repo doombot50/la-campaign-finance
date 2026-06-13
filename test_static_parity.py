@@ -105,7 +105,9 @@ def main():
     with socket.socket() as s:
         s.bind(('127.0.0.1', 0))
         port = s.getsockname()[1]
-    env = dict(os.environ, PORT=str(port))
+    # LA_OFFLINE: serve the on-disk snapshot as-is (no prefetch / re-download),
+    # so the live API can't drift from the static artifacts mid-comparison.
+    env = dict(os.environ, PORT=str(port), LA_OFFLINE='1')
     proc = subprocess.Popen([sys.executable, os.path.join(BASE, 'la_ethics_server.py')],
                             env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
