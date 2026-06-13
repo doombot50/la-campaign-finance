@@ -22,16 +22,27 @@ plus monthly in/out buckets for the cross-cycle cash-on-hand chart.
 isTransfer by retag_caches.py), so consumers can disclose net = raised −
 transfers_in, matching the dashboard's headline Total Raised semantics.
 
+ALSO writes la_filer_index.json.gz — the SAME per-cycle/monthly summary, but
+keyed by the raw Ethics `filerNumber` (the only true identity the records
+carry) instead of by normalized name. ~0.3% of normalized names cover more
+than one distinct filer (two different people who share a name, or one person
+with several committees); the name-keyed index merges them, the filer-keyed
+index keeps each filer separate. Each filer entry carries the same schema as a
+name entry plus `filer_number` and `name`, so /api/candidate-history can serve
+it verbatim when a filer number is known, and build_entities.py can join career
+totals by exact filer instead of by fuzzy name.
+
 Run nightly by .github/workflows/nightly-data.yml after retag_caches.py.
 Output goes to .la_cache/ so it ships with the data-cache release upload glob;
 the server prefers that copy over the committed repo-root fallback when newer.
 """
 import json, gzip, os, re, time
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 BASE  = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(BASE, '.la_cache')
-OUT   = os.path.join(CACHE, 'la_candidate_index.json.gz')
+OUT       = os.path.join(CACHE, 'la_candidate_index.json.gz')
+OUT_FILER = os.path.join(CACHE, 'la_filer_index.json.gz')
 
 def get_cycle(year):
     y = int(year)
@@ -56,13 +67,32 @@ def month_key(date_str):
         return d[:7]
     return None
 
-# norm_name -> cycle -> {raised, spent, borrowed, n_c, n_e, n_l, donors: set, ...}
 _empty = lambda: {'raised':0,'spent':0,'borrowed':0,'transfers_in':0,
                   'n_c':0,'n_e':0,'n_l':0,'n_t':0,'donors':set()}
-index  = defaultdict(lambda: defaultdict(_empty))
 
-# norm_name -> month_key -> {in: float, out: float}
+# norm_name -> cycle -> bucket   /   norm_name -> month_key -> {in, out}
+index   = defaultdict(lambda: defaultdict(_empty))
 monthly = defaultdict(lambda: defaultdict(lambda: {'in':0.0,'out':0.0}))
+
+# filerNumber -> cycle -> bucket  /  filerNumber -> month_key -> {in, out}
+# Same aggregation, keyed by the real filer identity so name collisions don't
+# merge. fnames tracks the raw spellings each filer used (most common = display).
+findex   = defaultdict(lambda: defaultdict(_empty))
+fmonthly = defaultdict(lambda: defaultdict(lambda: {'in':0.0,'out':0.0}))
+fnames   = defaultdict(Counter)
+
+def _apply(bucket, kind, amt, is_transfer, donor):
+    """Fold one record's amount into a per-cycle bucket (name- or filer-keyed)."""
+    if kind == 'c':
+        bucket['raised'] += amt; bucket['n_c'] += 1
+        if is_transfer:
+            bucket['transfers_in'] += amt; bucket['n_t'] += 1
+        if donor:
+            bucket['donors'].add(donor)
+    elif kind == 'e':
+        bucket['spent'] += amt; bucket['n_e'] += 1
+    else:
+        bucket['borrowed'] += amt; bucket['n_l'] += 1
 
 def ingest(path, kind):
     n = 0
@@ -80,20 +110,23 @@ def ingest(path, kind):
                 cycle = get_cycle(year)
                 amt   = float(r.get('amount') or 0)
                 mk    = month_key(date)
+                is_transfer = bool(r.get('isTransfer'))
+                donor = (r.get('contributor') or '').strip()
+                fn    = (r.get('filerNumber') or '').strip()
 
-                e = index[norm][cycle]
-                if kind == 'c':
-                    e['raised'] += amt; e['n_c'] += 1
-                    if r.get('isTransfer'):
-                        e['transfers_in'] += amt; e['n_t'] += 1
-                    donor = (r.get('contributor') or '').strip()
-                    if donor: e['donors'].add(donor)
-                    if mk: monthly[norm][mk]['in'] += amt
-                elif kind == 'e':
-                    e['spent']    += amt; e['n_e'] += 1
-                    if mk: monthly[norm][mk]['out'] += amt
-                else:
-                    e['borrowed'] += amt; e['n_l'] += 1
+                # Name-keyed aggregation (unchanged output)
+                _apply(index[norm][cycle], kind, amt, is_transfer, donor)
+                if mk:
+                    if   kind == 'c': monthly[norm][mk]['in']  += amt
+                    elif kind == 'e': monthly[norm][mk]['out'] += amt
+
+                # Filer-keyed aggregation (only when the record names a filer)
+                if fn:
+                    fnames[fn][cand] += 1
+                    _apply(findex[fn][cycle], kind, amt, is_transfer, donor)
+                    if mk:
+                        if   kind == 'c': fmonthly[fn][mk]['in']  += amt
+                        elif kind == 'e': fmonthly[fn][mk]['out'] += amt
                 n += 1
             except: pass
     return n
@@ -115,8 +148,10 @@ print(f'Ingested {total:,} records in {time.time()-t0:.1f}s. Building index...')
 CYCLE_ORDER = ['2000-2003','2004-2007','2008-2011','2012-2015',
                '2016-2019','2020-2023','2024-2027']
 
-out = {}
-for norm, cycles in index.items():
+def build_entry(cycles, monthly_map):
+    """Turn per-cycle buckets + monthly buckets into the public entry shape.
+    Returns None when there is no activity. Shared by the name- and filer-keyed
+    outputs so both carry an identical schema."""
     cycle_data = {}
     total_raised = total_spent = total_borrowed = total_transfers = 0
     for cycle_label in CYCLE_ORDER:
@@ -138,18 +173,19 @@ for norm, cycles in index.items():
         if xfer:
             cycle_data[cycle_label]['transfers_in'] = xfer
             cycle_data[cycle_label]['n_t'] = d['n_t']
-    if not cycle_data: continue
+    if not cycle_data:
+        return None
     labels = list(cycle_data.keys())
 
     # Monthly buckets — only include months with non-zero activity, rounded to 2dp
     mon = {}
-    for mk, vals in sorted(monthly[norm].items()):
+    for mk, vals in sorted(monthly_map.items()):
         i = round(vals['in'],  2)
         o = round(vals['out'], 2)
         if i or o:
             mon[mk] = {'in': i, 'out': o}
 
-    out[norm] = {
+    entry = {
         'cycles':          cycle_data,
         'monthly':         mon,
         'total_raised':    round(total_raised,   2),
@@ -160,15 +196,49 @@ for norm, cycles in index.items():
         'n_cycles':        len(labels),
     }
     if total_transfers:
-        out[norm]['total_transfers_in'] = round(total_transfers, 2)
+        entry['total_transfers_in'] = round(total_transfers, 2)
+    return entry
 
-tmp = OUT + '.tmp'
-with gzip.open(tmp, 'wt', encoding='utf-8') as f:
-    json.dump(out, f, separators=(',',':'))
-os.replace(tmp, OUT)
+# Name-keyed index (output unchanged)
+out = {}
+for norm, cycles in index.items():
+    entry = build_entry(cycles, monthly[norm])
+    if entry is not None:
+        out[norm] = entry
+
+# Filer-keyed index — same schema, plus filer_number + display name
+fout = {}
+for fnum, cycles in findex.items():
+    entry = build_entry(cycles, fmonthly[fnum])
+    if entry is None:
+        continue
+    entry['filer_number'] = fnum
+    entry['name'] = fnames[fnum].most_common(1)[0][0] if fnames[fnum] else ''
+    fout[fnum] = entry
+
+def _write_gz(path, obj):
+    tmp = path + '.tmp'
+    with gzip.open(tmp, 'wt', encoding='utf-8') as f:
+        json.dump(obj, f, separators=(',', ':'))
+    os.replace(tmp, path)
+
+_write_gz(OUT, out)
+_write_gz(OUT_FILER, fout)
 
 sz = os.path.getsize(OUT) / 1024
 n_xf = sum(1 for v in out.values() if v.get('total_transfers_in'))
 xf_total = sum(v.get('total_transfers_in', 0) for v in out.values())
 print(f'Wrote {OUT}: {len(out):,} candidates, {sz:.0f} KB')
 print(f'  transfer-aware: {n_xf:,} entities with transfers_in totaling ${xf_total:,.0f}')
+
+fsz = os.path.getsize(OUT_FILER) / 1024
+# How many normalized names cover more than one filer (the collisions the
+# filer index resolves) — handy signal in the nightly logs.
+name_filers = defaultdict(set)
+for fnum in fout:
+    nm = normalize(fout[fnum].get('name') or '')
+    if nm:
+        name_filers[nm].add(fnum)
+n_collide = sum(1 for v in name_filers.values() if len(v) > 1)
+print(f'Wrote {OUT_FILER}: {len(fout):,} filers, {fsz:.0f} KB')
+print(f'  name collisions resolved: {n_collide:,} normalized names map to >1 filer')

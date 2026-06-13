@@ -25,7 +25,7 @@ These rebuild the static `.json`/`.json.gz` artifacts committed to the repo. Run
 
 ```bash
 python3 refresh_la_cache.py          # re-download current cycle from ethics.la.gov
-python3 build_candidate_index.py     # per-candidate career totals + monthly buckets
+python3 build_candidate_index.py     # per-candidate career totals + monthly buckets (also emits la_filer_index.json.gz, the filer-keyed twin)
 python3 build_filer_lookup.py        # name → filer_number index
 python3 build_entities.py            # canonical entity table (run after refresh)
 python3 build_insights.py            # precomputed war chests, top donors (run after entities)
@@ -64,7 +64,8 @@ la_ethics_server.py  (ThreadingHTTPServer, stdlib only)
     ├── .la_cache/                       per-year NDJSON.gz — lazy-downloaded from ethics.la.gov
     │   ├── la_entities.json.gz          canonical filer table (built offline, ships via data-cache release)
     │   └── la_insights.json.gz          precomputed aggregates (built offline, ships via data-cache release)
-    ├── la_candidate_index.json.gz       per-candidate career summaries (committed)
+    ├── la_candidate_index.json.gz       per-candidate career summaries, keyed by normalized name (committed)
+    ├── la_filer_index.json.gz           same career summaries keyed by filerNumber — exact identity, no name-collision merges (ships via data-cache release)
     ├── la_candidacies_raw.json.gz       SoS ballot appearances (committed)
     ├── la_filer_lookup.json             name → filer_number (committed)
     ├── la_donor_industries.json         donor → industry (committed)
@@ -82,7 +83,7 @@ The `.la_cache/` files follow the pattern `contributions_yr<YYYY>.json.gz`. Curr
 
 All candidate lookup across datasets (contributions CSV, SoS candidacies, ethics COH) uses a shared `_norm_name()` pipeline: uppercase → strip honorifics/suffixes (DR, MR, JR, II, III…) → keep A–Z and spaces → collapse whitespace. This is the join key throughout `la_candidate_index`, `la_candidacies_raw`, and `ethics_coh_cache`.
 
-~0.3% of candidates have multiple filer IDs under one normalized name and roll up incorrectly. The roadmap item is a filer-keyed rebuild.
+~0.3% of normalized names cover more than one distinct filer (two people who share a name, or one person with several committees). The name-keyed join merges them. The **filer-keyed rebuild** addresses this: `build_candidate_index.py` also emits `la_filer_index.json.gz` (career summaries keyed by the raw Ethics `filerNumber`), `/api/candidate-history?...&filer=<n>` serves a single filer's exact figures, `build_entities.py` joins career by exact filer, and the dashboard threads `filer_number` from search results into the profile fetch. When no filer number is known (a bare-name link, the serverless static twin, or the Compare tab) the lookup falls back to the name-keyed index, so those surfaces still merge collisions — that's the remaining edge.
 
 ### Browser SPA (louisiana-campaign-finance.html)
 

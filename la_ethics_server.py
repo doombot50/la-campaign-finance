@@ -35,6 +35,7 @@ HTML_FILE = os.path.join(BASE_DIR, 'louisiana-campaign-finance.html')
 # ── Candidate career data (lazy-loaded on first request) ──────────────────────
 import re as _re
 _CAND_INDEX  = None   # la_candidate_index.json.gz  — financial summary per cycle
+_FILER_CAREER = None  # la_filer_index.json.gz      — same summary keyed by filerNumber
 _CAND_RACES  = None   # la_candidacies_raw.json.gz  — all SoS race appearances
 _CAND_LOCK   = threading.Lock()
 _CAND_IDX_MTIME = 0   # mtime of index file when last loaded
@@ -111,7 +112,10 @@ def _get_entity(name=None, filer=None):
     """Canonical entity by filer number (preferred) or any known name/alias."""
     _load_entities()
     if filer:
-        return _ENTITIES.get(str(filer))
+        ent = _ENTITIES.get(str(filer))
+        if ent:
+            return ent
+        # filer not in the entity table — fall through to a name match if given
     if name:
         fn = _ENTITIES_BYNAME.get(re.sub(r'\s+', ' ', name.strip().upper()))
         return _ENTITIES.get(fn) if fn else None
@@ -292,8 +296,20 @@ def _career_index_path():
             return cache_p
     return repo_p
 
+def _filer_career_path():
+    """Freshest la_filer_index.json.gz — same precedence rule as the name index
+    (.la_cache copy from the nightly release wins over a committed repo-root
+    fallback when at least as new). Built-time-only artifact; may be absent on a
+    cold checkout, in which case the server falls back to name-keyed lookups."""
+    cache_p = os.path.join(CACHE_DIR, 'la_filer_index.json.gz')
+    repo_p  = os.path.join(BASE_DIR,  'la_filer_index.json.gz')
+    if os.path.exists(cache_p):
+        if not os.path.exists(repo_p) or os.path.getmtime(cache_p) >= os.path.getmtime(repo_p):
+            return cache_p
+    return repo_p
+
 def _load_career_data():
-    global _CAND_INDEX, _CAND_RACES, _CAND_IDX_MTIME
+    global _CAND_INDEX, _FILER_CAREER, _CAND_RACES, _CAND_IDX_MTIME
     idx_path   = _career_index_path()
     races_path = os.path.join(BASE_DIR, 'la_candidacies_raw.json.gz')
     # Check if file has changed since last load (allows hot-reload after rebuild)
@@ -307,6 +323,13 @@ def _load_career_data():
             _CAND_IDX_MTIME = current_mtime
         else:
             _CAND_INDEX = {}
+        # Filer-keyed twin (additive; reloaded in lockstep with the name index).
+        filer_path = _filer_career_path()
+        if os.path.exists(filer_path):
+            with gzip.open(filer_path, 'rt', encoding='utf-8') as f:
+                _FILER_CAREER = json.load(f)
+        else:
+            _FILER_CAREER = {}
         if os.path.exists(races_path):
             with gzip.open(races_path, 'rt', encoding='utf-8') as f:
                 _CAND_RACES = json.load(f)
@@ -1595,13 +1618,18 @@ class Handler(BaseHTTPRequestHandler):
         # Candidate career history — financial index + SoS race list for one name.
         if parsed.path == '/api/candidate-history':
             name = params.get('name', [''])[0].strip()
+            filer = params.get('filer', [''])[0].strip()
             if not name:
                 self._json({'error': 'name required'}); return
             _load_career_data()
             norm = _norm_name(name)
             toks = norm.split()
-            # Try T1 exact, then T2 first+last
-            financial = (_CAND_INDEX.get(norm) or
+            # Exact identity first: a filer number resolves to one filer's career
+            # via the filer-keyed index, so two people sharing a normalized name
+            # never merge. Falls back to the name-keyed index (T1 exact, then T2
+            # first+last) when no filer is known or it isn't in the index yet.
+            financial = ((_FILER_CAREER.get(filer) if filer else None) or
+                         _CAND_INDEX.get(norm) or
                          (_CAND_INDEX.get(f'{toks[0]} {toks[-1]}') if len(toks) >= 2 else None) or
                          {})
             races_raw = (_CAND_RACES.get(norm) or
@@ -1653,7 +1681,7 @@ class Handler(BaseHTTPRequestHandler):
                 'norm':         norm,
                 'ethics_coh':   ethics_coh,   # None if not yet scraped
                 'coh_estimate': coh_estimate, # None unless certified base exists
-                'entity':       _get_entity(name=name),  # canonical entity or None
+                'entity':       _get_entity(filer=filer or None, name=name),  # canonical entity or None
             })
             return
 

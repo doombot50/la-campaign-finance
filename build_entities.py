@@ -100,10 +100,11 @@ def main():
     srv._load_filer_lookup()
     srv._load_career_data()
 
-    coh_cache   = srv._ETHICS_COH or {}
-    filer_map   = srv._FILER_NUM or {}     # norm name -> filer_number
-    cand_index  = srv._CAND_INDEX or {}
-    cand_races  = srv._CAND_RACES or {}
+    coh_cache    = srv._ETHICS_COH or {}
+    filer_map    = srv._FILER_NUM or {}     # norm name -> filer_number
+    cand_index   = srv._CAND_INDEX or {}    # norm name -> career (may merge collisions)
+    filer_career = srv._FILER_CAREER or {}  # filer_number -> career (exact identity)
+    cand_races   = srv._CAND_RACES or {}
 
     # Invert the filer lookup: filer_number -> [norm names] (alias source)
     fn_aliases = defaultdict(list)
@@ -160,11 +161,15 @@ def main():
                        'year': centry.get('report_year'),
                        'pdf_url': centry.get('pdf_url')}
 
-        # Career + races joins
-        idx_key = find(index_by_norm)
+        # Career join — prefer the filer-keyed index (exact identity, so two
+        # filers sharing a normalized name keep their own totals). Fall back to
+        # the name-keyed index for filers not present there yet.
+        ci = filer_career.get(fn)
+        if ci is None:
+            idx_key = find(index_by_norm)
+            ci = cand_index[index_by_norm[idx_key]] if idx_key else None
         career = None
-        if idx_key:
-            ci = cand_index[index_by_norm[idx_key]]
+        if ci is not None:
             career = {'total_raised': ci.get('total_raised'),
                       'total_spent':  ci.get('total_spent'),
                       'total_transfers_in': ci.get('total_transfers_in', 0),
