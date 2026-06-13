@@ -1248,9 +1248,14 @@
     /* Top Donors / Recipients / Lenders cards stack via .m-cards (see below);
        hide the inline bar column there. */
     .tc-bar-cell { display: none; }
-    /* Races: dense result grids keep sideways scroll inside their card */
-    .race-card { overflow-x: auto; }
-    .race-cand-table { min-width: 540px; }
+    /* Races: each candidate stacks into a labeled card (m-cards pattern)
+       instead of a sideways-scrolling 540px-wide table that clipped columns. */
+    .race-cand-table.m-cards td:first-child {
+      font-weight: 600 !important; font-size: 13px;
+      padding-bottom: 2px !important; color: var(--text);
+    }
+    .race-cand-table.m-cards tr { background: var(--card); }
+    .race-cand-table.m-cards .race-ind-row { padding: 0; border: none; margin: 0; }
 
     /* m-cards: record tables collapse into stacked label/value cards.
        Cells carry their column name in data-label; cells without one
@@ -6565,7 +6570,13 @@ function _scrollToRace(date, office, attempt = 0) {
   const el = document.getElementById(_raceAnchorId(date, office));
   if (el) {
     const _reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    el.scrollIntoView({ behavior: _reduce ? 'auto' : 'smooth', block: 'start' });
+    // Offset by the sticky header so the race-card title (office + date) lands
+    // in view rather than scrolling up underneath it — otherwise on a phone you
+    // see candidate rows with no idea which election you landed on.
+    const header = document.querySelector('header');
+    const offset = (header ? header.offsetHeight : 0) + 10;
+    const y = el.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: Math.max(0, y), behavior: _reduce ? 'auto' : 'smooth' });
     el.classList.add('race-highlight');
     setTimeout(() => el.classList.remove('race-highlight'), 2600);
   } else if (attempt < 24) {           // races load async — retry up to ~6s
@@ -7815,13 +7826,13 @@ function renderRaceCard(race) {
       : '';
     return `<tr style="${rowBg}">
       <td style="font-weight:${won?'600':'400'}"><span class="contributor-link" data-candidate="${escHtml(c.name)}" data-filer="${c.filer_number||''}" onclick="showCampaignProfile(this.dataset.candidate,'career',this.dataset.filer)" title="View ${escHtml(c.name)}'s profile">${escHtml(c.name)}</span></td>
-      <td>${partyBadge(c.party)}</td>
-      <td class="${outcomeClass(c.outcome)}">${outcomeLabel(c.outcome)}</td>
-      <td style="text-align:right">${pct}</td>
-      <td style="text-align:right" title="$${Math.round(c.raised||0).toLocaleString()}">${fmtRaisedShort(c.raised)}</td>
-      <td style="text-align:right" title="$${Math.round(c.spent||0).toLocaleString()}">${fmtRaisedShort(c.spent)}</td>
-      ${hasCoh ? `<td style="text-align:right">${cohCell}</td>` : ''}
-      <td style="text-align:center">${profileBtn}</td>
+      <td data-label="Party">${partyBadge(c.party)}</td>
+      <td data-label="Outcome" class="${outcomeClass(c.outcome)}">${outcomeLabel(c.outcome)}</td>
+      <td data-label="Vote %" style="text-align:right">${pct}</td>
+      <td data-label="Raised" style="text-align:right" title="$${Math.round(c.raised||0).toLocaleString()}">${fmtRaisedShort(c.raised)}</td>
+      <td data-label="Spent" style="text-align:right" title="$${Math.round(c.spent||0).toLocaleString()}">${fmtRaisedShort(c.spent)}</td>
+      ${hasCoh ? `<td data-label="Cash on Hand" style="text-align:right">${cohCell}</td>` : ''}
+      <td class="m-hide" style="text-align:center">${profileBtn}</td>
     </tr>
     <tr class="race-ind-row" style="display:none">
       <td colspan="${hasCoh?8:7}"><div class="race-ind-panel" id="ind-${c.filer_number}-${c.cycle.replace(/-/g,'')}"></div></td>
@@ -7836,7 +7847,7 @@ function renderRaceCard(race) {
            style="margin-left:6px;color:var(--muted);font-size:9px;text-decoration:underline dotted" title="Permanent link to this race — copy the URL to share">permalink</a>
       </span>
     </div>
-    <table class="race-cand-table">
+    <table class="race-cand-table m-cards">
       <thead><tr>
         <th>Candidate</th><th>Party</th><th>Outcome</th>
         <th style="text-align:right">Vote %</th>
