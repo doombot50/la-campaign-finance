@@ -6616,6 +6616,13 @@ function showCampaignProfile(name, openTab, filer) {
   // aren't loaded — default to the Career tab so all-cycle data shows. Callers
   // from in-cycle tables omit openTab and get the contributions list as before.
   campSwitchTab(openTab || (_campContribs.length ? 'contribs' : 'career'));
+  // Eagerly load expenditures + loans in the background so those tabs are
+  // already populated when the user clicks them — no per-tab click-to-load
+  // wait. Each loader no-ops if its cycle data is already in memory, and on
+  // completion refreshes _campExps/_campLoans + the header stats (and re-renders
+  // the tab if it happens to be the active one). See loadExpData/loadLoanData.
+  if (expData.length === 0)  loadExpData();
+  if (loanData.length === 0) loadLoanData();
   // Election result may load async on first open; re-render once available.
   const _p = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
   loadElectionResults().then(() => renderCampElection(name, _p));
