@@ -4545,7 +4545,7 @@ function switchMoneyView(dir) {
   _saveUrlState();
 }
 
-function switchTab(tab) {
+function switchTab(tab, opts) {
   // Hide all top-level views; also hide expenditures-view (managed by switchMoneyView)
   Object.entries(TAB_VIEWS).forEach(([k, id]) => {
     const el = document.getElementById(id); if (el) el.style.display = k === tab ? '' : 'none';
@@ -4593,7 +4593,7 @@ function switchTab(tab) {
   if (tab === 'loans'   && loanData.length === 0) loadLoanData();
   if (tab === 'donors')  renderDonorsLeaderboard();
   if (tab === 'compare') renderCompare();
-  if (tab === 'races')   loadRaces();
+  if (tab === 'races' && !(opts && opts.skipLoad)) loadRaces();
   if (tab === 'overview') loadOverview();
 
   _saveUrlState();
@@ -6586,24 +6586,22 @@ function _applyRoute() {
 // Open the Races tab focused on one specific race: widen the filters so the
 // target race is actually rendered (all offices, its own year), then scroll to
 // it. Used by race permalinks and the career-tab race rows.
-function _openRace(date, office) {
+async function _openRace(date, office) {
   const yr = (date.split('/')[2] || '');
   if (document.getElementById('camp-overlay').classList.contains('open')) closeCampaignProfile();
   if (document.getElementById('cp-overlay').classList.contains('open'))   closeContributorProfile();
-  const offSel = document.getElementById('races-office-filter');
-  offSel.value = 'all';
-  if (_currentTab() !== 'races') switchTab('races');   // switchTab triggers loadRaces()
-  else loadRaces();
+  document.getElementById('races-office-filter').value = 'all';
+  // Drive the load ourselves (suppressing switchTab's own loadRaces) so the
+  // year filter and scroll happen *after* the all-offices payload is in — a
+  // polling race against loadRaces could reset the year and wipe the scroll.
+  if (_currentTab() !== 'races') switchTab('races', { skipLoad: true });
+  await loadRaces();
   const yearSel = document.getElementById('races-year-filter');
-  let tries = 0;
-  (function focus() {
-    if (_racesData && (!yr || yearSel.querySelector(`option[value="${yr}"]`))) {
-      if (yr) { yearSel.value = yr; _renderRacesData(_racesData); }
-      _scrollToRace(date, office);
-    } else if (tries++ < 40) {
-      setTimeout(focus, 150);
-    }
-  })();
+  if (yr && yearSel.querySelector(`option[value="${yr}"]`)) {
+    yearSel.value = yr;
+    _renderRacesData(_racesData);
+  }
+  _scrollToRace(date, office);
 }
 window.addEventListener('popstate', _applyRoute);
 window.addEventListener('hashchange', _applyRoute);
@@ -8446,22 +8444,16 @@ function _ovOpenTop(i) {
   if (t) showCampaignProfile(t.name, 'career');
 }
 
-function _ovOpenElection(year) {
+async function _ovOpenElection(year) {
   // Jump to the Races tab filtered to that year + all offices
-  const offSel = document.getElementById('races-office-filter');
-  offSel.value = 'all';
-  if (_currentTab() !== 'races') switchTab('races');   // switchTab triggers loadRaces()
-  else loadRaces();
+  document.getElementById('races-office-filter').value = 'all';
+  if (_currentTab() !== 'races') switchTab('races', { skipLoad: true });
+  await loadRaces();
   const yearSel = document.getElementById('races-year-filter');
-  let tries = 0;
-  (function setYear() {
-    if (_racesData && yearSel.querySelector(`option[value="${year}"]`)) {
-      yearSel.value = String(year);
-      _renderRacesData(_racesData);
-    } else if (tries++ < 30) {
-      setTimeout(setYear, 100);
-    }
-  })();
+  if (yearSel.querySelector(`option[value="${year}"]`)) {
+    yearSel.value = String(year);
+    _renderRacesData(_racesData);
+  }
 }
 </script>
 <!-- CAMPAIGN PROFILE MODAL -->
