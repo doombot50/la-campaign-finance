@@ -6570,6 +6570,15 @@ function showCampaignProfile(name, openTab, filer) {
                     .sort((a,b) => (b.date||'').localeCompare(a.date||''));
 
   document.getElementById('camp-name').textContent = name;
+  // Reset the "Verify" link to the generic official search. fetchCareerData
+  // upgrades it to a direct ShowEForm report link once a certified filing
+  // (with its ReportID) is known — so it never lingers on the prior candidate.
+  const _vl = document.getElementById('camp-verify-link');
+  if (_vl) {
+    _vl.href = LA_ETHICS_SEARCH_URL;
+    _vl.textContent = 'Verify on ethics.la.gov ↗';
+    _vl.title = "Verify against the official Louisiana Board of Ethics record — search this candidate's name on ethics.la.gov";
+  }
   _refreshCampStats();
   // When opened from search/overview the current cycle's transactions usually
   // aren't loaded — default to the Career tab so all-cycle data shows. Callers
@@ -6602,6 +6611,11 @@ function _cyclePeriodLabel(cycleYear) {
                y >= 2012 ? 2015 : y >= 2008 ? 2011 : y >= 2004 ? 2007 : 2003;
   return `${y - 1}–${String(ends).slice(2)} cycle`;
 }
+
+// Official Louisiana Board of Ethics campaign-finance search. Used as the
+// fallback "Verify" target when we have no direct report link — the site is
+// ASP.NET WebForms (POST-only search), so a name can't be pre-filled via URL.
+const LA_ETHICS_SEARCH_URL = 'https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx';
 
 // Official source URL for a certified COH figure: prefer the LA Ethics
 // report viewer (renders in-browser and links the PDF), fall back to the
@@ -7131,6 +7145,16 @@ async function fetchCareerData(name) {
         cohLink.rel    = 'noopener noreferrer';
         cohLink.style.pointerEvents = '';
         cohLink.title  = `Certified per LA Ethics annual filing${date ? ' filed ' + date : ''}. Click to view the official report.`;
+        // Upgrade the header "Verify" pill to a DIRECT link to this filer's
+        // certified report (ShowEForm) — the same F102/F202 filing the search
+        // results list. A real deep link beats the generic search page.
+        const _vl = document.getElementById('camp-verify-link');
+        const _repUrl = _cohSourceUrl(coh);
+        if (_vl && _repUrl) {
+          _vl.href = _repUrl;
+          _vl.textContent = 'Verify: official report ↗';
+          _vl.title = `Open this filer's certified ${yr || ''} report (F102/F202) on ethics.la.gov — the official filing behind these figures.`;
+        }
       } else {
         cohEl.textContent = '—';
         cohEl.style.color = 'var(--muted)';
