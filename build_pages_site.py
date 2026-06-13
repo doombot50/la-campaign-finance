@@ -39,6 +39,12 @@ REQUIRED_ARTIFACTS = [
     'la_insights.json.gz',
     'la_entities.json.gz',
     'la_candidate_index.json.gz',
+]
+# Optional artifacts — shipped via the *.json.gz glob below when present, but a
+# missing one is NOT site-breaking (the static layer degrades gracefully), so it
+# must not block a deploy. la_filer_index.json.gz lands here on the first nightly
+# after it was introduced; until then candidateHistory falls back to name-keyed.
+OPTIONAL_ARTIFACTS = [
     'la_filer_index.json.gz',
 ]
 # Committed repo-root files the layer also reads
@@ -59,6 +65,12 @@ def main():
     for name in REQUIRED_ROOT:
         if not os.path.exists(os.path.join(BASE, name)):
             problems.append(f'missing committed file: {name}')
+
+    # Optional artifacts: note but never block (the static layer degrades).
+    for name in OPTIONAL_ARTIFACTS:
+        if not os.path.exists(os.path.join(CACHE, name)):
+            print(f'  note: optional artifact .la_cache/{name} not present yet '
+                  '(static layer falls back gracefully)')
 
     # ── completeness: record year files for every cycle the UI offers ────
     # Contributions must cover 2000..current contiguously (the state's
