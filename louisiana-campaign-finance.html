@@ -2715,6 +2715,18 @@ function _allCycleValues() {
   const src = _allCycleOpts || Array.from(document.getElementById('cycle-select').options);
   return src.map(o => o.value);
 }
+// Phones run out of memory holding more than a couple of cycles of raw records
+// at once (each cycle is hundreds of thousands of objects), so the multi-cycle
+// selection is capped on mobile / low-memory devices. Desktops are uncapped.
+const MOBILE_CYCLE_CAP = 2;
+let _cycleCapNotice = 0;   // >0 = how many cycles were requested before clamping
+function _isLowMemoryDevice() {
+  const ua = /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+  const narrow = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  const lowMem = typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 4;
+  return ua || narrow || lowMem;
+}
+function _maxCycles() { return _isLowMemoryDevice() ? MOBILE_CYCLE_CAP : Infinity; }
 function getSelectedCycles() {
   // Raw selection, newest first. Callers that can't use a cycle (e.g. expenditures
   // before 2002) apply their own floor.
@@ -2738,6 +2750,11 @@ function _setSelectedCycles(cycles) {
   let cs = [...new Set(cycles.map(String))].filter(v => known.has(v));
   if (!cs.length) cs = ['2026'];
   cs.sort((a, b) => parseInt(b) - parseInt(a));
+  // Enforce the per-device cap: keep the most recent N, remember if we trimmed
+  // so the loader can explain why fewer cycles loaded than were asked for.
+  const cap = _maxCycles();
+  if (cs.length > cap) { _cycleCapNotice = cs.length; cs = cs.slice(0, cap); }
+  else { _cycleCapNotice = 0; }
   _selectedCycles = cs;
   // Mirror the primary cycle into the dropdown for legacy single-cycle reads.
   const sel = document.getElementById('cycle-select');
@@ -2927,6 +2944,13 @@ async function loadData() {
       await fetchLAEthicsLive(cyc);
     }
     if (cycles.length > 1) _loadStrip(false);   // clear the multi-cycle notice
+    // If the device cap trimmed the request, say so (and auto-dismiss).
+    if (_cycleCapNotice) {
+      const asked = _cycleCapNotice; _cycleCapNotice = 0;
+      _loadStrip(true, `Loaded the ${cycles.length} most recent cycles. Phones can only hold a couple at once — open on a desktop to view all ${asked}.`, null, true);
+      clearTimeout(_noticeDismissTimer);
+      _noticeDismissTimer = setTimeout(() => _loadStrip(false), 7000);
+    }
   }
 
   mergeAndRender();
@@ -8808,7 +8832,14 @@ function _ovSearchDonor(i) {
 
 function _ovOpenTop(i) {
   const t = _overviewData?.top_fundraisers?.[i];
-  if (t) showCampaignProfile(t.name, 'career');
+  if (!t) return;
+  // Jump to Money In, load every cycle, and filter to just this committee — so the
+  // all-time leaderboard lands you on that committee's all-time money in. (On
+  // phones the cycle count is capped; the loader notes it.)
+  switchTab('contributions');
+  if (_moneyDir === 'out') switchMoneyView('in');
+  _applyToken('committee', t.name);   // sets the committee filter + chip
+  _applyToken('cycle', 'all');        // loads all cycles, then re-applies the filter
 }
 
 async function _ovOpenElection(year) {
