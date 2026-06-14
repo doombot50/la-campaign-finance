@@ -2698,14 +2698,90 @@ document.getElementById('btn-us-states').addEventListener('click', () => {
 
 let _loadedCycle = null;
 
+// ── Multi-cycle selection ───────────────────────────────────────────────────
+// The cycle dropdown still drives the common single-cycle case, but the unified
+// search `cycle:` token can select several cycles at once (e.g. `cycle:2024,2020`)
+// or every cycle (`cycle:all`). `_selectedCycles` is the source of truth — even-year
+// strings, newest first — and the dropdown mirrors the primary (newest) one so the
+// many places that read a single `cycle-select.value` keep working unchanged.
+let _selectedCycles = ['2026'];
+
+function _allCycleValues() {
+  // Prefer the full snapshot (the dropdown is pruned to 2002+ on Money Out).
+  const src = _allCycleOpts || Array.from(document.getElementById('cycle-select').options);
+  return src.map(o => o.value);
+}
+function getSelectedCycles() {
+  // Raw selection, newest first. Callers that can't use a cycle (e.g. expenditures
+  // before 2002) apply their own floor.
+  return _selectedCycles.slice().sort((a, b) => parseInt(b) - parseInt(a));
+}
+function getPrimaryCycle() {
+  return getSelectedCycles()[0] || '2026';
+}
+function isAllCycles() {
+  const all = _allCycleValues();
+  return all.length > 0 && _selectedCycles.length >= all.length;
+}
+function _cycleYearSet(cycles) {
+  // Each even-year cycle covers [c-1, c]; return the union of calendar years.
+  const s = new Set();
+  (cycles || getSelectedCycles()).forEach(c => { const y = parseInt(c); s.add(y); s.add(y - 1); });
+  return s;
+}
+function _setSelectedCycles(cycles) {
+  const known = new Set(_allCycleValues());
+  let cs = [...new Set(cycles.map(String))].filter(v => known.has(v));
+  if (!cs.length) cs = ['2026'];
+  cs.sort((a, b) => parseInt(b) - parseInt(a));
+  _selectedCycles = cs;
+  // Mirror the primary cycle into the dropdown for legacy single-cycle reads.
+  const sel = document.getElementById('cycle-select');
+  if (sel && sel.querySelector(`option[value="${cs[0]}"]`)) sel.value = cs[0];
+}
+// Human label for the active selection, used wherever a single-cycle period
+// label used to appear.
+function _cyclesLabel() {
+  if (isAllCycles()) return 'all cycles';
+  const cs = getSelectedCycles();
+  if (cs.length === 1) return _cyclePeriodLabel(cs[0]);
+  return `${cs.length} cycles`;
+}
+// Month- or year-granularity buckets spanning the selected cycles. One or two
+// cycles → monthly; more → yearly so the axis stays readable.
+function _cycleBuckets() {
+  const cycles = getSelectedCycles().map(c => parseInt(c)).filter(Boolean).sort((a, b) => a - b);
+  const nowY = new Date().getFullYear();
+  const minY = (cycles[0] || nowY) - 1;
+  const maxY = cycles[cycles.length - 1] || nowY;
+  const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Monthly only for a tight span (≤ two adjacent cycles); otherwise yearly so a
+  // wide or sparse selection doesn't explode into hundreds of bars.
+  if (maxY - minY <= 4) {
+    const keys = [];
+    for (let y = minY; y <= maxY; y++) for (let m = 1; m <= 12; m++) keys.push(`${y}-${String(m).padStart(2,'0')}`);
+    return { granularity: 'month', keys,
+      labels: keys.map(k => { const [y, m] = k.split('-'); return `${MN[+m - 1]} '${y.slice(2)}`; }),
+      keyOf: d => (d.date || '').slice(0, 7), span: `${minY}–${maxY}` };
+  }
+  const keys = [];
+  for (let y = minY; y <= maxY; y++) keys.push(String(y));
+  return { granularity: 'year', keys, labels: keys.slice(),
+    keyOf: d => (d.date || '').slice(0, 4), span: `${minY}–${maxY}` };
+}
+
 function updateLoadBtn() {
   const btn = document.getElementById('btn-load');
-  const cycle = document.getElementById('cycle-select').value;
-  if (cycle === _loadedCycle && allData.length > 0) {
-    const sel = document.getElementById('cycle-select');
-    // Find the label in _allCycleOpts (the full snapshot) since on exp/loans tab options may be pruned
-    const label = (_allCycleOpts || Array.from(sel.options)).find(o => o.value === cycle)?.text || cycle;
-    btn.textContent = `✓ ${label.split('—')[0].trim()}`;
+  const key = getSelectedCycles().join(',');
+  if (key === _loadedCycle && allData.length > 0) {
+    if (getSelectedCycles().length > 1) {
+      btn.textContent = `✓ ${isAllCycles() ? 'All cycles' : getSelectedCycles().length + ' cycles'}`;
+    } else {
+      const sel = document.getElementById('cycle-select');
+      // Find the label in _allCycleOpts (the full snapshot) since on exp/loans tab options may be pruned
+      const label = (_allCycleOpts || Array.from(sel.options)).find(o => o.value === key)?.text || key;
+      btn.textContent = `✓ ${label.split('—')[0].trim()}`;
+    }
   } else {
     btn.textContent = 'Load Data';
   }
@@ -2715,6 +2791,8 @@ let _autoLoadTimer = null;
 document.getElementById('cycle-select').addEventListener('change', () => {
   clearTimeout(_autoLoadTimer);
   _autoLoadTimer = setTimeout(() => {
+    // Picking from the dropdown collapses back to a single cycle.
+    _setSelectedCycles([document.getElementById('cycle-select').value]);
     allData = []; laEthicsData = []; filteredData = [];
     expData = []; expFiltered = [];
     loanData = []; loanFiltered = [];
@@ -2823,7 +2901,7 @@ function _showStatSkeletons() {
 let _noticeDismissTimer = null;
 
 async function loadData() {
-  const cycle = document.getElementById('cycle-select').value;
+  const cycles = getSelectedCycles();
   // btn-load is hidden now but may still be referenced; guard safely
   const btn = document.getElementById('btn-load');
   if (btn) { btn.textContent = 'Loading…'; btn.disabled = true; }
@@ -2834,13 +2912,23 @@ async function loadData() {
   showMapSpinner(true);
 
   if (proxyAvailable) {
-    await fetchLAEthicsLive(cycle);
+    // Single cycle keeps the original fast path untouched; several cycles stream
+    // in one after another (accumulating into laEthicsData) so the table fills
+    // progressively instead of blocking on the whole multi-cycle payload.
+    laEthicsData = [];
+    if (cycles.length > 1) {
+      _loadStrip(true, `Loading ${isAllCycles() ? 'all' : cycles.length} cycles — this is a larger download and may take a little while…`, null, true);
+    }
+    for (const cyc of cycles) {
+      await fetchLAEthicsLive(cyc);
+    }
+    if (cycles.length > 1) _loadStrip(false);   // clear the multi-cycle notice
   }
 
   mergeAndRender();
   showMapSpinner(false);
   setStatus('ok');
-  _loadedCycle = cycle;
+  _loadedCycle = cycles.join(',');
   // Refresh an open campaign profile with the newly loaded contributions —
   // the exps/loans loaders already do this; without it a profile opened
   // before the cycle data arrived stayed frozen at empty tables and $0.
@@ -2900,9 +2988,14 @@ function _loadStrip(show, text, frac, force) {
 
 async function fetchLAEthicsLive(cycle) {
   const cacheKey = `live_${cycle}`;
+  // laEthicsData accumulates across cycles (loadData resets it once up front),
+  // so each cycle appends onto whatever earlier cycles already loaded. _base
+  // marks where this cycle's slice begins, so a stale-cache refetch can drop
+  // just this cycle's rows before re-streaming.
+  const _base = laEthicsData.length;
   const cached = await idbGet(cacheKey);
   if (cached) {
-    laEthicsData = cached;
+    for (const r of cached) laEthicsData.push(r);
     document.getElementById('la-status').textContent = `${laEthicsData.length.toLocaleString()} LA Ethics records (cached)`;
     if (!await _cachedCycleStale(cacheKey + ':asof')) {
       return;
@@ -2918,7 +3011,7 @@ async function fetchLAEthicsLive(cycle) {
     // Server-less: stream the per-year artifacts through the same progressive
     // ingestion as the live path. Files always exist (published nightly), so
     // there is no 202 wait state.
-    laEthicsData = [];
+    laEthicsData.length = _base;   // drop this cycle's stale-cache copy (if any)
     const _expected = (typeof getCycleStats === 'function' && getCycleStats(cycle)?.count) || null;
     let lastTick = 0;
     const PARTIAL_RENDER_AT = [15000, 60000];
@@ -2947,7 +3040,7 @@ async function fetchLAEthicsLive(cycle) {
           }
         }
       }
-      idbSet(cacheKey, laEthicsData);   // persist (fire-and-forget)
+      idbSet(cacheKey, laEthicsData.slice(_base));   // persist just this cycle's slice (fire-and-forget)
       idbSet(cacheKey + ':asof', Date.now());
       document.getElementById('la-status').textContent =
         `${laEthicsData.length.toLocaleString()} LA Ethics records`;
@@ -2995,7 +3088,7 @@ async function fetchLAEthicsLive(cycle) {
       // the dashboard twice mid-stream, so first content shows in seconds
       // instead of after the full payload. Partial paints are flagged so
       // cycle-delta stats are never saved from incomplete data.
-      laEthicsData = [];
+      laEthicsData.length = _base;   // drop this cycle's stale-cache copy (if any)
       const _expected = (typeof getCycleStats === 'function' && getCycleStats(cycle)?.count) || null;
       const reader  = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -3034,7 +3127,7 @@ async function fetchLAEthicsLive(cycle) {
         }
       }
       ingestLine(buf.trim());
-      idbSet(cacheKey, laEthicsData);   // persist (fire-and-forget)
+      idbSet(cacheKey, laEthicsData.slice(_base));   // persist just this cycle's slice (fire-and-forget)
       idbSet(cacheKey + ':asof', Date.now());
       document.getElementById('la-status').textContent =
         `${laEthicsData.length.toLocaleString()} LA Ethics records`;
@@ -3095,7 +3188,6 @@ function mergeAndRender() {
 // FILTERS
 // ============================================================
 function applyFiltersAndRender() {
-  const cycle = document.getElementById('cycle-select').value;
   const party = document.getElementById('party-select').value;
   const minAmt = parseFloat(document.getElementById('amt-min').value) || 0;
   const maxAmt = parseFloat(document.getElementById('amt-max').value) || Infinity;
@@ -3107,14 +3199,13 @@ function applyFiltersAndRender() {
   const origin = document.getElementById('origin-select').value;
   const exclFilingFees = document.getElementById('btn-excl-ff').classList.contains('active');
   const onlyTransfers  = document.getElementById('btn-only-transfers').classList.contains('active');
-  const cycleYear = parseInt(cycle);  // even year; show full 2-year cycle [cycleYear-1, cycleYear]
-  const cycleYearPrev = cycleYear - 1;
+  const cycleYears = _cycleYearSet(getSelectedCycles());  // union of [c-1, c] for every selected cycle
 
   filteredData = allData.filter(d => {
     if (!d.date) return false;
     const dt = new Date(d.date);
     const yr = dt.getFullYear();
-    if (yr !== cycleYear && yr !== cycleYearPrev) return false;
+    if (!cycleYears.has(yr)) return false;
     if (party !== 'ALL') {
       if (party === 'PAC') { if (d.donorType !== 'PAC') return false; }
       else if (party === 'PAC-DEM') { if (d.donorType !== 'PAC' || detectPACParty(d.contributor) !== 'PAC-DEM') return false; }
@@ -3214,7 +3305,7 @@ function renderStats() {
   countUp(document.getElementById('stat-oos-total'), oosTotal, formatMoney);
 
   // FEC convention: money figures state their time scope right where they appear.
-  const _scope = _cyclePeriodLabel(document.getElementById('cycle-select').value);
+  const _scope = _cyclesLabel();
   const subEl = document.getElementById('stat-total-sub');
   if (transferTotal > 0) {
     subEl.innerHTML = `${_scope} · ${count.toLocaleString()} records · excl. ` +
@@ -3239,14 +3330,17 @@ function renderStats() {
   // Save full-dataset stats for delta comparison (only when unfiltered, and
   // never from a mid-stream partial paint — incomplete totals would poison
   // the "vs previous cycle" deltas)
-  const cycleVal = document.getElementById('cycle-select').value;
-  if (!_partialLoad && filteredData.length === allData.length && allData.length > 0) {
+  // Per-cycle delta stats only make sense for a single cycle; with several
+  // cycles loaded at once the "vs previous cycle" comparison is undefined.
+  const cycleVal = getPrimaryCycle();
+  const singleCycle = getSelectedCycles().length === 1;
+  if (singleCycle && !_partialLoad && filteredData.length === allData.length && allData.length > 0) {
     saveCycleStats(cycleVal, { total, count, avg, oosTotal });
   }
 
   // Show deltas vs previous cycle
   const prevCycleVal = String(parseInt(cycleVal) - 2);
-  const prev = getCycleStats(prevCycleVal);
+  const prev = singleCycle ? getCycleStats(prevCycleVal) : null;
   if (prev) {
     _renderDelta('stat-total-delta', total, prev.total);
     _renderDelta('stat-count-delta', count, prev.count);
@@ -3805,31 +3899,25 @@ function renderTopStates() {
 // TREND CHART
 // ============================================================
 function renderTrendChart() {
-  // Show all 24 months of the 2-year election cycle.
-  const cycleYear = parseInt(document.getElementById('cycle-select').value) || new Date().getFullYear();
-  const prevYear  = cycleYear - 1;
-  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const months = [
-    ...MONTH_NAMES.map((_,i) => `${prevYear}-${String(i+1).padStart(2,'0')}`),
-    ...MONTH_NAMES.map((_,i) => `${cycleYear}-${String(i+1).padStart(2,'0')}`),
-  ];
+  // Span the selected cycle(s): one or two cycles → monthly; more → yearly.
+  const { keys, labels, keyOf, granularity, span } = _cycleBuckets();
+  const bucketIdx = {};
+  keys.forEach((k, i) => bucketIdx[k] = i);
 
   const demByMonth = {}, repByMonth = {}, othByMonth = {};
-  months.forEach(m => { demByMonth[m]=0; repByMonth[m]=0; othByMonth[m]=0; });
+  keys.forEach(m => { demByMonth[m]=0; repByMonth[m]=0; othByMonth[m]=0; });
 
   filteredData.forEach(d => {
-    const m = d.date.substring(0,7);
-    if (!months.includes(m)) return;
+    const m = keyOf(d);
+    if (!(m in bucketIdx)) return;
     if (d.party==='DEM') demByMonth[m]=(demByMonth[m]||0)+d.amount;
     else if (d.party==='REP') repByMonth[m]=(repByMonth[m]||0)+d.amount;
     else othByMonth[m]=(othByMonth[m]||0)+d.amount;
   });
-
-  // 24 labels: "Jan '25", "Feb '25", … "Dec '26"
-  const labels = months.map(m => {
-    const [yr, mo] = m.split('-');
-    return `${MONTH_NAMES[parseInt(mo,10)-1]} '${yr.slice(2)}`;
-  });
+  const months = keys;
+  const _trendTitle = granularity === 'year'
+    ? `Yearly Contributions — ${span}`
+    : `Monthly Contributions — ${span}`;
 
   if (trendChart) { trendChart.destroy(); trendChart = null; }
   const ctx = document.getElementById('trend-chart').getContext('2d');
@@ -3853,7 +3941,7 @@ function renderTrendChart() {
       plugins: {
         legend:{labels:{color:'#8b949e',font:{size:12},boxWidth:12}},
         tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${formatMoney(ctx.raw)}`}},
-        title:{display:true,text:`Monthly Contributions — ${prevYear}–${cycleYear}`,color:'#8b949e',font:{size:12},padding:{bottom:8}}
+        title:{display:true,text:_trendTitle,color:'#8b949e',font:{size:12},padding:{bottom:8}}
       }
     }
   });
@@ -4135,7 +4223,7 @@ function downloadCSV() {
   const rows   = filteredData.map(d => cols.map(([, fn]) => esc(fn(d))).join(','));
   const csv    = [header, ...rows].join('\r\n');
 
-  const cycle = document.getElementById('cycle-select').value;
+  const cycle = isAllCycles() ? 'all' : getSelectedCycles().join('-');
   const blob  = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url   = URL.createObjectURL(blob);
   const a     = document.createElement('a');
@@ -4674,7 +4762,17 @@ document.getElementById('notes-search')?.setAttribute('aria-label', 'Search note
 
 // ── Fetch expenditure data ────────────────────────────────────────
 async function loadExpData() {
-  const cycle = document.getElementById('cycle-select').value;
+  // Expenditures exist from 2002 on. With several cycles selected, fan out and
+  // accumulate (see _loadExpMulti); the single-cycle path below is unchanged.
+  const expCycles = getSelectedCycles().filter(c => parseInt(c) >= 2002);
+  if (!expCycles.length) {
+    document.getElementById('exp-unavailable-msg').style.display = '';
+    document.getElementById('exp-table').style.display = 'none';
+    document.getElementById('exp-loading-msg').style.display = 'none';
+    return;
+  }
+  if (expCycles.length > 1) { await _loadExpMulti(expCycles); return; }
+  const cycle = expCycles[0];
   if (parseInt(cycle) < 2000) {
     document.getElementById('exp-unavailable-msg').style.display = '';
     document.getElementById('exp-table').style.display = 'none';
@@ -4778,6 +4876,58 @@ async function loadExpData() {
   poll();
 }
 
+// Fetch one cycle's expenditures as a plain array (IndexedDB cache → static
+// artifact → live proxy with 202-poll + backoff). Used by the multi-cycle path.
+async function _fetchExpCycleRaw(cycle) {
+  const key = `exp_${cycle}`;
+  const cached = await idbGet(key);
+  if (cached && !(await _cachedCycleStale(key + ':asof'))) return cached;
+  if (!proxyAvailable) return cached || [];
+  if (STATIC_MODE) {
+    try {
+      const raw = await StaticAPI.records('expenditures', cycle);
+      idbSet(key, raw); idbSet(key + ':asof', Date.now());
+      return raw;
+    } catch (e) { console.error('Expenditure static load error:', e); return cached || []; }
+  }
+  for (let attempt = 0; attempt < 60; attempt++) {
+    try {
+      const r = await fetch(`${API_BASE}/api/la-expenditures?cycle=${encodeURIComponent(cycle)}`);
+      if (r.status === 202) { await new Promise(res => setTimeout(res, 3000)); continue; }
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const raw = await r.json();
+      idbSet(key, raw); idbSet(key + ':asof', Date.now());
+      return raw;
+    } catch (e) { await new Promise(res => setTimeout(res, 3000)); }
+  }
+  return cached || [];
+}
+
+// Load several cycles of expenditures, accumulating into expData, then render once.
+async function _loadExpMulti(cycles) {
+  document.getElementById('exp-loading-msg').style.display = '';
+  document.getElementById('exp-unavailable-msg').style.display = 'none';
+  document.getElementById('exp-table').style.display = '';
+  document.getElementById('exp-loading-msg').textContent =
+    `Loading ${isAllCycles() ? 'all' : cycles.length} cycles of expenditures…`;
+  const acc = [];
+  for (const c of cycles) {
+    const part = await _fetchExpCycleRaw(c);
+    if (part && part.length) for (const r of part) acc.push(r);
+  }
+  expData = acc;
+  expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
+  document.getElementById('exp-loading-msg').style.display = 'none';
+  document.getElementById('exp-loading-msg').textContent = 'Loading expenditure data…';
+  populateExpCampaignDropdown();
+  renderExpAll();
+  if (document.getElementById('camp-overlay').classList.contains('open')) {
+    _campExps = expData.filter(_campaignMatch(_campName, _campFiler)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    _refreshCampStats();
+    if (_campTab === 'exps') campSwitchTab('exps');
+  }
+}
+
 // ── Populate campaign + parish dropdowns ──────────────────────────
 function populateExpCampaignDropdown() {
   const sel = document.getElementById('exp-campaign-select');
@@ -4852,7 +5002,7 @@ function renderExpStats() {
   const count = expFiltered.length;
   document.getElementById('exp-stat-total').textContent = fmt(total);
   document.getElementById('exp-stat-total-sub').textContent =
-    `${_cyclePeriodLabel(document.getElementById('cycle-select').value)} · ${count.toLocaleString()} payments`;
+    `${_cyclesLabel()} · ${count.toLocaleString()} payments`;
   document.getElementById('exp-stat-count').textContent = count.toLocaleString();
   document.getElementById('exp-stat-avg').textContent = count ? fmt(total / count) : '—';
 
@@ -4967,23 +5117,14 @@ function renderExpPartyChart() {
 
 // ── Combined cash flow chart ──────────────────────────────────────
 function renderCashFlowChart() {
-  const cycle    = parseInt(document.getElementById('cycle-select').value) || new Date().getFullYear();
-  const prevYear = cycle - 1;
-  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const months = [
-    ...MONTH_NAMES.map((_,i) => `${prevYear}-${String(i+1).padStart(2,'0')}`),
-    ...MONTH_NAMES.map((_,i) => `${cycle}-${String(i+1).padStart(2,'0')}`),
-  ];
-  const labels = months.map(m => {
-    const [yr, mo] = m.split('-');
-    return `${MONTH_NAMES[parseInt(mo,10)-1]} '${yr.slice(2)}`;
-  });
+  // Span the selected cycle(s): one or two cycles → monthly; more → yearly.
+  const { keys: months, labels, keyOf } = _cycleBuckets();
 
   // Contributions in (from filteredData — already cycle-filtered)
   const contribByMonth = {};
   months.forEach(m => contribByMonth[m] = 0);
   filteredData.forEach(d => {
-    const mo = (d.date || '').slice(0, 7);
+    const mo = keyOf(d);
     if (mo in contribByMonth) contribByMonth[mo] += d.amount;
   });
 
@@ -4991,7 +5132,7 @@ function renderCashFlowChart() {
   const expByMonth = {};
   months.forEach(m => expByMonth[m] = 0);
   expFiltered.forEach(r => {
-    const mo = (r.date || '').slice(0, 7);
+    const mo = keyOf(r);
     if (mo in expByMonth) expByMonth[mo] += r.amount;
   });
 
@@ -5179,7 +5320,7 @@ function downloadExpCSV() {
   const csv = [headers.join(','), ...rows].join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-  a.download = `la_expenditures_${document.getElementById('cycle-select').value}.csv`;
+  a.download = `la_expenditures_${isAllCycles() ? 'all' : getSelectedCycles().join('-')}.csv`;
   a.click();
 }
 
@@ -5222,7 +5363,11 @@ let _loanLenderSorted = [];
 
 // ── Fetch loan data ───────────────────────────────────────────
 async function loadLoanData() {
-  const cycle = document.getElementById('cycle-select').value;
+  // Several cycles selected → fan out and accumulate; single-cycle path below
+  // is unchanged.
+  const loanCycles = getSelectedCycles();
+  if (loanCycles.length > 1) { await _loadLoanMulti(loanCycles); return; }
+  const cycle = loanCycles[0];
   document.getElementById('loan-loading-msg').style.display = '';
   document.getElementById('loan-unavailable-msg').style.display = 'none';
   document.getElementById('loan-table').style.display = '';
@@ -5319,6 +5464,62 @@ async function loadLoanData() {
   poll();
 }
 
+// Fetch one cycle's loans as a plain array (cache → static → live poll).
+async function _fetchLoanCycleRaw(cycle) {
+  const key = `loan_${cycle}`;
+  const cached = await idbGet(key);
+  if (cached && !(await _cachedCycleStale(key + ':asof'))) return cached;
+  if (!proxyAvailable) return cached || [];
+  const tag = (raw) => raw.map(d => {
+    const lender = (d.contributor || '').toUpperCase();
+    const cand   = (d.candidate   || '').toUpperCase();
+    d._isSelf = cand.split(' ').some(p => p.length > 2 && lender.includes(p));
+    return d;
+  });
+  if (STATIC_MODE) {
+    try {
+      const raw = tag(await StaticAPI.records('loans', cycle));
+      idbSet(key, raw); idbSet(key + ':asof', Date.now());
+      return raw;
+    } catch (e) { console.error('Loan static load error:', e); return cached || []; }
+  }
+  for (let attempt = 0; attempt < 60; attempt++) {
+    try {
+      const r = await fetch(`${API_BASE}/api/la-loans?cycle=${encodeURIComponent(cycle)}`);
+      if (r.status === 202) { await new Promise(res => setTimeout(res, 3000)); continue; }
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const raw = tag(await r.json());
+      idbSet(key, raw); idbSet(key + ':asof', Date.now());
+      return raw;
+    } catch (e) { await new Promise(res => setTimeout(res, 3000)); }
+  }
+  return cached || [];
+}
+
+// Load several cycles of loans, accumulating into loanData, then render once.
+async function _loadLoanMulti(cycles) {
+  document.getElementById('loan-loading-msg').style.display = '';
+  document.getElementById('loan-unavailable-msg').style.display = 'none';
+  document.getElementById('loan-table').style.display = '';
+  document.getElementById('loan-loading-msg').textContent =
+    `Loading ${isAllCycles() ? 'all' : cycles.length} cycles of loans…`;
+  const acc = [];
+  for (const c of cycles) {
+    const part = await _fetchLoanCycleRaw(c);
+    if (part && part.length) for (const r of part) acc.push(r);
+  }
+  loanData = acc;
+  document.getElementById('loan-loading-msg').style.display = 'none';
+  document.getElementById('loan-loading-msg').textContent = 'Loading loan data…';
+  populateLoanCampaignDropdown();
+  renderLoanAll();
+  if (document.getElementById('camp-overlay').classList.contains('open')) {
+    _campLoans = loanData.filter(_campaignMatch(_campName, _campFiler)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    _refreshCampStats();
+    if (_campTab === 'loans') campSwitchTab('loans');
+  }
+}
+
 function populateLoanCampaignDropdown() {
   const sel = document.getElementById('loan-campaign-select');
   const campaigns = [...new Set(loanData.map(r => r.candidate).filter(Boolean))].sort();
@@ -5368,7 +5569,7 @@ function renderLoanStats() {
   const selfTotal = loanFiltered.filter(r => r._isSelf).reduce((s, r) => s + r.amount, 0);
   document.getElementById('loan-stat-total').textContent = fmt(total);
   document.getElementById('loan-stat-total-sub').textContent =
-    `${_cyclePeriodLabel(document.getElementById('cycle-select').value)} · ${count.toLocaleString()} loans`;
+    `${_cyclesLabel()} · ${count.toLocaleString()} loans`;
   document.getElementById('loan-stat-count').textContent = count.toLocaleString();
   document.getElementById('loan-stat-count-sub').textContent = `${loanFiltered.filter(r => r._isSelf).length} self-loans`;
   document.getElementById('loan-stat-avg').textContent = count ? fmt(total / count) : '—';
@@ -5544,7 +5745,7 @@ function downloadLoanCSV() {
   const csv = [headers.join(','), ...rows].join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-  a.download = `la_loans_${document.getElementById('cycle-select').value}.csv`;
+  a.download = `la_loans_${isAllCycles() ? 'all' : getSelectedCycles().join('-')}.csv`;
   a.click();
 }
 
@@ -5575,13 +5776,12 @@ let donorsSortCol = 'total';
 let donorsSortDir = 'desc';
 
 function buildDonorsAgg() {
-  const cycleYear = parseInt(document.getElementById('cycle-select').value);
-  const prev = cycleYear - 1;
+  const cycleYears = _cycleYearSet(getSelectedCycles());
   const byDonor = {};
   allData.forEach(d => {
     if (!d.date) return;
     const yr = new Date(d.date).getFullYear();
-    if (yr !== cycleYear && yr !== prev) return;
+    if (!cycleYears.has(yr)) return;
     const k = d.contributor || 'Unknown';
     if (!byDonor[k]) byDonor[k] = { name: k, total: 0, count: 0, committees: new Set(), type: d.donorType || '' };
     byDonor[k].total += d.amount;
@@ -5676,7 +5876,7 @@ function downloadDonorsCSV() {
   const csv = [headers.join(','), ...rows].join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-  a.download = `la_top_donors_${document.getElementById('cycle-select').value}.csv`;
+  a.download = `la_top_donors_${isAllCycles() ? 'all' : getSelectedCycles().join('-')}.csv`;
   a.click();
 }
 
@@ -5773,9 +5973,8 @@ function renderCompare() {
     return;
   }
 
-  const cycleYear = parseInt(document.getElementById('cycle-select').value);
-  const prev = cycleYear - 1;
-  const inCycle = (d) => { const yr = new Date(d.date).getFullYear(); return yr === cycleYear || yr === prev; };
+  const cycleYears = _cycleYearSet(getSelectedCycles());
+  const inCycle = (d) => cycleYears.has(new Date(d.date).getFullYear());
 
   const cards = _compareSel.map(name => {
     const _cm = _campaignMatch(name);   // normalized join — search names vs as-filed records
@@ -5848,7 +6047,7 @@ function renderCompare() {
           <button class="cmp-chip-x" title="Remove" aria-label="Remove ${escHtml(s.name)}" style="margin-left:auto" onclick="removeCompareAt(${i})">✕</button>
         </div>
       </div>
-      <div class="cmp-section-lbl">This cycle · ${_cyclePeriodLabel(cycleYear)}</div>
+      <div class="cmp-section-lbl">${getSelectedCycles().length > 1 ? 'Selected cycles' : 'This cycle'} · ${_cyclesLabel()}</div>
       ${row('Raised', fmt(s.raised), isLead(s.raised, L.raised))}
       ${row('Spent', fmt(s.spent), isLead(s.spent, L.spent))}
       ${row('Unique Donors', num(s.donors), isLead(s.donors, L.donors))}
@@ -5931,16 +6130,16 @@ function _renderCompareChart(canvasId, s) {
 // CONTRIBUTOR PROFILE MODAL
 // ============================================================
 function showContributorProfile(name) {
-  // allData: ignore other active filters so the full cycle picture is shown (both years of the cycle)
-  const cycle      = parseInt(document.getElementById('cycle-select').value);
+  // allData: ignore other active filters so the full picture for the selected
+  // cycle(s) is shown (every covered year).
+  const cycleYears = _cycleYearSet(getSelectedCycles());
   const contribs   = allData.filter(d => {
     if (d.contributor !== name) return false;
-    const yr = new Date(d.date).getFullYear();
-    return yr === cycle || yr === cycle - 1;
+    return cycleYears.has(new Date(d.date).getFullYear());
   }).sort((a, b) => b.date.localeCompare(a.date));
 
   if (!contribs.length) {
-    alert(`No contributions found for "${name}" in ${cycle}.`);
+    alert(`No contributions found for "${name}" in ${_cyclesLabel()}.`);
     return;
   }
 
@@ -6088,7 +6287,7 @@ function exportContributorProfileCSV() {
   const csv    = [header, ...rows].join('\r\n');
 
   const safeName = cpCurrentName.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
-  const cycle    = document.getElementById('cycle-select').value;
+  const cycle    = isAllCycles() ? 'all' : getSelectedCycles().join('-');
   const blob     = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url      = URL.createObjectURL(blob);
   const a        = document.createElement('a');
@@ -6223,9 +6422,14 @@ function renderFilterChips() {
   }
 
   // Always show current cycle as a permanent first chip (clickable to change)
-  const cycleVal = document.getElementById('cycle-select').value;
-  const cycleOpt = (_allCycleOpts || []).find(o => o.value === cycleVal);
-  const cycleLabel = cycleOpt ? cycleOpt.text.split('—')[0].trim() : cycleVal;
+  let cycleLabel;
+  if (getSelectedCycles().length > 1) {
+    cycleLabel = isAllCycles() ? 'All cycles' : `${getSelectedCycles().length} cycles`;
+  } else {
+    const cycleVal = getPrimaryCycle();
+    const cycleOpt = (_allCycleOpts || []).find(o => o.value === cycleVal);
+    cycleLabel = cycleOpt ? cycleOpt.text.split('—')[0].trim() : cycleVal;
+  }
   chips.push({ label: `${cycleLabel}`, type: 'cycle', permanent: true });
 
   // Effective tab for filter purposes (contributions = In, expenditures = Out)
@@ -6361,9 +6565,11 @@ function _saveUrlState() {
   if (!_urlStateReady) return;
   const p = new URLSearchParams();
 
-  // Cycle (skip default)
-  const cycle = document.getElementById('cycle-select').value;
-  if (cycle && cycle !== '2026') p.set('cycle', cycle);
+  // Cycle(s) (skip the default single 2026). "all" is serialized compactly;
+  // any other multi-selection as a comma list so it's shareable.
+  const cs = getSelectedCycles();
+  if (isAllCycles()) p.set('cycle', 'all');
+  else if (!(cs.length === 1 && cs[0] === '2026')) p.set('cycle', cs.join(','));
 
   // Active tab (overview is the default landing — omit it from the URL)
   const tab = _currentTab();
@@ -6444,14 +6650,11 @@ function _restoreUrlState() {
   const p = new URLSearchParams(window.location.search);
   if (!p.toString()) { _urlStateReady = true; return; }
 
-  // ── Cycle ──────────────────────────────────────────────────
+  // ── Cycle(s) ───────────────────────────────────────────────
   const cycle = p.get('cycle');
   if (cycle) {
-    const sel = document.getElementById('cycle-select');
-    if (sel.querySelector(`option[value="${CSS.escape(cycle)}"]`) ||
-        [...sel.options].some(o => o.value === cycle)) {
-      sel.value = cycle;
-    }
+    if (cycle.toLowerCase() === 'all') _setSelectedCycles(_allCycleValues());
+    else _setSelectedCycles(cycle.split(','));
   }
 
   // ── Contribution filters (static — apply immediately) ──────
@@ -8083,7 +8286,9 @@ function _tokenCompletions(key, partial) {
   const match = opts => opts.filter(o => !p || o.label.toLowerCase().includes(p) || o.value.toLowerCase().includes(p));
 
   if (key === 'cycle') {
-    const opts = (_allCycleOpts || []).map(o => ({ label: o.text.split('—')[0].trim(), value: o.value }));
+    const src = _allCycleOpts || Array.from(document.getElementById('cycle-select').options);
+    const opts = src.map(o => ({ label: o.text.split('—')[0].trim(), value: o.value }));
+    opts.unshift({ label: 'All cycles (2000–present)', value: 'all' });
     return match(opts);
   }
   if (key === 'party' || key === 'from' || key === 'state') {
@@ -8161,10 +8366,23 @@ function _applyToken(key, rawValue) {
   if (!el) return;
 
   if (key === 'cycle') {
-    // Cycle token triggers a full data reload
-    const opt = Array.from(el.options).find(o => o.value === rawValue || o.text.toLowerCase().includes(rawValue.toLowerCase()));
-    const val = opt ? opt.value : rawValue;
-    el.value = val;
+    // Cycle token triggers a full data reload. Accepts a single cycle, a
+    // comma/space list (cycle:2024,2020), or "all" for every cycle.
+    const rv = (rawValue || '').trim().toLowerCase();
+    let cycles;
+    if (rv === 'all' || rv === '*') {
+      cycles = _allCycleValues();
+    } else {
+      cycles = rawValue.split(/[\s,]+/).map(tok => {
+        tok = tok.trim();
+        if (!tok) return null;
+        const o = Array.from(el.options).find(o =>
+          o.value === tok || o.text.toLowerCase().includes(tok.toLowerCase()));
+        return o ? o.value : (/^\d{4}$/.test(tok) ? tok : null);
+      }).filter(Boolean);
+    }
+    if (!cycles.length) cycles = [rawValue];
+    _setSelectedCycles(cycles);
     allData = []; laEthicsData = []; filteredData = [];
     expData = []; expFiltered = [];
     loanData = []; loanFiltered = [];
@@ -8220,7 +8438,7 @@ function _renderTokenSuggestions(key, completions) {
 
   if (!completions) {
     // Free-text token (zip, donor, notes, committee, min, max) — just show a hint
-    const hint = { cycle:'year (e.g. 2024)', from:'state code (e.g. TX)', state:'state code (e.g. TX)',
+    const hint = { cycle:'year, list, or "all" (e.g. 2024, 2024,2020, or all)', from:'state code (e.g. TX)', state:'state code (e.g. TX)',
                    min:'amount (e.g. 5000 or 5k)', max:'amount', zip:'ZIP code', donor:'donor name',
                    notes:'keyword', committee:'committee name',
                    recipient:'recipient name', desc:'keyword', campaign:'campaign name' }[key] || 'value';
@@ -8617,7 +8835,7 @@ async function _ovOpenElection(year) {
       <div class="fh-group">
         <div class="fh-group-title">Anywhere</div>
         <div class="fh-row"><span class="fh-token">jeff landry</span><div class="fh-desc">Plain text (no colon) searches candidates &amp; committees across all cycles.</div></div>
-        <div class="fh-row"><span class="fh-token">cycle:2024</span><div class="fh-desc">Switch the election cycle. <small>Reloads data for the selected years.</small></div></div>
+        <div class="fh-row"><span class="fh-token">cycle:2024</span><div class="fh-desc">Switch the election cycle. Combine several (<span class="fh-token">cycle:2024,2020</span>) or load every cycle (<span class="fh-token">cycle:all</span>). <small>Reloads data for the selected years.</small></div></div>
       </div>
 
       <div class="fh-group">
