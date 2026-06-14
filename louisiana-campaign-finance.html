@@ -1338,7 +1338,7 @@
     <div style="flex:1;min-width:0">
       <div class="header-title">Louisiana Campaign Finance Dashboard</div>
       <div class="header-provenance">
-        <span>Source: <a class="source-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener" title="Open the official Louisiana Board of Ethics campaign finance search">Louisiana Board of Ethics ↗</a></span>
+        <span>Source: <a class="source-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx" target="_blank" rel="noopener" title="Open the official Louisiana Board of Ethics campaign finance search">Louisiana Board of Ethics ↗</a></span>
         <span class="sep prov-cadence" aria-hidden="true">·</span>
         <span class="prov-cadence">refreshed nightly from ethics.la.gov</span>
         <span class="sep" aria-hidden="true">·</span>
@@ -2224,7 +2224,7 @@
   </p>
   <p style="font-size:11px;color:var(--muted);margin-bottom:10px;">Louisiana State Motto · The Pelican State</p>
   <p><strong style="color:var(--gold);">Data Source:</strong>
-    <a href="https://ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank">Louisiana Ethics Administration Campaign Finance</a>
+    <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx" target="_blank">Louisiana Ethics Administration Campaign Finance</a>
   </p>
   <p><a href="#/about" onclick="openAbout();return false;">About &amp; Methodology</a> · This dashboard is for informational and research purposes.</p>
   <p style="margin-top:8px;">Built with <a href="https://claude.ai" target="_blank">Claude</a> by Charlie Stephens</p>
@@ -7003,9 +7003,11 @@ function _cyclePeriodLabel(cycleYear) {
 }
 
 // Official Louisiana Board of Ethics campaign-finance search. Used as the
-// fallback "Verify" target when we have no direct report link — the site is
-// ASP.NET WebForms (POST-only search), so a name can't be pre-filled via URL.
-const LA_ETHICS_SEARCH_URL = 'https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx';
+// fallback "Verify" target when we have no direct report link. SearchScanned is
+// the general search hub — partial name search across ALL filings back to 1999
+// (scanned + electronic). The site is ASP.NET WebForms (POST-only search), so a
+// name can't be pre-filled via URL; the user types the candidate/committee name.
+const LA_ETHICS_SEARCH_URL = 'https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx';
 
 // Official source URL for a certified COH figure: prefer the LA Ethics
 // report viewer (renders in-browser and links the PDF), fall back to the
@@ -9018,12 +9020,12 @@ async function _ovOpenElection(year) {
         government site and is not affiliated with the Louisiana Board of Ethics. It
         re-presents public records to make them easier to search and understand. For
         official records, always consult
-        <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener">ethics.la.gov</a>.</p>
+        <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx" target="_blank" rel="noopener">ethics.la.gov</a>.</p>
       </section>
 
       <section class="about-section" id="about-sources">
         <h3>Where the data comes from</h3>
-        <div class="fh-row"><span class="fh-token">Board of Ethics</span><div class="fh-desc">Contributions, expenditures, and loans come from the Louisiana Board of Ethics bulk campaign-finance <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener">data downloads</a> (filers report electronically).</div></div>
+        <div class="fh-row"><span class="fh-token">Board of Ethics</span><div class="fh-desc">Contributions, expenditures, and loans come from the Louisiana Board of Ethics bulk campaign-finance <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx" target="_blank" rel="noopener">data downloads</a> (filers report electronically).</div></div>
         <div class="fh-row"><span class="fh-token">Certified reports</span><div class="fh-desc">Cash-on-Hand figures are read from each filer's certified annual reports (F102 candidate / F202 PAC). These are the only true balance figures shown, and each links back to its source filing.</div></div>
         <div class="fh-row"><span class="fh-token">Secretary of State</span><div class="fh-desc">Candidate party, ballot appearances, and election results are enriched from Louisiana Secretary of State records.</div></div>
       </section>
@@ -9055,7 +9057,7 @@ async function _ovOpenElection(year) {
             <li>The bulk data publishes the same contribution once per report filing; figures here are de-duplicated and are <strong>approximations, not audited totals</strong>.</li>
             <li>About 0.3% of names map to more than one filer (two people sharing a name, or one person with several committees). We use exact filer identity where it's known; bare-name links and a few in-cycle lists may still merge them.</li>
             <li>The “Raised vs Spent” line is a cumulative flow, <strong>not</strong> cash on hand. Only the certified green dots are true balances.</li>
-            <li>This is not an official record. <strong>Always verify against <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener">ethics.la.gov</a></strong> before relying on any figure. Each profile's “Verify” button links to the official source.</li>
+            <li>This is not an official record. <strong>Always verify against <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx" target="_blank" rel="noopener">ethics.la.gov</a></strong> before relying on any figure. Each profile's “Verify” button links to the official source.</li>
           </ul>
         </div>
       </section>
@@ -9072,7 +9074,7 @@ async function _ovOpenElection(year) {
         <div class="fh-row"><span class="fh-token">Cycle</span><div class="fh-desc">A four-year election period; figures and filters are grouped by cycle.</div></div>
       </section>
 
-      <p class="about-credits">Data: <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener">Louisiana Board of Ethics</a> · Louisiana Secretary of State. For informational and research purposes only.</p>
+      <p class="about-credits">Data: <a href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx" target="_blank" rel="noopener">Louisiana Board of Ethics</a> · Louisiana Secretary of State. For informational and research purposes only.</p>
 
     </div>
   </div>
@@ -9089,7 +9091,7 @@ async function _ovOpenElection(year) {
       </div>
       <div class="cp-header-actions" style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         <select id="camp-verify-year" class="verify-year" style="display:none" aria-label="Choose which certified report year to open" onchange="_campVerifySelectYear()"></select>
-        <a class="verify-link" id="camp-verify-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener" title="Verify these figures against the official Louisiana Board of Ethics record — search this candidate's name on ethics.la.gov">Verify on ethics.la.gov ↗</a>
+        <a class="verify-link" id="camp-verify-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx" target="_blank" rel="noopener" title="Verify these figures against the official Louisiana Board of Ethics record — search this candidate's name on ethics.la.gov">Verify on ethics.la.gov ↗</a>
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="exportCampaignCSV()">⬇ CSV</button>
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px" onclick="printCampaignProfile()" title="Print / Export PDF">Print</button>
         <button class="cp-close" onclick="closeCampaignProfile()" aria-label="Close campaign profile">✕</button>
@@ -9169,7 +9171,7 @@ async function _ovOpenElection(year) {
         <div class="cp-meta" id="cp-meta"></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
-        <a class="verify-link" id="cp-verify-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchPaymentToCandidate.aspx" target="_blank" rel="noopener" title="Verify these contributions against the official Louisiana Board of Ethics record — search this donor's name on ethics.la.gov">Verify on ethics.la.gov ↗</a>
+        <a class="verify-link" id="cp-verify-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx" target="_blank" rel="noopener" title="Verify these contributions against the official Louisiana Board of Ethics record — search this donor's name on ethics.la.gov">Verify on ethics.la.gov ↗</a>
         <button class="btn-secondary" style="font-size:12px;padding:4px 12px;white-space:nowrap" onclick="exportContributorProfileCSV()">⬇ Export CSV</button>
         <button class="cp-close" onclick="closeContributorProfile()" aria-label="Close contributor profile">✕</button>
       </div>
