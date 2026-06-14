@@ -1089,6 +1089,9 @@
   .gs-token-item:hover, .gs-token-item.active { background: rgba(200,169,81,.12); }
   .gs-token-key  { font-weight: 700; color: var(--gold); flex-shrink: 0; font-family: monospace; font-size: 12px; }
   .gs-token-val  { flex: 1; min-width: 0; }
+  .gs-token-item.gs-token-selected { background: rgba(90,160,90,.08); }
+  .gs-token-item.gs-token-selected:hover { background: rgba(90,160,90,.18); }
+  .gs-token-item.gs-token-selected .gs-token-key { color: #5a9a5a; }
   /* Money In/Out sub-toggle */
   .money-subtabs { display: none; gap: 0; padding: 8px 24px 0; }
   .money-subtab { padding: 5px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
@@ -2766,7 +2769,8 @@ function _cyclesLabel() {
   if (isAllCycles()) return 'all cycles';
   const cs = getSelectedCycles();
   if (cs.length === 1) return _cyclePeriodLabel(cs[0]);
-  return `${cs.length} cycles`;
+  if (cs.length <= 3) return cs.join(' & ');
+  return cs.slice(0, 3).join(', ') + ` & ${cs.length - 3} more`;
 }
 // Month- or year-granularity buckets spanning the selected cycles. One or two
 // cycles → monthly; more → yearly so the axis stays readable.
@@ -8340,9 +8344,16 @@ function _tokenCompletions(key, partial) {
 
   if (key === 'cycle') {
     const src = _allCycleOpts || Array.from(document.getElementById('cycle-select').options);
-    const opts = src.map(o => ({ label: o.text.split('—')[0].trim(), value: o.value }));
-    opts.unshift({ label: 'All cycles (2000–present)', value: 'all' });
-    return match(opts);
+    const allOpts = src.map(o => ({ label: o.text.split('—')[0].trim(), value: o.value }));
+    allOpts.unshift({ label: 'All cycles (2000–present)', value: 'all' });
+    // Multi-cycle: "2020,2015" → committed = ['2020'], current partial = '2015'
+    const parts = (partial || '').split(',');
+    const currentPart = parts[parts.length - 1].trim().toLowerCase();
+    const alreadyPicked = new Set(parts.slice(0, -1).map(p => p.trim()).filter(Boolean));
+    const matchCurrent = o => !currentPart || o.label.toLowerCase().includes(currentPart) || o.value.toLowerCase().includes(currentPart);
+    const selected = allOpts.filter(o => alreadyPicked.has(o.value)).map(o => ({ ...o, _selected: true }));
+    const rest = allOpts.filter(o => !alreadyPicked.has(o.value) && matchCurrent(o));
+    return [...selected, ...rest];
   }
   if (key === 'party' || key === 'from' || key === 'state') {
     const base = key === 'party'
@@ -8476,6 +8487,28 @@ function _focusSearchWithToken(prefix) {
   _doGlobalSearch(prefix);
 }
 
+// Add a cycle value to the comma list in the search input (e.g. "cycle:2020," → "cycle:2020,2016,")
+function _addCycleToInput(value) {
+  const input = document.getElementById('global-search');
+  const m = input.value.match(/^cycle:(.*)$/i);
+  if (!m) return;
+  // Committed = all tokens except the last (which is the in-progress partial)
+  const committed = m[1].split(',').slice(0, -1).map(p => p.trim()).filter(Boolean);
+  if (!committed.includes(value)) committed.push(value);
+  input.value = 'cycle:' + committed.join(',') + ',';
+  _doGlobalSearch(input.value);
+}
+
+// Remove a cycle value from the comma list in the search input
+function _removeCycleFromInput(value) {
+  const input = document.getElementById('global-search');
+  const m = input.value.match(/^cycle:(.*)$/i);
+  if (!m) return;
+  const remaining = m[1].split(',').slice(0, -1).map(p => p.trim()).filter(p => p && p !== value);
+  input.value = 'cycle:' + (remaining.length ? remaining.join(',') + ',' : '');
+  _doGlobalSearch(input.value);
+}
+
 // Render token key/value suggestions in the dropdown
 let _tokenSuggestions = [];   // parallel to _gsResults for keyboard nav
 
@@ -8505,13 +8538,30 @@ function _renderTokenSuggestions(key, completions) {
   if (!completions.length) {
     box.innerHTML = `<div class="gs-token-header">${key}:</div><div class="gs-empty">No matches</div>`;
   } else {
+    const hasSelected = completions.some(c => c._selected);
+    const unselectedCount = completions.filter(c => !c._selected).length;
     box.innerHTML = `<div class="gs-token-header">${key}:</div>` +
-      completions.map((c, i) =>
-        `<button class="gs-token-item" data-tidx="${i}" onclick="_applyToken('${key}','${escHtml(c.value)}')">
-          <span class="gs-token-key">${escHtml(c.value)}</span>
+      completions.map((c, i) => {
+        let onclick;
+        if (c._selected) {
+          onclick = `_removeCycleFromInput('${escHtml(c.value)}')`;
+        } else if (hasSelected) {
+          onclick = `_addCycleToInput('${escHtml(c.value)}')`;
+        } else {
+          onclick = `_applyToken('${key}','${escHtml(c.value)}')`;
+        }
+        return `<button class="gs-token-item${c._selected ? ' gs-token-selected' : ''}" data-tidx="${i}"
+          title="${c._selected ? 'Selected — click to remove' : ''}"
+          onclick="${onclick}">
+          <span class="gs-token-key">${c._selected ? '✓ ' : ''}${escHtml(c.value)}</span>
           <span class="gs-token-val">${escHtml(c.label)}</span>
-        </button>`
-      ).join('');
+        </button>`;
+      }).join('') +
+      (hasSelected && unselectedCount === 0
+        ? `<div class="gs-empty" style="text-align:left;padding:6px 10px">Press Enter to apply</div>`
+        : hasSelected
+        ? `<div class="gs-empty" style="text-align:left;padding:4px 10px;font-size:11px">Click to add · Press Enter to apply</div>`
+        : '');
   }
   box.style.display = 'block';
   document.getElementById('global-search').setAttribute('aria-expanded', 'true');
