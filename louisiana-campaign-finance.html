@@ -7012,6 +7012,18 @@ function _cohSourceUrl(e) {
   return e.pdf_url || null;
 }
 
+// A filer's official page on ethics.la.gov, listing every report they've filed.
+// Keyed on the prefixed Ethics FilerID (e.g. CAN993860 / PAC######) — which we
+// only carry for filers with scraped certified COH (ethics_coh_cache.json), and
+// which is a DIFFERENT identifier from our bare CSV filer number. Returns null
+// when we don't have that prefixed form, so callers fall back to the generic search.
+function _viewEFilerUrl(filerId) {
+  const id = (filerId || '').trim();
+  return /^[A-Za-z]{2,4}\d+$/.test(id)
+    ? `https://www.ethics.la.gov/CampaignFinanceSearch/ViewEFiler.aspx?FilerID=${encodeURIComponent(id)}`
+    : null;
+}
+
 // Wire the header "Verify" control from a filer's certified COH entry.
 // One usable report → a direct link to it. Several → a year picker (newest
 // first, latest selected) that re-points the link. None → the generic search
@@ -7031,12 +7043,18 @@ function _renderCampVerify(coh) {
     const u = _cohSourceUrl(coh);
     if (u) reports.push(Object.assign({}, coh, { _url: u }));
   }
+  // When we know the filer's prefixed Ethics FilerID, lead with their official
+  // filer page (lists every report they've filed) — a cleaner "verify this whole
+  // filer" target than the generic name search, and a better default than any one
+  // report. Also covers filers whose individual reports lack a resolvable URL.
+  const filerUrl = _viewEFilerUrl(coh && coh.filer_id);
+  if (filerUrl) reports.unshift({ _url: filerUrl, _allReports: true });
   _campCohReports = reports;
   if (!reports.length) { sel.style.display = 'none'; sel.innerHTML = ''; return; }
   if (reports.length > 1) {
     sel.innerHTML = reports.map((r, i) =>
-      `<option value="${i}">${r.report_year || '—'} report</option>`).join('');
-    sel.selectedIndex = 0;          // default to the latest year
+      `<option value="${i}">${r._allReports ? 'All reports' : (r.report_year || '—') + ' report'}</option>`).join('');
+    sel.selectedIndex = 0;          // default to the filer page / latest year
     sel.style.display = '';
   } else {
     sel.style.display = 'none';
@@ -7055,6 +7073,12 @@ function _applyCampVerify(i) {
   const r = _campCohReports[i];
   if (!link || !r) return;
   link.href = r._url;
+  if (r._allReports) {
+    link.textContent = 'Verify on ethics.la.gov ↗';
+    link.title = "Open this filer's official page on ethics.la.gov — every report they've filed " +
+      '(contributions, expenditures, loans, year-end Cash-on-Hand), the authoritative source for these figures.';
+    return;
+  }
   link.textContent = `Verify: ${r.report_year || 'certified'} report ↗`;
   link.title = `Open this filer's certified ${r.report_year || ''} year-end report ` +
     `(${r.form_type || 'F102/F202'})${r.date_filed ? ' filed ' + r.date_filed : ''} on ethics.la.gov — ` +
