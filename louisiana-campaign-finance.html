@@ -4599,6 +4599,7 @@ function switchTab(tab, opts) {
     if (_gsBox) _gsBox.style.display = 'none';
   }
   _racesTextFilter = '';
+  _racesParishFilter = '';
 
   // Leaflet computes a 0×0 size when its container is hidden (the map lives in
   // contributions-view, which is display:none on load). Re-measure + redraw once
@@ -6198,8 +6199,23 @@ function renderFilterChips() {
   const tab = _currentTab();
   const chips = [];
 
+  // Races: only the parish filter surfaces as a chip (office/year live in
+  // dropdowns, free text is transient).
+  if (tab === 'races') {
+    const badge = document.getElementById('filter-count-badge');
+    if (_racesParishFilter) {
+      bar.style.display = 'flex';
+      bar.innerHTML = `<span class="filter-chip"><span class="chip-label">Parish: ${escHtml(_racesParishFilter)}</span><span class="chip-x" onclick="_clearRacesParish()">×</span></span>`;
+      if (badge) { badge.textContent = '1'; badge.classList.add('visible'); }
+    } else {
+      bar.style.display = 'none';
+      if (badge) { badge.textContent = '0'; badge.classList.remove('visible'); }
+    }
+    return;
+  }
+
   // Donors and Compare tabs have no shared filters
-  if (tab === 'donors' || tab === 'compare' || tab === 'overview' || tab === 'races') {
+  if (tab === 'donors' || tab === 'compare' || tab === 'overview') {
     bar.style.display = 'none';
     const badge = document.getElementById('filter-count-badge');
     if (badge) { badge.textContent = '0'; badge.classList.remove('visible'); }
@@ -7572,6 +7588,14 @@ function exportCampaignCSV() {
 let _racesData  = null;   // cached fetch result
 let _racesSort  = 'raised'; // 'raised' | 'coh'
 let _racesTextFilter = '';  // free-text filter from the global search bar (office/candidate)
+let _racesParishFilter = ''; // structured parish filter (parish: token → chip)
+
+// Clear the active parish chip and re-render.
+function _clearRacesParish() {
+  _racesParishFilter = '';
+  if (_racesData) _renderRacesData(_racesData);
+  renderFilterChips();
+}
 
 function _setRacesSort(btn) {
   _racesSort = btn.dataset.rsort;
@@ -7710,6 +7734,14 @@ function _renderRacesData(data) {
   const yearFilter = document.getElementById('races-year-filter').value;
   let races = yearFilter ? data.races.filter(r => String(r.year) === yearFilter) : data.races;
 
+  // Parish chip (parish: token): keep races whose qualified office sits in that
+  // parish, e.g. "Orleans Parish …". Municipality offices (Mayor -- City of …)
+  // carry no parish prefix and aren't matched here.
+  if (_racesParishFilter) {
+    const pf = _racesParishFilter.toLowerCase() + ' parish';
+    races = races.filter(r => (r.office || '').toLowerCase().startsWith(pf));
+  }
+
   // Free-text filter from the global search bar: match the office (parish
   // included) or any candidate's name. Every whitespace-separated term must
   // hit, so "vermilion sheriff" narrows to that race.
@@ -7723,7 +7755,8 @@ function _renderRacesData(data) {
   }
 
   if (!races.length) {
-    empty.textContent = _racesTextFilter ? `No races match “${_racesTextFilter}”.` : 'No races found.';
+    const bits = [_racesParishFilter && `${_racesParishFilter} Parish`, _racesTextFilter && `“${_racesTextFilter}”`].filter(Boolean);
+    empty.textContent = bits.length ? `No races match ${bits.join(' + ')}.` : 'No races found.';
     empty.style.display = 'block';
     body.innerHTML = '';
     return;
@@ -7967,11 +8000,33 @@ const _EXP_TOKEN_DEFS = {
   max:       { field: 'exp-amt-max',          type: 'amount'  },
 };
 
+// Races token map — parish: filters the race list by its qualified office
+// prefix (e.g. "Orleans Parish …"). Not backed by a DOM field; applied to the
+// races render + shown as a chip.
+const _RACES_TOKEN_DEFS = {
+  parish: { type: 'races-parish' },
+};
+
 // True when the Money tab is showing the expenditures (Money Out) sub-view.
 function _isMoneyOut() { return _currentTab() === 'contributions' && _moneyDir === 'out'; }
-// The token map for the current context (Money Out → expenditures, else contributions).
-function _activeTokenDefs() { return _isMoneyOut() ? _EXP_TOKEN_DEFS : _TOKEN_DEFS; }
+// The token map for the current context (Races, Money Out → expenditures, else contributions).
+function _activeTokenDefs() {
+  if (_currentTab() === 'races') return _RACES_TOKEN_DEFS;
+  return _isMoneyOut() ? _EXP_TOKEN_DEFS : _TOKEN_DEFS;
+}
 function _allTokenKeys() { return Object.keys(_activeTokenDefs()); }
+
+// Parishes available to filter on, derived from the qualified office strings in
+// the loaded race data ("Vermilion Parish Sheriff" → "Vermilion"). Only parishes
+// that actually have races show up, so the list is honest and self-updating.
+function _racesParishOptions() {
+  const set = new Set();
+  for (const r of (_racesData && _racesData.races) || []) {
+    const m = (r.office || '').match(/^(.+?) Parish\b/);
+    if (m && m[1].length <= 25 && !/[0-9]/.test(m[1])) set.add(m[1]);
+  }
+  return [...set].sort().map(p => ({ label: p, value: p }));
+}
 
 // Update the search box hint to match the filters available in the current context.
 function _updateSearchPlaceholder() {
@@ -7984,7 +8039,7 @@ function _updateSearchPlaceholder() {
   else if (_currentTab() === 'compare')
     input.placeholder = 'Search a campaign to add to the comparison…';
   else if (_currentTab() === 'races')
-    input.placeholder = 'Filter races — try vermilion sheriff, school board, governor…';
+    input.placeholder = 'Filter races — try parish:orleans, vermilion sheriff, governor…';
   else
     input.placeholder = 'Search candidates & committees — or try cycle:2024…';
 }
@@ -8047,7 +8102,9 @@ function _tokenCompletions(key, partial) {
     return match(base);
   }
   if (key === 'parish') {
-    // Parish maps to a different select depending on Money In/Out context.
+    // On Races, parishes come from the qualified office strings; on Money,
+    // from the contribution/expenditure parish select.
+    if (_currentTab() === 'races') return match(_racesParishOptions());
     const sel = document.getElementById(_isMoneyOut() ? 'exp-parish-select' : 'parish-select');
     const opts = sel ? Array.from(sel.options).filter(o => o.value !== 'ALL').map(o => ({ label: o.value, value: o.value })) : [];
     return match(opts);
@@ -8075,6 +8132,21 @@ function _applyToken(key, rawValue) {
   const onOut = _isMoneyOut();
   const def = _activeTokenDefs()[key];
   if (!def) return;
+
+  // Races parish filter: virtual (no DOM field) — narrows the race list and
+  // shows a removable chip. Coexists with the free-text race filter.
+  if (def.type === 'races-parish') {
+    const raw = (rawValue || '').trim();
+    const opt = _racesParishOptions().find(o => o.value.toLowerCase() === raw.toLowerCase());
+    _racesParishFilter = opt ? opt.value : raw;   // canonical casing when known
+    const input = document.getElementById('global-search');
+    input.value = '';
+    input.setAttribute('aria-expanded', 'false');
+    document.getElementById('global-search-results').style.display = 'none';
+    if (_racesData) _renderRacesData(_racesData);
+    renderFilterChips();
+    return;
+  }
 
   // Money Out re-renders the expenditures view; Money In re-renders contributions.
   const refresh = onOut ? renderExpAll : applyFiltersAndRender;
@@ -8569,6 +8641,12 @@ async function _ovOpenElection(year) {
         <div class="fh-row"><span class="fh-token">campaign:landry</span><div class="fh-desc">Spending campaign / committee.</div></div>
         <div class="fh-row"><span class="fh-token">parish:Orleans</span><div class="fh-desc">Parish (or <code>oos</code> for out-of-state).</div></div>
         <div class="fh-row"><span class="fh-token">min:1000 / max:50k</span><div class="fh-desc">Amount range.</div></div>
+      </div>
+
+      <div class="fh-group">
+        <div class="fh-group-title">Races <span class="fh-group-note">— elections &amp; candidates</span></div>
+        <div class="fh-row"><span class="fh-token">parish:Orleans</span><div class="fh-desc">Show only races in that parish. <small>Suggestions appear as you type.</small></div></div>
+        <div class="fh-row"><span class="fh-token">vermilion sheriff</span><div class="fh-desc">Plain text filters the race list by office or candidate name.</div></div>
       </div>
 
       <ul class="fh-tips">
