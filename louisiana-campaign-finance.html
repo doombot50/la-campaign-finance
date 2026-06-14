@@ -2315,6 +2315,10 @@ let allData = [];
 let filteredData = [];
 let _partialLoad = false;   // true during mid-stream partial paints
 let laEthicsData = [];
+// Multi-cycle selection state. Declared up here (not in the helper block below)
+// because applyTheme() re-renders charts during early init, and those charts now
+// read getSelectedCycles() — so this must be initialized before that first paint.
+let _selectedCycles = ['2026'];
 // When served from the Python server itself, use relative URLs.
 // When opened as a local file://, fall back to explicit localhost.
 const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8765' : '';
@@ -2701,10 +2705,10 @@ let _loadedCycle = null;
 // ── Multi-cycle selection ───────────────────────────────────────────────────
 // The cycle dropdown still drives the common single-cycle case, but the unified
 // search `cycle:` token can select several cycles at once (e.g. `cycle:2024,2020`)
-// or every cycle (`cycle:all`). `_selectedCycles` is the source of truth — even-year
-// strings, newest first — and the dropdown mirrors the primary (newest) one so the
-// many places that read a single `cycle-select.value` keep working unchanged.
-let _selectedCycles = ['2026'];
+// or every cycle (`cycle:all`). `_selectedCycles` (declared up top with allData,
+// so it's initialized before applyTheme's first chart paint) is the source of
+// truth — even-year strings, newest first — and the dropdown mirrors the primary
+// (newest) one so the many places that read `cycle-select.value` keep working.
 
 function _allCycleValues() {
   // Prefer the full snapshot (the dropdown is pruned to 2002+ on Money Out).
