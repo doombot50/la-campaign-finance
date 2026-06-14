@@ -572,13 +572,15 @@ def build_races_payload(office_filter='major', year_filter=''):
                 if not filer_num and nk and nk in fn_idx:
                     filer_num = _FILER_NUM.get(fn_idx[nk], '')
                 cycle_key = _cycle_for_year(yr)
-                raised = spent = 0
+                raised = spent = borrowed = 0
                 ci_key = (cand_name if (_CAND_INDEX and cand_name in _CAND_INDEX)
                           else (ci_idx.get(nk) if nk else None))
                 if ci_key:
                     cyc = _CAND_INDEX[ci_key].get('cycles', {}).get(cycle_key, {})
-                    raised = cyc.get('raised', 0)
-                    spent  = cyc.get('spent',  0)
+                    raised   = cyc.get('raised', 0)
+                    spent    = cyc.get('spent',  0)
+                    borrowed = cyc.get('borrowed', 0)   # self-loans: matters for
+                                                        # self-funders (Rispone)
 
                 # Certified COH from ethics annual filing (same fallback)
                 coh_entry   = _get_ethics_coh(cand_name)
@@ -598,6 +600,7 @@ def build_races_payload(office_filter='major', year_filter=''):
                     'cycle':        cycle_key,
                     'raised':       raised,
                     'spent':        spent,
+                    'borrowed':     borrowed,
                     'coh_ending':   coh_ending,
                     'coh_year':     coh_year,
                     'coh_pdf_url':  coh_pdf_url,

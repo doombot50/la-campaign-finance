@@ -8124,7 +8124,7 @@ function renderRaceCard(race) {
       <td data-label="Party">${partyBadge(c.party)}</td>
       <td data-label="Outcome" class="${outcomeClass(c.outcome)}">${outcomeLabel(c.outcome)}</td>
       <td data-label="Vote %" style="text-align:right">${pct}</td>
-      <td data-label="Raised" style="text-align:right" title="$${Math.round(c.raised||0).toLocaleString()}">${fmtRaisedShort(c.raised)}</td>
+      <td data-label="Raised" style="text-align:right" title="$${Math.round(c.raised||0).toLocaleString()} in itemized contributions${c.borrowed>0 ? ' — plus $'+Math.round(c.borrowed).toLocaleString()+' in loans (mostly self-funding)' : ''}">${fmtRaisedShort(c.raised)}${c.borrowed>0 ? `<span style="font-size:9px;color:var(--muted);display:block">+${fmtRaisedShort(c.borrowed)} loans</span>` : ''}</td>
       <td data-label="Spent" style="text-align:right" title="$${Math.round(c.spent||0).toLocaleString()}">${fmtRaisedShort(c.spent)}</td>
       ${hasCoh ? `<td data-label="Cash on Hand" style="text-align:right">${cohCell}</td>` : ''}
       <td class="m-hide" style="text-align:center">${profileBtn}</td>
