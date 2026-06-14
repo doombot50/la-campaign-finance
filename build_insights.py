@@ -101,8 +101,29 @@ def main():
                     donor_totals[donor] += amt
                     donor_counts[donor] += 1
 
-    top_donors = [{'name': n, 'total': round(t, 2), 'count': donor_counts[n]}
-                  for n, t in sorted(donor_totals.items(), key=lambda x: -x[1])[:100]]
+    # Top donors: prefer the resolved donor table (spelling/nickname variants
+    # merged within ZIP) so one person isn't split across spellings. Fall back to
+    # the raw name grouping if the resolver hasn't run yet.
+    donor_method = ('Identity-resolved: spelling, middle-initial, and nickname '
+                    'variants merged within the same surname, generational suffix, '
+                    'and ZIP (organizations merged by name). Excludes committee '
+                    'transfers and clerk filing fees. Each entry lists its merged '
+                    'variants.')
+    de_path = os.path.join(srv.CACHE_DIR, 'la_donor_entities.json.gz')
+    if os.path.exists(de_path):
+        with gzip.open(de_path, 'rt', encoding='utf-8') as f:
+            de = json.load(f).get('donors', {})
+        ranked = sorted(de.values(), key=lambda d: -d['total'])[:100]
+        top_donors = [{'name': d['name'], 'total': d['total'], 'count': d['count'],
+                       'kind': d['kind'], 'n_variants': d['n_variants'],
+                       'variants': d.get('variants', [])} for d in ranked]
+    else:
+        donor_method = ('Grouped by contributor name as reported; spelling variants '
+                        'NOT merged (resolver not yet run). Excludes committee '
+                        'transfers and clerk filing fees.')
+        top_donors = [{'name': n, 'total': round(t, 2), 'count': donor_counts[n],
+                       'n_variants': 1, 'variants': []}
+                      for n, t in sorted(donor_totals.items(), key=lambda x: -x[1])[:100]]
 
     window = {'first_year': min(years_seen), 'last_year': max(years_seen)} if years_seen else {}
 
@@ -115,9 +136,7 @@ def main():
             'items':  war_chests,
         },
         'top_donors': {
-            'method': 'Grouped by contributor name as reported; spelling variants are NOT '
-                      'merged. Excludes committee-to-committee transfers and clerk-forwarded '
-                      'filing fees.',
+            'method': donor_method,
             'items':  top_donors,
         },
         'party_totals': {

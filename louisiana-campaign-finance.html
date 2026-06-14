@@ -8886,13 +8886,21 @@ function renderOverview() {
       ? ` (${ins.window.first_year}–${ins.window.last_year})` : '';
     document.getElementById('ov-donors-help').title =
       ins.top_donors.method + (winLbl ? ` Window: ${winLbl.trim()}.` : '');
-    document.getElementById('ov-donors').innerHTML = ins.top_donors.items.slice(0, 10).map((t, i) => `
-      <div class="ov-top-row" onclick="_ovSearchDonor(${i})" role="button" tabindex="0"
-           title="${t.count.toLocaleString()} contribution${t.count === 1 ? '' : 's'} — click to filter">
+    document.getElementById('ov-donors').innerHTML = ins.top_donors.items.slice(0, 10).map((t, i) => {
+      const nv = t.n_variants || 1;
+      // Disclose merges: badge the count, list the merged spellings on hover.
+      const merged = nv > 1
+        ? ` <span style="font-size:9px;color:var(--muted);cursor:help"
+             title="Merges ${nv} spellings: ${escHtml((t.variants||[]).join(', '))}">▢${nv}</span>`
+        : '';
+      const cnt = (t.count||0).toLocaleString();
+      return `<div class="ov-top-row" onclick="_ovSearchDonor(${i})" role="button" tabindex="0"
+           title="${cnt} contribution${t.count === 1 ? '' : 's'}${nv>1 ? ' across '+nv+' spellings' : ''} — click to filter">
         <span class="ov-top-rank">${i+1}</span>
-        <span class="ov-top-name">${escHtml(t.name)}</span>
+        <span class="ov-top-name">${escHtml(t.name)}${merged}</span>
         <span class="ov-top-amt">${_gsFmt(t.total)}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     dnWrap.style.display = '';
   } else { dnWrap.style.display = 'none'; }
 }
