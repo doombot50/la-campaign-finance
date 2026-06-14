@@ -7043,18 +7043,19 @@ function _renderCampVerify(coh) {
     const u = _cohSourceUrl(coh);
     if (u) reports.push(Object.assign({}, coh, { _url: u }));
   }
-  // When we know the filer's prefixed Ethics FilerID, lead with their official
-  // filer page (lists every report they've filed) — a cleaner "verify this whole
-  // filer" target than the generic name search, and a better default than any one
-  // report. Also covers filers whose individual reports lack a resolvable URL.
+  // Purely additive: the individual certified reports stay first (the default
+  // still verifies the exact COH figure shown). When we know the filer's prefixed
+  // Ethics FilerID, append their official filer page (lists every report) as an
+  // extra "All reports" option — and it's the sole target when no individual
+  // report has a resolvable URL, beating the generic name-search fallback.
   const filerUrl = _viewEFilerUrl(coh && coh.filer_id);
-  if (filerUrl) reports.unshift({ _url: filerUrl, _allReports: true });
+  if (filerUrl) reports.push({ _url: filerUrl, _allReports: true });
   _campCohReports = reports;
   if (!reports.length) { sel.style.display = 'none'; sel.innerHTML = ''; return; }
   if (reports.length > 1) {
     sel.innerHTML = reports.map((r, i) =>
       `<option value="${i}">${r._allReports ? 'All reports' : (r.report_year || '—') + ' report'}</option>`).join('');
-    sel.selectedIndex = 0;          // default to the filer page / latest year
+    sel.selectedIndex = 0;          // default to the latest individual report
     sel.style.display = '';
   } else {
     sel.style.display = 'none';
