@@ -38,6 +38,31 @@ class TestNameNormalization(unittest.TestCase):
         self.assertEqual(s._norm_name('Señor Núñez'), 'SE OR N EZ')
 
 
+class TestNameKey(unittest.TestCase):
+    """Cross-dataset (nickname-canonical first, last) matcher used to join SoS
+    ballot names to Ethics finance/COH names in the Races tab."""
+    def test_nickname_and_maiden_resolve_to_formal(self):
+        # SoS ballot spelling and formal finance spelling share an identity key
+        self.assertEqual(s._name_key('Eddie Rispone'),
+                         s._name_key('Edward L Rispone'))
+        self.assertEqual(s._name_key('Liz Baker Murrill'),
+                         s._name_key('Elizabeth Murrill'))
+
+    def test_distinct_people_stay_distinct(self):
+        self.assertNotEqual(s._name_key('Eddie Rispone'),
+                            s._name_key('Gary Rispone'))
+
+    def test_too_few_tokens(self):
+        self.assertIsNone(s._name_key('Cher'))
+
+    def test_index_drops_collisions(self):
+        # Two distinct keys sharing an identity must not produce a fuzzy target —
+        # exact match still covers them, but the fallback index excludes them.
+        idx = s._namekey_index(['ROBERT JONES', 'BOB JONES', 'EDWARD RISPONE'])
+        self.assertNotIn(('ROBERT', 'JONES'), idx)      # collision dropped
+        self.assertEqual(idx.get(('EDWARD', 'RISPONE')), 'EDWARD RISPONE')
+
+
 class TestOfficeType(unittest.TestCase):
     CASES = {
         'United States Senator': 'us_senate',

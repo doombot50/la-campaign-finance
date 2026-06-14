@@ -291,6 +291,70 @@ def _norm_name(name):
     n = _re.sub(r'[^A-Z\s]', ' ', n)
     return ' '.join(n.split())
 
+# ── Cross-dataset person name matching ──────────────────────────────────────
+# A candidate's name differs across sources: SoS ballots carry nicknames and
+# maiden names ("Eddie Rispone", "Liz Baker Murrill") while Ethics finance/COH
+# use the formal name ("Edward L Rispone", "Elizabeth Murrill"). A
+# (nickname-canonical first, last) key bridges them. Same curated nickname map
+# the donor resolver (build_donor_entities.py) imports from here.
+_NICK_GROUPS = [
+    "ROBERT BOB BOBBY ROB ROBBIE", "WILLIAM BILL BILLY WILL WILLIE",
+    "RICHARD RICK RICKY DICK RICH", "JAMES JIM JIMMY JIMMIE",
+    "JOHN JOHNNY JACK JON", "EDWARD ED EDDIE EDDY NED",
+    "GERALD GERARD JERRY JEROLD JERROLD", "MICHAEL MIKE MIKEY MICK",
+    "CHARLES CHARLIE CHUCK CHAS", "THOMAS TOM TOMMY",
+    "JOSEPH JOE JOEY", "DANIEL DAN DANNY", "DAVID DAVE",
+    "RONALD RON RONNIE", "DONALD DON DONNIE", "KENNETH KEN KENNY",
+    "ANTHONY TONY", "STEPHEN STEVEN STEVE STEVIE", "ANDREW ANDY DREW",
+    "MATTHEW MATT", "CHRISTOPHER CHRIS", "NICHOLAS NICK",
+    "BENJAMIN BEN BENNY", "SAMUEL SAM SAMMY", "TIMOTHY TIM",
+    "PATRICK PAT", "FREDERICK FRED FREDDIE", "GREGORY GREG",
+    "JEFFREY JEFF", "JONATHAN JON", "LAWRENCE LARRY",
+    "RAYMOND RAY", "DOUGLAS DOUG", "PHILIP PHIL PHILLIP",
+    "ALEXANDER ALEX", "EUGENE GENE", "VINCENT VINCE VINNIE",
+    "FRANCIS FRANK FRANKIE", "ALBERT AL", "WALTER WALT",
+    "HENRY HANK HARRY", "THEODORE TED TEDDY", "LEONARD LEN LENNY",
+    "ELIZABETH LIZ BETH BETTY LIZZIE", "MARGARET MAGGIE MEG PEGGY MARGE",
+    "KATHERINE KATHRYN KATHY KATE KATIE KAY", "PATRICIA PAT PATTY TRICIA",
+    "JENNIFER JEN JENNY", "DEBORAH DEB DEBBIE", "BARBARA BARB",
+    "SUSAN SUE SUSIE", "REBECCA BECKY", "VICTORIA VICKI VICKY",
+    "CYNTHIA CINDY", "CHRISTINE CHRISTINA CHRIS TINA", "NICOLE NIKKI",
+    "STEPHANIE STEPH", "JESSICA JESS", "PAMELA PAM", "SANDRA SANDY",
+    "THADDEUS THAD", "THERESA TERESA TERRY TERRI",
+]
+_NICK = {}
+for _grp in _NICK_GROUPS:
+    _forms = _grp.split()
+    for _f in _forms:
+        _NICK.setdefault(_f, _forms[0])
+
+def _name_key(name):
+    """(_nick_first, last) identity for matching a person across datasets, or
+    None if fewer than 2 name tokens. Drops middle/maiden tokens; _norm_name has
+    already stripped honorifics and generational suffixes."""
+    toks = _norm_name(name).split()
+    if len(toks) < 2:
+        return None
+    return (_NICK.get(toks[0], toks[0]), toks[-1])
+
+def _namekey_index(keys):
+    """Map (nick_first, last) -> the single source key with that identity.
+    Collisions (two distinct keys sharing an identity, e.g. ROBERT vs BOB JONES)
+    are dropped so a fuzzy fallback never attaches the wrong person's money —
+    exact-name matching still covers those cases."""
+    idx, collided = {}, set()
+    for k in keys:
+        nk = _name_key(k)
+        if not nk:
+            continue
+        if nk in idx and idx[nk] != k:
+            collided.add(nk)
+        else:
+            idx[nk] = k
+    for nk in collided:
+        idx.pop(nk, None)
+    return idx
+
 def _career_index_path():
     """Freshest available candidate index: the nightly-rebuilt copy seeded into
     .la_cache/ from the data-cache release wins over the committed repo-root
@@ -445,6 +509,14 @@ def build_races_payload(office_filter='major', year_filter=''):
 
     races_by_key = {}
 
+    # Nickname/maiden-name-aware fallback indexes: SoS ballot names ("Eddie
+    # Rispone", "Liz Baker Murrill") often differ from the Ethics finance/COH
+    # spelling ("Edward L Rispone", "Elizabeth Murrill"). Built once per call;
+    # collision-guarded so we never attach the wrong person's figures.
+    ci_idx  = _namekey_index(_CAND_INDEX.keys()) if _CAND_INDEX else {}
+    coh_idx = _namekey_index(_ETHICS_COH.keys()) if _ETHICS_COH else {}
+    fn_idx  = _namekey_index(_FILER_NUM.keys())  if _FILER_NUM  else {}
+
     if _CAND_RACES:
         for cand_name, candidacies in _CAND_RACES.items():
             for c in candidacies:
@@ -490,19 +562,28 @@ def build_races_payload(office_filter='major', year_filter=''):
                         'candidates': [],
                     }
 
-                # Match to Ethics finance data
+                # Match to Ethics finance data. Try exact name first, then the
+                # nickname/maiden-name-aware (first,last) fallback so SoS ballot
+                # spellings resolve to the formal finance/COH record.
                 norm_name = _norm_name(cand_name)
+                nk = _name_key(cand_name)
                 filer_num = (_FILER_NUM.get(norm_name) or
                              _FILER_NUM.get(cand_name.upper(), ''))
+                if not filer_num and nk and nk in fn_idx:
+                    filer_num = _FILER_NUM.get(fn_idx[nk], '')
                 cycle_key = _cycle_for_year(yr)
                 raised = spent = 0
-                if _CAND_INDEX and cand_name in _CAND_INDEX:
-                    cyc = _CAND_INDEX[cand_name].get('cycles', {}).get(cycle_key, {})
+                ci_key = (cand_name if (_CAND_INDEX and cand_name in _CAND_INDEX)
+                          else (ci_idx.get(nk) if nk else None))
+                if ci_key:
+                    cyc = _CAND_INDEX[ci_key].get('cycles', {}).get(cycle_key, {})
                     raised = cyc.get('raised', 0)
                     spent  = cyc.get('spent',  0)
 
-                # Certified COH from ethics annual filing
+                # Certified COH from ethics annual filing (same fallback)
                 coh_entry   = _get_ethics_coh(cand_name)
+                if not coh_entry and nk and nk in coh_idx:
+                    coh_entry = _ETHICS_COH.get(coh_idx[nk])
                 coh_ending  = coh_entry.get('ending_coh')  if coh_entry else None
                 coh_year    = coh_entry.get('report_year') if coh_entry else None
                 coh_pdf_url = coh_entry.get('pdf_url')     if coh_entry else None

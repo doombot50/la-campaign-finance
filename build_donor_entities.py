@@ -81,40 +81,9 @@ _NONDONOR = re.compile(
     r'\bNON LA\b|NEGATIVE DISBURSE|UNITEMIZED|\bAGGREGATE\b|\bANONYMOUS\b|'
     r'MISCELLANEOUS|NO NAME (GIVEN|PROVIDED|LISTED)|NOT (PROVIDED|LISTED|APPLICABLE)', re.I)
 
-# Curated common nickname groups (each line = one identity, all forms equivalent).
-# Conservative: only well-established formal↔familiar pairs, never ambiguous ones
-# we can't anchor. Same-ZIP requirement guards the rare cross-name collision.
-_NICK_GROUPS = [
-    "ROBERT BOB BOBBY ROB ROBBIE", "WILLIAM BILL BILLY WILL WILLIE",
-    "RICHARD RICK RICKY DICK RICH", "JAMES JIM JIMMY JIMMIE",
-    "JOHN JOHNNY JACK JON", "EDWARD ED EDDIE EDDY NED",
-    "GERALD GERARD JERRY JEROLD JERROLD", "MICHAEL MIKE MIKEY MICK",
-    "CHARLES CHARLIE CHUCK CHAS", "THOMAS TOM TOMMY",
-    "JOSEPH JOE JOEY", "DANIEL DAN DANNY", "DAVID DAVE",
-    "RONALD RON RONNIE", "DONALD DON DONNIE", "KENNETH KEN KENNY",
-    "ANTHONY TONY", "STEPHEN STEVEN STEVE STEVIE", "ANDREW ANDY DREW",
-    "MATTHEW MATT", "CHRISTOPHER CHRIS", "NICHOLAS NICK",
-    "BENJAMIN BEN BENNY", "SAMUEL SAM SAMMY", "TIMOTHY TIM",
-    "PATRICK PAT", "FREDERICK FRED FREDDIE", "GREGORY GREG",
-    "JEFFREY JEFF", "JONATHAN JON", "LAWRENCE LARRY",
-    "RAYMOND RAY", "DOUGLAS DOUG", "PHILIP PHIL PHILLIP",
-    "ALEXANDER ALEX", "EUGENE GENE", "VINCENT VINCE VINNIE",
-    "FRANCIS FRANK FRANKIE", "ALBERT AL", "WALTER WALT",
-    "HENRY HANK HARRY", "THEODORE TED TEDDY", "LEONARD LEN LENNY",
-    "ELIZABETH LIZ BETH BETTY LIZZIE", "MARGARET MAGGIE MEG PEGGY MARGE",
-    "KATHERINE KATHRYN KATHY KATE KATIE KAY", "PATRICIA PAT PATTY TRICIA",
-    "JENNIFER JEN JENNY", "DEBORAH DEB DEBBIE", "BARBARA BARB",
-    "SUSAN SUE SUSIE", "REBECCA BECKY", "VICTORIA VICKI VICKY",
-    "CYNTHIA CINDY", "CHRISTINE CHRISTINA CHRIS TINA", "NICOLE NIKKI",
-    "STEPHANIE STEPH", "JESSICA JESS", "PAMELA PAM", "SANDRA SANDY",
-    "THADDEUS THAD", "THERESA TERESA TERRY TERRI", "GARY",
-]
-_NICK = {}
-for _grp in _NICK_GROUPS:
-    forms = _grp.split()
-    canon = forms[0]
-    for f in forms:
-        _NICK.setdefault(f, canon)  # first group wins on the rare overlap
+# Curated nickname map — single source of truth lives in la_ethics_server so the
+# donor resolver and the Races-tab cross-dataset matcher stay in lockstep.
+_NICK = srv._NICK
 
 
 def _norm(n):
