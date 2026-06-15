@@ -2180,6 +2180,7 @@
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select id="races-office-filter" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text)" onchange="loadRaces()">
             <option value="major">Major Offices</option>
+            <option value="federal">Federal</option>
             <option value="state">State Legislature</option>
             <option value="board">Boards &amp; Courts</option>
             <option value="judicial">Judicial</option>
@@ -2195,6 +2196,15 @@
             <button class="races-sort-btn" data-rsort="coh" onclick="_setRacesSort(this)">Cash on Hand</button>
           </div>
         </div>
+      </div>
+      <div id="races-federal-note" style="display:none;margin:0 0 14px;padding:10px 14px;border-left:3px solid var(--gold);background:rgba(200,169,81,0.08);border-radius:0 6px 6px 0;font-size:12px;line-height:1.55;color:var(--muted)">
+        <strong style="color:var(--gold)">Federal fundraising is not tracked here.</strong>
+        This dashboard is built on Louisiana Board of Ethics filings — it is <strong>not</strong> an FEC tool.
+        Federal candidates report their campaign contributions and spending to the
+        <a href="https://www.fec.gov" target="_blank" rel="noopener">Federal Election Commission</a>,
+        which is not included. Any dollar figures shown below appear <em>only</em> because the candidate
+        also held or sought a Louisiana <em>state</em> office subject to the Board of Ethics; they do
+        not reflect federal campaign fundraising.
       </div>
       <div id="races-loading" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">
         Loading races…
@@ -8065,6 +8075,10 @@ let _racesYearInit = false;   // first load defaults the year dropdown to the la
 
 async function loadRaces(force) {
   const officeFilter = document.getElementById('races-office-filter').value;
+  // Federal races carry only state-office finance residue (this is not an FEC
+  // tool) — surface that caveat whenever the Federal view is active.
+  const fedNote = document.getElementById('races-federal-note');
+  if (fedNote) fedNote.style.display = (officeFilter === 'federal') ? 'block' : 'none';
   const yearSel      = document.getElementById('races-year-filter');
   const desiredYear  = yearSel.value;   // preserve the user's pick across office changes
 

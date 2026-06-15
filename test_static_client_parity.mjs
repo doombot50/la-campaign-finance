@@ -72,8 +72,8 @@ try {
     check('overview', !d, d);
   }
 
-  // races: default (major), all, filtered
-  for (const qs of ['', '?office=all', '?office=state&year=2023']) {
+  // races: default (major), all, federal, filtered
+  for (const qs of ['', '?office=all', '?office=federal', '?office=state&year=2023']) {
     const d = diff(await getJSON(`/api/races${qs}`),
                    await S.races(new URLSearchParams(qs.slice(1)).get('office'),
                                  new URLSearchParams(qs.slice(1)).get('year')), `races${qs}`);
