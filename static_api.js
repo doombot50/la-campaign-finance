@@ -193,6 +193,62 @@
             'CENTRAL COMMITTEE', 'EXECUTIVE COMMITTEE', 'PARTY COMMITTEE']
       .some(x => o.includes(x));
   }
+  // ── Cross-dataset person name matching ──────────────────────────────────────
+  // Mirrors _name_key / _namekey_index in la_ethics_server.py so a SoS ballot
+  // spelling ("Liz Baker Murrill") and the formal finance/COH spelling
+  // ("Elizabeth Murrill") resolve to one another. Keep _NICK_GROUPS byte-for-byte
+  // in sync with the server list (the candidate-history parity gate guards drift).
+  // The index key is `first\tlast` because JS objects can't key on a tuple.
+  const _NICK_GROUPS = [
+    "ROBERT BOB BOBBY ROB ROBBIE", "WILLIAM BILL BILLY WILL WILLIE",
+    "RICHARD RICK RICKY DICK RICH", "JAMES JIM JIMMY JIMMIE",
+    "JOHN JOHNNY JACK JON", "EDWARD ED EDDIE EDDY NED",
+    "GERALD GERARD JERRY JEROLD JERROLD", "MICHAEL MIKE MIKEY MICK",
+    "CHARLES CHARLIE CHUCK CHAS", "THOMAS TOM TOMMY",
+    "JOSEPH JOE JOEY", "DANIEL DAN DANNY", "DAVID DAVE",
+    "RONALD RON RONNIE", "DONALD DON DONNIE", "KENNETH KEN KENNY",
+    "ANTHONY TONY", "STEPHEN STEVEN STEVE STEVIE", "ANDREW ANDY DREW",
+    "MATTHEW MATT", "CHRISTOPHER CHRIS", "NICHOLAS NICK",
+    "BENJAMIN BEN BENNY", "SAMUEL SAM SAMMY", "TIMOTHY TIM",
+    "PATRICK PAT", "FREDERICK FRED FREDDIE", "GREGORY GREG",
+    "JEFFREY JEFF", "JONATHAN JON", "LAWRENCE LARRY",
+    "RAYMOND RAY", "DOUGLAS DOUG", "PHILIP PHIL PHILLIP",
+    "ALEXANDER ALEX", "EUGENE GENE", "VINCENT VINCE VINNIE",
+    "FRANCIS FRANK FRANKIE", "ALBERT AL", "WALTER WALT",
+    "HENRY HANK HARRY", "THEODORE TED TEDDY", "LEONARD LEN LENNY",
+    "ELIZABETH LIZ BETH BETTY LIZZIE", "MARGARET MAGGIE MEG PEGGY MARGE",
+    "KATHERINE KATHRYN KATHY KATE KATIE KAY", "PATRICIA PAT PATTY TRICIA",
+    "JENNIFER JEN JENNY", "DEBORAH DEB DEBBIE", "BARBARA BARB",
+    "SUSAN SUE SUSIE", "REBECCA BECKY", "VICTORIA VICKI VICKY",
+    "CYNTHIA CINDY", "CHRISTINE CHRISTINA CHRIS TINA", "NICOLE NIKKI",
+    "STEPHANIE STEPH", "JESSICA JESS", "PAMELA PAM", "SANDRA SANDY",
+    "THADDEUS THAD", "THERESA TERESA TERRY TERRI",
+  ];
+  const _NICK = {};
+  for (const grp of _NICK_GROUPS) {
+    const forms = grp.split(' ');
+    for (const f of forms) if (!(f in _NICK)) _NICK[f] = forms[0];
+  }
+  // (_nick_first, last) identity, or null when < 2 tokens. Mirrors _name_key.
+  function _nameKey(name) {
+    const toks = normName(name).split(' ').filter(Boolean);
+    if (toks.length < 2) return null;
+    return (_NICK[toks[0]] || toks[0]) + '\t' + toks[toks.length - 1];
+  }
+  // Map identity -> the one source key with it; drop collisions (mirrors
+  // _namekey_index) so a fuzzy fallback never attaches the wrong person's money.
+  function _namekeyIndex(keys) {
+    const idx = {}, collided = new Set();
+    for (const k of keys) {
+      const nk = _nameKey(k);
+      if (!nk) continue;
+      if ((nk in idx) && idx[nk] !== k) collided.add(nk);
+      else idx[nk] = k;
+    }
+    for (const nk of collided) delete idx[nk];
+    return idx;
+  }
+
   async function candidateHistory(name, filer) {
     const [index, racesRaw, cohCache] = await Promise.all([
       fetchJSON('la_candidate_index.json.gz'),
@@ -212,16 +268,26 @@
     const norm = normName(name);
     const toks = norm.split(' ');
     const t2 = toks.length >= 2 ? `${toks[0]} ${toks[toks.length - 1]}` : null;
+    // Nickname/maiden-name fallback (mirrors the server): bridges SoS-ballot and
+    // formal spellings when no filer pins the identity, so the career chart,
+    // election history, and certified COH all resolve to the same person.
+    const nk     = _nameKey(name);
+    const ciIdx  = _namekeyIndex(Object.keys(index));
+    const crIdx  = _namekeyIndex(Object.keys(racesRaw));
+    const cohIdx = _namekeyIndex(Object.keys(cohCache));
 
-    const financial = filerEntry || index[norm] || (t2 && index[t2]) || {};
-    const racesList = racesRaw[norm] || (t2 && racesRaw[t2]) || [];
+    const financial = filerEntry || index[norm] || (t2 && index[t2]) ||
+                      (nk && (nk in ciIdx) ? index[ciIdx[nk]] : null) || {};
+    const racesList = racesRaw[norm] || (t2 && racesRaw[t2]) ||
+                      (nk && (nk in crIdx) ? racesRaw[crIdx[nk]] : null) || [];
     // Mirror the endpoint: party-committee offices excluded, then sorted by
     // the raw M/D/YYYY date string (lexicographic — same as the server).
     const races = racesList
       .filter(r => !_isPartyOffice(r.office))
       .sort((a, b) => ((a.date || '') < (b.date || '') ? -1 : (a.date || '') > (b.date || '') ? 1 : 0));
 
-    const ethics_coh = cohCache[wsNorm(name)] || null;
+    let ethics_coh = cohCache[wsNorm(name)] || null;
+    if (!ethics_coh && nk && (nk in cohIdx)) ethics_coh = cohCache[cohIdx[nk]] || null;
 
     // Hybrid live-cash estimate from the index's monthly buckets — the same
     // computation the server runs (flows after the certified Dec-31 close).
