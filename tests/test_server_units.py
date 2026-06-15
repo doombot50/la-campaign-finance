@@ -92,6 +92,7 @@ class TestOfficeType(unittest.TestCase):
         'Attorney General': 'statewide',
         'Mayor': 'local',
         'Sheriff': 'local',
+        'East Baton Rouge Parish Clerk of Court': 'local',
         # The server's classifier is intentionally coarse — these fall through.
         'Constable': 'other',
         'Constitutional Amendment No. 1': 'other',
