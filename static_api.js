@@ -229,11 +229,14 @@
     const forms = grp.split(' ');
     for (const f of forms) if (!(f in _NICK)) _NICK[f] = forms[0];
   }
-  // (_nick_first, last) identity, or null when < 2 tokens. Mirrors _name_key.
+  // (_nick_first, last) identity, or null when < 2 tokens. Mirrors _name_key,
+  // including the leading-initial skip ("J Douglas Welborn" -> DOUGLAS, meeting
+  // the "Doug Welborn" ballot spelling).
   function _nameKey(name) {
     const toks = normName(name).split(' ').filter(Boolean);
     if (toks.length < 2) return null;
-    return (_NICK[toks[0]] || toks[0]) + '\t' + toks[toks.length - 1];
+    const i = (toks[0].length === 1 && toks.length >= 3) ? 1 : 0;
+    return (_NICK[toks[i]] || toks[i]) + '\t' + toks[toks.length - 1];
   }
   // Map identity -> the one source key with it; drop collisions (mirrors
   // _namekey_index) so a fuzzy fallback never attaches the wrong person's money.

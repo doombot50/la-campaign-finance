@@ -48,6 +48,16 @@ class TestNameKey(unittest.TestCase):
         self.assertEqual(s._name_key('Liz Baker Murrill'),
                          s._name_key('Elizabeth Murrill'))
 
+    def test_leading_initial_skipped_for_middle_name(self):
+        # Formal filings often lead with an initial ("J Douglas Welborn") while
+        # the ballot uses the middle name's nickname ("Doug Welborn") — same
+        # person. The leading single-letter initial is skipped so they meet.
+        self.assertEqual(s._name_key('J Douglas Welborn'),
+                         s._name_key('Doug Welborn'))
+        self.assertEqual(s._name_key('J Douglas Welborn'), ('DOUGLAS', 'WELBORN'))
+        # A lone initial + last (no middle) can't do better — left as-is.
+        self.assertEqual(s._name_key('J Welborn'), ('J', 'WELBORN'))
+
     def test_distinct_people_stay_distinct(self):
         self.assertNotEqual(s._name_key('Eddie Rispone'),
                             s._name_key('Gary Rispone'))
