@@ -626,6 +626,90 @@ def build_races_payload(office_filter='major', year_filter=''):
     return {'races': race_list, 'total': len(race_list), 'years': all_years}
 
 
+def build_candidate_history_payload(name, filer=''):
+    """Career profile for one person — financial index + SoS race list +
+    certified COH — payload of /api/candidate-history.
+
+    A filer number (from a search result / entity) pins exact identity via the
+    filer-keyed index, so two people sharing a normalized name never merge.
+    Without one, the lookup falls back through the name-keyed index: exact
+    normalized name, then first+last, then the nickname/maiden-name key — the
+    same cross-dataset bridge build_races_payload uses, so a SoS ballot spelling
+    ("Liz Baker Murrill") and the formal finance/COH spelling ("Elizabeth
+    Murrill") resolve to the same career, election history, and certified COH.
+    Without it the profile could silently miss this filer's records whenever it
+    is reached by the variant spelling (e.g. a #/campaign/<name> permalink).
+    """
+    _load_career_data()
+    _load_ethics_coh()
+    name  = (name or '').strip()
+    filer = (filer or '').strip()
+    norm  = _norm_name(name)
+    toks  = norm.split()
+    nk      = _name_key(name)
+    ci_idx  = _namekey_index(_CAND_INDEX.keys())  if _CAND_INDEX  else {}
+    cr_idx  = _namekey_index(_CAND_RACES.keys())  if _CAND_RACES  else {}
+    coh_idx = _namekey_index(_ETHICS_COH.keys())  if _ETHICS_COH  else {}
+    financial = ((_FILER_CAREER.get(filer) if filer else None) or
+                 _CAND_INDEX.get(norm) or
+                 (_CAND_INDEX.get(f'{toks[0]} {toks[-1]}') if len(toks) >= 2 else None) or
+                 (_CAND_INDEX.get(ci_idx[nk]) if nk and nk in ci_idx else None) or
+                 {})
+    races_raw = (_CAND_RACES.get(norm) or
+                 (_CAND_RACES.get(f'{toks[0]} {toks[-1]}') if len(toks) >= 2 else None) or
+                 (_CAND_RACES.get(cr_idx[nk]) if nk and nk in cr_idx else None) or
+                 [])
+
+    # Sort races by date, exclude party-committee offices
+    def _is_party_office(o):
+        o = o.upper()
+        return any(x in o for x in ('DSCC','RSCC','DPEC','RPEC',
+                   'CENTRAL COMMITTEE','EXECUTIVE COMMITTEE','PARTY COMMITTEE'))
+    races = sorted(
+        [r for r in races_raw if not _is_party_office(r.get('office',''))],
+        key=lambda r: r.get('date','')
+    )
+
+    # Certified COH from ethics_coh_cache.json (same nickname/maiden fallback).
+    ethics_coh = _get_ethics_coh(name)
+    if not ethics_coh and nk and nk in coh_idx:
+        ethics_coh = _ETHICS_COH.get(coh_idx[nk])
+
+    # Hybrid live-cash estimate: certified Dec-31 balance + net flows since.
+    # Flows come from the index's monthly buckets — the same aggregation as every
+    # other number on the profile. Buckets hold contributions in / expenditures
+    # out only; loans excluded (noted in the UI tooltip).
+    coh_estimate = None
+    if ethics_coh and ethics_coh.get('ending_coh') is not None:
+        try:
+            base_year = int(ethics_coh.get('report_year'))
+        except (TypeError, ValueError):
+            base_year = None
+        if base_year and base_year < date.today().year:
+            cutoff = f'{base_year}-12'   # filing certifies through Dec 31
+            raised_since = spent_since = 0.0
+            for mk, flows in (financial.get('monthly') or {}).items():
+                if mk > cutoff:
+                    raised_since += flows.get('in', 0) or 0
+                    spent_since  += flows.get('out', 0) or 0
+            coh_estimate = {
+                'base':         ethics_coh['ending_coh'],
+                'base_year':    base_year,
+                'raised_since': round(raised_since, 2),
+                'spent_since':  round(spent_since, 2),
+                'estimate':     round(ethics_coh['ending_coh'] + raised_since - spent_since, 2),
+            }
+
+    return {
+        'financial':    financial,
+        'races':        races,
+        'norm':         norm,
+        'ethics_coh':   ethics_coh,   # None if not yet scraped
+        'coh_estimate': coh_estimate, # None unless certified base exists
+        'entity':       _get_entity(filer=filer or None, name=name),  # canonical entity or None
+    }
+
+
 def build_overview_payload():
     """Landing-page aggregate stats — payload of /api/overview."""
     _build_search_index()
@@ -1729,68 +1813,7 @@ class Handler(BaseHTTPRequestHandler):
             filer = params.get('filer', [''])[0].strip()
             if not name:
                 self._json({'error': 'name required'}); return
-            _load_career_data()
-            norm = _norm_name(name)
-            toks = norm.split()
-            # Exact identity first: a filer number resolves to one filer's career
-            # via the filer-keyed index, so two people sharing a normalized name
-            # never merge. Falls back to the name-keyed index (T1 exact, then T2
-            # first+last) when no filer is known or it isn't in the index yet.
-            financial = ((_FILER_CAREER.get(filer) if filer else None) or
-                         _CAND_INDEX.get(norm) or
-                         (_CAND_INDEX.get(f'{toks[0]} {toks[-1]}') if len(toks) >= 2 else None) or
-                         {})
-            races_raw = (_CAND_RACES.get(norm) or
-                         (_CAND_RACES.get(f'{toks[0]} {toks[-1]}') if len(toks) >= 2 else None) or
-                         [])
-            # Sort races by date, exclude party-committee offices
-            def _is_party_office(o):
-                o = o.upper()
-                return any(x in o for x in ('DSCC','RSCC','DPEC','RPEC',
-                           'CENTRAL COMMITTEE','EXECUTIVE COMMITTEE','PARTY COMMITTEE'))
-            races = sorted(
-                [r for r in races_raw if not _is_party_office(r.get('office',''))],
-                key=lambda r: r.get('date','')
-            )
-            # Augment with certified COH from ethics_coh_cache.json if available
-            ethics_coh = _get_ethics_coh(name)
-
-            # Hybrid live-cash estimate: certified Dec-31 balance + net flows since.
-            # Flows come from the nightly index's monthly buckets — the same
-            # normalized-name aggregation as every other number on the profile —
-            # instead of the old per-request scan of whole year files, which cost
-            # seconds per profile open on the free tier. Monthly buckets contain
-            # contributions in / expenditures out only; loans excluded — noted in
-            # the UI tooltip.
-            coh_estimate = None
-            if ethics_coh and ethics_coh.get('ending_coh') is not None:
-                try:
-                    base_year = int(ethics_coh.get('report_year'))
-                except (TypeError, ValueError):
-                    base_year = None
-                if base_year and base_year < date.today().year:
-                    cutoff = f'{base_year}-12'   # filing certifies through Dec 31
-                    raised_since = spent_since = 0.0
-                    for mk, flows in (financial.get('monthly') or {}).items():
-                        if mk > cutoff:
-                            raised_since += flows.get('in', 0) or 0
-                            spent_since  += flows.get('out', 0) or 0
-                    coh_estimate = {
-                        'base':         ethics_coh['ending_coh'],
-                        'base_year':    base_year,
-                        'raised_since': round(raised_since, 2),
-                        'spent_since':  round(spent_since, 2),
-                        'estimate':     round(ethics_coh['ending_coh'] + raised_since - spent_since, 2),
-                    }
-
-            self._json({
-                'financial':    financial,
-                'races':        races,
-                'norm':         norm,
-                'ethics_coh':   ethics_coh,   # None if not yet scraped
-                'coh_estimate': coh_estimate, # None unless certified base exists
-                'entity':       _get_entity(filer=filer or None, name=name),  # canonical entity or None
-            })
+            self._json(build_candidate_history_payload(name, filer))
             return
 
         # ── /api/insights — nightly precomputed insight blocks ───────────────

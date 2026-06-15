@@ -80,8 +80,9 @@ try {
     check(`races ${qs || '(default major)'}`, !d, d);
   }
 
-  // candidate-history: person with COH + flows, committee, alias-form name, unknown
-  for (const name of ['SHARON WESTON BROOME', 'JAMBALAYA PAC', 'Aeisha S. Kelly', 'JEFF LANDRY', 'NOBODY AT ALL XYZ']) {
+  // candidate-history: person with COH + flows, committee, alias-form name,
+  // SoS ballot/maiden variant (exercises the nickname fallback), unknown
+  for (const name of ['SHARON WESTON BROOME', 'JAMBALAYA PAC', 'Aeisha S. Kelly', 'JEFF LANDRY', 'LIZ BAKER MURRILL', 'NOBODY AT ALL XYZ']) {
     const live = await getJSON(`/api/candidate-history?name=${encodeURIComponent(name)}`);
     const mine = await S.candidateHistory(name);
     const d = diff(live, mine, `ch[${name}]`);

@@ -221,6 +221,52 @@ class TestBuildRacesPayload(unittest.TestCase):
         self.assertGreaterEqual(every['total'], self.major['total'])
 
 
+class TestBuildCandidateHistory(unittest.TestCase):
+    """build_candidate_history_payload runs on committed data (career index +
+    candidacies + COH cache). The profile must reach a person by any spelling —
+    the same maiden/nickname bridge the races page uses."""
+
+    def test_payload_shape(self):
+        p = s.build_candidate_history_payload('JEFF LANDRY')
+        self.assertEqual(set(p), {'financial', 'races', 'norm', 'ethics_coh',
+                                  'coh_estimate', 'entity'})
+
+    def test_unknown_name_is_empty_but_well_formed(self):
+        p = s.build_candidate_history_payload('NOBODY AT ALL XYZ')
+        self.assertEqual(p['financial'], {})
+        self.assertEqual(p['races'], [])
+        self.assertIsNone(p['ethics_coh'])
+
+    def test_maiden_nickname_variants_resolve_to_one_career(self):
+        # The reported bug: the SoS ballot spelling ("Liz Baker Murrill"), the
+        # formal finance/COH spelling ("Elizabeth Murrill"), and a bare nickname
+        # ("Liz Murrill") must all land on the SAME career, election history, and
+        # certified COH — so the profile agrees with the races page.
+        formal = s.build_candidate_history_payload('ELIZABETH MURRILL')
+        # The fix is meaningless if the base record is missing from the data.
+        self.assertGreater(formal['financial'].get('total_raised', 0) or 0, 0)
+        for variant in ('LIZ BAKER MURRILL', 'Liz Murrill'):
+            other = s.build_candidate_history_payload(variant)
+            self.assertEqual(other['financial'].get('total_raised'),
+                             formal['financial'].get('total_raised'),
+                             f'{variant}: financial differs')
+            self.assertEqual(set((other['financial'].get('cycles') or {})),
+                             set((formal['financial'].get('cycles') or {})),
+                             f'{variant}: cycles differ')
+            self.assertEqual([r.get('office') for r in other['races']],
+                             [r.get('office') for r in formal['races']],
+                             f'{variant}: election history differs')
+            self.assertEqual((other['ethics_coh'] or {}).get('ending_coh'),
+                             (formal['ethics_coh'] or {}).get('ending_coh'),
+                             f'{variant}: certified COH differs')
+
+    def test_election_history_surfaces_for_formal_name(self):
+        # Races are keyed by the SoS ballot name, so the formal finance spelling
+        # must still surface them via the namekey fallback (previously empty).
+        p = s.build_candidate_history_payload('ELIZABETH MURRILL')
+        self.assertTrue(p['races'], 'expected at least one race for the formal name')
+
+
 class TestBuildSearchEntries(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
