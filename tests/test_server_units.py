@@ -67,6 +67,12 @@ class TestOfficeType(unittest.TestCase):
     CASES = {
         'United States Senator': 'us_senate',
         'U. S. Representative -- 3rd Congressional District': 'us_house',
+        'Presidential Nominee -- Democratic Party': 'president',
+        'President of the United States': 'president',
+        # "PRESIDENT" without a federal qualifier stays local — the president
+        # branch must not swallow these.
+        'Parish President -- Jefferson Parish': 'local',
+        'Mayor-President -- East Baton Rouge': 'local',
         'Governor': 'governor',
         'Lieutenant Governor': 'lt_governor',
         'State Senator -- 5th Senatorial District': 'state_senate',
@@ -191,8 +197,24 @@ class TestBuildRacesPayload(unittest.TestCase):
         self.assertGreater(p['total'], 0)
 
     def test_office_filter_major_only_major_types(self):
-        major_types = {'governor', 'us_senate', 'us_house', 'statewide', 'lt_governor'}
+        # Federal offices were split out into their own 'federal' view, so they
+        # no longer appear under "Major Offices".
+        major_types = {'governor', 'statewide', 'lt_governor'}
         self.assertTrue(all(r['office_type'] in major_types for r in self.major['races']))
+
+    def test_office_filter_federal_only_federal_types(self):
+        fed = s.build_races_payload('federal', '')
+        federal_types = {'us_senate', 'us_house', 'president'}
+        self.assertGreater(fed['total'], 0)
+        self.assertTrue(all(r['office_type'] in federal_types for r in fed['races']))
+
+    def test_major_and_federal_are_disjoint(self):
+        # The Races tab splits federal out of "Major Offices"; a race must land in
+        # exactly one of the two views, never both.
+        fed = s.build_races_payload('federal', '')
+        major_keys = {(r['date'], r['office']) for r in self.major['races']}
+        fed_keys   = {(r['date'], r['office']) for r in fed['races']}
+        self.assertTrue(major_keys.isdisjoint(fed_keys))
 
     def test_office_filter_all_is_superset(self):
         every = s.build_races_payload('all', '')

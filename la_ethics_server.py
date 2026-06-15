@@ -180,6 +180,11 @@ def _load_election_results():
 def _office_type(office):
     """Classify an office string into a broad category."""
     o = office.upper()
+    # Federal — these report fundraising to the FEC, not the Board of Ethics,
+    # so any finance figures attached downstream are state-office residue only.
+    if 'PRESIDENT' in o and _re.search(
+            r'UNITED STATES|U\.?\s*S\.?|ELECTOR|NOMINEE|PREFERENCE', o):
+        return 'president'
     if _re.search(r'\bU\.?\s*S\.?\s+SENAT|UNITED STATES SENAT', o): return 'us_senate'
     if _re.search(r'\bU\.?\s*S\.?\s+REP|CONGRESS', o):               return 'us_house'
     if 'GOVERNOR' in o and 'LT' not in o and 'LIEUTENANT' not in o:  return 'governor'
@@ -501,7 +506,8 @@ def build_races_payload(office_filter='major', year_filter=''):
     office_filter = (office_filter or 'major').lower()
     year_filter   = (year_filter or '').strip()
 
-    MAJOR_TYPES    = {'governor','us_senate','us_house','statewide','lt_governor'}
+    MAJOR_TYPES    = {'governor','statewide','lt_governor'}
+    FEDERAL_TYPES  = {'us_senate','us_house','president'}
     STATE_TYPES    = {'state_senate','state_house'}
     BOARD_TYPES    = {'board','supreme_court'}
     JUDICIAL_TYPES = {'judicial'}
@@ -537,6 +543,8 @@ def build_races_payload(office_filter='major', year_filter=''):
                 # Apply office type filter
                 if office_filter == 'major':
                     if otype not in MAJOR_TYPES: continue
+                elif office_filter == 'federal':
+                    if otype not in FEDERAL_TYPES: continue
                 elif office_filter == 'state':
                     if otype not in STATE_TYPES: continue
                 elif office_filter == 'board':

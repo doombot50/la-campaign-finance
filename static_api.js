@@ -126,7 +126,8 @@
 
   // ── /api/races (client-side office/year filtering over the full dump) ────
   const OFFICE_GROUPS = {
-    major:    new Set(['governor', 'us_senate', 'us_house', 'statewide', 'lt_governor']),
+    major:    new Set(['governor', 'statewide', 'lt_governor']),
+    federal:  new Set(['us_senate', 'us_house', 'president']),
     state:    new Set(['state_senate', 'state_house']),
     board:    new Set(['board', 'supreme_court']),
     judicial: new Set(['judicial']),
