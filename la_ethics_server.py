@@ -196,8 +196,8 @@ def _office_type(office):
     if any(x in o for x in ['ATTORNEY GENERAL','SECRETARY OF STATE',
                              'TREASURER','COMMISSIONER OF']):          return 'statewide'
     if 'JUSTICE' in o or 'JUDGE' in o:                               return 'judicial'
-    if any(x in o for x in ['SHERIFF','MAYOR','PARISH PRESIDENT',
-                             'DISTRICT ATTORNEY','ASSESSOR']):         return 'local'
+    if any(x in o for x in ['SHERIFF','MAYOR','PARISH PRESIDENT','DISTRICT ATTORNEY',
+                             'ASSESSOR','CLERK OF COURT']):             return 'local'
     return 'other'
 
 def _cycle_for_year(yy):
