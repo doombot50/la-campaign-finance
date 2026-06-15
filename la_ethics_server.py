@@ -336,11 +336,14 @@ for _grp in _NICK_GROUPS:
 def _name_key(name):
     """(_nick_first, last) identity for matching a person across datasets, or
     None if fewer than 2 name tokens. Drops middle/maiden tokens; _norm_name has
-    already stripped honorifics and generational suffixes."""
+    already stripped honorifics and generational suffixes. A leading single-letter
+    initial is skipped when a fuller name follows, so a formal "J Douglas Welborn"
+    keys off DOUGLAS and meets the "Doug Welborn" ballot spelling."""
     toks = _norm_name(name).split()
     if len(toks) < 2:
         return None
-    return (_NICK.get(toks[0], toks[0]), toks[-1])
+    i = 1 if (len(toks[0]) == 1 and len(toks) >= 3) else 0
+    return (_NICK.get(toks[i], toks[i]), toks[-1])
 
 def _namekey_index(keys):
     """Map (nick_first, last) -> the single source key with that identity.
