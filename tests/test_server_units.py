@@ -141,6 +141,18 @@ class TestZipToState(unittest.TestCase):
         self.assertEqual(s._zip_to_state('90210'), 'CA')
         self.assertEqual(s._zip_to_state('10001'), 'NY')
 
+    def test_zip_plus_four(self):
+        self.assertEqual(s._zip_to_state('70801-1234'), 'LA')   # 9-digit ZIP+4
+        self.assertEqual(s._zip_to_state('390566275'), 'MS')    # 9-digit, no dash
+
+    def test_malformed_length_not_guessed(self):
+        # A 4-digit data-entry error must NOT resolve from its truncated prefix:
+        # '1934' -> '193' would wrongly map a Baton Rouge donor to PA. Regression
+        # for the John Sinquefield / Welborn "state: PA" bug.
+        self.assertEqual(s._zip_to_state('1934'), '')
+        self.assertEqual(s._zip_to_state('193'), '')     # 3-digit fragment
+        self.assertEqual(s._zip_to_state('7080112'), '')  # 7-digit junk
+
     def test_invalid(self):
         self.assertEqual(s._zip_to_state('00000'), '')
         self.assertEqual(s._zip_to_state('abcde'), '')

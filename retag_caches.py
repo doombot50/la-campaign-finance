@@ -50,6 +50,43 @@ else:
 def _is_transfer(contributor):
     return re.sub(r'\s+', ' ', (contributor or '').strip().upper()) in committee_names
 
+def _old_zip_state(z):
+    """What the pre-fix _zip_to_state would have guessed (len>=3, 3-digit prefix).
+    Used to recognize a state that was DERIVED from a now-rejected malformed ZIP
+    rather than supplied by the source."""
+    if len(z) >= 3 and z[:3].isdigit():
+        return srv._ZIP3_STATE.get(z[:3], '')
+    return ''
+
+def _repair_contrib_geo(r):
+    """Re-resolve contributorState/parish for an already-cached contribution.
+    Older contribution cycles are never re-parsed from CSV, so a state invented
+    from a malformed ZIP (e.g. Baton Rouge donor tagged 'PA' from zip '1934')
+    persists until repaired here. Conservative: only discards a stored state that
+    exactly matches the bad-ZIP guess the fix now rejects — a genuine source
+    state (e.g. a real out-of-state donor with a valid ZIP) is left untouched.
+    Returns True if anything changed."""
+    z = (r.get('contributorZip') or '').strip().replace('-', '')
+    stored = (r.get('contributorState') or '').upper()
+    new_zip_state = srv._zip_to_state(z)            # fixed: '' for malformed len
+    # Drop a state that was only a now-rejected bad-ZIP guess.
+    if stored and stored == _old_zip_state(z) and new_zip_state != stored:
+        stored = ''
+    state = stored or new_zip_state
+    city = (r.get('contributor_city') or r.get('city') or '').upper()
+    if not state or state == 'LA':
+        cp = srv.CITY_TO_PARISH.get(city) or srv._zip_to_parish_fallback(z)
+        parish = cp or r.get('parish') or 'East Baton Rouge'
+        if not state and cp:
+            state = 'LA'
+    else:
+        parish = 'Out of State'
+    changed = (state != (r.get('contributorState') or '').upper()
+               or parish != r.get('parish'))
+    r['contributorState'] = state
+    r['parish'] = parish
+    return changed
+
 paths = (glob.glob(os.path.join(CACHE, 'contributions_yr*.json.gz')) +
          glob.glob(os.path.join(CACHE, 'expenditures_yr*.json.gz')) +
          glob.glob(os.path.join(CACHE, 'loans_yr*.json.gz')))
@@ -57,6 +94,7 @@ paths = (glob.glob(os.path.join(CACHE, 'contributions_yr*.json.gz')) +
 grand = Counter()
 n_transfer = 0
 transfer_amt = 0.0
+n_geo_fixed = 0
 for path in sorted(paths):
     is_contrib = 'contributions_' in os.path.basename(path)
     recs, changed = [], 0
@@ -72,6 +110,8 @@ for path in sorted(paths):
                 changed += 1
             r['party'] = new
             grand[new] += 1
+            if is_contrib and _repair_contrib_geo(r):
+                n_geo_fixed += 1
             if is_contrib and committee_names:
                 if _is_transfer(r.get('contributor')):
                     r['isTransfer'] = True
@@ -97,3 +137,4 @@ for k, v in grand.most_common():
     print(f'  {k:5} {v:,}')
 if committee_names:
     print(f'\nInter-committee transfers flagged: {n_transfer:,} records, ${transfer_amt:,.0f}')
+print(f'Geography repaired (bad-ZIP state -> correct): {n_geo_fixed:,} contribution records')

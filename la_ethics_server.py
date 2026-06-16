@@ -875,9 +875,14 @@ def _build_zip3_state():
 _build_zip3_state()
 
 def _zip_to_state(zip_code: str) -> str:
-    """Return a 2-letter state abbreviation for a ZIP code, or '' if unknown."""
+    """Return a 2-letter state abbreviation for a ZIP code, or '' if unknown.
+
+    Only genuine 5-digit (or 9-digit ZIP+4) codes resolve. A malformed length —
+    e.g. a 4-digit '1934' from a data-entry error — must NOT be mapped from its
+    truncated prefix, which would invent a wrong state (193 -> PA) for an
+    obviously-local donor. Better to return unknown and let the city decide."""
     z = (zip_code or '').strip().replace('-', '')
-    if len(z) >= 3 and z[:3].isdigit():
+    if len(z) in (5, 9) and z[:5].isdigit():
         return _ZIP3_STATE.get(z[:3], '')
     return ''
 
@@ -1506,11 +1511,14 @@ def _parse_contribution_row(row):
     # Out-of-state contributors get parish='Out of State' so "Alexandria, VA" is never
     # mistaken for Alexandria in Rapides Parish, and the LA map stays accurate.
     if not contributor_state or contributor_state == 'LA':
-        parish = (
-            CITY_TO_PARISH.get(city.upper())
-            or _zip_to_parish_fallback(zip_raw)
-            or 'East Baton Rouge'
-        )
+        confident_parish = (CITY_TO_PARISH.get(city.upper())
+                            or _zip_to_parish_fallback(zip_raw))
+        parish = confident_parish or 'East Baton Rouge'
+        # If we can place them in a real LA parish from city/ZIP but the state
+        # was blank (no source value, malformed ZIP), label it LA — otherwise the
+        # row shows a Baton Rouge parish with an empty State column.
+        if not contributor_state and confident_parish:
+            contributor_state = 'LA'
     else:
         parish = 'Out of State'
 
