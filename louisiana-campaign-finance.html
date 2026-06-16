@@ -4136,7 +4136,7 @@ function renderTable() {
         <td data-label="Industry">${industryBadgeHtml(d)}</td>
         <td data-label="Amount" class="amount-cell">${formatMoney(d.amount)}</td>
         <td data-label="Notes" style="font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(d.notes||'')}">${escHtml((d.notes||'').slice(0,60))}</td>
-        <td class="m-hide"><span class="source-badge la">LA Ethics</span></td>
+        <td class="m-hide">${sourceCellHtml(d)}</td>
       </tr>
       <tr class="detail-row${d.isFilingFee ? ' filing-fee-row' : ''}" id="${rid}" style="display:none">
         <td colspan="11">${buildDetailPanel(d)}</td>
@@ -4529,7 +4529,7 @@ function buildDetailPanel(d) {
         ${df('Date', d.date)}
         ${df('Type', d.type)}
         ${df('Schedule', d.scheduleType)}
-        ${df('Report Code', d.reportCode)}
+        ${filingDetailRow(d)}
       </div>
 
       ${notesBlock}
@@ -4557,6 +4557,32 @@ function formatMoneyShort(n) {
 
 function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Every transaction carries the certified report it was filed on (reportNumber),
+// which is also the public PDF's filename. These render the link to that source
+// document — the dashboard's strongest provenance: one click from any figure to
+// the filing it came from.
+function sourceCellHtml(d) {
+  const badge = '<span class="source-badge la">LA Ethics</span>';
+  if (!d || !d.filingUrl) return badge;
+  return `<a href="${escHtml(d.filingUrl)}" target="_blank" rel="noopener noreferrer"
+    title="View certified filing ${escHtml(d.reportNumber)} (PDF) on ethics.la.gov"
+    onclick="event.stopPropagation()">${badge}</a>`;
+}
+function filingDetailRow(d) {
+  if (!d || !d.filingUrl) return '';
+  const code = d.reportCode ? ` (${escHtml(d.reportCode)})` : '';
+  return `<div class="detail-field"><label>Source Filing</label>
+    <div><a href="${escHtml(d.filingUrl)}" target="_blank" rel="noopener noreferrer"
+      onclick="event.stopPropagation()">📄 ${escHtml(d.reportNumber)}${code} — view certified PDF ↗</a></div></div>`;
+}
+// Compact icon for flat tables (expenditures, loans) with no Source column.
+function filingLinkInline(d) {
+  if (!d || !d.filingUrl) return '';
+  return ` <a href="${escHtml(d.filingUrl)}" target="_blank" rel="noopener noreferrer"
+    title="View certified filing ${escHtml(d.reportNumber)} (PDF) on ethics.la.gov"
+    onclick="event.stopPropagation()" style="text-decoration:none">📄</a>`;
 }
 
 // ============================================================
@@ -5337,7 +5363,7 @@ function renderExpTable() {
       <td data-label="State">${r.recipientState || '—'}</td>
       <td data-label="Parish">${r.parish === 'Out of State' ? '<span style="color:var(--muted);font-size:11px">Out of State</span>' : (r.parish || '—')}</td>
       <td data-label="Amount" class="num">$${Math.round(r.amount).toLocaleString()}</td>
-      <td data-label="Description" style="max-width:260px;font-size:12px;color:var(--muted)">${escHtml((r.description || '').slice(0,120))}</td>
+      <td data-label="Description" style="max-width:260px;font-size:12px;color:var(--muted)">${escHtml((r.description || '').slice(0,120))}${filingLinkInline(r)}</td>
     </tr>
   `).join('');
 
@@ -5766,7 +5792,7 @@ function renderLoanTable() {
       <td data-label="State">${r.lenderState || '—'}</td>
       <td data-label="Parish">${r.parish === 'Out of State' ? '<span style="color:var(--muted);font-size:11px">Out of State</span>' : (r.parish || '—')}</td>
       <td data-label="Rate" class="num">${r.rate ? r.rate.toFixed(2) + '%' : '0%'}</td>
-      <td data-label="Amount" class="num">$${Math.round(r.amount).toLocaleString()}</td>
+      <td data-label="Amount" class="num">$${Math.round(r.amount).toLocaleString()}${filingLinkInline(r)}</td>
     </tr>
   `).join('');
   buildPagination({
@@ -7518,7 +7544,7 @@ function campSwitchTab(tab) {
         <td data-label="Parish">${escHtml(d.parish||'—')}</td>
         <td data-label="Type" style="font-size:11px;color:var(--muted)">${escHtml(d.donorType||'')}</td>
         <td data-label="Amount" class="num">$${Math.round(d.amount).toLocaleString()}</td>
-        <td data-label="Notes" style="font-size:11px;color:var(--muted);max-width:180px">${escHtml((d.notes||'').slice(0,80))}</td>
+        <td data-label="Notes" style="font-size:11px;color:var(--muted);max-width:180px">${escHtml((d.notes||'').slice(0,80))}${filingLinkInline(d)}</td>
       </tr>`).join('');
   } else if (tab === 'exps') {
     // If expenditure data hasn't been loaded yet, trigger a load and show a message
@@ -7536,7 +7562,7 @@ function campSwitchTab(tab) {
           <td data-label="State">${d.recipientState||'—'}</td>
           <td data-label="Category" style="font-size:11px;color:var(--muted)">${escHtml(d._cat||'')}</td>
           <td data-label="Amount" class="num">$${Math.round(d.amount).toLocaleString()}</td>
-          <td data-label="Description" style="font-size:11px;color:var(--muted);max-width:200px">${escHtml((d.description||'').slice(0,100))}</td>
+          <td data-label="Description" style="font-size:11px;color:var(--muted);max-width:200px">${escHtml((d.description||'').slice(0,100))}${filingLinkInline(d)}</td>
         </tr>`).join('');
     }
   } else {
@@ -7555,7 +7581,7 @@ function campSwitchTab(tab) {
         <td data-label="State">${d.lenderState||'—'}</td>
         <td data-label="Parish">${escHtml(d.parish||'—')}</td>
         <td data-label="Rate" class="num">${d.rate?d.rate.toFixed(2)+'%':'0%'}</td>
-        <td data-label="Amount" class="num">$${Math.round(d.amount).toLocaleString()}</td>
+        <td data-label="Amount" class="num">$${Math.round(d.amount).toLocaleString()}${filingLinkInline(d)}</td>
       </tr>`).join('');
     }  // end else (loanData loaded)
   }

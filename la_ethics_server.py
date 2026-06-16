@@ -1475,6 +1475,21 @@ def is_cached_fresh(csv_key, report_type='contributions'):
     """True when every year in the range has a fresh per-year cache file."""
     return all(_year_is_fresh(y, report_type) for y in _key_years(csv_key))
 
+# Each transaction in the bulk data carries the certified report it was filed
+# on (ReportNumber, e.g. "LA-113368"), which is also the public PDF's filename:
+# https://eap.ethics.la.gov/CFSearch/LA-113368.pdf — so every contribution,
+# expenditure, and loan can link straight to its source document, no scraping.
+_FILING_PDF = 'https://eap.ethics.la.gov/CFSearch/{rn}.pdf'
+
+def _filing_fields(row):
+    """Return {reportNumber, reportCode, filingUrl} for a bulk-data row.
+    filingUrl is '' when the report number is missing/malformed."""
+    rn = (row.get('ReportNumber') or '').strip()
+    code = (row.get('ReportCode') or '').strip()
+    url = _FILING_PDF.format(rn=rn) if re.match(r'^LA-\d+$', rn) else ''
+    return {'reportNumber': rn, 'reportCode': code, 'filingUrl': url}
+
+
 def _parse_contribution_row(row):
     amt = float((row.get('ContributionAmt') or '').strip() or 0)
     if amt <= 0:
@@ -1550,7 +1565,7 @@ def _parse_contribution_row(row):
         'filerType':          (row.get('FilerType')          or '').strip(),
         'scheduleType':       (row.get('ScheduleDescription') or row.get('Schedule') or
                                row.get('ScheduleType') or '').strip(),
-        'reportCode':         (row.get('ReportCode')         or '').strip(),
+        **_filing_fields(row),   # reportNumber, reportCode, filingUrl (source PDF)
         'notes':              notes_raw,
         'isFilingFee':        (
                                   any(p in ff_text for p in [
@@ -1602,6 +1617,7 @@ def _parse_expenditure_row(row):
         'source':          'LA Ethics (Expenditure)',
         'description':     (row.get('ExpenditureDescription') or '').strip(),
         'filerNumber':     (row.get('FilerNumber') or '').strip(),
+        **_filing_fields(row),   # reportNumber, reportCode, filingUrl (source PDF)
     }
 
 def _parse_loan_row(row):
@@ -1639,6 +1655,7 @@ def _parse_loan_row(row):
         'party':        lookup_party(filer),
         'source':       'LA Ethics (Loan)',
         'filerNumber':  (row.get('FilerNumber') or '').strip(),
+        **_filing_fields(row),   # reportNumber, reportCode, filingUrl (source PDF)
     }
 
 def download_and_cache(csv_key, report_type='contributions'):
