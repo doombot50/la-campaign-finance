@@ -48,6 +48,11 @@ jobs:
           python-version: '3.12'
 
       - name: Seed data from the data-cache release
+        # Authenticate the GitHub API metadata fetch: unauthenticated calls
+        # share a 60/hour limit per runner IP and intermittently 403, seeding
+        # nothing and tripping the completeness gate below.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: python fetch_cache_assets.py
 
       - name: Assemble site (with completeness gate)

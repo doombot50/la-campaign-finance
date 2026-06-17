@@ -7,7 +7,12 @@ warm contribution/expenditure/loan cache instead of re-downloading 100MB+
 CSVs from ethics.la.gov on the first visitor's request.
 
 Assets live on the rolling `data-cache` GitHub release, refreshed nightly by
-.github/workflows/nightly-data.yml. Repo is public, so no token is needed.
+.github/workflows/nightly-data.yml. The repo is public, so no token is
+required — but unauthenticated GitHub API calls share a tiny 60/hour limit
+per source IP, and CI runners pool behind shared IPs, so the metadata fetch
+can hit "HTTP 403: rate limit exceeded" and seed nothing. When GITHUB_TOKEN
+(or GH_TOKEN) is present, we send it on the api.github.com request to use the
+authenticated 1000+/hour limit. Render and local runs still work tokenless.
 
 Non-fatal by design: if the release doesn't exist yet (first deploy before
 the first workflow run) the build proceeds with a cold cache — the server
@@ -30,6 +35,17 @@ UA = {'User-Agent': 'la-campaign-finance-build/1.0',
       'Accept': 'application/vnd.github+json'}
 
 RETRIES = 3   # per asset, with exponential backoff
+
+
+def _api_headers():
+    """Headers for the api.github.com metadata request. Authenticate when a
+    token is in the environment so CI doesn't hit the 60/hour unauthenticated
+    rate limit (shared per runner IP). Tokenless on Render/local is fine."""
+    headers = dict(UA)
+    token = os.environ.get('GITHUB_TOKEN') or os.environ.get('GH_TOKEN')
+    if token:
+        headers['Authorization'] = f'Bearer {token}'
+    return headers
 
 
 def _download_asset(url, dest, expected_size):
@@ -68,12 +84,23 @@ def _download_asset(url, dest, expected_size):
 
 def main():
     os.makedirs(DEST, exist_ok=True)
-    try:
-        req = urllib.request.Request(API_URL, headers=UA)
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            release = json.load(resp)
-    except Exception as e:
-        print(f'WARN: could not fetch release "{TAG}" ({e}). '
+    release = None
+    last_err = None
+    for attempt in range(1, RETRIES + 1):
+        try:
+            req = urllib.request.Request(API_URL, headers=_api_headers())
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                release = json.load(resp)
+            break
+        except Exception as e:
+            last_err = e
+            if attempt < RETRIES:
+                backoff = 2 ** attempt   # 2s, 4s
+                print(f'  release metadata: attempt {attempt}/{RETRIES} '
+                      f'failed ({e}); retrying in {backoff}s')
+                time.sleep(backoff)
+    if release is None:
+        print(f'WARN: could not fetch release "{TAG}" ({last_err}). '
               f'Building with cold cache; server will self-warm at boot.')
         return
 
