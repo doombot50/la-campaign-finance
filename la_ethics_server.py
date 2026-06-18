@@ -719,7 +719,7 @@ def build_overview_payload():
     today_iso = time.strftime('%Y-%m-%d')
 
     total_raised = sum(e['total_raised'] for e in _SEARCH_INDEX)
-    n_candidates = sum(1 for e in _SEARCH_INDEX if e['is_candidate'])
+    n_candidates = sum(1 for e in _SEARCH_INDEX if e['is_candidate'] and e['n_cycles'] > 0)
     n_committees = sum(1 for e in _SEARCH_INDEX if not e['is_candidate'])
 
     # Elections: races (distinct offices) + candidate counts per date
