@@ -8907,7 +8907,7 @@ function renderOverview() {
   // Hero stats
   document.getElementById('ov-hero').innerHTML = [
     ['$' + (d.total_raised/1e9).toFixed(2) + 'B', 'Total raised, all cycles'],
-    [d.n_candidates.toLocaleString(), 'Candidates tracked'],
+    [d.n_candidates.toLocaleString(), 'Candidates with finance records'],
     [d.n_committees.toLocaleString(), 'Committees & PACs'],
     [d.n_elections.toLocaleString(), 'Elections'],
     [(d.years.length ? d.years[d.years.length-1] + '–' + d.years[0] : '—'), 'Years covered'],
