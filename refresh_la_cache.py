@@ -74,6 +74,9 @@ def main():
                     os.utime(p, (old, old))
                 print(f'[{rtype}/{key}] current cycle -> forcing re-download')
             elif have and _needs_schema_backfill(have):
+                old = time.time() - srv.CACHE_TTL - 60
+                for p in have:
+                    os.utime(p, (old, old))
                 print(f'[{rtype}/{key}] present but missing filing fields -> re-downloading (backfill)')
             elif have:
                 print(f'[{rtype}/{key}] {len(have)} year files present -> skip')
