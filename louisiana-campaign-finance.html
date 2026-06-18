@@ -602,6 +602,21 @@
   .fh-tips li { margin-bottom: 3px; }
   @media (max-width: 560px) { .fh-row { grid-template-columns: 1fr; gap: 3px; } }
 
+  /* ── Search token hint bar ──────────────────────────────────── */
+  #search-token-hint-bar {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 3px 24px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  }
+  .sth-label { color: var(--muted); font-size: 11px; flex-shrink: 0; }
+  .sth-chip {
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+    color: var(--muted); background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 6px; cursor: pointer; white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s; line-height: 1.6;
+  }
+  .sth-chip:hover { color: var(--gold); border-color: rgba(200,169,81,0.5); }
+  @media (max-width: 600px) { #search-token-hint-bar { padding: 3px 12px; } }
+
   /* ── About & Methodology ───────────────────────────────────── */
   .about-body { padding: 8px 24px 24px; }
   .about-toc {
@@ -1364,6 +1379,9 @@
     </div>
   </div>
 </header>
+
+<!-- FILTER TOKEN HINTS — updated per active tab/sub-tab; chips click-to-insert into search -->
+<div id="search-token-hint-bar" style="display:none" aria-label="Available search filters"></div>
 
 <!-- DATA LOAD NOTICE (inside sticky so it's always visible until dismissed) -->
 <div id="data-notice" style="
@@ -2426,11 +2444,13 @@ function _idbOpen() {
   if (_idbPromise) return _idbPromise;
   _idbPromise = new Promise((resolve, reject) => {
     let req;
-    try { req = indexedDB.open(IDB_NAME, 1); }
+    try { req = indexedDB.open(IDB_NAME, 2); }
     catch (e) { reject(e); return; }
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = (e) => {
       const db = req.result;
-      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      if (e.oldVersion > 0 && db.objectStoreNames.contains(IDB_STORE))
+        db.deleteObjectStore(IDB_STORE);   // clear stale records when schema version bumps
+      db.createObjectStore(IDB_STORE);
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror   = () => reject(req.error);
@@ -8330,21 +8350,48 @@ function _racesParishOptions() {
   return [...set].sort().map(p => ({ label: p, value: p }));
 }
 
-// Update the search box hint to match the filters available in the current context.
+// Update the search box hint and token bar to match the current tab's available filters.
 function _updateSearchPlaceholder() {
   const input = document.getElementById('global-search');
   if (!input) return;
-  if (_isMoneyOut())
-    input.placeholder = 'Search or filter — try recipient:acme category:media min:5k…';
-  else if (_currentTab() === 'contributions')
-    input.placeholder = 'Search or filter — try zip:70801 party:rep donor:exxon…';
-  else if (_currentTab() === 'compare')
-    input.placeholder = 'Search a campaign to add to the comparison…';
-  else if (_currentTab() === 'races')
-    input.placeholder = 'Filter races — try parish:orleans, vermilion sheriff, governor…';
-  else
-    input.placeholder = 'Search candidates & committees — or try cycle:2024…';
+  let placeholder, tokens;
+  if (_isMoneyOut()) {
+    placeholder = 'Search or filter — try recipient:acme category:media min:5k…';
+    tokens = ['recipient:', 'category:', 'campaign:', 'parish:', 'desc:', 'min:', 'max:'];
+  } else if (_currentTab() === 'contributions') {
+    placeholder = 'Search or filter — try zip:70801 party:rep donor:exxon…';
+    tokens = ['donor:', 'zip:', 'party:', 'state:', 'parish:', 'committee:', 'min:', 'max:'];
+  } else if (_currentTab() === 'compare') {
+    placeholder = 'Search a campaign to add to the comparison…';
+    tokens = null;
+  } else if (_currentTab() === 'races') {
+    placeholder = 'Filter races — try parish:orleans, vermilion sheriff, governor…';
+    tokens = ['parish:'];
+  } else {
+    placeholder = 'Search candidates & committees — or try cycle:2024…';
+    tokens = null;
+  }
+  input.placeholder = placeholder;
+  const bar = document.getElementById('search-token-hint-bar');
+  if (!bar) return;
+  if (!tokens || !tokens.length) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  bar.innerHTML = '<span class="sth-label">Filter:</span>' +
+    tokens.map(t => `<button class="sth-chip" data-token="${t}" type="button">${t}</button>`).join('');
 }
+// Insert a clicked token chip into the search box and trigger filtering.
+function insertFilterToken(token) {
+  const input = document.getElementById('global-search');
+  if (!input) return;
+  const v = input.value.trimEnd();
+  input.value = (v && !v.endsWith(':') ? v + ' ' : '') + token;
+  input.focus();
+  input.dispatchEvent(new Event('input', {bubbles: true}));
+}
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.sth-chip');
+  if (chip) insertFilterToken(chip.dataset.token);
+});
 
 // Search & filter guide modal
 function openFilterHelp() {
