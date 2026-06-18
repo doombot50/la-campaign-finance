@@ -4580,27 +4580,36 @@ function escHtml(str) {
 }
 
 // Every transaction carries the certified report it was filed on (reportNumber),
-// which is also the public PDF's filename. These render the link to that source
-// document — the dashboard's strongest provenance: one click from any figure to
-// the filing it came from.
+// which IS the public PDF's filename — so the URL is derived here, not stored on
+// every record (that bloated the payload ~20%). One click from any figure to the
+// filing it came from. Accepts a legacy d.filingUrl if present (old cached rows).
+function _filingUrl(d) {
+  if (!d) return '';
+  if (d.filingUrl) return d.filingUrl;                       // legacy cached record
+  const rn = d.reportNumber || '';
+  return /^LA-\d+$/.test(rn) ? `https://eap.ethics.la.gov/CFSearch/${rn}.pdf` : '';
+}
 function sourceCellHtml(d) {
   const badge = '<span class="source-badge la">LA Ethics</span>';
-  if (!d || !d.filingUrl) return badge;
-  return `<a href="${escHtml(d.filingUrl)}" target="_blank" rel="noopener noreferrer"
+  const url = _filingUrl(d);
+  if (!url) return badge;
+  return `<a href="${escHtml(url)}" target="_blank" rel="noopener noreferrer"
     title="View certified filing ${escHtml(d.reportNumber)} (PDF) on ethics.la.gov"
     onclick="event.stopPropagation()">${badge}</a>`;
 }
 function filingDetailRow(d) {
-  if (!d || !d.filingUrl) return '';
+  const url = _filingUrl(d);
+  if (!url) return '';
   const code = d.reportCode ? ` (${escHtml(d.reportCode)})` : '';
   return `<div class="detail-field"><label>Source Filing</label>
-    <div><a href="${escHtml(d.filingUrl)}" target="_blank" rel="noopener noreferrer"
+    <div><a href="${escHtml(url)}" target="_blank" rel="noopener noreferrer"
       onclick="event.stopPropagation()">📄 ${escHtml(d.reportNumber)}${code} — view certified PDF ↗</a></div></div>`;
 }
 // Compact icon for flat tables (expenditures, loans) with no Source column.
 function filingLinkInline(d) {
-  if (!d || !d.filingUrl) return '';
-  return ` <a href="${escHtml(d.filingUrl)}" target="_blank" rel="noopener noreferrer"
+  const url = _filingUrl(d);
+  if (!url) return '';
+  return ` <a href="${escHtml(url)}" target="_blank" rel="noopener noreferrer"
     title="View certified filing ${escHtml(d.reportNumber)} (PDF) on ethics.la.gov"
     onclick="event.stopPropagation()" style="text-decoration:none">📄</a>`;
 }

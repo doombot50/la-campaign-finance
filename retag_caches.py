@@ -110,6 +110,9 @@ for path in sorted(paths):
                 changed += 1
             r['party'] = new
             grand[new] += 1
+            # Shed the legacy per-record filing URL — it's derived client-side
+            # from reportNumber now; storing it bloated the payload ~20%.
+            r.pop('filingUrl', None)
             if is_contrib and _repair_contrib_geo(r):
                 n_geo_fixed += 1
             if is_contrib and committee_names:
