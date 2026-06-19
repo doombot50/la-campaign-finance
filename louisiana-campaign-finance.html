@@ -4280,6 +4280,8 @@ function downloadCSV() {
     ['Type',          d => d.type || ''],
     ['Schedule',      d => d.scheduleType || ''],
     ['Report Code',   d => d.reportCode || ''],
+    ['Report Number', d => d.reportNumber || ''],
+    ['Filing PDF',    d => _filingUrl(d)],
     ['Filing Fee',    d => d.isFilingFee ? 'YES' : ''],
     ['Notes',         d => d.notes || ''],
     ['Source',        d => d.source],
@@ -5419,10 +5421,10 @@ function expGoPage(p) { expPage = p; renderExpTable(); }
 
 // ── CSV export ────────────────────────────────────────────────────
 function downloadExpCSV() {
-  const headers = ['Date','Campaign','Recipient','Category','State','Parish','Amount','Description'];
+  const headers = ['Date','Campaign','Recipient','Category','State','Parish','Amount','Description','Report Number','Filing PDF'];
   const rows = expFiltered.map(r => [
     r.date, r.candidate, r.contributor, r._cat, r.recipientState, r.parish,
-    r.amount, (r.description||'').replace(/"/g,'""')
+    r.amount, (r.description||'').replace(/"/g,'""'), r.reportNumber||'', _filingUrl(r)
   ].map(v => `"${v||''}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
   const a = document.createElement('a');
@@ -5845,9 +5847,9 @@ function loanGoPage(p) { loanPage = p; renderLoanTable(); }
 
 // ── CSV export ────────────────────────────────────────────────
 function downloadLoanCSV() {
-  const headers = ['Date','Campaign','Lender','State','Parish','Rate','Amount'];
+  const headers = ['Date','Campaign','Lender','State','Parish','Rate','Amount','Report Number','Filing PDF'];
   const rows = loanFiltered.map(r => [
-    r.date, r.candidate, r.contributor, r.lenderState, r.parish, r.rate, r.amount
+    r.date, r.candidate, r.contributor, r.lenderState, r.parish, r.rate, r.amount, r.reportNumber||'', _filingUrl(r)
   ].map(v => `"${v||''}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
   const a = document.createElement('a');
@@ -6378,6 +6380,8 @@ function exportContributorProfileCSV() {
     ['Type',          d => d.type || ''],
     ['Schedule',      d => d.scheduleType || ''],
     ['Report Code',   d => d.reportCode || ''],
+    ['Report Number', d => d.reportNumber || ''],
+    ['Filing PDF',    d => _filingUrl(d)],
     ['Filing Fee',    d => d.isFilingFee ? 'YES' : ''],
     ['Notes',         d => d.notes || ''],
     ['Source',        d => d.source || ''],
@@ -7910,10 +7914,10 @@ function renderCampCareer() {
 
 function exportCampaignCSV() {
   const rows = [];
-  _campContribs.forEach(d => rows.push(['contribution', d.date, d.contributor, d.contributorState, d.parish, d.amount, d.notes||'']));
-  _campExps.forEach(d    => rows.push(['expenditure',  d.date, d.contributor, d.recipientState||'', d.parish, d.amount, d.description||'']));
-  _campLoans.forEach(d   => rows.push(['loan',         d.date, d.contributor, d.lenderState||'',    d.parish, d.amount, d.rate||0]));
-  const header = 'Type,Date,Counterparty,State,Parish,Amount,Notes/Description';
+  _campContribs.forEach(d => rows.push(['contribution', d.date, d.contributor, d.contributorState, d.parish, d.amount, d.notes||'', _filingUrl(d)]));
+  _campExps.forEach(d    => rows.push(['expenditure',  d.date, d.contributor, d.recipientState||'', d.parish, d.amount, d.description||'', _filingUrl(d)]));
+  _campLoans.forEach(d   => rows.push(['loan',         d.date, d.contributor, d.lenderState||'',    d.parish, d.amount, d.rate||0, _filingUrl(d)]));
+  const header = 'Type,Date,Counterparty,State,Parish,Amount,Notes/Description,Filing PDF';
   const csv = [header, ...rows.map(r => r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))].join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
