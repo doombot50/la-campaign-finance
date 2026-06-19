@@ -1245,6 +1245,19 @@ _FALLBACK_LOOKUP = {
 }
 
 _POLITICIAN_LOOKUP: dict = {}
+# Lazily-built (nickname-canonical first, last) -> lookup key index, used as the
+# last-resort party match: it bridges "J Douglas Welborn" to the lookup's "DOUG
+# WELBORN" and "Toni Higginbotham" to "TONI MANNING HIGGINBOTHAM". Collisions are
+# dropped (two different "James Caldwell"s stay unresolved rather than guessed).
+_POL_NAMEKEY: dict | None = None
+# Names containing these tokens are organizations, not people — the (first,last)
+# bridge must never run on them (it would map e.g. a committee's two words onto a
+# random person). The earlier party-org fast-path already classifies real party
+# committees; this just fences off the heuristic bridge.
+_ORG_TOKENS = re.compile(
+    r'\b(PAC|COMMITTEE|FUND|PARTY|CAUCUS|ASSOCIATION|ASSN|LLC|INC|CORP|LLP|LP|'
+    r'UNION|LOCAL|LEAGUE|COALITION|ALLIANCE|FEDERATION|CITIZENS|FRIENDS|'
+    r'FOUNDATION|COMPANY|TRUST|GROUP|COUNCIL|SOCIETY)\b', re.I)
 
 def _normalize_name(name: str) -> str:
     """Uppercase, strip honorifics/punctuation, collapse whitespace."""
@@ -1253,9 +1266,18 @@ def _normalize_name(name: str) -> str:
     name = re.sub(r'[^A-Z\s]', ' ', name)
     return ' '.join(name.split())
 
+def _pol_namekey_index():
+    """Build (or return cached) (nick_first, last) -> lookup key index over the
+    politician lookup. Collision-guarded so an ambiguous bare name never matches."""
+    global _POL_NAMEKEY
+    if _POL_NAMEKEY is None:
+        _POL_NAMEKEY = _namekey_index((_POLITICIAN_LOOKUP or {}).keys())
+    return _POL_NAMEKEY
+
 def _load_politician_lookup():
     """Load la_politicians_lookup.json into _POLITICIAN_LOOKUP."""
-    global _POLITICIAN_LOOKUP
+    global _POLITICIAN_LOOKUP, _POL_NAMEKEY
+    _POL_NAMEKEY = None   # invalidate the derived index on (re)load
     if os.path.exists(LOOKUP_FILE):
         try:
             with open(LOOKUP_FILE, 'r', encoding='utf-8') as f:
@@ -1427,6 +1449,22 @@ def lookup_party_detail(name: str, _depth: int = 0) -> dict:
                 d = lookup_party_detail(cand, _depth + 1)
                 if d['party'] != 'OTH':
                     return d
+
+    # 6. Nickname/middle-name bridge — last resort. The earlier tiers require the
+    #    query's exact tokens; this matches on (nickname-canonical first, last) so
+    #    "J Douglas Welborn" finds "DOUG WELBORN" and "Toni Higginbotham" finds
+    #    "TONI MANNING HIGGINBOTHAM". Collision-guarded (ambiguous bare names like
+    #    two different "James Caldwell"s are excluded), so it never guesses. Marked
+    #    as a distinct source so provenance stays honest (a heuristic match).
+    if _ORG_TOKENS.search(_up):
+        return dict(_MISS)           # don't bridge committee/org names to a person
+    nk = _name_key(name)
+    if nk:
+        key = _pol_namekey_index().get(nk)
+        if key:
+            entry = _POLITICIAN_LOOKUP.get(key) or {}
+            return {'party': entry.get('party', 'OTH'),
+                    'source': 'name-bridge', 'matched': key}
 
     return dict(_MISS)
 

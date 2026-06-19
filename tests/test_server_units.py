@@ -176,6 +176,21 @@ class TestPartyLookup(unittest.TestCase):
         self.assertIsInstance(d, dict)
         self.assertIn('party', d)
 
+    def test_nickname_middlename_bridge(self):
+        # Party data exists under a nickname/middle-name form; the (first,last)
+        # bridge should find it where the exact tiers can't. These rely on the
+        # committed lookup containing DOUG WELBORN / TONI MANNING HIGGINBOTHAM.
+        for name in ('J. Douglas Welborn', 'Toni Higginbotham'):
+            d = s.lookup_party_detail(name)
+            self.assertNotEqual(d['party'], 'OTH', f'{name} should bridge to a party')
+            self.assertEqual(d['source'], 'name-bridge')
+
+    def test_bridge_never_guesses_org_or_ambiguous(self):
+        # Org names must not be bridged onto a person...
+        self.assertEqual(s.lookup_party('Entergy Corporation Employee PAC'), 'OTH')
+        # ...and a bare name with two differently-partied matches stays unresolved.
+        self.assertEqual(s.lookup_party('James Caldwell'), 'OTH')
+
 
 class TestBuildRacesPayload(unittest.TestCase):
     """build_races_payload runs on committed data (candidacies + career index)."""
