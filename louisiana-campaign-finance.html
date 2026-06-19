@@ -2446,15 +2446,25 @@ function _idbOpen() {
     let req;
     try { req = indexedDB.open(IDB_NAME, 2); }
     catch (e) { reject(e); return; }
+    // The cache is an optimization, never a dependency: the data load awaits
+    // idbGet up front, so the DB open must NEVER hang. A version upgrade can be
+    // blocked indefinitely when another tab holds an older version — onblocked
+    // fires but neither onsuccess nor onerror does — which would freeze the whole
+    // load ("cycle data won't load"). A hard timeout guarantees we fall through
+    // to a network load instead of waiting forever.
+    const timer = setTimeout(() => reject(new Error('idb open timeout')), 3000);
     req.onupgradeneeded = (e) => {
       const db = req.result;
       if (e.oldVersion > 0 && db.objectStoreNames.contains(IDB_STORE))
         db.deleteObjectStore(IDB_STORE);   // clear stale records when schema version bumps
       db.createObjectStore(IDB_STORE);
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(req.error);
+    req.onsuccess = () => { clearTimeout(timer); resolve(req.result); };
+    req.onerror   = () => { clearTimeout(timer); reject(req.error); };
+    req.onblocked = () => { clearTimeout(timer); reject(new Error('idb blocked')); };
   });
+  // Don't cache a failure forever — let a later call retry the open.
+  _idbPromise.catch(() => { _idbPromise = null; });
   return _idbPromise;
 }
 
