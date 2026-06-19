@@ -159,6 +159,24 @@ class TestZipToState(unittest.TestCase):
         self.assertEqual(s._zip_to_state(''), '')
 
 
+class TestLaCityOverride(unittest.TestCase):
+    """Unambiguously-LA city names override a wrong state from a bad ZIP, but
+    shared city names (Alexandria, Clinton, Hammond...) must be left untouched."""
+    def test_la_exclusive_overrides_wrong_state(self):
+        self.assertEqual(s._la_city_override('MA', 'BATON ROUGE'), 'LA')
+        self.assertEqual(s._la_city_override('NY', 'Baton Rouge'), 'LA')
+        self.assertEqual(s._la_city_override('', 'SHREVEPORT'), 'LA')
+
+    def test_shared_names_preserved(self):
+        self.assertEqual(s._la_city_override('VA', 'ALEXANDRIA'), 'VA')
+        self.assertEqual(s._la_city_override('MS', 'CLINTON'), 'MS')
+        self.assertEqual(s._la_city_override('IN', 'HAMMOND'), 'IN')
+        self.assertEqual(s._la_city_override('TX', 'MONROE'), 'TX')
+
+    def test_la_state_unchanged(self):
+        self.assertEqual(s._la_city_override('LA', 'NEW ORLEANS'), 'LA')
+
+
 class TestPartyLookup(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

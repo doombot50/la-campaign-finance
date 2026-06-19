@@ -74,6 +74,9 @@ def _repair_contrib_geo(r):
         stored = ''
     state = stored or new_zip_state
     city = (r.get('contributor_city') or r.get('city') or '').upper()
+    # An unambiguously-LA city overrides a wrong state from a bad-but-valid-length
+    # ZIP (e.g. "Baton Rouge" tagged MA from "01934", which _zip_to_state accepts).
+    state = srv._la_city_override(state, city)
     if not state or state == 'LA':
         cp = srv.CITY_TO_PARISH.get(city) or srv._zip_to_parish_fallback(z)
         parish = cp or r.get('parish') or 'East Baton Rouge'

@@ -954,6 +954,29 @@ CITY_TO_PARISH = {
     'GRAND LAKE': 'Cameron', 'JOHNSON BAYOU': 'Cameron',
 }
 
+# ── Unambiguously-Louisiana cities ────────────────────────────────────────────
+# Major LA cities whose NAME is unique to Louisiana — no same-name city of any
+# note in another state. When a record's resolved state isn't LA but the city is
+# one of these, the state came from bad data (e.g. a typo'd ZIP) and the city is
+# the truth, so we override to LA. Deliberately excludes common, shared names
+# (Alexandria, Monroe, Lafayette, Clinton, Hammond, Covington, Gonzales, Harvey,
+# Gretna...) where a same-name out-of-state city really exists — those must NOT
+# be overridden or genuine out-of-state donors would be miscounted as Louisiana.
+_LA_EXCLUSIVE_CITIES = frozenset({
+    'BATON ROUGE', 'NEW ORLEANS', 'SHREVEPORT', 'METAIRIE', 'LAKE CHARLES',
+    'BOSSIER CITY', 'KENNER', 'HOUMA', 'THIBODAUX', 'SLIDELL', 'CHALMETTE',
+    'OPELOUSAS', 'NATCHITOCHES', 'PONCHATOULA', 'LAPLACE', 'DESTREHAN',
+    'HAHNVILLE', 'BROUSSARD', 'MARRERO', 'WESTWEGO', 'MANDEVILLE', 'ZACHARY',
+    'PRAIRIEVILLE', 'DENHAM SPRINGS',
+})
+
+def _la_city_override(state, city):
+    """Return 'LA' when the city is unambiguously Louisiana but the resolved
+    state says otherwise (bad ZIP / wrong source state); else the state as-is."""
+    if state != 'LA' and (city or '').strip().upper() in _LA_EXCLUSIVE_CITIES:
+        return 'LA'
+    return state
+
 # ── ZIP-to-parish fallback ────────────────────────────────────────────────────
 # When a contributor's city isn't in CITY_TO_PARISH, try their 5-digit ZIP code.
 # Two levels: ZIP5 exact match → ZIP3 prefix regional heuristic.
@@ -1556,6 +1579,10 @@ def _parse_contribution_row(row):
     )
     if is_la_clerk:
         contributor_state = 'LA'
+
+    # An unambiguously-LA city name overrides a wrong state from a bad ZIP
+    # (e.g. "Baton Rouge" tagged MA from a typo'd "01934").
+    contributor_state = _la_city_override(contributor_state, city)
 
     # Only map to a Louisiana parish when the contributor is actually from Louisiana.
     # Out-of-state contributors get parish='Out of State' so "Alexandria, VA" is never
