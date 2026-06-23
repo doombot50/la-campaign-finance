@@ -572,7 +572,7 @@
     display: none; position: fixed; inset: 0; z-index: 2000;
     background: rgba(15,28,26,0.45); backdrop-filter: blur(2px);
     align-items: flex-start; justify-content: center;
-    padding: 48px 20px; overflow-y: auto;
+    padding: 48px 20px; overflow-y: auto; overflow-x: hidden;
   }
   .cp-overlay.open { display: flex; }
   .cp-modal {
@@ -1058,6 +1058,9 @@
     /* Race timeline */
     body.printing-profile .race-row { break-inside:avoid; }
     body.printing-profile #camp-empty { display:none !important; }
+    /* Collapse the two-column grid — rail is irrelevant on paper */
+    body.printing-profile .cp-split { grid-template-columns: 1fr !important; }
+    body.printing-profile .cp-rail  { display: none !important; }
     /* Footer watermark */
     body.printing-profile #camp-overlay::after {
       content:'Louisiana Campaign Finance Dashboard · ' attr(data-print-date);
@@ -7277,7 +7280,12 @@ function renderCampElection(name, party) {
 function _renderCampRail() {
   const railEl = document.getElementById('camp-rail');
   if (!railEl) return;
-  if (!_campContribs.length) { railEl.style.display = 'none'; railEl.innerHTML = ''; return; }
+  const splitEl = railEl.closest('.cp-split');
+  if (!_campContribs.length) {
+    railEl.style.display = 'none'; railEl.innerHTML = '';
+    if (splitEl) splitEl.style.gridTemplateColumns = '1fr';
+    return;
+  }
 
   const byDonor = {}, byInd = {};
   _campContribs.forEach(d => {
@@ -7309,6 +7317,7 @@ function _renderCampRail() {
         </div>`).join('')}
     </div>`;
   railEl.style.display = '';
+  if (splitEl) splitEl.style.gridTemplateColumns = '';
 }
 
 function showCampaignProfile(name, openTab, filer) {
@@ -7793,58 +7802,72 @@ function closeCampaignProfile() {
   _clearRouteHash('#/campaign/');
 }
 
-function printCampaignProfile() {
-  // Switch to Career tab so both charts are rendered before we snapshot them
+async function printCampaignProfile() {
+  // Switch to Career tab so both charts are visible before snapshotting.
+  // If career data hasn't arrived yet, campSwitchTab still makes the career
+  // content div visible (so Chart.js can measure its container) even though
+  // renderCampCareer() will return early without drawing.
   campSwitchTab('career');
 
   // Stamp print date on overlay for watermark
   const overlay = document.getElementById('camp-overlay');
   overlay.setAttribute('data-print-date', new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}));
 
-  // Give Chart.js enough time to fully draw the career chart in the case it
-  // was just initialized by the campSwitchTab('career') call above. Double-rAF
-  // is usually enough, but a tiny extra timeout protects against first-paint
-  // flakiness that can produce a blank snapshot.
-  requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => {
-    // ── Snapshot every chart canvas as a static PNG image ──────────────
-    // Chart.js fires a responsive resize callback when print CSS is applied,
-    // which can corrupt bar layouts mid-print.  Replacing canvases with <img>
-    // tags before window.print() ensures pixel-perfect, resize-proof output.
-    const canvasIds = ['camp-cashflow-chart', 'camp-career-chart'];
-    const swapped = [];
+  // If career data is still in flight, wait up to 3 s for it to arrive so
+  // the bar chart can be drawn before we snapshot.
+  if (!_careerData) {
+    let waited = 0;
+    while (!_careerData && waited < 3000) {
+      await new Promise(r => setTimeout(r, 100));
+      waited += 100;
+    }
+    // Re-render now that data has arrived (campSwitchTab's call above bailed early)
+    if (_careerData) renderCampCareer();
+  }
 
-    // Heal any stale proxies from a previous print whose restore never ran
-    _restoreChartProxies();
+  // Double-rAF gives the browser time to lay out the newly-visible career
+  // container, then force a Chart.js resize so the bar chart fills it before
+  // we snapshot.  Without this, a career chart opened for the first time during
+  // print sees a 0×0 canvas and produces a blank box.
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (_careerChart) _careerChart.resize();
+    setTimeout(r, 150);
+  })));
 
-    canvasIds.forEach(id => {
-      const canvas = document.getElementById(id);
-      if (!canvas || !canvas.width || !canvas.height) return;
-      try {
-        const img = document.createElement('img');
-        img.src = canvas.toDataURL('image/png');
-        img.style.width  = '100%';
-        img.style.height = canvas.offsetHeight + 'px';
-        img.style.display = 'block';
-        img.dataset.chartProxy = id;
-        canvas.parentNode.insertBefore(img, canvas);
-        canvas.style.display = 'none';
-        swapped.push({ canvas, img });
-      } catch (e) { /* tainted canvas — skip */ }
-    });
+  // ── Snapshot every chart canvas as a static PNG image ──────────────
+  // Chart.js fires a responsive resize callback when print CSS is applied,
+  // which can corrupt bar layouts mid-print.  Replacing canvases with <img>
+  // tags before window.print() ensures pixel-perfect, resize-proof output.
+  _restoreChartProxies();  // heal stale proxies from a previous print
 
-    document.body.classList.add('printing-profile');
-    window.print();
+  const canvasIds = ['camp-cashflow-chart', 'camp-career-chart'];
+  canvasIds.forEach(id => {
+    const canvas = document.getElementById(id);
+    if (!canvas || !canvas.width || !canvas.height) return;
+    try {
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.style.width  = '100%';
+      img.style.height = canvas.offsetHeight + 'px';
+      img.style.display = 'block';
+      img.dataset.chartProxy = id;
+      canvas.parentNode.insertBefore(img, canvas);
+      canvas.style.display = 'none';
+    } catch (e) { /* tainted canvas — skip */ }
+  });
 
-    // ── Restore canvases after the print dialog closes ─────────────────
-    // afterprint is unreliable in some environments (embedded webviews never
-    // fire it), which used to leave the stale <img> proxy in the DOM — the
-    // next chart re-render then showed BOTH copies stacked. Belt & braces:
-    // afterprint, plus a timer after window.print() returns (print blocks JS
-    // in desktop browsers, so this runs right after the dialog closes), plus
-    // heal-on-open in showCampaignProfile. _restoreChartProxies is idempotent.
-    window.addEventListener('afterprint', _restoreChartProxies, { once: true });
-    setTimeout(_restoreChartProxies, 500);
-  }, 120)));
+  document.body.classList.add('printing-profile');
+  window.print();
+
+  // ── Restore canvases after the print dialog closes ─────────────────
+  // afterprint is unreliable in some environments (embedded webviews never
+  // fire it), which used to leave the stale <img> proxy in the DOM — the
+  // next chart re-render then showed BOTH copies stacked. Belt & braces:
+  // afterprint, plus a timer after window.print() returns (print blocks JS
+  // in desktop browsers, so this runs right after the dialog closes), plus
+  // heal-on-open in showCampaignProfile. _restoreChartProxies is idempotent.
+  window.addEventListener('afterprint', _restoreChartProxies, { once: true });
+  setTimeout(_restoreChartProxies, 500);
 }
 
 // Remove ALL chart-proxy images and unhide their canvases. Idempotent — safe
@@ -8051,12 +8074,16 @@ async function fetchCareerData(name) {
 }
 
 function renderCampCareer() {
-  const empty  = document.getElementById('camp-career-empty');
-  const racesEl = document.getElementById('camp-career-races');
+  const empty    = document.getElementById('camp-career-empty');
+  const racesEl  = document.getElementById('camp-career-races');
+  const racesHdr = document.getElementById('camp-career-races-hdr');
   if (!_careerData || (!_careerData.races?.length && !Object.keys(_careerData.financial?.cycles||{}).length)) {
-    empty.style.display = ''; racesEl.innerHTML = ''; return;
+    empty.style.display = ''; racesEl.innerHTML = '';
+    if (racesHdr) racesHdr.style.display = 'none';
+    return;
   }
   empty.style.display = 'none';
+  if (racesHdr) racesHdr.style.display = _careerData.races?.length ? '' : 'none';
 
   // ── Bar chart: raised vs spent by cycle ──
   const fin    = _careerData.financial || {};
@@ -9587,7 +9614,7 @@ async function _ovOpenElection(year) {
       <div id="camp-content-career" style="display:none;padding:16px 20px">
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Fundraising by Election Cycle</div>
         <div style="position:relative;height:180px;margin-bottom:20px"><canvas id="camp-career-chart"></canvas></div>
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Election History</div>
+        <div id="camp-career-races-hdr" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Election History</div>
         <div id="camp-career-races"></div>
         <div id="camp-career-empty" style="display:none;color:var(--muted);font-size:13px;padding:20px 0;text-align:center">No career data available.</div>
       </div>
