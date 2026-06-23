@@ -4,70 +4,92 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Louisiana Campaign Finance Dashboard</title>
-<!-- PWA: installable from the browser menu; theme-color is kept in sync with
-     the light/dark toggle by applyTheme() -->
+<!-- PWA: installable from the browser menu. Light-only redesign — theme-color
+     matches the dark app header bar. -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#161b22">
+<meta name="theme-color" content="#0f1c1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LA CampFin">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* ============================================================
+     REDESIGN TOKEN MAP — light/teal editorial-data system.
+     Existing variable NAMES are preserved (the app references them
+     everywhere); only their VALUES are remapped to the new palette,
+     plus new design tokens are added. Ships light-only — no dark block.
+     ============================================================ */
   :root {
-    --bg: #0d1117;
-    --card: #161b22;
-    --gold: #c8a951;
-    --border: #30363d;
-    --dem: #2166ac;
-    --rep: #d73027;
-    --oth: #888888;            /* Other party: neutral — green is reserved for certified figures */
-    --flow-in:  #39b3a6;       /* money in (teal) — never party colors for flows */
+    /* surfaces */
+    --bg: #eef1f4;             /* page background */
+    --card: #ffffff;           /* cards, tables, panels */
+    --surface: #f7f9f8;        /* table header rows, subtle fills */
+    --border: #e2e8e6;         /* hairlines, card borders */
+    --header-bg: #0f1c1a;      /* top app bar (near-black green) */
+
+    /* text */
+    --text: #0f1c1a;           /* headings, primary numbers */
+    --text-2: #3f4b48;         /* secondary body */
+    --muted: #8a948f;          /* labels, captions */
+    --muted-2: #aab4b0;        /* faint / disabled */
+
+    /* accent (teal) — --gold kept as an alias so legacy usages stay teal */
+    --gold: #14756b;
+    --accent: #14756b;
+    --accent-dark: #0c5e4f;    /* accent text on light */
+    --accent-bg: #e6f2f0;      /* chip / active-filter bg */
+    --accent-border: #bfe0da;
+    --header-accent: #7fb5ad;  /* teal text inside the dark header */
+
+    /* data semantics */
+    --certified: #2e9e7a;      /* green = from a certified filing, ONLY */
+    --scraped: #c7a23b;        /* gold = scraped / unverified */
+    --flow-in:  #14756b;       /* money in (teal) */
     --flow-out: #e8833a;       /* money out (orange) */
-    --certified:#4caf7d;       /* green = came from a certified filing, nothing else */
-    --text: #e6edf3;
-    --muted: #8b949e;
-    --purple: #7b5ea7;
-    /* Derived tokens used for specific elements */
-    --surface: #0f1319;
-    --tooltip-bg: rgba(22,27,34,0.97);
-    --btn-active-text: #000;
-    --badge-dem-text: #9fc8ff;   --badge-dem-bg: rgba(33,102,172,0.18);
-    --badge-rep-text: #ff8888;   --badge-rep-bg: rgba(215,48,39,0.18);
-    --badge-oth-text: #b8c0c8;   --badge-oth-bg: rgba(140,140,140,0.18);
-    --badge-pac-text: #bf9fff;   --badge-pac-bg: rgba(153,102,255,0.18);
-    --badge-org-text: #ffcc66;   --badge-org-bg: rgba(255,165,0,0.15);
-    --badge-bus-text: #aaaaaa;   --badge-bus-bg: rgba(100,100,100,0.18);
-    --badge-ind-text: #80c8a0;   --badge-ind-bg: rgba(80,180,120,0.15);
-    --amount-color: var(--flow-in);
-    /* Type scale */
-    --fs-xs: 10px; --fs-sm: 12px; --fs-base: 14px;
-    --fs-lg: 17px; --fs-xl: 22px; --fs-hero: 28px;
-    --tile-url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-  }
-  [data-theme="light"] {
-    --bg: #f6f8fa;
-    --card: #ffffff;
-    --gold: #a07820;
-    --border: #d0d7de;
-    --text: #1f2328;
-    --muted: #57606a;
-    --surface: #edf0f3;
+
+    /* party — chart/line colors keep legacy names, mapped to the new bars */
+    --dem: #4d79a8;
+    --rep: #c0564d;
+    --oth: #6b7672;
+    --purple: #6a4fa0;
+    --rep-text: #a8453d; --rep-bg: #f6e7e5; --rep-bar: #c0564d;
+    --dem-text: #3a648f; --dem-bg: #e4ecf4; --dem-bar: #4d79a8;
+    --oth-text: #6b7672; --oth-bg: #eef1f0;
+
+    /* derived element tokens */
     --tooltip-bg: rgba(255,255,255,0.97);
     --btn-active-text: #fff;
-    --badge-dem-text: #1565c0;   --badge-dem-bg: rgba(33,102,172,0.12);
-    --badge-rep-text: #b71c1c;   --badge-rep-bg: rgba(215,48,39,0.12);
-    --badge-oth-text: #57606a;   --badge-oth-bg: rgba(100,100,100,0.12);
-    --badge-pac-text: #6a1b9a;   --badge-pac-bg: rgba(153,102,255,0.12);
-    --badge-org-text: #e65100;   --badge-org-bg: rgba(255,165,0,0.12);
-    --badge-bus-text: #424242;   --badge-bus-bg: rgba(100,100,100,0.12);
-    --badge-ind-text: #1b5e20;   --badge-ind-bg: rgba(80,180,120,0.12);
+
+    /* party / donor-type badges (legacy names → new values) */
+    --badge-dem-text: #3a648f;   --badge-dem-bg: #e4ecf4;
+    --badge-rep-text: #a8453d;   --badge-rep-bg: #f6e7e5;
+    --badge-oth-text: #6b7672;   --badge-oth-bg: #eef1f0;
+    --badge-pac-text: #6a4fa0;   --badge-pac-bg: #ece6f5;
+    --badge-org-text: #a06a1d;   --badge-org-bg: #f6edda;
+    --badge-bus-text: #4a4a4a;   --badge-bus-bg: #eceeed;
+    --badge-ind-text: #1b5e54;   --badge-ind-bg: #dcefe9;
+
+    /* donor-type tokens (new design names) */
+    --type-business-text: #4a4a4a;   --type-business-bg: #eceeed;
+    --type-individual-text: #1b5e54; --type-individual-bg: #dcefe9;
+    --type-pac-text: #6a4fa0;         --type-pac-bg: #ece6f5;
+    --type-org-text: #a06a1d;         --type-org-bg: #f6edda;
+
+    /* live badge (in dark header) */
+    --live-bg: #13322b; --live-dot: #3ddc97; --live-text: #7fe9c4;
+
     --amount-color: var(--flow-in);
-    --flow-in:  #0d7d72;
-    --flow-out: #c05d21;
-    --certified:#1a7a45;
+
+    /* Type scale */
+    --fs-xs: 10px; --fs-sm: 12px; --fs-base: 13px;
+    --fs-lg: 15px; --fs-xl: 22px; --fs-hero: 27px;
+    --tile-url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
   }
   html { scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) {
@@ -77,12 +99,14 @@
       scroll-behavior: auto !important;
     }
   }
-  /* Tabular numerals: equal-width digits make money columns scannable */
+  /* Numbers, dates, codes, labels → IBM Plex Mono with equal-width digits
+     so money columns stay scannable. */
   .num, td.num, .stat-value, .stat-sub, .cp-stat-val, .cmp-stat-val,
   .ov-stat-val, .ov-top-amt, .gs-result-amt, .race-cand-table td {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
   }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; }
+  body { background: var(--bg); color: var(--text); font-family: 'Libre Franklin', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; line-height: 1.5; }
   a { color: var(--gold); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
@@ -106,55 +130,43 @@
   /* EMPTY STATE — hide the dashboard grid until data is loaded */
   .main.is-empty > *:not(#empty-state) { display: none !important; }
 
-  /* LOUISIANA BRANDING */
-  #la-mardi-gras-stripe {
-    height: 3px;
-    background: linear-gradient(90deg, #7b2d8b 0%, #7b2d8b 33.3%, #c8a951 33.3%, #c8a951 66.6%, #2d8a45 66.6%);
-    flex-shrink: 0;
-  }
-  .pelican-icon { width: 34px; height: 26px; flex-shrink: 0; opacity: 0.92; }
-  .header-logo { display: flex; align-items: center; gap: 8px; }
-  .header-wordmark { display: flex; flex-direction: column; }
-  .header-wordmark-state {
-    font-size: 9px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase;
-    color: var(--gold); opacity: 0.7; line-height: 1;
-  }
-  .header-wordmark-name {
-    font-size: 11px; font-weight: 700; color: var(--gold); letter-spacing: 0.5px; line-height: 1.3;
+  /* LOUISIANA BRANDING — redesign ships a clean dark header; the Mardi Gras
+     stripe and the watermark fleur-de-lis are dropped. */
+  #la-mardi-gras-stripe { display: none; }
+  .pelican-icon { display: none; }
+  .header-logo { display: flex; align-items: center; gap: 14px; }
+  /* Teal "LA" logo tile (CSS-only, replaces the pelican mark) */
+  .la-logo-tile {
+    width: 42px; height: 42px; flex-shrink: 0;
+    background: var(--accent); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 800; font-size: 17px; color: #fff; letter-spacing: 0.02em;
   }
 
-  /* HEADER */
+  /* HEADER — dark app bar */
   header {
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
+    background: var(--header-bg);
+    border-bottom: none;
+    padding: 0 32px;
     position: sticky; top: 0; z-index: 1000;
-    overflow: hidden;
-  }
-  header::after {
-    content: '⚜';
-    position: absolute; right: 60px; top: -18px;
-    font-size: 110px; line-height: 1;
-    color: var(--gold); opacity: 0.035;
-    pointer-events: none; user-select: none; font-family: serif;
   }
   .header-inner {
-    max-width: 1400px; margin: 0 auto;
+    max-width: 1240px; margin: 0 auto;
     display: flex; align-items: center; gap: 16px;
-    flex-wrap: wrap; padding: 12px 0;
+    flex-wrap: wrap; padding: 18px 0;
   }
-  .header-logo { font-size: 28px; }
-  .header-title { font-size: 18px; font-weight: 700; color: var(--gold); flex: 1; }
-  .header-subtitle { font-size: 12px; color: var(--muted); }
+  .header-title { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.01em; line-height: 1.2; }
+  .header-subtitle { font-size: 12px; color: var(--header-accent); }
 
   /* CONTROLS */
   .controls-bar {
     background: var(--card);
     border-bottom: 1px solid var(--border);
-    padding: 12px 24px;
+    padding: 12px 32px;
   }
   .controls-inner {
-    max-width: 1400px; margin: 0 auto;
+    max-width: 1240px; margin: 0 auto;
     display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
   }
   .ctrl-group { display: flex; flex-direction: column; gap: 4px; }
@@ -189,13 +201,19 @@
      profile. The whole trust promise of this dashboard is that any figure can
      be traced back to the official Board of Ethics record. */
   .header-provenance {
-    font-size: 11px; color: var(--muted); margin-top: 2px;
-    line-height: 1.3; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 10.5px; color: var(--header-accent); margin-top: 3px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    line-height: 1.3; display: flex; flex-wrap: wrap; align-items: center; gap: 3px 7px;
   }
-  .header-provenance .sep { color: var(--border); }
+  .header-provenance .sep { color: #2f4340; }
+  /* Source links inside the dark header read in the header-accent teal */
+  .header-provenance .source-link {
+    color: var(--header-accent); border-bottom-color: rgba(127,181,173,0.45);
+  }
   .source-link {
     color: var(--gold); text-decoration: none; font-weight: 600;
-    border-bottom: 1px dotted rgba(200,169,81,0.5); white-space: nowrap;
+    border-bottom: 1px dotted rgba(20,117,107,0.5); white-space: nowrap;
   }
   .source-link:hover { border-bottom-style: solid; }
   button.source-link { background: none; padding: 0; font: inherit; cursor: pointer; }
@@ -221,36 +239,37 @@
   /* PROXY BANNER */
   #proxy-banner {
     display: none; align-items: center; gap: 12px; flex-wrap: wrap;
-    background: #1a2a1a; border: 1px solid #2d5a2d; border-left: 4px solid #c8a951;
-    padding: 10px 24px; font-size: 13px; color: #a8c8a8;
+    background: var(--accent-bg); border: 1px solid var(--accent-border); border-left: 4px solid var(--accent);
+    padding: 10px 32px; font-size: 13px; color: var(--text-2);
   }
-  #proxy-banner strong { color: #c8a951; }
+  #proxy-banner strong { color: var(--accent-dark); }
   #proxy-banner code {
-    background: #0d1f0d; border: 1px solid #2d5a2d; border-radius: 4px;
-    padding: 2px 8px; font-family: monospace; font-size: 12px; color: #7fff7f;
+    background: #fff; border: 1px solid var(--accent-border); border-radius: 4px;
+    padding: 2px 8px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: var(--accent-dark);
   }
   #proxy-banner .dismiss-btn {
-    margin-left: auto; background: none; border: 1px solid #2d5a2d;
-    color: #a8c8a8; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 12px;
+    margin-left: auto; background: none; border: 1px solid var(--accent-border);
+    color: var(--accent-dark); border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 12px;
   }
   #proxy-live-badge {
-    display: none; align-items: center; gap: 6px;
-    background: #1a2a1a; border: 1px solid #2d5a2d;
-    padding: 6px 14px; font-size: 12px; color: #7fff7f;
+    display: none; align-items: center; gap: 7px;
+    background: var(--live-bg); border: none; border-radius: 9px;
+    padding: 10px 13px; font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.04em; color: var(--live-text);
   }
-  #proxy-live-badge .dot { width:8px; height:8px; border-radius:50%; background:#3fb950; animation: pulse 2s infinite; }
+  #proxy-live-badge .dot { width:7px; height:7px; border-radius:50%; background:var(--live-dot); animation: pulse 2s infinite; }
 
   /* MAIN CONTENT */
-  .main { max-width: 1400px; margin: 0 auto; padding: 20px 24px; }
+  .main { max-width: 1240px; margin: 0 auto; padding: 28px 32px; }
 
   /* STATS ROW */
   .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
   .stat-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
-    padding: 18px 20px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 18px;
   }
-  .stat-label { font-size: var(--fs-sm); color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-  .stat-value { font-size: var(--fs-hero); font-weight: 700; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 7px; line-height: 1.35; }
+  .stat-value { font-size: var(--fs-hero); font-weight: 600; color: var(--text); line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
   .stat-sub { font-size: var(--fs-sm); color: var(--muted); margin-top: 4px; }
   .stat-delta { font-size: 11px; margin-top: 3px; font-weight: 600; letter-spacing: 0.2px; }
   .stat-delta.up   { color: #4caf7d; }
@@ -267,10 +286,10 @@
   .map-card-header {
     position: absolute; top: 0; left: 0; right: 0; z-index: 500;
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 14px; background: rgba(22,27,34,0.85);
+    padding: 10px 14px; background: rgba(255,255,255,0.92);
     border-bottom: 1px solid var(--border); backdrop-filter: blur(4px);
   }
-  .map-title { font-size: 13px; font-weight: 600; color: var(--gold); }
+  .map-title { font-size: 13px; font-weight: 600; color: var(--text); }
   .map-toggle-btns { display: flex; gap: 4px; }
   .map-toggle-btn {
     padding: 4px 12px; border-radius: 5px; font-size: 12px; cursor: pointer;
@@ -320,8 +339,8 @@
     border: 1px solid var(--border); background: transparent; color: var(--muted);
     transition: all 0.2s;
   }
-  .tp-sort-btn.active { background: rgba(200,169,81,0.15); color: var(--gold); border-color: var(--gold); }
-  .tp-view-btn.active { background: rgba(200,169,81,0.25); color: var(--gold); border-color: var(--gold); font-weight: 700; }
+  .tp-sort-btn.active { background: var(--accent-bg); color: var(--accent-dark); border-color: var(--accent-border); }
+  .tp-view-btn.active { background: var(--accent-bg); color: var(--accent-dark); border-color: var(--accent-border); font-weight: 700; }
   .tp-view-sep { width: 1px; background: var(--border); margin: 0 2px; align-self: stretch; }
   .top-parish-item {
     display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
@@ -393,24 +412,26 @@
   #csv-upload { display: none; }
   table { width: 100%; border-collapse: collapse; min-width: 700px; }
   thead th {
-    padding: 8px 12px; text-align: left; font-size: 12px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border);
+    padding: 9px 12px; text-align: left; font-size: 10px; color: var(--muted); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
     cursor: pointer; white-space: nowrap; user-select: none;
     position: sticky; top: 0; z-index: 2;
-    background: var(--card); box-shadow: 0 1px 0 var(--border);
+    background: var(--surface); box-shadow: 0 1px 0 var(--border);
   }
-  thead th:hover { color: var(--gold); }
-  thead th.sort-asc::after { content: ' ↑'; color: var(--gold); }
-  thead th.sort-desc::after { content: ' ↓'; color: var(--gold); }
-  tbody tr { border-bottom: 1px solid rgba(48,54,61,0.5); transition: background 0.15s; }
-  tbody tr:hover { background: rgba(200,169,81,0.04); }
-  td { padding: 8px 12px; font-size: 13px; }
+  thead th:hover { color: var(--accent); }
+  thead th.sort-asc, thead th.sort-desc { color: var(--accent); }
+  thead th.sort-asc::after { content: ' ↑'; color: var(--accent); }
+  thead th.sort-desc::after { content: ' ↓'; color: var(--accent); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:hover { background: #f7faf9; }
+  td { padding: 11px 12px; font-size: 13px; }
   .party-badge {
-    display: inline-block; padding: 2px 7px; border-radius: 4px;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    display: inline-block; padding: 2px 7px; border-radius: 5px;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 9.5px; font-weight: 700; letter-spacing: 0.02em;
   }
-  .party-badge.dem { background: rgba(33,102,172,0.25); color: #64b0ff; border: 1px solid rgba(33,102,172,0.4); }
-  .party-badge.rep { background: rgba(215,48,39,0.25); color: #ff7070; border: 1px solid rgba(215,48,39,0.4); }
+  .party-badge.dem { background: var(--badge-dem-bg); color: var(--badge-dem-text); border: 1px solid var(--badge-dem-bg); }
+  .party-badge.rep { background: var(--badge-rep-bg); color: var(--badge-rep-text); border: 1px solid var(--badge-rep-bg); }
   .party-badge.oth     { background: var(--badge-oth-bg); color: var(--badge-oth-text); border: 1px solid var(--badge-oth-bg); }
   .party-badge.pac     { background: var(--badge-pac-bg); color: var(--badge-pac-text); border: 1px solid var(--badge-pac-bg); }
   .party-badge.pac-dem { background: var(--badge-dem-bg); color: var(--badge-dem-text); border: 1px solid var(--badge-dem-bg); }
@@ -420,14 +441,15 @@
   .party-badge.ind     { background: var(--badge-ind-bg); color: var(--badge-ind-text); border: 1px solid var(--badge-ind-bg); }
   /* Political-party badges for minor parties (namespaced 'pty-' to avoid the
      donor-type 'ind' = Individual collision above) */
-  .party-badge.pty-ind { background: rgba(150,150,170,0.22); color: #b9c0cc; border: 1px solid rgba(150,150,170,0.45); }
-  .party-badge.pty-lbt { background: rgba(224,176,32,0.20); color: #e8c454; border: 1px solid rgba(224,176,32,0.45); }
-  .party-badge.pty-grn { background: rgba(63,163,77,0.22); color: #6cd47f; border: 1px solid rgba(63,163,77,0.45); }
+  .party-badge.pty-ind { background: var(--oth-bg); color: var(--oth-text); border: 1px solid var(--oth-bg); }
+  .party-badge.pty-lbt { background: var(--badge-org-bg); color: var(--badge-org-text); border: 1px solid var(--badge-org-bg); }
+  .party-badge.pty-grn { background: #dcefe9; color: #1b6e4a; border: 1px solid #dcefe9; }
   .source-badge {
-    display: inline-block; padding: 2px 7px; border-radius: 4px;
-    font-size: 11px; font-weight: 700;
+    display: inline-block; padding: 2px 7px; border-radius: 5px;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 9.5px; font-weight: 700;
   }
-  .source-badge.la { background: rgba(200,169,81,0.2); color: var(--gold); border: 1px solid rgba(200,169,81,0.4); }
+  .source-badge.la { background: var(--accent-bg); color: var(--accent-dark); border: 1px solid var(--accent-border); }
   .amount-cell { color: var(--amount-color); font-weight: 600; font-variant-numeric: tabular-nums; }
   .empty-state {
     text-align: center; padding: 48px 20px; color: var(--muted);
@@ -455,7 +477,7 @@
     font-variant-numeric: tabular-nums;
   }
   .page-btn.pag-arrow { padding: 0 10px; font-size: 12px; gap: 3px; white-space: nowrap; }
-  .page-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); background: rgba(200,169,81,0.06); }
+  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
   .page-btn.active { background: var(--gold); color: var(--btn-active-text); border-color: var(--gold); font-weight: 700; }
   .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
   /* Compact inline pagination for panel headers */
@@ -472,7 +494,7 @@
 
   /* EXPANDABLE ROW DETAIL */
   tbody tr.data-row { cursor: pointer; }
-  tbody tr.data-row:hover { background: rgba(200,169,81,0.06); }
+  tbody tr.data-row:hover { background: #f7faf9; }
   tbody tr.data-row.filing-fee-row { border-left: 3px solid #e0782a; }
   tbody tr.data-row.filing-fee-row:hover { background: rgba(224,120,42,0.07); }
   td.expand-cell { width: 28px; padding: 8px 6px 8px 10px; color: var(--muted); font-size: 11px; user-select: none; }
@@ -504,7 +526,7 @@
     display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
     padding: 1px 5px; border-radius: 4px; font-family: monospace;
   }
-  .state-badge-la  { background: rgba(200,169,81,0.15); color: var(--gold); border: 1px solid rgba(200,169,81,0.3); }
+  .state-badge-la  { background: var(--accent-bg); color: var(--accent-dark); border: 1px solid var(--accent-border); }
   .state-badge-oos { background: rgba(139,148,158,0.12); color: var(--muted); border: 1px solid var(--border); }
   .detail-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -523,18 +545,18 @@
   .detail-field span.empty { color: var(--muted); font-style: italic; }
   .detail-notes { grid-column: 1 / -1; }
   .notes-text {
-    font-size: 12px; color: #e0c080; background: rgba(200,169,81,0.07);
-    border: 1px solid rgba(200,169,81,0.2); border-radius: 5px;
+    font-size: 12px; color: var(--text-2); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 5px;
     padding: 8px 12px; margin-top: 4px; font-style: italic; word-break: break-word;
   }
 
   /* STATUS BAR */
   .status-bar {
     background: var(--card); border-top: 1px solid var(--border);
-    padding: 8px 24px;
+    padding: 8px 32px;
   }
   .status-inner {
-    max-width: 1400px; margin: 0 auto;
+    max-width: 1240px; margin: 0 auto;
     display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
   }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -548,56 +570,61 @@
   /* CONTRIBUTOR PROFILE MODAL */
   .cp-overlay {
     display: none; position: fixed; inset: 0; z-index: 2000;
-    background: rgba(0,0,0,0.7); backdrop-filter: blur(3px);
+    background: rgba(15,28,26,0.45); backdrop-filter: blur(2px);
     align-items: flex-start; justify-content: center;
-    padding: 32px 16px; overflow-y: auto;
+    padding: 48px 20px; overflow-y: auto;
   }
   .cp-overlay.open { display: flex; }
   .cp-modal {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 12px; width: 100%; max-width: 860px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    background: var(--card); border: none;
+    border-radius: 16px; width: 100%; max-width: 860px;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.28);
     animation: cpFadeIn 0.18s ease;
   }
   @keyframes cpFadeIn { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
   .cp-header {
     display: flex; align-items: flex-start; justify-content: space-between;
-    padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
-    gap: 12px;
+    padding: 22px 24px; border-bottom: 1px solid #eef2f1;
+    gap: 16px;
   }
-  .cp-name { font-size: 20px; font-weight: 700; color: var(--gold); }
-  .cp-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .cp-name { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .cp-meta { font-size: 12.5px; color: #57606a; margin-top: 5px; line-height: 1.45; }
   .cp-close {
-    background: none; border: 1px solid var(--border); color: var(--muted);
-    border-radius: 6px; width: 28px; height: 28px; cursor: pointer;
-    font-size: 16px; line-height: 1; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); color: #6b7672;
+    border-radius: 8px; width: 34px; height: 34px; cursor: pointer;
+    font-size: 15px; line-height: 1; flex-shrink: 0;
     transition: all 0.15s;
   }
-  .cp-close:hover { border-color: var(--gold); color: var(--gold); }
+  .cp-close:hover { border-color: var(--accent); color: var(--accent); }
 
   /* ── Search / filter help ──────────────────────────────────── */
   .help-btn {
-    background: transparent; border: 1px solid var(--border); color: var(--muted);
-    border-radius: 6px; width: 32px; height: 32px; cursor: pointer;
-    font-size: 15px; line-height: 1; flex-shrink: 0; transition: all .2s;
+    background: transparent; border: 1px solid #2f4340; color: var(--header-accent);
+    border-radius: 9px; width: 38px; height: 38px; cursor: pointer;
+    font-size: 15px; font-weight: 600; line-height: 1; flex-shrink: 0; transition: all .2s;
   }
-  .help-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .help-btn:hover { border-color: var(--header-accent); color: #fff; background: rgba(127,181,173,0.12); }
   .fh-body { padding: 8px 24px 24px; }
   .fh-group { margin-top: 18px; }
-  .fh-group-title { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+  .fh-group-title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
   .fh-group-note { font-size: 11px; color: var(--muted); font-weight: 400; }
   .fh-row {
     display: grid; grid-template-columns: 150px 1fr; gap: 12px;
-    padding: 7px 0; border-top: 1px solid var(--border); align-items: baseline;
+    padding: 6px 0; align-items: start;
   }
-  .fh-row:first-of-type { border-top: none; }
   .fh-token {
-    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
-    color: var(--text); background: var(--bg); border: 1px solid var(--border);
-    border-radius: 5px; padding: 2px 7px; white-space: nowrap; justify-self: start;
+    font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace; font-size: 11px; font-weight: 600;
+    color: var(--accent-dark); background: var(--accent-bg); border: 1px solid var(--accent-border);
+    border-radius: 6px; padding: 3px 8px; white-space: nowrap; justify-self: start;
   }
-  .fh-desc { font-size: 12.5px; color: var(--text); line-height: 1.45; }
+  .fh-desc { font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
   .fh-desc small { color: var(--muted); }
+  /* Inline code tokens inside descriptions read like mini token chips */
+  .fh-desc code, .about-section code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px;
+    color: var(--accent-dark); background: var(--accent-bg); border: 1px solid var(--accent-border);
+    border-radius: 5px; padding: 1px 5px;
+  }
   .fh-tips { margin-top: 20px; font-size: 12px; color: var(--muted); line-height: 1.6; }
   .fh-tips li { margin-bottom: 3px; }
   @media (max-width: 560px) { .fh-row { grid-template-columns: 1fr; gap: 3px; } }
@@ -614,7 +641,7 @@
     border-radius: 4px; padding: 1px 6px; cursor: pointer; white-space: nowrap;
     transition: color 0.15s, border-color 0.15s; line-height: 1.6;
   }
-  .sth-chip:hover { color: var(--gold); border-color: rgba(200,169,81,0.5); }
+  .sth-chip:hover { color: var(--accent); border-color: var(--accent-border); }
   @media (max-width: 600px) { #search-token-hint-bar { padding: 3px 12px; } }
 
   /* ── About & Methodology ───────────────────────────────────── */
@@ -625,20 +652,20 @@
     border-bottom: 1px solid var(--border); margin-bottom: 6px;
   }
   .about-toc button {
-    background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+    background: #f1f4f3; border: 1px solid var(--border); color: var(--text-2);
     border-radius: 999px; padding: 4px 11px; font-size: 11.5px; cursor: pointer;
     transition: all .15s; font-weight: 600;
   }
-  .about-toc button:hover { border-color: var(--gold); color: var(--gold); }
+  .about-toc button:hover { border-color: var(--accent-border); color: var(--accent); }
   .about-section { margin-top: 22px; scroll-margin-top: 48px; }
   .about-section h3 {
-    font-size: 14px; font-weight: 700; color: var(--gold); margin: 0 0 8px;
+    font-size: 14px; font-weight: 700; color: var(--accent); margin: 0 0 8px;
   }
   .about-section p { font-size: 13px; color: var(--text); line-height: 1.55; margin-bottom: 8px; }
-  .about-section a { color: var(--gold); }
+  .about-section a { color: var(--accent); }
   .about-disclaimer {
-    border: 1px solid rgba(200,169,81,0.35); background: rgba(200,169,81,0.07);
-    border-left: 3px solid var(--gold); border-radius: 8px; padding: 12px 14px;
+    border: 1px solid var(--accent-border); background: #f3faf8;
+    border-left: 3px solid var(--accent); border-radius: 8px; padding: 13px 15px;
   }
   .about-disclaimer p { margin-bottom: 8px; }
   .about-disclaimer ul { margin: 0; padding-left: 18px; }
@@ -667,6 +694,58 @@
   .cp-detail-lbl { color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
   .cp-detail-val { color: var(--text); font-weight: 600; }
   .cp-table-wrap { padding: 16px 24px 24px; overflow-x: auto; }
+
+  /* ── Profile two-column body + right rail (DC profile screens) ── */
+  .cp-split { display: grid; grid-template-columns: 1fr 280px; gap: 18px; padding: 16px 24px 24px; align-items: start; }
+  .cp-split .cp-table-wrap { padding: 0; min-width: 0; }
+  .cp-rail { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .cp-rail-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+  .cp-rail-card.dark { background: var(--header-bg); border: none; }
+  .cp-rail-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+  .cp-rail-title.on-dark { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--header-accent); }
+  .cp-rail-sub { font-size: 11px; color: var(--muted); margin-top: -8px; margin-bottom: 16px; }
+  /* Partisan / lean bar (profile rail, full-width) */
+  .cp-lean-track { display: flex; height: 11px; border-radius: 6px; overflow: hidden; margin-bottom: 12px; background: #eef2f1; }
+  .cp-lean-track > i { display: block; height: 100%; }
+  .cp-lean-legend { display: flex; justify-content: space-between; font-size: 12px; }
+  .cp-lean-legend .r { color: var(--rep-text); font-weight: 600; }
+  .cp-lean-legend .d { color: var(--dem-text); font-weight: 600; }
+  /* Rail list rows (top recipients / top donors) */
+  .cp-rail-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+  .cp-rail-rank { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; color: var(--muted-2); width: 14px; flex-shrink: 0; }
+  .cp-rail-name { flex: 1; min-width: 0; font-size: 12px; font-weight: 500; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cp-rail-amt { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11.5px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  /* Rail mini-bar breakdown (industries / type mix) */
+  .cp-rail-mix { margin-bottom: 11px; }
+  .cp-rail-mix-top { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .cp-rail-mix-name { font-size: 12px; font-weight: 500; color: var(--text-2); }
+  .cp-rail-mix-amt { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11.5px; color: var(--muted); }
+  .cp-rail-mix-bar { height: 6px; background: #eef2f1; border-radius: 3px; overflow: hidden; }
+  .cp-rail-mix-bar > i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+  /* Result rows inside the dark election-result rail card */
+  .cp-result-row { margin-bottom: 11px; }
+  .cp-result-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .cp-result-name { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cp-result-pct { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #cdd9d6; flex-shrink: 0; }
+  .cp-result-track { height: 7px; background: #1b2b29; border-radius: 4px; overflow: hidden; }
+  .cp-result-track > i { display: block; height: 100%; border-radius: 4px; }
+  /* Lean badge in profile header */
+  .cp-lean-badge { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 10px; font-weight: 700; border-radius: 5px; padding: 3px 9px; }
+  .cp-badges { display: flex; align-items: center; gap: 9px; margin-top: 9px; flex-wrap: wrap; }
+  @media (max-width: 640px) { .cp-split { grid-template-columns: 1fr; padding: 12px; } }
+
+  /* ── Donors tab: header, stat cards, type chips, split + rail ── */
+  .dn-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 6px; }
+  .dn-title { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .dn-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .dn-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .dn-chip { padding: 7px 13px; font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--card); border: 1px solid var(--border); border-radius: 7px; cursor: pointer; transition: all .15s; }
+  .dn-chip.active { color: var(--accent-dark); background: var(--accent-bg); border-color: var(--accent-border); }
+  .dn-chip:hover:not(.active) { border-color: var(--accent-border); }
+  .dn-split { display: grid; grid-template-columns: 1fr 300px; gap: 22px; align-items: start; }
+  .dn-lean-cell { display: flex; height: 7px; width: 64px; border-radius: 4px; overflow: hidden; background: #eef2f1; }
+  .dn-lean-cell > i { display: block; height: 100%; }
+  @media (max-width: 980px) { .dn-split { grid-template-columns: 1fr; } }
 
   /* ── Compare campaigns (profile cards) ─────────────────────── */
   .cmp-add-hint { font-size: 12px; color: var(--muted); padding: 0 2px 12px; }
@@ -709,7 +788,7 @@
   }
   .cp-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
   .cp-table tr:last-child td { border-bottom: none; }
-  .cp-table tr:hover td { background: rgba(200,169,81,0.04); }
+  .cp-table tr:hover td { background: #f7faf9; }
   .cp-amount { font-weight: 700; color: var(--gold); white-space: nowrap; }
   .contributor-link {
     color: var(--text); cursor: pointer; border-bottom: 1px dotted var(--muted);
@@ -778,12 +857,11 @@
     .stat-value { font-size: var(--fs-xl); }
   }
   @media (max-width: 480px) {
-    .stats-row { grid-template-columns: 1fr 1fr; }
     .map-panel-row { grid-template-columns: 1fr; }
   }
   /* ── Sticky top wrapper ─────────────────────────────────────── */
-  .sticky-top { position:sticky; top:0; z-index:1000; background:var(--card); box-shadow:0 2px 12px rgba(0,0,0,0.22); }
-  header { position:static !important; border-bottom:1px solid var(--border); box-shadow:none !important; }
+  .sticky-top { position:sticky; top:0; z-index:1000; background:var(--card); box-shadow:0 2px 10px rgba(15,28,26,0.06); }
+  header { position:static !important; border-bottom:none; box-shadow:none !important; }
 
   /* ── Controls collapse ──────────────────────────────────────── */
   .ctrl-always-row { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
@@ -797,46 +875,50 @@
   .filter-count-badge.visible { display:inline-block; }
 
   /* ── Filter chips bar ───────────────────────────────────────── */
-  #filter-chips-bar { display:none; flex-wrap:wrap; gap:6px; align-items:center; padding:6px 24px; background:rgba(200,169,81,0.04); border-top:1px solid rgba(200,169,81,0.15); }
-  .filter-chip { display:inline-flex; align-items:center; gap:4px; background:rgba(200,169,81,0.12); border:1px solid rgba(200,169,81,0.3); color:var(--gold); padding:3px 7px 3px 9px; border-radius:20px; font-size:11px; font-weight:500; white-space:nowrap; max-width:220px; }
+  #filter-chips-bar { display:none; flex-wrap:wrap; gap:6px; align-items:center; padding:8px 32px; background:#f5f7f6; border-top:1px solid var(--border); }
+  .filter-chip { display:inline-flex; align-items:center; gap:5px; background:var(--accent-bg); border:1px solid var(--accent-border); color:var(--accent-dark); padding:4px 8px 4px 10px; border-radius:7px; font-size:11px; font-weight:600; white-space:nowrap; max-width:220px; }
   .chip-label { overflow:hidden; text-overflow:ellipsis; }
-  .chip-x { cursor:pointer; font-size:14px; line-height:1; opacity:0.55; flex-shrink:0; transition:opacity .15s; }
+  .chip-x { cursor:pointer; font-size:14px; line-height:1; color:var(--accent); opacity:0.65; flex-shrink:0; transition:opacity .15s; }
   .chip-x:hover { opacity:1; }
-  .chip-clear-all { background:transparent; border:1px solid var(--border); color:var(--muted); padding:3px 10px; border-radius:20px; font-size:11px; cursor:pointer; transition:all .15s; }
-  .chip-clear-all:hover { border-color:var(--gold); color:var(--gold); }
+  .chip-clear-all { background:transparent; border:1px solid var(--border); color:var(--text-2); padding:4px 11px; border-radius:7px; font-size:11px; cursor:pointer; transition:all .15s; }
+  .chip-clear-all:hover { border-color:var(--accent); color:var(--accent); }
 
-  /* ── Section tabs ─────────────────────────────────────────── */
-  .section-tabs { display:flex; gap:0; background:var(--card); border-bottom:2px solid var(--border); padding:0 24px; border-top:1px solid var(--border); overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  /* ── Section tabs (nav pill strip) ────────────────────────── */
+  .nav-bar { background:var(--card); border-bottom:1px solid var(--border); }
+  .nav-inner { max-width:1240px; margin:0 auto; padding:0 32px; display:flex; align-items:center; gap:12px; }
+  .section-tabs { display:flex; gap:6px; background:transparent; border:none; padding:12px 0; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; flex:1 1 auto; min-width:0; }
   .section-tabs::-webkit-scrollbar { display:none; }
   /* Progressive-load strip: progress lives where attention is (under the
      tabs, above the content), not in the bottom status bar. */
   #load-strip { position:relative; background:var(--card); border-bottom:1px solid var(--border);
-                padding:5px 24px 4px; font-size:11px; color:var(--muted); overflow:hidden; }
-  #load-strip-bar { position:absolute; left:0; bottom:0; height:2px; background:var(--gold);
+                padding:5px 32px 4px; font-size:11px; color:var(--muted); overflow:hidden; }
+  #load-strip-bar { position:absolute; left:0; bottom:0; height:2px; background:var(--accent);
                     width:0%; transition:width .3s ease; }
   #load-strip-bar.indet { width:100%;
-                          background:linear-gradient(90deg, transparent, var(--gold), transparent);
+                          background:linear-gradient(90deg, transparent, var(--accent), transparent);
                           animation: loadstrip-slide 1.2s linear infinite; }
   @keyframes loadstrip-slide { from { transform:translateX(-100%); } to { transform:translateX(100%); } }
-  .section-tab { padding:11px 28px; background:none; border:none; border-bottom:3px solid transparent; margin-bottom:-2px; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; transition:color .15s,border-color .15s; letter-spacing:.01em; flex-shrink:0; white-space:nowrap; }
-  .section-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
-  .section-tab:hover:not(.active) { color:var(--text); }
+  .section-tab { padding:8px 16px; background:transparent; border:none; border-radius:8px; color:var(--text-2); font-size:13px; font-weight:600; cursor:pointer; transition:background .15s,color .15s; flex-shrink:0; white-space:nowrap; }
+  .section-tab.active { color:#fff; background:var(--accent); }
+  .section-tab:hover:not(.active) { background:#f1f4f3; color:var(--text); }
+  /* "About & methodology" link at the right end of the nav row */
+  .nav-about { flex-shrink:0; white-space:nowrap; font-size:12.5px; font-weight:600;
+               color:var(--accent); background:none; border:none; cursor:pointer; padding:6px 2px; }
+  .nav-about:hover { text-decoration:underline; }
 
   /* ── Stat card accents + hover ──────────────────────────────── */
   .stat-card { border-left:3px solid transparent; transition:border-color .3s, transform .15s ease, box-shadow .15s ease; cursor:default; }
-  .stat-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.35); }
-  [data-theme="light"] .stat-card:hover { box-shadow:0 8px 24px rgba(0,0,0,0.14); }
-  .stat-card.accent-green  { border-left-color:#4caf7d; }
-  .stat-card.accent-blue   { border-left-color:#4d9de0; }
-  .stat-card.accent-purple { border-left-color:#9b72cf; }
+  .stat-card:hover { box-shadow:0 4px 16px rgba(15,28,26,0.06); }
+  .stat-card.accent-green  { border-left-color:var(--certified); }
+  .stat-card.accent-blue   { border-left-color:var(--dem-bar); }
+  .stat-card.accent-purple { border-left-color:var(--type-pac-text); }
   .stat-card.accent-gold   { border-left-color:var(--gold); }
   .stat-card.accent-muted  { border-left-color:var(--muted); }
   .stat-card.accent-red    { border-left-color:var(--rep); }
   .stat-icon { font-size:20px; float:right; opacity:0.4; margin-top:-2px; line-height:1; }
-  /* Panel card hover */
+  /* Panel card hover (clickable cards lift; resting cards are border-only) */
   .panel-card { transition:transform .15s ease, box-shadow .15s ease; }
-  .panel-card:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,0.3); }
-  [data-theme="light"] .panel-card:hover { box-shadow:0 6px 18px rgba(0,0,0,0.12); }
+  .panel-card:hover { box-shadow:0 4px 16px rgba(15,28,26,0.06); border-color:var(--accent-border); }
   /* No-results row inside tables */
   .table-no-results { text-align:center; padding:36px 20px; color:var(--muted); font-size:13px; }
   .table-no-results .no-res-icon { font-size:32px; margin-bottom:8px; opacity:0.5; }
@@ -848,7 +930,7 @@
   /* Career race rows link back to the full race (opponents) in the Races tab */
   a.race-row { text-decoration:none; color:inherit; cursor:pointer;
     border-radius:6px; transition:background .12s; padding-left:6px; padding-right:6px; margin:0 -6px; }
-  a.race-row:hover { background:rgba(200,169,81,.08); }
+  a.race-row:hover { background:#f7faf9; }
   a.race-row .race-office::after { content:'›'; color:var(--gold); opacity:0;
     margin-left:6px; font-weight:700; transition:opacity .12s; }
   a.race-row:hover .race-office::after { opacity:1; }
@@ -910,8 +992,7 @@
     .table-scroll-wrap { max-height:none !important; overflow:visible !important; }
     thead th { background:#f0f0f0 !important; color:#333 !important; box-shadow:none !important; position:static !important; }
     tbody tr { break-inside:avoid; }
-    #la-mardi-gras-stripe { display:block !important; }
-    .stat-value { color:#c8a951 !important; }
+    .stat-value { color:#0f1c1a !important; }
     a { text-decoration:none; color:inherit; }
     @page { margin:1.5cm; size:A4 landscape; }
   }
@@ -934,7 +1015,7 @@
       flex-direction:column !important;
     }
     body.printing-profile .camp-header {
-      background:#f8f6ef !important; border-bottom:2px solid #c8a951 !important;
+      background:#f3faf8 !important; border-bottom:2px solid #14756b !important;
       padding:12px 20px !important; break-inside:avoid;
     }
     body.printing-profile .cp-name, body.printing-profile #camp-name {
@@ -1030,21 +1111,19 @@
   .cand-outcome-won  { color: #16a34a; font-weight: 700; font-size: 11px; }
   .cand-outcome-lost { color: var(--muted); font-size: 11px; }
   .cand-outcome-run  { color: #b45309; font-size: 11px; }
-  .party-badge {
-    display: inline-block; font-size: 10px; font-weight: 600;
-    padding: 1px 6px; border-radius: 4px; letter-spacing: .03em;
-  }
-  .party-rep  { background: #fee2e2; color: #991b1b; }
-  .party-dem  { background: #dbeafe; color: #1e40af; }
-  .party-lib  { background: #fef9c3; color: #92400e; }
+  /* Races candidate-table party chips use these light tokens alongside the
+     global .party-badge (kept in sync with the badge spec). */
+  .party-rep  { background: var(--rep-bg); color: var(--rep-text); }
+  .party-dem  { background: var(--dem-bg); color: var(--dem-text); }
+  .party-lib  { background: var(--badge-org-bg); color: var(--badge-org-text); }
   .party-grn  { background: #dcfce7; color: #166534; }
-  .party-ind  { background: #f3f4f6; color: #374151; }
+  .party-ind  { background: var(--oth-bg); color: var(--oth-text); }
   .races-sort-btn {
-    font-size: 11px; padding: 2px 8px; border-radius: 4px;
-    border: 1px solid var(--border); background: var(--bg);
-    color: var(--muted); cursor: pointer;
+    font-size: 11px; padding: 4px 10px; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--card);
+    color: var(--text-2); cursor: pointer; font-weight: 600;
   }
-  .races-sort-btn.active { background: rgba(200,169,81,.13); color: var(--gold); border-color: var(--gold); }
+  .races-sort-btn.active { background: var(--accent-bg); color: var(--accent-dark); border-color: var(--accent-border); }
   .races-sort-btn:hover:not(.active) { background: rgba(0,0,0,.05); }
   .coh-certified { font-size: 10px; color: var(--muted); margin-left: 2px; }
   .race-finance-btn {
@@ -1064,13 +1143,14 @@
   /* ── Global search ─────────────────────────────────────────── */
   .global-search-wrap { position: relative; }
   #global-search {
-    background: var(--card); border: 1px solid var(--border);
-    color: var(--text); border-radius: 8px; padding: 7px 12px 7px 30px;
-    font-size: 13px; width: 230px; transition: width .2s, border-color .2s;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: 9px center;
+    background: #1b2b29; border: 1px solid #2f4340;
+    color: #e6f0ee; border-radius: 9px; padding: 9px 14px 9px 32px;
+    font-size: 13px; width: 280px; transition: width .2s, border-color .2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236f8d88' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: 11px center;
   }
-  #global-search:focus { outline: none; border-color: var(--gold); width: 300px; }
+  #global-search::placeholder { color: #6f8d88; }
+  #global-search:focus { outline: none; border-color: var(--header-accent); width: 320px; }
   #global-search-results {
     position: fixed; /* fixed so header overflow:hidden doesn't clip it */
     width: 380px; max-width: calc(100vw - 16px); max-height: 440px; overflow-y: auto;
@@ -1083,7 +1163,7 @@
     padding: 8px 10px; border-radius: 7px; cursor: pointer; text-align: left;
     width: 100%; background: none; border: none; color: var(--text);
   }
-  .gs-result:hover, .gs-result.active { background: rgba(200,169,81,.12); }
+  .gs-result:hover, .gs-result.active { background: var(--accent-bg); }
   .gs-result-main { flex: 1; min-width: 0; }
   .gs-result-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .gs-result-sub  { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1101,23 +1181,22 @@
   .gs-token-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px;
     border-radius: 7px; cursor: pointer; width: 100%; background: none; border: none;
     color: var(--text); font-size: 13px; text-align: left; }
-  .gs-token-item:hover, .gs-token-item.active { background: rgba(200,169,81,.12); }
+  .gs-token-item:hover, .gs-token-item.active { background: var(--accent-bg); }
   .gs-token-key  { font-weight: 700; color: var(--gold); flex-shrink: 0; font-family: monospace; font-size: 12px; }
   .gs-token-val  { flex: 1; min-width: 0; }
   .gs-token-item.gs-token-selected { background: rgba(90,160,90,.08); }
   .gs-token-item.gs-token-selected:hover { background: rgba(90,160,90,.18); }
   .gs-token-item.gs-token-selected .gs-token-key { color: #5a9a5a; }
   /* Money In/Out sub-toggle */
-  .money-subtabs { display: none; gap: 0; padding: 8px 24px 0; }
-  .money-subtab { padding: 5px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
-    background: none; border: 1px solid var(--border); color: var(--muted);
+  .money-subtabs { display: none; align-items: center; max-width: 1240px; margin: 0 auto; padding: 12px 32px 2px; }
+  .money-subtab-pill { display: inline-flex; gap: 4px; background: #e3e8e6; border-radius: 10px; padding: 4px; }
+  .money-subtab { padding: 6px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+    background: transparent; border: none; color: var(--muted); border-radius: 7px;
     transition: all .15s; }
-  .money-subtab:first-child { border-radius: 6px 0 0 6px; }
-  .money-subtab:last-child  { border-radius: 0 6px 6px 0; border-left: none; }
-  .money-subtab.active { background: var(--gold); border-color: var(--gold); color: #1a1208; }
+  .money-subtab.active { background: var(--accent); color: #fff; }
   /* Cycle chip — permanent, no dismiss button */
-  .chip-cycle { background: rgba(200,169,81,.18); border-color: rgba(200,169,81,.4); cursor: pointer; }
-  .chip-cycle:hover { background: rgba(200,169,81,.28); }
+  .chip-cycle { background: var(--accent-bg); border-color: var(--accent-border); cursor: pointer; }
+  .chip-cycle:hover { background: #d7ece8; }
 
   /* ── Overview / landing tab ────────────────────────────────── */
   .ov-hero {
@@ -1128,8 +1207,8 @@
     background: var(--card); border: 1px solid var(--border);
     border-radius: 12px; padding: 16px 18px;
   }
-  .ov-stat-val { font-size: 24px; font-weight: 700; color: var(--gold); line-height: 1.1; }
-  .ov-stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .ov-stat-val { font-size: 27px; font-weight: 600; color: var(--text); line-height: 1; letter-spacing: -0.02em; }
+  .ov-stat-label { font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 10px; text-transform: uppercase; letter-spacing: .03em; line-height: 1.35; }
   .ov-section-title {
     font-size: 14px; font-weight: 700; color: var(--text);
     margin: 26px 0 12px; display: flex; align-items: center; gap: 8px;
@@ -1138,19 +1217,32 @@
     display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
   }
   @media (max-width: 760px) { .ov-grid { grid-template-columns: 1fr; } }
-  .ov-elec-card, .ov-top-row {
+  .ov-elec-card {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
-    margin-bottom: 8px; background: var(--card); cursor: pointer;
-    transition: border-color .15s, transform .1s;
+    padding: 11px 13px; border: 1px solid #eef2f1; border-radius: 9px;
+    margin-bottom: 7px; background: var(--card); cursor: pointer;
+    transition: border-color .15s, background .15s;
   }
-  .ov-elec-card:hover, .ov-top-row:hover { border-color: var(--gold); transform: translateX(2px); }
-  .ov-elec-date { font-weight: 600; font-size: 13px; }
-  .ov-elec-meta { font-size: 11px; color: var(--muted); }
-  .ov-upcoming-pill { font-size: 9px; font-weight: 700; background: #16a34a; color: #fff; padding: 1px 6px; border-radius: 10px; margin-left: 6px; }
-  .ov-top-rank { font-size: 12px; color: var(--muted); width: 22px; flex-shrink: 0; }
-  .ov-top-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ov-top-amt { font-size: 13px; font-weight: 700; color: var(--gold); flex-shrink: 0; }
+  .ov-elec-card:hover { border-color: var(--accent-border); background: #f3faf8; }
+  .ov-elec-date { font-weight: 500; font-size: 13.5px; font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  .ov-elec-meta { font-size: 12px; color: var(--muted); }
+  .ov-upcoming-pill { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 9px; font-weight: 700; letter-spacing: .06em; background: #d3f0e7; color: var(--accent-dark); padding: 3px 7px; border-radius: 5px; margin-left: 8px; }
+  /* Leaderboard rows: borderless list style (matches the Overview DC) */
+  .ov-top-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 7px 8px; border-radius: 8px; background: var(--card);
+    cursor: pointer; transition: background .15s;
+  }
+  .ov-top-row:hover { background: #f7faf9; }
+  .ov-top-rank { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: var(--muted-2); width: 18px; text-align: right; flex-shrink: 0; }
+  .ov-top-name { font-size: 12.5px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ov-top-amt { font-size: 12.5px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  /* Mini bar chart for fundraiser / war-chest leaderboard rows */
+  .ov-top-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .ov-top-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .ov-bar { height: 6px; background: #eef2f1; border-radius: 3px; overflow: hidden; }
+  .ov-bar > i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+  .ov-bar.warchest > i { background: #1f9e8f; }
 
   /* ══════════════════════════════════════════════════════════════
      MOBILE & TOUCH
@@ -1225,12 +1317,13 @@
        dissolves the wrapper box so the tabs' sticky containing block is the
        page, not the wrapper (a sticky child can never escape its parent). */
     .sticky-top { display: contents; }
-    .section-tabs { position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 12px rgba(0,0,0,0.22); }
-    .section-tab { padding: 12px 16px; font-size: 13px; }
+    .nav-bar { position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 12px rgba(15,28,26,0.12); }
+    .section-tab { padding: 10px 14px; font-size: 13px; }
+    .nav-about { display: none; }
 
     /* Tighter gutters everywhere (desktop uses 24px) */
     header, .controls-bar, #data-notice, .exp-controls-bar, footer { padding-left: 12px; padding-right: 12px; }
-    .section-tabs { padding: 0 8px; }
+    .nav-inner { padding: 0 8px; }
     #filter-chips-bar { padding: 6px 12px; }
     #load-strip { padding: 5px 12px 4px; }
     .money-subtabs { padding: 8px 12px 0; }
@@ -1281,8 +1374,8 @@
     table.m-cards thead { display: none; }
     table.m-cards, table.m-cards tbody, table.m-cards tr, table.m-cards td { display: block; width: 100%; }
     table.m-cards tr {
-      border: 1px solid var(--border); border-radius: 10px;
-      margin-bottom: 10px; padding: 8px 12px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 12px;
+      margin-bottom: 10px; padding: 10px 13px; background: var(--card);
     }
     table.m-cards td {
       border: none !important; padding: 4px 0 !important;
@@ -1317,6 +1410,25 @@
     .cp-details { padding: 12px 14px; gap: 14px; }
     .cp-table-wrap { padding: 12px; }
   }
+
+  /* ── Mobile ≤480: design horizontal-scroll stat rows ──────────
+     Placed last in the sheet so it overrides the component base
+     definitions (.stats-row, .ov-hero) that appear earlier. The stat
+     cards become a single edge-to-edge scrolling row of ~142px cards. */
+  @media (max-width: 480px) {
+    .stats-row, .ov-hero {
+      display: flex !important; grid-template-columns: none; gap: 9px;
+      overflow-x: auto; scrollbar-width: none;
+      margin: 0 -12px 18px; padding: 2px 12px;
+      scroll-snap-type: x proximity;
+    }
+    .stats-row::-webkit-scrollbar, .ov-hero::-webkit-scrollbar { display: none; }
+    .stats-row > .stat-card, .ov-hero > .ov-stat {
+      flex: 0 0 142px; scroll-snap-align: start;
+    }
+    .stat-value, .ov-stat-val { font-size: 19px; }
+    .stat-label, .ov-stat-label { font-size: 9px; letter-spacing: .04em; }
+  }
 </style>
 </head>
 <body>
@@ -1340,15 +1452,8 @@
 <header>
   <div class="header-inner">
     <div class="header-logo">
-      <!-- State pelican — Louisiana's official state bird and flag symbol -->
-      <svg class="pelican-icon" viewBox="0 0 58 44" fill="var(--gold)" xmlns="http://www.w3.org/2000/svg" aria-label="Louisiana Brown Pelican">
-        <ellipse cx="22" cy="27" rx="14" ry="10"/>
-        <path d="M9 23 L0 20 L1 28 L9 30Z"/>
-        <path d="M30 22 C33 17 36 13 35 7" stroke="var(--gold)" stroke-width="5.5" fill="none" stroke-linecap="round"/>
-        <circle cx="35" cy="6" r="5"/>
-        <path d="M39 7.5 L57 12.5 L57 16 L38 11Z"/>
-        <ellipse cx="48" cy="14.5" rx="9" ry="3.5" opacity="0.55"/>
-      </svg>
+      <!-- Teal "LA" logo tile (CSS-only) -->
+      <div class="la-logo-tile" aria-label="Louisiana">LA</div>
     </div>
     <div style="flex:1;min-width:0">
       <div class="header-title">Louisiana Campaign Finance Dashboard</div>
@@ -1356,8 +1461,6 @@
         <span>Source: <a class="source-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx" target="_blank" rel="noopener" title="Open the official Louisiana Board of Ethics campaign finance search">Louisiana Board of Ethics ↗</a></span>
         <span class="sep prov-cadence" aria-hidden="true">·</span>
         <span class="prov-cadence">refreshed nightly from ethics.la.gov</span>
-        <span class="sep" aria-hidden="true">·</span>
-        <button type="button" class="source-link" onclick="openAbout()">About &amp; methodology</button>
       </div>
     </div>
     <div class="header-tools">
@@ -1372,10 +1475,6 @@
       <div id="proxy-live-badge" style="display:none">
         <span class="dot"></span> Live data
       </div>
-      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle light or dark mode"
-        style="background:transparent;border:1px solid var(--border);
-               color:var(--muted);border-radius:6px;padding:5px 10px;cursor:pointer;
-               font-size:11px;font-weight:600;letter-spacing:0.3px;line-height:1;transition:all 0.2s">Dark</button>
     </div>
   </div>
 </header>
@@ -1385,8 +1484,8 @@
 
 <!-- DATA LOAD NOTICE (inside sticky so it's always visible until dismissed) -->
 <div id="data-notice" style="
-  background: rgba(200,169,81,0.08); border-bottom: 1px solid rgba(200,169,81,0.2);
-  padding: 6px 24px; font-size: 12px; color: var(--muted);
+  background: var(--accent-bg); border-bottom: 1px solid var(--accent-border);
+  padding: 6px 32px; font-size: 12px; color: var(--text-2);
   display: flex; align-items: center; gap: 8px; justify-content: space-between;
 ">
   <span><strong style="color:var(--gold)">Heads up:</strong> first load for each cycle downloads from ethics.la.gov and may take 20–60 seconds.</span>
@@ -1546,19 +1645,26 @@
   <div id="load-strip-bar" aria-hidden="true"></div>
   <span id="load-strip-text"></span>
 </div>
-<div class="section-tabs" role="tablist" aria-label="Dashboard sections">
-  <button class="section-tab active" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview-view" onclick="switchTab('overview')">Overview</button>
-  <button class="section-tab" id="tab-contributions" role="tab" aria-selected="false" tabindex="-1" aria-controls="contributions-view" onclick="switchTab('contributions')">Money</button>
-  <button class="section-tab" id="tab-loans" role="tab" aria-selected="false" tabindex="-1" aria-controls="loans-view" onclick="switchTab('loans')">Loans</button>
-  <button class="section-tab" id="tab-donors" role="tab" aria-selected="false" tabindex="-1" aria-controls="donors-view" onclick="switchTab('donors')">Top Donors</button>
-  <button class="section-tab" id="tab-compare" role="tab" aria-selected="false" tabindex="-1" aria-controls="compare-view" onclick="switchTab('compare')">Compare</button>
-  <button class="section-tab" id="tab-races" role="tab" aria-selected="false" tabindex="-1" aria-controls="races-view" onclick="switchTab('races')">Races</button>
+<div class="nav-bar">
+  <div class="nav-inner">
+    <div class="section-tabs" role="tablist" aria-label="Dashboard sections">
+      <button class="section-tab active" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview-view" onclick="switchTab('overview')">Overview</button>
+      <button class="section-tab" id="tab-contributions" role="tab" aria-selected="false" tabindex="-1" aria-controls="contributions-view" onclick="switchTab('contributions')">Money</button>
+      <button class="section-tab" id="tab-loans" role="tab" aria-selected="false" tabindex="-1" aria-controls="loans-view" onclick="switchTab('loans')">Loans</button>
+      <button class="section-tab" id="tab-donors" role="tab" aria-selected="false" tabindex="-1" aria-controls="donors-view" onclick="switchTab('donors')">Top Donors</button>
+      <button class="section-tab" id="tab-compare" role="tab" aria-selected="false" tabindex="-1" aria-controls="compare-view" onclick="switchTab('compare')">Compare</button>
+      <button class="section-tab" id="tab-races" role="tab" aria-selected="false" tabindex="-1" aria-controls="races-view" onclick="switchTab('races')">Races</button>
+    </div>
+    <button type="button" class="nav-about" onclick="openAbout()">About &amp; methodology</button>
+  </div>
 </div>
 
 <!-- MONEY IN/OUT SUB-TOGGLE (shown only on Money tab, sits between tabs and content) -->
 <div class="money-subtabs" id="money-subtabs" role="group" aria-label="Money direction">
-  <button class="money-subtab active" id="money-tab-in"  onclick="switchMoneyView('in')">Money In</button>
-  <button class="money-subtab"        id="money-tab-out" onclick="switchMoneyView('out')">Money Out</button>
+  <div class="money-subtab-pill">
+    <button class="money-subtab active" id="money-tab-in"  onclick="switchMoneyView('in')">Money In</button>
+    <button class="money-subtab"        id="money-tab-out" onclick="switchMoneyView('out')">Money Out</button>
+  </div>
 </div>
 
 <!-- FILTER CHIPS -->
@@ -2134,11 +2240,20 @@
 <!-- TOP DONORS VIEW -->
 <div id="donors-view" class="tab-view" style="display:none" role="tabpanel" aria-labelledby="tab-donors" tabindex="0">
   <div class="main">
-    <div class="table-card">
-      <div class="table-header-row">
-        <div class="table-title">Top Donors — All Committees This Cycle</div>
-        <div class="table-actions">
+    <div class="dn-head">
+      <div class="dn-title">Top Donors</div>
+      <button class="upload-btn" onclick="downloadDonorsCSV()">⬇ Download CSV</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-2);max-width:740px;margin-bottom:20px;line-height:1.5">
+      The biggest givers across every committee in the selected cycle, ranked by total contributed. Click any donor to see everywhere they gave.
+    </p>
+    <div class="stats-row" id="donors-stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:22px"></div>
+    <div class="dn-split">
+      <div class="dn-main" style="min-width:0">
+        <div class="dn-toolbar">
           <input type="text" class="ctrl-input search" id="donors-search" placeholder="Search donor…" style="width:200px" aria-label="Search top donors">
+          <div id="donors-type-chips" class="dn-chips" role="group" aria-label="Filter donors by type"></div>
+          <div style="flex:1"></div>
           <label class="per-page-wrap">Rows
             <select class="per-page-select" id="donors-per-page" onchange="setDonorsPageSize(+this.value)" aria-label="Rows per page">
               <option value="25">25</option>
@@ -2147,27 +2262,27 @@
               <option value="250">250</option>
             </select>
           </label>
-          <button class="upload-btn" onclick="downloadDonorsCSV()">⬇ Download CSV</button>
+        </div>
+        <div class="table-card" style="padding:0;overflow:hidden">
+          <div class="table-scroll-wrap" id="donors-table-scroll">
+            <table class="data-table m-cards" id="donors-table" style="width:100%">
+              <thead><tr>
+                <th style="width:48px" data-dcol="rank">#</th>
+                <th data-dcol="name">Donor</th>
+                <th data-dcol="type">Type</th>
+                <th class="num" data-dcol="committees">Committees</th>
+                <th class="num" data-dcol="count">Gifts</th>
+                <th class="dn-lean-th">Leans</th>
+                <th class="num" data-dcol="total">Total</th>
+              </tr></thead>
+              <tbody id="donors-tbody"></tbody>
+            </table>
+          </div>
+          <div id="donors-empty" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">No contribution data loaded yet.</div>
+          <div class="pagination" id="donors-pagination"></div>
         </div>
       </div>
-      <p style="font-size:12px;color:var(--muted);padding:0 4px 12px">
-        Biggest givers across every committee in the selected cycle. Click any donor to see everywhere they gave.
-      </p>
-      <div class="table-scroll-wrap" id="donors-table-scroll">
-        <table class="data-table m-cards" id="donors-table" style="width:100%">
-          <thead><tr>
-            <th style="width:48px" data-dcol="rank">#</th>
-            <th data-dcol="name">Donor</th>
-            <th data-dcol="type">Type</th>
-            <th class="num" data-dcol="committees">Committees</th>
-            <th class="num" data-dcol="count">Gifts</th>
-            <th class="num" data-dcol="total">Total</th>
-          </tr></thead>
-          <tbody id="donors-tbody"></tbody>
-        </table>
-      </div>
-      <div id="donors-empty" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">No contribution data loaded yet.</div>
-      <div class="pagination" id="donors-pagination"></div>
+      <aside class="cp-rail" id="donors-rail"></aside>
     </div>
   </div>
 </div>
@@ -2215,7 +2330,7 @@
           </div>
         </div>
       </div>
-      <div id="races-federal-note" style="display:none;margin:0 0 14px;padding:10px 14px;border-left:3px solid var(--gold);background:rgba(200,169,81,0.08);border-radius:0 6px 6px 0;font-size:12px;line-height:1.55;color:var(--muted)">
+      <div id="races-federal-note" style="display:none;margin:0 0 14px;padding:10px 14px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:0 6px 6px 0;font-size:12px;line-height:1.55;color:var(--text-2)">
         <strong style="color:var(--gold)">Federal fundraising is not tracked here.</strong>
         This dashboard is built on Louisiana Board of Ethics filings — it is <strong>not</strong> an FEC tool.
         Federal candidates report their campaign contributions and spending to the
@@ -2517,40 +2632,33 @@ const PARTY_SLICE_META = {
 };
 const PARTY_SLICE_ORDER = ['DEM','REP','IND','LBT','GRN','OTH'];
 
-function applyTheme(theme, persist) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('theme-toggle').textContent = theme === 'light' ? 'Dark' : 'Light';
-  if (persist) localStorage.setItem('cf-theme', theme);
-  // Keep the browser/OS chrome color in step (PWA + mobile address bar)
+// Light-only redesign. applyTheme is retained (called at startup and after
+// Chart.js loads) but always applies the single light theme — the dark-mode
+// toggle was removed in the visual redesign.
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', 'light');
+  // Keep the browser/OS chrome color in step (PWA + mobile address bar) —
+  // matches the dark app header bar.
   const tc = document.querySelector('meta[name="theme-color"]');
-  if (tc) tc.setAttribute('content', theme === 'light' ? '#ffffff' : '#161b22');
-  // Swap map tiles (map is created lazily on first Money-tab view;
-  // initMap reads the current theme, so nothing to do before then)
+  if (tc) tc.setAttribute('content', '#0f1c1a');
+  // Map tiles are the light CARTO basemap (initMap also reads TILE_LIGHT).
   if (map) {
     if (tileLayer) map.removeLayer(tileLayer);
-    tileLayer = L.tileLayer(theme === 'light' ? TILE_LIGHT : TILE_DARK, {
+    tileLayer = L.tileLayer(TILE_LIGHT, {
       attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
       subdomains: 'abcd', maxZoom: 19
     }).addTo(map);
   }
-  // Update Chart.js default text colour and re-render charts only
-  // (CSS variables handle all other element colours automatically)
-  const textColor = theme === 'light' ? '#57606a' : '#8b949e';
+  // Chart.js default text colour for the light theme.
   if (window.Chart) {
-    Chart.defaults.color = textColor;
+    Chart.defaults.color = '#3f4b48';
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       Chart.defaults.animation = false;
     }
-    // Only re-render charts if they've already been initialised
     if (typeof renderPartyChart   === 'function') renderPartyChart();
     if (typeof renderDonorTypeChart === 'function') renderDonorTypeChart();
     if (typeof renderTrendChart   === 'function') renderTrendChart();
   }
-}
-
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'light';
-  applyTheme(current === 'dark' ? 'light' : 'dark', true);   // explicit choice persists
 }
 
 // ============================================================
@@ -2574,20 +2682,14 @@ function initMap() {
       setTimeout(dismiss, 8000);
     }
   }
-  const theme = document.documentElement.getAttribute('data-theme') || 'light';
-  tileLayer = L.tileLayer(theme === 'light' ? TILE_LIGHT : TILE_DARK, {
+  tileLayer = L.tileLayer(TILE_LIGHT, {
     attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd', maxZoom: 19
   }).addTo(map);
   legend.addTo(map);
 }
-const _osDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
-let _savedTheme = localStorage.getItem('cf-theme') || (_osDark && _osDark.matches ? 'dark' : 'light');
-applyTheme(_savedTheme);
-// Keep following the OS until the user makes an explicit choice
-if (_osDark && _osDark.addEventListener) _osDark.addEventListener('change', e => {
-  if (!localStorage.getItem('cf-theme')) applyTheme(e.matches ? 'dark' : 'light');
-});
+// Light-only: apply the single theme at startup.
+applyTheme();
 
 // Legend
 const legend = L.control({position:'bottomright'});
@@ -3523,7 +3625,7 @@ function renderUSBubbles() {
   // Draw Louisiana as a fixed star/pin to show the donation target
   const laCentroid = [30.9, -91.5];
   const laStar = L.circleMarker(laCentroid, {
-    radius: 10, fillColor: '#c8a951', color: '#fff',
+    radius: 10, fillColor: '#14756b', color: '#fff',
     weight: 2, opacity: 1, fillOpacity: 0.9,
   }).bindTooltip('<strong>Louisiana</strong><br>Recipient state', {permanent: false});
   laStar.addTo(map);
@@ -3686,7 +3788,7 @@ async function renderChoropleth() {
       return {
         fillColor: color,
         fillOpacity: 0.2 + intensity * 0.55,
-        color: '#30363d', weight: 1
+        color: '#c7d0cc', weight: 1
       };
     },
     onEachFeature: (feature, layer) => {
@@ -4007,8 +4109,8 @@ function renderTrendChart() {
       responsive: true, maintainAspectRatio: false,
       interaction: {mode:'index',intersect:false},
       scales: {
-        x: {ticks:{color:'#8b949e',maxTicksLimit:12,font:{size:11}},grid:{color:'rgba(48,54,61,0.5)'}},
-        y: {ticks:{color:'#8b949e',font:{size:11},callback:v=>formatMoneyShort(v)},grid:{color:'rgba(48,54,61,0.5)'}}
+        x: {ticks:{color:'#8b949e',maxTicksLimit:12,font:{size:11}},grid:{color:'rgba(15,28,26,0.07)'}},
+        y: {ticks:{color:'#8b949e',font:{size:11},callback:v=>formatMoneyShort(v)},grid:{color:'rgba(15,28,26,0.07)'}}
       },
       plugins: {
         legend:{labels:{color:'#8b949e',font:{size:12},boxWidth:12}},
@@ -5176,7 +5278,7 @@ function renderExpCategoryChart() {
   const byCat = {};
   expFiltered.forEach(r => { byCat[r._cat] = (byCat[r._cat] || 0) + r.amount; });
   const sorted = Object.entries(byCat).sort((a,b) => b[1]-a[1]);
-  const palette = ['#c8a951','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899'];
+  const palette = ['#14756b','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899'];
 
   const ctx = document.getElementById('exp-category-chart').getContext('2d');
   if (expCategoryChart) expCategoryChart.destroy();
@@ -5298,7 +5400,7 @@ function renderExpTrend() {
     type: 'bar',
     data: {
       labels: months.map(m => { const [y,mo] = m.split('-'); return new Date(+y,+mo-1).toLocaleString('default',{month:'short',year:'2-digit'}); }),
-      datasets: [{ data: months.map(m => byMonth[m]), backgroundColor: 'rgba(200,169,81,0.65)', borderRadius: 3 }]
+      datasets: [{ data: months.map(m => byMonth[m]), backgroundColor: 'rgba(20,117,107,0.6)', borderRadius: 3 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -5740,7 +5842,7 @@ function renderLoanOriginChart() {
     type: 'doughnut',
     data: {
       labels: ['In-State (LA)', 'Out of State', 'Unknown'],
-      datasets: [{ data: [inState, outState, unknown], backgroundColor: ['#c8a951','#3b82f6','#6b7280'], borderWidth: 0 }]
+      datasets: [{ data: [inState, outState, unknown], backgroundColor: ['#14756b','#3b82f6','#6b7280'], borderWidth: 0 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -5884,28 +5986,129 @@ let _donorsAgg = [];
 let donorsSortCol = 'total';
 let donorsSortDir = 'desc';
 
+// Cached alongside _donorsAgg; rebuilt only when the data/cycle signature
+// changes (the median/top-1% computations sort the full amount list, so we
+// avoid redoing them on every search/sort/page render).
+let _donorsAggSig = '';
+let _donorsStats = null, _donorsTypeMix = [], _donorsTopRecip = [];
+let _donorsTypeFilter = 'all';
+
+function _donorTypeLabel(code) {
+  return { IND: 'Individuals', PAC: 'PACs', BUS: 'Businesses', ORG: 'Organizations', OTH: 'Other' }[code] || 'Other';
+}
+
 function buildDonorsAgg() {
+  const sig = `${allData.length}|${getSelectedCycles().join(',')}|${isAllCycles()}`;
+  if (sig === _donorsAggSig && _donorsAgg.length) return;   // cached — skip the rebuild
+  _donorsAggSig = sig;
+
   const cycleYears = _cycleYearSet(getSelectedCycles());
-  const byDonor = {};
+  const byDonor = {}, byType = {}, byRecip = {};
+  const amounts = [];
+  let totalAll = 0;
   allData.forEach(d => {
     if (!d.date) return;
     const yr = new Date(d.date).getFullYear();
     if (!cycleYears.has(yr)) return;
     const k = d.contributor || 'Unknown';
-    if (!byDonor[k]) byDonor[k] = { name: k, total: 0, count: 0, committees: new Set(), type: d.donorType || '' };
-    byDonor[k].total += d.amount;
-    byDonor[k].count++;
-    byDonor[k].committees.add(d.candidate);
+    let rec = byDonor[k];
+    if (!rec) rec = byDonor[k] = { name: k, total: 0, count: 0, committees: new Set(), type: d.donorType || '', rep: 0, dem: 0 };
+    rec.total += d.amount; rec.count++; rec.committees.add(d.candidate);
+    const p = (d.party || '').toUpperCase();
+    if (p === 'REP') rec.rep += d.amount;
+    else if (p === 'DEM') rec.dem += d.amount;
+    // Global aggregates for the stat cards + right rail
+    totalAll += d.amount;
+    amounts.push(d.amount);
+    // Collapse any non-standard / missing type code into OTH so the type mix
+    // shows a single "Other" bucket rather than several.
+    const t = ['IND', 'PAC', 'BUS', 'ORG'].includes(d.donorType) ? d.donorType : 'OTH';
+    byType[t] = (byType[t] || 0) + d.amount;
+    const c = d.candidate || 'Unknown';
+    byRecip[c] = (byRecip[c] || 0) + d.amount;
   });
   _donorsAgg = Object.values(byDonor).map(o => ({
-    name: o.name, total: o.total, count: o.count, committees: o.committees.size, type: o.type
+    name: o.name, total: o.total, count: o.count, committees: o.committees.size, type: o.type,
+    rep: o.rep, dem: o.dem
   }));
+
+  // Stat-card metrics
+  amounts.sort((a, b) => a - b);
+  const median = amounts.length ? amounts[Math.floor(amounts.length / 2)] : 0;
+  const totalsDesc = _donorsAgg.map(r => r.total).sort((a, b) => b - a);
+  const top1Count = Math.max(1, Math.ceil(totalsDesc.length * 0.01));
+  let top1Sum = 0;
+  for (let i = 0; i < top1Count && i < totalsDesc.length; i++) top1Sum += totalsDesc[i];
+  _donorsStats = {
+    totalAll, unique: _donorsAgg.length, median,
+    top1Pct: totalAll ? Math.round(top1Sum / totalAll * 100) : 0
+  };
+  _donorsTypeMix  = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+  _donorsTopRecip = Object.entries(byRecip).sort((a, b) => b[1] - a[1]).slice(0, 6);
+}
+
+// Donors tab: stat cards, donor-type filter chips, and the right rail
+// (Donor Type Mix + Top Recipients). Reads the cached globals from buildDonorsAgg.
+const DONOR_TYPE_CHIPS = [['all', 'All'], ['IND', 'Individual'], ['PAC', 'PAC'], ['BUS', 'Business'], ['ORG', 'Org']];
+
+function setDonorsType(code) {
+  _donorsTypeFilter = code;
+  donorsPage = 1;
+  renderDonorsLeaderboard();
+}
+
+function _renderDonorsExtras() {
+  // Stat cards
+  const statsEl = document.getElementById('donors-stats');
+  if (statsEl && _donorsStats) {
+    const s = _donorsStats;
+    statsEl.innerHTML = [
+      [_gsFmt(s.totalAll),        'Total Contributed'],
+      [s.unique.toLocaleString(), 'Unique Donors'],
+      [formatMoney(s.median),     'Median Gift'],
+      [s.top1Pct + '%',           'From Top 1% of Donors'],
+    ].map(([v, l]) => `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value">${v}</div></div>`).join('');
+  }
+
+  // Donor-type filter chips
+  const chipsEl = document.getElementById('donors-type-chips');
+  if (chipsEl) {
+    chipsEl.innerHTML = DONOR_TYPE_CHIPS.map(([code, label]) =>
+      `<button class="dn-chip${_donorsTypeFilter === code ? ' active' : ''}" onclick="setDonorsType('${code}')" aria-pressed="${_donorsTypeFilter === code}">${label}</button>`).join('');
+  }
+
+  // Right rail: Donor Type Mix + Top Recipients
+  const railEl = document.getElementById('donors-rail');
+  if (railEl) {
+    const mixMax = Math.max(1, ..._donorsTypeMix.map(([, v]) => v));
+    const MIX_COLOR = { IND: 'var(--accent)', PAC: 'var(--type-pac-text)', BUS: 'var(--type-business-text)', ORG: 'var(--type-org-text)', OTH: 'var(--muted-2)' };
+    const mixHtml = _donorsTypeMix.map(([code, v]) => `
+      <div class="cp-rail-mix">
+        <div class="cp-rail-mix-top"><span class="cp-rail-mix-name">${_donorTypeLabel(code)}</span><span class="cp-rail-mix-amt">${_gsFmt(v)}</span></div>
+        <div class="cp-rail-mix-bar"><i style="width:${Math.round(v / mixMax * 100)}%;background:${MIX_COLOR[code] || 'var(--accent)'}"></i></div>
+      </div>`).join('');
+    const recipHtml = _donorsTopRecip.map(([n, v], i) => `
+      <div class="cp-rail-row">
+        <span class="cp-rail-rank">${i + 1}</span>
+        <span class="cp-rail-name">${escHtml(n)}</span>
+        <span class="cp-rail-amt">${_gsFmt(v)}</span>
+      </div>`).join('');
+    const hasData = mixHtml || recipHtml;
+    railEl.innerHTML = hasData
+      ? `<div class="cp-rail-card"><div class="cp-rail-title">Donor Type Mix</div>${mixHtml}</div>
+         <div class="cp-rail-card"><div class="cp-rail-title">Top Recipients</div>${recipHtml}</div>`
+      : '';
+    railEl.style.display = hasData ? '' : 'none';
+  }
 }
 
 function renderDonorsLeaderboard() {
   buildDonorsAgg();
+  _renderDonorsExtras();   // stat cards + type chips + right rail (overall, unfiltered)
   const search = (document.getElementById('donors-search').value || '').toLowerCase().trim();
-  let rows = search ? _donorsAgg.filter(r => r.name.toLowerCase().includes(search)) : _donorsAgg.slice();
+  let rows = _donorsAgg.slice();
+  if (_donorsTypeFilter !== 'all') rows = rows.filter(r => r.type === _donorsTypeFilter);
+  if (search) rows = rows.filter(r => r.name.toLowerCase().includes(search));
 
   // Sort
   const dir = donorsSortDir === 'asc' ? 1 : -1;
@@ -5945,14 +6148,19 @@ function renderDonorsLeaderboard() {
     const rank = start + i + 1;
     const pct  = maxTotal ? (r.total / maxTotal * 100) : 0;
     const medal = rank;   // rank number — no medal emoji; leaders read fine from order
+    const rd = r.rep + r.dem;
+    const leanCell = rd > 0
+      ? `<div class="dn-lean-cell"><i style="width:${Math.round(r.rep / rd * 100)}%;background:var(--rep-bar)"></i><i style="width:${Math.round(r.dem / rd * 100)}%;background:var(--dem-bar)"></i></div>`
+      : `<span style="color:var(--muted-2);font-size:11px">—</span>`;
     return `<tr>
       <td data-label="Rank" style="color:var(--muted);font-weight:700;text-align:center">${medal}</td>
       <td data-label="Donor"><span class="contributor-link" data-contributor="${escHtml(r.name)}" onclick="showContributorProfile(this.dataset.contributor)">${escHtml(r.name)}</span></td>
-      <td data-label="Type"><span style="font-size:11px;color:var(--muted)">${escHtml(r.type)}</span></td>
+      <td data-label="Type">${donorTypeBadgeHtml({ donorType: r.type, contributor: r.name })}</td>
       <td data-label="Committees" class="num">${r.committees}</td>
       <td data-label="Gifts" class="num">${r.count.toLocaleString()}</td>
+      <td data-label="Leans">${leanCell}</td>
       <td data-label="Total" class="num" style="font-weight:700;color:var(--gold);position:relative">
-        <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:rgba(200,169,81,0.10);z-index:0"></div>
+        <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:rgba(20,117,107,0.08);z-index:0"></div>
         <span style="position:relative;z-index:1">$${Math.round(r.total).toLocaleString()}</span>
       </td>
     </tr>`;
@@ -6261,7 +6469,7 @@ function showContributorProfile(name) {
   document.getElementById('cp-name').textContent = name;
   const locParts = [first.city, first.contributorState, first.contributorZip].filter(Boolean);
   document.getElementById('cp-meta').textContent =
-    `${cycle} Calendar Year` +
+    `${_cyclesLabel()} cycle` +
     (locParts.length ? '  ·  ' + locParts.join(', ') : '');
 
   // ── Summary stats ──────────────────────────────────────────
@@ -6298,11 +6506,61 @@ function showContributorProfile(name) {
       <span class="cp-detail-val">${escHtml(v)}</span>
     </div>`).join('');
 
+  // ── Right rail: partisan split + top recipients (DC contributor screen) ──
+  // Bucket the donor's dollars by the recipient committee's party.
+  let _repAmt = 0, _demAmt = 0;
+  contribs.forEach(d => {
+    const p = (d.party || '').toUpperCase();
+    if (p === 'REP') _repAmt += d.amount;
+    else if (p === 'DEM') _demAmt += d.amount;
+  });
+  const _partisan = _repAmt + _demAmt;   // lean is R-vs-D only; other/unknown excluded
+  const _repPct = _partisan ? Math.round(_repAmt / _partisan * 100) : 0;
+  const _demPct = _partisan ? 100 - _repPct : 0;
+  const _leansR = _repPct >= _demPct;
+
+  // Header badges: donor type + partisan lean
+  const _badgesEl = document.getElementById('cp-badges');
+  let _badges = donorTypeBadgeHtml(first);
+  if (_partisan > 0) {
+    _badges += `<span class="cp-lean-badge" style="color:${_leansR ? 'var(--rep-text)' : 'var(--dem-text)'};background:${_leansR ? 'var(--rep-bg)' : 'var(--dem-bg)'}">LEANS ${_leansR ? 'R · ' + _repPct : 'D · ' + _demPct}%</span>`;
+  }
+  _badgesEl.innerHTML = _badges;
+  _badgesEl.style.display = _badges ? 'flex' : 'none';
+
+  // Rail panels
+  const _recipHtml = committeeList.slice(0, 6).map(([committee, s], i) => `
+    <div class="cp-rail-row">
+      <span class="cp-rail-rank">${i + 1}</span>
+      <span class="cp-rail-name">${escHtml(committee)}</span>
+      <span class="cp-rail-amt">${_gsFmt(s.total)}</span>
+    </div>`).join('');
+  let _railHtml = '';
+  if (_partisan > 0) {
+    _railHtml += `<div class="cp-rail-card">
+      <div class="cp-rail-title">Partisan Split</div>
+      <div class="cp-rail-sub">Where this donor's dollars went (R vs D recipients).</div>
+      <div class="cp-lean-track">
+        <i style="width:${_repPct}%;background:var(--rep-bar)"></i>
+        <i style="width:${_demPct}%;background:var(--dem-bar)"></i>
+      </div>
+      <div class="cp-lean-legend">
+        <span class="r">Republican · ${_repPct}%</span>
+        <span class="d">Dem · ${_demPct}%</span>
+      </div>
+    </div>`;
+  }
+  _railHtml += `<div class="cp-rail-card">
+    <div class="cp-rail-title">Top Recipients</div>
+    ${_recipHtml || '<div class="cp-rail-sub">No recipients.</div>'}
+  </div>`;
+  document.getElementById('cp-rail').innerHTML = _railHtml;
+
   // ── Committee breakdown table ──────────────────────────────
   // Injected into cp-tbody in two sections: summary rows then a divider then individual gifts
   const summaryRows = committeeList.map(([committee, s]) => {
     const dummyD = { party: s.party };
-    return `<tr style="background:rgba(200,169,81,0.05)">
+    return `<tr style="background:#f3faf8">
       <td style="color:var(--muted);font-size:11px;font-style:italic" colspan="2">
         ${s.count} gift${s.count!==1?'s':''}
       </td>
@@ -7014,6 +7272,45 @@ function renderCampElection(name, party) {
   el.innerHTML = `<span class="wl-badge ${m[0]}">${m[1]}</span>${pct}${race}`;
 }
 
+// Campaign profile right rail (DC profile screen): top donors + top industries
+// for this committee, derived from the loaded-cycle contributions.
+function _renderCampRail() {
+  const railEl = document.getElementById('camp-rail');
+  if (!railEl) return;
+  if (!_campContribs.length) { railEl.style.display = 'none'; railEl.innerHTML = ''; return; }
+
+  const byDonor = {}, byInd = {};
+  _campContribs.forEach(d => {
+    const n = d.contributor || 'Unknown';
+    byDonor[n] = (byDonor[n] || 0) + d.amount;
+    const ind = _getIndustry(d) || 'Other';
+    byInd[ind] = (byInd[ind] || 0) + d.amount;
+  });
+  const topDonors = Object.entries(byDonor).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const topInd    = Object.entries(byInd).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const indMax    = Math.max(1, ...topInd.map(([, v]) => v));
+
+  railEl.innerHTML = `
+    <div class="cp-rail-card">
+      <div class="cp-rail-title">Top Donors</div>
+      ${topDonors.map(([n, v], i) => `
+        <div class="cp-rail-row">
+          <span class="cp-rail-rank">${i + 1}</span>
+          <span class="cp-rail-name">${escHtml(n)}</span>
+          <span class="cp-rail-amt">${_gsFmt(v)}</span>
+        </div>`).join('')}
+    </div>
+    <div class="cp-rail-card">
+      <div class="cp-rail-title">Top Industries</div>
+      ${topInd.map(([n, v]) => `
+        <div class="cp-rail-mix">
+          <div class="cp-rail-mix-top"><span class="cp-rail-mix-name">${escHtml(n)}</span><span class="cp-rail-mix-amt">${_gsFmt(v)}</span></div>
+          <div class="cp-rail-mix-bar"><i style="width:${Math.round(v / indMax * 100)}%"></i></div>
+        </div>`).join('')}
+    </div>`;
+  railEl.style.display = '';
+}
+
 function showCampaignProfile(name, openTab, filer) {
   _restoreChartProxies();   // heal stale print-proxy images from a failed restore
   _campName     = name;
@@ -7042,6 +7339,7 @@ function showCampaignProfile(name, openTab, filer) {
   const _vy = document.getElementById('camp-verify-year');
   if (_vy) { _vy.style.display = 'none'; _vy.innerHTML = ''; }
   _refreshCampStats();
+  _renderCampRail();
   // When opened from search/overview the current cycle's transactions usually
   // aren't loaded — default to the Career tab so all-cycle data shows. Callers
   // from in-cycle tables omit openTab and get the contributions list as before.
@@ -7324,14 +7622,14 @@ function renderCampCashFlow() {
       const cx1 = Math.min(x1, chartArea.right);
       if (cx1 <= cx0) return;
       ctx.save();
-      ctx.fillStyle = 'rgba(200,169,81,0.08)';
+      ctx.fillStyle = 'rgba(15,28,26,0.04)';
       ctx.fillRect(cx0, chartArea.top, cx1 - cx0, chartArea.bottom - chartArea.top);
-      ctx.strokeStyle = 'rgba(200,169,81,0.3)';
+      ctx.strokeStyle = 'rgba(15,28,26,0.15)';
       ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
       if (x0 >= chartArea.left)  { ctx.beginPath(); ctx.moveTo(cx0, chartArea.top); ctx.lineTo(cx0, chartArea.bottom); ctx.stroke(); }
       if (x1 <= chartArea.right) { ctx.beginPath(); ctx.moveTo(cx1, chartArea.top); ctx.lineTo(cx1, chartArea.bottom); ctx.stroke(); }
       if (cx1 - cx0 > 28) {
-        ctx.setLineDash([]); ctx.fillStyle = 'rgba(200,169,81,0.55)';
+        ctx.setLineDash([]); ctx.fillStyle = 'rgba(63,75,72,0.55)';
         ctx.font = 'bold 8px -apple-system,sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'top';
         ctx.fillText(bandLabel + ' cycle', (cx0 + cx1) / 2, chartArea.top + 3);
@@ -7838,7 +8136,7 @@ function renderCampCareer() {
         }
       },
       scales: {
-        x: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        x: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(15,28,26,0.07)' } },
         y: {
           beginAtZero: true, grace: '18%',
           ticks: { color: '#8b949e', font: { size: 11 }, maxTicksLimit: 6, callback: fmtCycleY },
@@ -8951,12 +9249,20 @@ function renderOverview() {
     </div>`;
   }).join('') || '<div class="gs-empty">No election data.</div>';
 
-  // Top fundraisers (open profile by index to avoid name-in-onclick escaping issues)
-  document.getElementById('ov-top').innerHTML = (d.top_fundraisers || []).map((t, i) => `
+  // Top fundraisers (open profile by index to avoid name-in-onclick escaping issues).
+  // Mini bar chart per row, scaled to the largest fundraiser in the list.
+  const _tf = d.top_fundraisers || [];
+  const _tfMax = Math.max(1, ..._tf.map(t => t.total_raised || 0));
+  document.getElementById('ov-top').innerHTML = _tf.map((t, i) => `
     <div class="ov-top-row" onclick="_ovOpenTop(${i})" role="button" tabindex="0">
       <span class="ov-top-rank">${i+1}</span>
-      <span class="ov-top-name">${escHtml(t.name)}</span>
-      <span class="ov-top-amt">${_gsFmt(t.total_raised)}</span>
+      <div class="ov-top-main">
+        <div class="ov-top-line">
+          <span class="ov-top-name">${escHtml(t.name)}</span>
+          <span class="ov-top-amt">${_gsFmt(t.total_raised)}</span>
+        </div>
+        <div class="ov-bar"><i style="width:${Math.round((t.total_raised||0)/_tfMax*100)}%"></i></div>
+      </div>
     </div>`).join('') || '<div class="gs-empty">No data.</div>';
 
   // ── Nightly insight blocks (optional) ──────────────────────────────────
@@ -8976,15 +9282,22 @@ function renderOverview() {
   const wc = ins && ins.war_chests && ins.war_chests.items && ins.war_chests.items.length;
   if (wc) {
     document.getElementById('ov-warchests-help').title = ins.war_chests.method;
-    document.getElementById('ov-warchests').innerHTML = ins.war_chests.items.slice(0, 10).map((w, i) => `
+    const _wc = ins.war_chests.items.slice(0, 10);
+    const _wcMax = Math.max(1, ..._wc.map(w => w.ending || 0));
+    document.getElementById('ov-warchests').innerHTML = _wc.map((w, i) => `
       <div class="ov-top-row" onclick="_ovOpenWarchest(${i})" role="button" tabindex="0">
         <span class="ov-top-rank">${i+1}</span>
-        <span class="ov-top-name">${escHtml(w.name)}</span>
-        <span class="ov-top-amt" style="color:var(--certified)">
-          ${_gsFmt(w.ending)}<a href="${escHtml(w.pdf_url || '#')}" target="_blank" rel="noopener noreferrer"
-            onclick="event.stopPropagation()" title="Certified ${w.year} annual filing — view source PDF"
-            style="font-size:9px;color:var(--muted);text-decoration:none;margin-left:4px">${w.year}↗</a>
-        </span>
+        <div class="ov-top-main">
+          <div class="ov-top-line">
+            <span class="ov-top-name">${escHtml(w.name)}</span>
+            <span class="ov-top-amt" style="color:var(--certified)">
+              ${_gsFmt(w.ending)}<a href="${escHtml(w.pdf_url || '#')}" target="_blank" rel="noopener noreferrer"
+                onclick="event.stopPropagation()" title="Certified ${w.year} annual filing — view source PDF"
+                style="font-size:9px;color:var(--muted);text-decoration:none;margin-left:4px">${w.year}↗</a>
+            </span>
+          </div>
+          <div class="ov-bar warchest"><i style="width:${Math.round((w.ending||0)/_wcMax*100)}%"></i></div>
+        </div>
       </div>`).join('');
     wcWrap.style.display = '';
   } else { wcWrap.style.display = 'none'; }
@@ -9052,7 +9365,7 @@ async function _ovOpenElection(year) {
 <!-- CAMPAIGN PROFILE MODAL -->
 <!-- SEARCH / FILTER HELP MODAL -->
 <div class="cp-overlay" id="help-overlay" onclick="if(event.target===this)closeFilterHelp()">
-  <div class="cp-modal" id="help-modal" style="max-width:660px" role="dialog" aria-modal="true" aria-labelledby="help-title">
+  <div class="cp-modal" id="help-modal" style="max-width:720px" role="dialog" aria-modal="true" aria-labelledby="help-title">
     <div class="cp-header">
       <div>
         <div class="cp-name" id="help-title">Search &amp; Filter Guide</div>
@@ -9199,7 +9512,7 @@ async function _ovOpenElection(year) {
 </div>
 
 <div class="cp-overlay" id="camp-overlay" onclick="if(event.target===this)closeCampaignProfile()">
-  <div class="cp-modal" id="camp-modal" style="max-width:860px" role="dialog" aria-modal="true" aria-labelledby="camp-name">
+  <div class="cp-modal" id="camp-modal" style="max-width:1000px" role="dialog" aria-modal="true" aria-labelledby="camp-name">
     <div class="cp-header">
       <div style="min-width:0">
         <div class="cp-name" id="camp-name">—</div>
@@ -9246,6 +9559,9 @@ async function _ovOpenElection(year) {
       </div>
       <div style="position:relative;height:170px"><canvas id="camp-cashflow-chart"></canvas></div>
     </div>
+    <!-- Body: sub-tabs + content (left), campaign right rail (right) -->
+    <div class="cp-split">
+      <div class="camp-main" style="min-width:0">
     <!-- Sub-tabs -->
     <div style="display:flex;border-bottom:1px solid var(--border);background:var(--card);overflow-x:auto">
       <button class="section-tab active" id="camp-tab-contribs"  onclick="campSwitchTab('contribs')"  style="font-size:13px;padding:9px 20px;white-space:nowrap">Contributions</button>
@@ -9277,16 +9593,20 @@ async function _ovOpenElection(year) {
       </div>
       <div id="camp-empty" style="display:none;padding:30px;text-align:center;color:var(--muted);font-size:13px">No data for this section in the loaded cycle.</div>
     </div>
+      </div><!-- /camp-main -->
+      <aside class="cp-rail" id="camp-rail" style="display:none"></aside>
+    </div><!-- /cp-split -->
   </div>
 </div>
 
 <!-- CONTRIBUTOR PROFILE MODAL -->
 <div class="cp-overlay" id="cp-overlay" onclick="handleCPOverlayClick(event)">
-  <div class="cp-modal" id="cp-modal" role="dialog" aria-modal="true" aria-labelledby="cp-name">
+  <div class="cp-modal" id="cp-modal" style="max-width:1000px" role="dialog" aria-modal="true" aria-labelledby="cp-name">
     <div class="cp-header">
-      <div>
+      <div style="min-width:0">
         <div class="cp-name" id="cp-name">—</div>
         <div class="cp-meta" id="cp-meta"></div>
+        <div class="cp-badges" id="cp-badges" style="display:none"></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         <a class="verify-link" id="cp-verify-link" href="https://www.ethics.la.gov/CampaignFinanceSearch/SearchScanned.aspx" target="_blank" rel="noopener" title="Verify these contributions against the official Louisiana Board of Ethics record — search this donor's name on ethics.la.gov">Verify on ethics.la.gov ↗</a>
@@ -9301,20 +9621,23 @@ async function _ovOpenElection(year) {
       <div class="cp-stat"><div class="cp-stat-val" id="cp-committees">—</div><div class="cp-stat-lbl">Committees</div></div>
     </div>
     <div class="cp-details" id="cp-details"></div>
-    <div class="cp-table-wrap">
-      <table class="cp-table m-cards">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Committee</th>
-            <th>Party</th>
-            <th>Type</th>
-            <th>Amount</th>
-            <th>Notes</th>
-          </tr>
-        </thead>
-        <tbody id="cp-tbody"></tbody>
-      </table>
+    <div class="cp-split">
+      <div class="cp-table-wrap">
+        <table class="cp-table m-cards">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Committee</th>
+              <th>Party</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="cp-tbody"></tbody>
+        </table>
+      </div>
+      <aside class="cp-rail" id="cp-rail"></aside>
     </div>
   </div>
 </div>
