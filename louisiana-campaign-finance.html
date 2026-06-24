@@ -16,8 +16,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<!-- Leaflet's CSS is injected lazily alongside its JS (ensureLeaflet), only when
-     the map-bearing Money tab is first opened — not on the Overview landing. -->
+<!-- Map tiles (CARTO) are the only remaining third-party origin loaded at
+     runtime, and only once the Money tab's map opens — warm the DNS early. -->
+<link rel="dns-prefetch" href="https://basemaps.cartocdn.com">
+<!-- Leaflet + Chart.js are self-hosted under vendor/ and injected lazily by
+     ensureLeaflet() / ensureChart() — see the loaders in the app script. -->
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* ============================================================
@@ -2405,7 +2408,7 @@ function _injectScript(src) {
 }
 function ensureChart() {
   if (!_chartReady) {
-    _chartReady = _injectScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js')
+    _chartReady = _injectScript('vendor/chart.umd.min.js')
       .then(() => {
         // Mirror applyTheme()'s Chart defaults so lazily-loaded charts match the
         // theme without needing a second applyTheme() pass.
@@ -2421,9 +2424,9 @@ function ensureLeaflet() {
   if (!_leafletReady) {
     const css = document.createElement('link');
     css.rel = 'stylesheet';
-    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    css.href = 'vendor/leaflet.css';
     document.head.appendChild(css);
-    _leafletReady = _injectScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
+    _leafletReady = _injectScript('vendor/leaflet.js');
   }
   return _leafletReady;
 }

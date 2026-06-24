@@ -10,9 +10,9 @@
  *       so the NEXT load is current. A nightly redeploy is thus picked up one
  *       visit later — fine for a shell that changes only on deploy, and far
  *       faster than blocking every load on the network.
- *   • The third-party libraries (Leaflet, Chart.js, fonts) → cache-first.
- *       They're version-pinned and immutable, so once cached they never need
- *       to be refetched; this is the bulk of the repeat-visit byte savings.
+ *   • Google Fonts (the one remaining immutable third-party origin) → cache-first.
+ *       Leaflet + Chart.js are self-hosted under vendor/, so they're same-origin
+ *       and ride the stale-while-revalidate path above — no special-casing.
  *   • Everything else (cross-origin map tiles, etc.) → straight to network,
  *       untouched.
  *
@@ -43,11 +43,10 @@ const SHELL_ASSETS = [
   './apple-touch-icon.png',
 ];
 
-// Third-party hosts whose responses are immutable (version-pinned URLs) and
-// worth keeping cached across visits.
+// Third-party hosts whose responses are immutable and worth keeping cached
+// across visits. Leaflet + Chart.js used to live here (unpkg/jsdelivr) but are
+// now self-hosted under vendor/, so only the Google Fonts origins remain.
 const LIB_HOSTS = [
-  'unpkg.com',
-  'cdn.jsdelivr.net',
   'fonts.googleapis.com',
   'fonts.gstatic.com',
 ];
