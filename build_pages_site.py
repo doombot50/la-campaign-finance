@@ -57,6 +57,34 @@ REQUIRED_ROOT = [
 ]
 
 
+# The SPA decides at runtime whether to answer /api/* reads from a live server
+# or from the static artifacts (StaticAPI). Its hostname heuristic only matches
+# *.github.io, so a Pages site on a custom domain (e.g. charliestephens.xyz)
+# would wrongly try to reach a server and 404. The static build KNOWS its output
+# is server-less, so it hard-pins STATIC_MODE on — domain-agnostic and immune to
+# any future domain change. The source file is untouched, so the live server
+# (which serves it verbatim) still evaluates STATIC_MODE as false.
+_STATIC_MODE_RE = re.compile(r'const STATIC_MODE = [^;]*;', re.S)
+
+
+def _emit_index_html(src, dst):
+    with open(src, encoding='utf-8') as f:
+        html = f.read()
+    html, n = _STATIC_MODE_RE.subn(
+        'const STATIC_MODE = true; '
+        '/* hard-pinned by build_pages_site.py: this artifact is the static '
+        'Pages site (server-less, any domain) */',
+        html, count=1)
+    if n != 1:
+        # Fail loud, consistent with the completeness gate: a missed injection
+        # would publish a site that 404s on every /api read on a custom domain.
+        raise SystemExit('build_pages_site.py: could not pin STATIC_MODE — the '
+                         '`const STATIC_MODE = ...;` declaration was not found '
+                         'in louisiana-campaign-finance.html')
+    with open(dst, 'w', encoding='utf-8') as f:
+        f.write(html)
+
+
 def main():
     problems = []
 
@@ -102,8 +130,8 @@ def main():
     data_dir = os.path.join(SITE, 'data')
     os.makedirs(data_dir)
 
-    shutil.copy2(os.path.join(BASE, 'louisiana-campaign-finance.html'),
-                 os.path.join(SITE, 'index.html'))
+    _emit_index_html(os.path.join(BASE, 'louisiana-campaign-finance.html'),
+                     os.path.join(SITE, 'index.html'))
     shutil.copy2(os.path.join(BASE, 'static_api.js'), SITE)
     # sw.js must sit at the site root so its scope covers the whole project path.
     shutil.copy2(os.path.join(BASE, 'sw.js'), SITE)
