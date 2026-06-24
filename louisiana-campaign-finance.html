@@ -16,7 +16,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<!-- Leaflet's CSS is injected lazily alongside its JS (ensureLeaflet), only when
+     the map-bearing Money tab is first opened — not on the Overview landing. -->
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* ============================================================
@@ -2376,12 +2377,57 @@
   <p style="margin-top:8px;">Built with <a href="https://claude.ai" target="_blank">Claude</a> by Charlie Stephens</p>
 </footer>
 
-<!-- Libraries load here (not <head>) so the shell paints immediately;
-     the app script below depends on L and Chart, so order is preserved. -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- The data layer is tiny and same-origin, and the app depends on it, so it
+     loads eagerly. Leaflet (~150KB) and Chart.js (~210KB) are NOT loaded here:
+     the Overview landing needs neither, so they're injected on first use by
+     ensureLeaflet() / ensureChart() (map / chart tabs) to keep boot off the
+     critical path. The render functions self-heal once the lib arrives. -->
 <script src="static_api.js"></script>
 <script>
+// ============================================================
+// LAZY LIBRARY LOADERS
+// ============================================================
+// Chart.js and Leaflet are only needed on the chart-bearing tabs (Money/Loans)
+// and the map (Money) — never on the Overview landing. So instead of blocking
+// boot on ~360KB of CDN JS, we inject each library on first use. Every loader
+// caches its promise, so concurrent callers share a single fetch, and the
+// chart/map render functions below self-heal: if called before their library
+// has arrived, they kick off the load and re-invoke themselves when it resolves.
+let _chartReady, _leafletReady;
+function _injectScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+function ensureChart() {
+  if (!_chartReady) {
+    _chartReady = _injectScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js')
+      .then(() => {
+        // Mirror applyTheme()'s Chart defaults so lazily-loaded charts match the
+        // theme without needing a second applyTheme() pass.
+        Chart.defaults.color = '#3f4b48';
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          Chart.defaults.animation = false;
+        }
+      });
+  }
+  return _chartReady;
+}
+function ensureLeaflet() {
+  if (!_leafletReady) {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    _leafletReady = _injectScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
+  }
+  return _leafletReady;
+}
+
 // ============================================================
 // CONSTANTS & DATA
 // ============================================================
@@ -2689,23 +2735,24 @@ function initMap() {
     attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd', maxZoom: 19
   }).addTo(map);
+
+  // Built here (not at top level) because L is now loaded lazily and only
+  // guaranteed present once initMap runs behind ensureLeaflet().
+  const legend = L.control({position:'bottomright'});
+  legend.onAdd = function() {
+    const div = L.DomUtil.create('div','map-legend');
+    div.innerHTML = `<div class="legend-title">Party Dominance</div>
+      <div><span class="legend-swatch" style="background:#2166ac;opacity:0.8;"></span> Democrat (&gt;60%)</div>
+      <div><span class="legend-swatch" style="background:#d73027;opacity:0.8;"></span> Republican (&gt;60%)</div>
+      <div><span class="legend-swatch" style="background:#888888;opacity:0.8;"></span> Mixed / Other</div>
+      <div style="margin-top:8px;font-size:11px;color:#8b949e;">Circle size = total raised</div>`;
+    return div;
+  };
   legend.addTo(map);
 }
 // Light-only: apply the single theme at startup.
 applyTheme();
-
-// Legend
-const legend = L.control({position:'bottomright'});
-legend.onAdd = function() {
-  const div = L.DomUtil.create('div','map-legend');
-  div.innerHTML = `<div class="legend-title">Party Dominance</div>
-    <div><span class="legend-swatch" style="background:#2166ac;opacity:0.8;"></span> Democrat (&gt;60%)</div>
-    <div><span class="legend-swatch" style="background:#d73027;opacity:0.8;"></span> Republican (&gt;60%)</div>
-    <div><span class="legend-swatch" style="background:#888888;opacity:0.8;"></span> Mixed / Other</div>
-    <div style="margin-top:8px;font-size:11px;color:#8b949e;">Circle size = total raised</div>`;
-  return div;
-};
-// (legend is added to the map by initMap)
+// The map legend is created inside initMap (it needs Leaflet, now loaded lazily).
 
 // ============================================================
 // POPULATE PARISH DROPDOWN
@@ -3845,6 +3892,7 @@ function getDomPartyLabel(dem, rep, oth) {
 // PARTY CHART
 // ============================================================
 function renderPartyChart() {
+  if (!window.Chart) { ensureChart().then(renderPartyChart); return; }
   const totals = { DEM:0, REP:0, IND:0, LBT:0, GRN:0, OTH:0 };
   filteredData.forEach(d => {
     const p = d.party;
@@ -3927,6 +3975,7 @@ function clearIndustryFilter() {
 }
 
 function renderDonorTypeChart() {
+  if (!window.Chart) { ensureChart().then(renderDonorTypeChart); return; }
   // Tally by industry using ALL loaded data (not filteredData) so the chart
   // always shows the full industry picture for context
   const totals = {};
@@ -4076,6 +4125,7 @@ function renderTopStates() {
 // TREND CHART
 // ============================================================
 function renderTrendChart() {
+  if (!window.Chart) { ensureChart().then(renderTrendChart); return; }
   // Span the selected cycle(s): one or two cycles → monthly; more → yearly.
   const { keys, labels, keyOf, granularity, span } = _cycleBuckets();
   const bucketIdx = {};
@@ -4907,8 +4957,11 @@ function switchTab(tab, opts) {
   // contributions-view, which is display:none on load). Re-measure + redraw once
   // the Money tab is actually visible, otherwise the map renders as a gray box.
   if (tab === 'contributions') {
-    initMap();   // first activation creates the map; no-op afterwards
-    setTimeout(() => { map.invalidateSize(); renderMap(); }, 0);
+    // Leaflet is loaded on demand; create + redraw the map once it arrives.
+    ensureLeaflet().then(() => {
+      initMap();   // first activation creates the map; no-op afterwards
+      setTimeout(() => { if (map) { map.invalidateSize(); renderMap(); } }, 0);
+    });
   }
   if (tab === 'loans'   && loanData.length === 0) loadLoanData();
   if (tab === 'donors')  renderDonorsLeaderboard();
@@ -5241,6 +5294,7 @@ function renderExpStats() {
 
 // ── Campaign chart ────────────────────────────────────────────────
 function renderExpCampaignChart() {
+  if (!window.Chart) { ensureChart().then(renderExpCampaignChart); return; }
   const byCampaign = {};
   expFiltered.forEach(r => { byCampaign[r.candidate || 'Unknown'] = (byCampaign[r.candidate || 'Unknown'] || 0) + r.amount; });
   const sorted = Object.entries(byCampaign).sort((a,b) => b[1]-a[1]).slice(0, 12);
@@ -5278,6 +5332,7 @@ function renderExpCampaignChart() {
 
 // ── Category chart ────────────────────────────────────────────────
 function renderExpCategoryChart() {
+  if (!window.Chart) { ensureChart().then(renderExpCategoryChart); return; }
   const byCat = {};
   expFiltered.forEach(r => { byCat[r._cat] = (byCat[r._cat] || 0) + r.amount; });
   const sorted = Object.entries(byCat).sort((a,b) => b[1]-a[1]);
@@ -5303,6 +5358,7 @@ function renderExpCategoryChart() {
 
 // ── Party breakdown ───────────────────────────────────────────────
 function renderExpPartyChart() {
+  if (!window.Chart) { ensureChart().then(renderExpPartyChart); return; }
   const totals = { DEM:0, REP:0, IND:0, LBT:0, GRN:0, OTH:0 };
   expFiltered.forEach(r => {
     const p = r.party;
@@ -5331,6 +5387,7 @@ function renderExpPartyChart() {
 
 // ── Combined cash flow chart ──────────────────────────────────────
 function renderCashFlowChart() {
+  if (!window.Chart) { ensureChart().then(renderCashFlowChart); return; }
   // Span the selected cycle(s): one or two cycles → monthly; more → yearly.
   const { keys: months, labels, keyOf } = _cycleBuckets();
 
@@ -5391,6 +5448,7 @@ function renderCashFlowChart() {
 
 // ── Monthly trend ─────────────────────────────────────────────────
 function renderExpTrend() {
+  if (!window.Chart) { ensureChart().then(renderExpTrend); return; }
   const byMonth = {};
   expFiltered.forEach(r => {
     const mo = (r.date || '').slice(0, 7);
@@ -5801,6 +5859,7 @@ function renderLoanStats() {
 
 // ── Campaign chart ────────────────────────────────────────────
 function renderLoanCampaignChart() {
+  if (!window.Chart) { ensureChart().then(renderLoanCampaignChart); return; }
   const byCampaign = {};
   loanFiltered.forEach(r => { byCampaign[r.candidate || 'Unknown'] = (byCampaign[r.candidate || 'Unknown'] || 0) + r.amount; });
   const sorted = Object.entries(byCampaign).sort((a,b) => b[1]-a[1]).slice(0, 12);
@@ -5836,6 +5895,7 @@ function renderLoanCampaignChart() {
 
 // ── Origin chart ──────────────────────────────────────────────
 function renderLoanOriginChart() {
+  if (!window.Chart) { ensureChart().then(renderLoanOriginChart); return; }
   const inState  = loanFiltered.filter(r => r.lenderState === 'LA').reduce((s, r) => s + r.amount, 0);
   const outState = loanFiltered.filter(r => r.lenderState && r.lenderState !== 'LA').reduce((s, r) => s + r.amount, 0);
   const unknown  = loanFiltered.filter(r => !r.lenderState).reduce((s, r) => s + r.amount, 0);
@@ -6388,6 +6448,7 @@ function renderCompare() {
 }
 
 function _renderCompareChart(canvasId, s) {
+  if (!window.Chart) { ensureChart().then(() => _renderCompareChart(canvasId, s)); return; }
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
 
@@ -7121,7 +7182,22 @@ let _overviewData = null;
     await loadOverview();
   }
 
-  loadData();   // heavy contributions pre-load runs in the background
+  // The contributions pre-load is a multi-megabyte stream parsed line-by-line —
+  // CPU- and bandwidth-heavy. On a pure Overview landing (no data tab or permanent
+  // route restored), nothing needs it yet, so defer it to idle: the landing stays
+  // responsive and the data is still warm by the time the user opens Money. When a
+  // data tab or a #/… route IS restored, that view needs contributions now, so load
+  // it eagerly as before.
+  {
+    const _tabParam = new URLSearchParams(window.location.search).get('tab');
+    const _hasRoute = window.location.hash.startsWith('#/');
+    const _overviewLanding = (!_tabParam || _tabParam === 'overview') && !_hasRoute;
+    if (_overviewLanding && typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => loadData(), { timeout: 3000 });
+    } else {
+      loadData();   // heavy contributions pre-load runs in the background
+    }
+  }
 
   // Global data-freshness stamp (every view, not just Overview) — a number is
   // only citable if the reader knows how current it is.
@@ -7526,6 +7602,7 @@ function _refreshCampStats() {
 
 let _campCashChart = null;
 function renderCampCashFlow() {
+  if (!window.Chart) { ensureChart().then(renderCampCashFlow); return; }
   const canvas = document.getElementById('camp-cashflow-chart');
   if (!canvas) return;
   // Guard: if the modal isn't open yet the canvas is inside display:none — Chart.js
@@ -8074,6 +8151,7 @@ async function fetchCareerData(name) {
 }
 
 function renderCampCareer() {
+  if (!window.Chart) { ensureChart().then(renderCampCareer); return; }
   const empty    = document.getElementById('camp-career-empty');
   const racesEl  = document.getElementById('camp-career-races');
   const racesHdr = document.getElementById('camp-career-races-hdr');
