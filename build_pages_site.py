@@ -142,7 +142,7 @@ def main():
                  'apple-touch-icon.png'):
         shutil.copy2(os.path.join(BASE, name), SITE)
     open(os.path.join(SITE, '.nojekyll'), 'w').close()
-    open(os.path.join(SITE, 'CNAME'), 'w').write('charliestephens.xyz')
+    open(os.path.join(SITE, 'CNAME'), 'w').write('finance.charliestephens.xyz')
 
     n = 0
     for path in sorted(glob.glob(os.path.join(CACHE, '*.json.gz'))):
