@@ -2057,6 +2057,34 @@ class Handler(BaseHTTPRequestHandler):
                 self._empty(404)
             return
 
+        # Self-hosted vendor libraries (Leaflet + Chart.js + Leaflet's images),
+        # injected lazily by the dashboard's ensureLeaflet()/ensureChart(). The
+        # path is allowlisted by extension and confined to vendor/ (the images/
+        # subdir is leaflet.css's relative url() target). Mirrors how Pages
+        # serves _site/vendor/.
+        if parsed.path.startswith('/vendor/'):
+            rel = parsed.path[len('/vendor/'):]
+            if not re.fullmatch(r'(images/|fonts/)?[A-Za-z0-9_.\-]+\.(js|css|png|map|woff2)', rel):
+                self._empty(404); return
+            vroot = os.path.join(BASE_DIR, 'vendor')
+            fpath = os.path.normpath(os.path.join(vroot, *rel.split('/')))
+            if not (fpath == vroot or fpath.startswith(vroot + os.sep)) or not os.path.exists(fpath):
+                self._empty(404); return
+            ctypes = {'.js': 'application/javascript; charset=utf-8',
+                      '.css': 'text/css; charset=utf-8',
+                      '.png': 'image/png', '.map': 'application/json',
+                      '.woff2': 'font/woff2'}
+            with open(fpath, 'rb') as fh:
+                body = fh.read()
+            self.send_response(200)
+            self._cors_headers()
+            self.send_header('Content-Type',
+                             ctypes.get(os.path.splitext(fpath)[1], 'application/octet-stream'))
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
         # Static data files — serve gzip-encoded JSON directly so the browser can
         # load them client-side without going through the candidate-history API.
         _STATIC_DATA = {
