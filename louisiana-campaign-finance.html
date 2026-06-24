@@ -7214,6 +7214,19 @@ let _overviewData = null;
   setTimeout(_applyRoute, 0);
 })();
 
+// ── Service worker ─────────────────────────────────────────────────────────
+// Register only on the server-less (Pages) deploy, where the shell + data are
+// all static and safe to cache. The live Python server path is left alone so
+// local dev never wrestles a stale SW cache. Registration waits for 'load' so
+// it never competes with the landing's critical fetches. The SW itself
+// (sw.js) self-heals stale entries via stale-while-revalidate + a versioned
+// cache, so this is purely additive: a non-supporting browser just skips it.
+if (STATIC_MODE && 'serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* non-fatal */ });
+  });
+}
+
 // ============================================================
 // PERMANENT URLS — #/campaign/NAME · #/donor/NAME · #/race/DATE/OFFICE
 // Profiles and races are citable artifacts: every one gets a shareable,

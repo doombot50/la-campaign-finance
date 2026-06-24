@@ -6,6 +6,7 @@ Lays out _site/ for actions/upload-pages-artifact:
 
   _site/index.html        ← louisiana-campaign-finance.html, verbatim
   _site/static_api.js     ← the static data layer, verbatim
+  _site/sw.js             ← service worker (shell + lib cache; root scope)
   _site/manifest.json + icons  ← PWA assets (committed, see build_pwa_icons.py)
   _site/.nojekyll
   _site/data/             ← every .la_cache/*.json.gz (records + nightly
@@ -103,6 +104,8 @@ def main():
     shutil.copy2(os.path.join(BASE, 'louisiana-campaign-finance.html'),
                  os.path.join(SITE, 'index.html'))
     shutil.copy2(os.path.join(BASE, 'static_api.js'), SITE)
+    # sw.js must sit at the site root so its scope covers the whole project path.
+    shutil.copy2(os.path.join(BASE, 'sw.js'), SITE)
     for name in ('manifest.json', 'icon-192.png', 'icon-512.png',
                  'apple-touch-icon.png'):
         shutil.copy2(os.path.join(BASE, name), SITE)
