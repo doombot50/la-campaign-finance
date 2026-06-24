@@ -13,15 +13,26 @@
 <meta name="apple-mobile-web-app-title" content="LA CampFin">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<!-- Map tiles (CARTO) are the only remaining third-party origin loaded at
-     runtime, and only once the Money tab's map opens — warm the DNS early. -->
+<!-- Fonts (Libre Franklin + IBM Plex Mono) are self-hosted under vendor/fonts/
+     via @font-face in the stylesheet below — no Google Fonts origin at runtime.
+     Map tiles (CARTO) are the only remaining third-party origin, and only once
+     the Money tab's map opens — warm the DNS early. -->
 <link rel="dns-prefetch" href="https://basemaps.cartocdn.com">
 <!-- Leaflet + Chart.js are self-hosted under vendor/ and injected lazily by
      ensureLeaflet() / ensureChart() — see the loaders in the app script. -->
 <style>
+  /* Self-hosted fonts (latin woff2, fontsource 5.x). Replaces the Google Fonts
+     stylesheet so no third-party font origin is hit at runtime. font-display:swap
+     keeps text visible during load, matching the prior behavior. */
+  @font-face { font-family:'Libre Franklin'; font-style:normal; font-weight:400; font-display:swap; src:url('vendor/fonts/libre-franklin-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family:'Libre Franklin'; font-style:normal; font-weight:500; font-display:swap; src:url('vendor/fonts/libre-franklin-latin-500-normal.woff2') format('woff2'); }
+  @font-face { font-family:'Libre Franklin'; font-style:normal; font-weight:600; font-display:swap; src:url('vendor/fonts/libre-franklin-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family:'Libre Franklin'; font-style:normal; font-weight:700; font-display:swap; src:url('vendor/fonts/libre-franklin-latin-700-normal.woff2') format('woff2'); }
+  @font-face { font-family:'Libre Franklin'; font-style:normal; font-weight:800; font-display:swap; src:url('vendor/fonts/libre-franklin-latin-800-normal.woff2') format('woff2'); }
+  @font-face { font-family:'IBM Plex Mono'; font-style:normal; font-weight:400; font-display:swap; src:url('vendor/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family:'IBM Plex Mono'; font-style:normal; font-weight:500; font-display:swap; src:url('vendor/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+  @font-face { font-family:'IBM Plex Mono'; font-style:normal; font-weight:600; font-display:swap; src:url('vendor/fonts/ibm-plex-mono-latin-600-normal.woff2') format('woff2'); }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* ============================================================
      REDESIGN TOKEN MAP — light/teal editorial-data system.

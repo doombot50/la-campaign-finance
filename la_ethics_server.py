@@ -2064,7 +2064,7 @@ class Handler(BaseHTTPRequestHandler):
         # serves _site/vendor/.
         if parsed.path.startswith('/vendor/'):
             rel = parsed.path[len('/vendor/'):]
-            if not re.fullmatch(r'(images/)?[A-Za-z0-9_.\-]+\.(js|css|png|map)', rel):
+            if not re.fullmatch(r'(images/|fonts/)?[A-Za-z0-9_.\-]+\.(js|css|png|map|woff2)', rel):
                 self._empty(404); return
             vroot = os.path.join(BASE_DIR, 'vendor')
             fpath = os.path.normpath(os.path.join(vroot, *rel.split('/')))
@@ -2072,7 +2072,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._empty(404); return
             ctypes = {'.js': 'application/javascript; charset=utf-8',
                       '.css': 'text/css; charset=utf-8',
-                      '.png': 'image/png', '.map': 'application/json'}
+                      '.png': 'image/png', '.map': 'application/json',
+                      '.woff2': 'font/woff2'}
             with open(fpath, 'rb') as fh:
                 body = fh.read()
             self.send_response(200)

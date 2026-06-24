@@ -9,10 +9,9 @@
  *       Serve the cached copy instantly, fetch a fresh one in the background
  *       so the NEXT load is current. A nightly redeploy is thus picked up one
  *       visit later — fine for a shell that changes only on deploy, and far
- *       faster than blocking every load on the network.
- *   • Google Fonts (the one remaining immutable third-party origin) → cache-first.
- *       Leaflet + Chart.js are self-hosted under vendor/, so they're same-origin
- *       and ride the stale-while-revalidate path above — no special-casing.
+ *       faster than blocking every load on the network. The libraries (Leaflet,
+ *       Chart.js) and fonts are self-hosted under vendor/, so they're same-origin
+ *       and ride this path too — no third-party origins to special-case.
  *   • Everything else (cross-origin map tiles, etc.) → straight to network,
  *       untouched.
  *
@@ -27,8 +26,7 @@
 const CACHE_VERSION = 'v1';
 const SHELL_CACHE = `lacf-shell-${CACHE_VERSION}`;
 const DATA_CACHE  = `lacf-data-${CACHE_VERSION}`;
-const LIB_CACHE   = `lacf-lib-${CACHE_VERSION}`;
-const ALL_CACHES  = [SHELL_CACHE, DATA_CACHE, LIB_CACHE];
+const ALL_CACHES  = [SHELL_CACHE, DATA_CACHE];
 
 // Precached on install — the minimum needed to paint the shell offline.
 // Relative to the SW's scope (the project path on Pages), so this works under
@@ -41,14 +39,6 @@ const SHELL_ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
-];
-
-// Third-party hosts whose responses are immutable and worth keeping cached
-// across visits. Leaflet + Chart.js used to live here (unpkg/jsdelivr) but are
-// now self-hosted under vendor/, so only the Google Fonts origins remain.
-const LIB_HOSTS = [
-  'fonts.googleapis.com',
-  'fonts.gstatic.com',
 ];
 
 self.addEventListener('install', (event) => {
@@ -85,31 +75,15 @@ async function staleWhileRevalidate(request, cacheName) {
   return cached || network;
 }
 
-// Return cache if present; otherwise fetch once and keep it.
-async function cacheFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-  if (cached) return cached;
-  const res = await fetch(request);
-  // Opaque (no-cors) responses are fine to keep for immutable libs.
-  if (res && (res.ok || res.type === 'opaque')) cache.put(request, res.clone());
-  return res;
-}
-
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
 
-  // Immutable third-party libraries → cache-first.
-  if (LIB_HOSTS.includes(url.hostname)) {
-    event.respondWith(cacheFirst(req, LIB_CACHE));
-    return;
-  }
-
-  // Only manage our own origin beyond this point; let everything else (map
-  // tiles, etc.) hit the network untouched.
+  // Only manage our own origin; let everything else (map tiles, etc.) hit the
+  // network untouched. Libraries and fonts are same-origin (vendor/), so they
+  // fall through to the same-origin handling below.
   if (url.origin !== self.location.origin) return;
 
   // Navigations → the shell, served fast and revalidated.

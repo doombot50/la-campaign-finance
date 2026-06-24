@@ -7,7 +7,7 @@ Lays out _site/ for actions/upload-pages-artifact:
   _site/index.html        ← louisiana-campaign-finance.html, verbatim
   _site/static_api.js     ← the static data layer, verbatim
   _site/sw.js             ← service worker (shell + lib cache; root scope)
-  _site/vendor/           ← self-hosted Leaflet + Chart.js (+ images), verbatim
+  _site/vendor/           ← self-hosted Leaflet + Chart.js (+ images) + fonts/
   _site/manifest.json + icons  ← PWA assets (committed, see build_pwa_icons.py)
   _site/.nojekyll
   _site/data/             ← every .la_cache/*.json.gz (records + nightly
