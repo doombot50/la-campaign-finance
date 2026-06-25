@@ -118,6 +118,18 @@ jobs:
       - name: Upload cache snapshots to release
         run: gh release upload data-cache .la_cache/*.json.gz --clobber
 
+      - name: Publish donations export for the pay-to-play tool
+        # Flat-file handoff to the la-pay-to-play repo (build_p2p_export.py,
+        # stdlib only). Reads the freshly refreshed .la_cache contributions and
+        # ships cf_donations.csv.gz on the same data-cache release; that repo's
+        # deploy-pages workflow pulls it. Decoupled: a failure here never affects
+        # the dashboard.
+        continue-on-error: true
+        run: |
+          python build_p2p_export.py --since 2015 --out cf_donations.csv
+          gzip -f cf_donations.csv
+          gh release upload data-cache cf_donations.csv.gz --clobber
+
       - name: Incremental COH scrape
         timeout-minutes: 125      # backstop only — the inner timeout fires first
         continue-on-error: true   # partial progress is saved + committed below
