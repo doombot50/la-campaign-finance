@@ -85,6 +85,14 @@ jobs:
         # the server, so search/profile totals stay in sync with the records.
         run: python build_candidate_index.py
 
+      - name: Build per-entity lifetime edge lists
+        # Top donors-in (by filer) and recipients-out (by donor name) per entity,
+        # so the profile's lifetime giving/receiving lists render row-free.
+        # Outputs .la_cache/la_entity_donors.json.gz + la_entity_giving.json.gz —
+        # both ship via the upload glob; build_pages_site.py shards the giving
+        # map for Pages. Needs only the refreshed contributions_yr*.json.gz.
+        run: python build_entity_profiles.py
+
       - name: Resolve donor identities
         # Conservative A+B+C clustering (punctuation/initial/nickname within
         # same surname+suffix+ZIP; orgs by name) so the donor leaderboard isn't

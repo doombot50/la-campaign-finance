@@ -22,6 +22,8 @@ layer can ask for is present. Better no deploy than a wrong one.
 Stdlib only. Run by .github/workflows/deploy-pages.yml.
 """
 import glob
+import gzip
+import json
 import os
 import re
 import shutil
@@ -31,6 +33,19 @@ from datetime import date
 BASE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(BASE, '.la_cache')
 SITE = os.path.join(BASE, '_site')
+
+# Per-entity giving map is too big to ship whole (~22 MB), so it's hash-sharded
+# into GIVING_SHARDS buckets a donor profile fetches one of. shard_of (FNV-1a/32)
+# MUST stay identical to fnv1a() in static_api.js or lookups miss their bucket.
+GIVING_SHARDS = 128
+GIVING_SRC = 'la_entity_giving.json.gz'   # sharded below; not bulk-copied whole
+
+def shard_of(s, n):
+    h = 2166136261
+    for ch in s:
+        h ^= ord(ch)
+        h = (h * 16777619) & 0xFFFFFFFF
+    return h % n
 
 # Artifacts the static data layer fetches by name (see static_api.js)
 REQUIRED_ARTIFACTS = [
@@ -48,6 +63,11 @@ REQUIRED_ARTIFACTS = [
 # after it was introduced; until then candidateHistory falls back to name-keyed.
 OPTIONAL_ARTIFACTS = [
     'la_filer_index.json.gz',
+    # Per-entity lifetime edge lists (build_entity_profiles.py). Receiving ships
+    # whole; giving ships as la_entity_giving_shard_*.json.gz. Absent until the
+    # first nightly after introduction — the profile degrades to row-based lists.
+    'la_entity_donors.json.gz',
+    GIVING_SRC,
 ]
 # Committed repo-root files the layer also reads
 REQUIRED_ROOT = [
@@ -146,11 +166,30 @@ def main():
 
     n = 0
     for path in sorted(glob.glob(os.path.join(CACHE, '*.json.gz'))):
+        if os.path.basename(path) == GIVING_SRC:
+            continue   # sharded below instead of shipped whole
         shutil.copy2(path, data_dir)
         n += 1
     for name in REQUIRED_ROOT:
         shutil.copy2(os.path.join(BASE, name), data_dir)
         n += 1
+
+    # ── shard the per-entity giving map (donor name -> giving) for Pages ──────
+    giving_src = os.path.join(CACHE, GIVING_SRC)
+    if os.path.exists(giving_src):
+        with gzip.open(giving_src, 'rt', encoding='utf-8') as f:
+            giving = json.load(f)
+        buckets = [{} for _ in range(GIVING_SHARDS)]
+        for k, v in giving.items():
+            buckets[shard_of(k, GIVING_SHARDS)][k] = v
+        for i, b in enumerate(buckets):
+            with gzip.open(os.path.join(data_dir, f'la_entity_giving_shard_{i}.json.gz'),
+                           'wt', encoding='utf-8') as f:
+                json.dump(b, f, separators=(',', ':'), ensure_ascii=False)
+        n += GIVING_SHARDS
+        print(f'  sharded {GIVING_SRC} ({len(giving):,} donors) into {GIVING_SHARDS} buckets')
+    else:
+        print(f'  note: {GIVING_SRC} absent — entity-profile giving side empty on Pages')
 
     total_mb = sum(os.path.getsize(os.path.join(dp, f))
                    for dp, _, fs in os.walk(SITE) for f in fs) / 1e6

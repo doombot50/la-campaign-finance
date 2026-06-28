@@ -149,6 +149,75 @@ def _load_insights():
         _INSIGHTS_MTIME = mtime
 
 
+# ── Per-entity LIFETIME edge lists (built nightly by build_entity_profiles.py) ─
+# Two row-free maps the profile reads instead of scanning loaded cycle rows:
+#   _ENTITY_DONORS  filerNumber       -> receiving side {top_donors, total_raised, ...}
+#   _ENTITY_GIVING  _norm_name(donor) -> giving side    {top_recipients, total_given, ...}
+# Receiving is keyed by exact filer; giving is name-keyed (donors carry no filer
+# on the row) using the SAME _norm_name as the build script and StaticAPI.
+_ENTITY_DONORS = None
+_ENTITY_GIVING = None
+_ENTITY_PROFILE_MTIME = 0
+_ENTITY_PROFILE_LOCK  = threading.Lock()
+
+def _load_entity_profiles():
+    global _ENTITY_DONORS, _ENTITY_GIVING, _ENTITY_PROFILE_MTIME
+    with _ENTITY_PROFILE_LOCK:
+        dp = os.path.join(CACHE_DIR, 'la_entity_donors.json.gz')
+        gp = os.path.join(CACHE_DIR, 'la_entity_giving.json.gz')
+        if not os.path.exists(dp):
+            if _ENTITY_DONORS is None:
+                _ENTITY_DONORS, _ENTITY_GIVING = {}, {}
+            return
+        mtime = os.path.getmtime(dp)
+        if _ENTITY_DONORS is not None and mtime <= _ENTITY_PROFILE_MTIME:
+            return
+        with gzip.open(dp, 'rt', encoding='utf-8') as f:
+            _ENTITY_DONORS = json.load(f)
+        if os.path.exists(gp):
+            with gzip.open(gp, 'rt', encoding='utf-8') as f:
+                _ENTITY_GIVING = json.load(f)
+        else:
+            _ENTITY_GIVING = {}
+        _ENTITY_PROFILE_MTIME = mtime
+
+
+def build_entity_profile_payload(filer='', name=''):
+    """One entity's LIFETIME money in both directions — payload of
+    /api/entity-profile. `receiving` (who gave TO this committee) is looked up by
+    exact filerNumber; `giving` (who this donor gave TO) by normalized name.
+    Either may be null when the entity has no records on that side."""
+    _load_entity_profiles()
+    filer = (filer or '').strip()
+    name  = (name or '').strip()
+    norm  = _norm_name(name)
+    receiving = (_ENTITY_DONORS.get(filer) if (filer and _ENTITY_DONORS) else None)
+    giving    = (_ENTITY_GIVING.get(norm)  if (norm  and _ENTITY_GIVING) else None)
+    return {'filer': filer, 'name': name, 'receiving': receiving, 'giving': giving}
+
+
+# Pages ships the giving map as GIVING_SHARDS hash buckets (build_pages_site.py).
+# FNV-1a/32 — MUST stay identical to fnv1a() in static_api.js and shard_of() in
+# build_pages_site.py, or a donor's bucket lookup misses. The /data/ route
+# synthesizes these buckets so the server emulates Pages exactly for parity tests
+# and local ?static=1 use.
+GIVING_SHARDS = 128
+def _giving_shard_of(s):
+    h = 2166136261
+    for ch in s:
+        h ^= ord(ch)
+        h = (h * 16777619) & 0xFFFFFFFF
+    return h % GIVING_SHARDS
+
+def _build_giving_shard_gz(shard):
+    """Gzip bytes of the donor-name->giving submap whose names hash to `shard`."""
+    _load_entity_profiles()
+    sub = {k: v for k, v in (_ENTITY_GIVING or {}).items()
+           if _giving_shard_of(k) == shard}
+    return gzip.compress(json.dumps(sub, separators=(',', ':'),
+                                    ensure_ascii=False).encode('utf-8'))
+
+
 def _load_filer_lookup():
     global _FILER_NUM
     with _FILER_NUM_LOCK:
@@ -1920,6 +1989,16 @@ class Handler(BaseHTTPRequestHandler):
             self._json(ent or {})
             return
 
+        # ── /api/entity-profile — lifetime giving + receiving edge lists ─────
+        # ?filer=<n>&name=<display>. receiving keyed by filer, giving by name.
+        if parsed.path == '/api/entity-profile':
+            filer = params.get('filer', [''])[0].strip()
+            name  = params.get('name',  [''])[0].strip()
+            if not filer and not name:
+                self._json({'error': 'filer or name required'}); return
+            self._json(build_entity_profile_payload(filer, name))
+            return
+
         # ── /api/coh — certified COH lookup for one or all filers ────────────
         if parsed.path == '/api/coh':
             _load_ethics_coh()
@@ -2001,6 +2080,20 @@ class Handler(BaseHTTPRequestHandler):
             name = os.path.basename(parsed.path)
             if not re.fullmatch(r'[A-Za-z0-9_.\-]+\.(json|json\.gz)', name):
                 self._empty(404); return
+            # Synthetic giving shards: Pages serves these as files (built by
+            # build_pages_site.py); here we generate the same bucket on demand so
+            # the static client sees an identical map without a site build.
+            m = re.fullmatch(r'la_entity_giving_shard_(\d+)\.json\.gz', name)
+            if m:
+                shard = int(m.group(1))
+                body = _build_giving_shard_gz(shard) if shard < GIVING_SHARDS else gzip.compress(b'{}')
+                self.send_response(200)
+                self._cors_headers()
+                self.send_header('Content-Type', 'application/gzip')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             fpath = None
             for base in (CACHE_DIR, BASE_DIR):
                 cand = os.path.join(base, name)

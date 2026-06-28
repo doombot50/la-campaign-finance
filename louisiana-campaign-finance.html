@@ -954,6 +954,22 @@
   .race-office-sub { font-size:11px; color:var(--muted); margin-top:1px; }
   .race-outcome { flex-shrink:0; text-align:right; }
 
+  /* ── Lifetime giving/receiving edge lists (Career tab) ──────── */
+  .edge-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; }
+  .edge-hdr { font-size:11px; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.5px; font-weight:600; margin-bottom:2px; }
+  .edge-sub { font-size:11px; color:var(--text); margin-bottom:8px; }
+  .edge-row { display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    padding:5px 6px; margin:0 -6px; border-bottom:1px solid var(--border);
+    text-decoration:none; color:inherit; border-radius:6px; transition:background .12s; }
+  .edge-row:last-child { border-bottom:none; }
+  .edge-row:hover { background:#f7faf9; }
+  .edge-name { font-size:12.5px; color:var(--text); line-height:1.3;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .edge-amt { font-size:12px; color:var(--text); flex-shrink:0; font-variant-numeric:tabular-nums; }
+  .edge-n { color:var(--muted); }
+  .edge-empty { font-size:12px; color:var(--muted); padding:6px 0; }
+
   /* ── Win/loss election-result badge ─────────────────────────── */
   /* Lives inside the header — no separate background/border zone */
   .camp-election { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
@@ -2577,6 +2593,7 @@ async function apiFetch(pathAndQuery) {
       case '/api/candidate-history':  data = await StaticAPI.candidateHistory(p.get('name') || '', p.get('filer') || ''); break;
       case '/api/coh':                data = await StaticAPI.coh(p.get('name') || ''); break;
       case '/api/entity':             data = await StaticAPI.entity({ name: p.get('name'), filer: p.get('filer') }); break;
+      case '/api/entity-profile':     data = await StaticAPI.entityProfile(p.get('filer') || '', p.get('name') || ''); break;
       default: return { ok: false, status: 404, json: async () => ({}) };
     }
     return { ok: true, status: 200, json: async () => data };
@@ -8058,9 +8075,12 @@ function campSwitchTab(tab) {
 // ── Career tab ────────────────────────────────────────────────────────────────
 let _careerData = null;   // cached for the current profile
 let _careerChart = null;
+let _entityProfile = null;   // /api/entity-profile — lifetime giving + receiving edge lists
 
 async function fetchCareerData(name) {
   _careerData = null;
+  _entityProfile = null;
+  _fetchEntityProfile(name);   // lifetime giving/receiving edge lists, in parallel
   // Reset the always-visible certified COH slot so the previous profile's
   // number never lingers while this one loads.
   const _cohEl = document.getElementById('camp-coh');
@@ -8177,13 +8197,73 @@ async function fetchCareerData(name) {
   } catch(e) {}
 }
 
+// Lifetime giving + receiving edge lists — served row-free by /api/entity-profile
+// (per-filer receiving, name-keyed giving). An enhancement layered on the Career
+// tab: silent if the artifacts aren't deployed yet.
+async function _fetchEntityProfile(name) {
+  try {
+    const _filerQ = _campFiler ? `&filer=${encodeURIComponent(_campFiler)}` : '';
+    const r = await apiFetch(`/api/entity-profile?name=${encodeURIComponent(name)}${_filerQ}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    if (name !== _campName) return;   // user navigated away before this resolved
+    _entityProfile = data;
+    if (_campTab === 'career') renderCampEdges();
+  } catch (e) { /* edge lists are optional — never block the profile */ }
+}
+
+function _edgePanel(title, sub, rows, kind) {
+  const list = (rows || []).slice(0, 10).map(r => {
+    const nm  = r.name || (kind === 'recipient' && r.filer ? `Filer ${r.filer}` : '(unnamed)');
+    const own = (kind === 'recipient' && r.filer && r.filer === _campFiler)
+      ? ` <span style="font-size:9px;color:var(--muted)">own committee</span>` : '';
+    const gifts = r.n ? `<span class="edge-n"> · ${r.n} gift${r.n === 1 ? '' : 's'}</span>` : '';
+    const href  = `#/campaign/${encodeURIComponent(nm)}`;
+    return `<a class="edge-row" href="${href}" title="Open ${escHtml(nm)}">
+      <span class="edge-name">${escHtml(nm)}${own}</span>
+      <span class="edge-amt">${formatMoney(r.amount)}${gifts}</span>
+    </a>`;
+  }).join('');
+  return `<div class="edge-panel">
+    <div class="edge-hdr">${escHtml(title)}</div>
+    <div class="edge-sub">${escHtml(sub)}</div>
+    ${list || '<div class="edge-empty">No records</div>'}
+  </div>`;
+}
+
+function renderCampEdges() {
+  const el = document.getElementById('camp-career-edges');
+  if (!el) return;
+  const p = _entityProfile || {};
+  const recv = p.receiving, give = p.giving;
+  if (!recv && !give) { el.innerHTML = ''; return; }
+  const panels = [];
+  if (recv) {
+    const span = (recv.first && recv.last) ? ` · ${recv.first.slice(0,4)}–${recv.last.slice(0,4)}` : '';
+    panels.push(_edgePanel('Top lifetime donors',
+      `${formatMoney(recv.total_raised)} from ${(recv.n_donors||0).toLocaleString()} donor${recv.n_donors===1?'':'s'}${span}`,
+      recv.top_donors, 'donor'));
+  }
+  if (give) {
+    panels.push(_edgePanel('Where they gave (lifetime)',
+      `${formatMoney(give.total_given)} to ${(give.n_recipients||0).toLocaleString()} recipient${give.n_recipients===1?'':'s'}`,
+      give.top_recipients, 'recipient'));
+  }
+  el.innerHTML = `<div class="edge-grid">${panels.join('')}</div>`;
+}
+
 function renderCampCareer() {
   if (!window.Chart) { ensureChart().then(renderCampCareer); return; }
+  renderCampEdges();   // lifetime giving/receiving — independent of cycle/race data
   const empty    = document.getElementById('camp-career-empty');
   const racesEl  = document.getElementById('camp-career-races');
   const racesHdr = document.getElementById('camp-career-races-hdr');
   if (!_careerData || (!_careerData.races?.length && !Object.keys(_careerData.financial?.cycles||{}).length)) {
-    empty.style.display = ''; racesEl.innerHTML = '';
+    // A pure donor (gives but never ran / raised) has edge lists but no career —
+    // show those instead of the generic "no data" message.
+    const hasEdges = _entityProfile && (_entityProfile.receiving || _entityProfile.giving);
+    empty.style.display = hasEdges ? 'none' : '';
+    racesEl.innerHTML = '';
     if (racesHdr) racesHdr.style.display = 'none';
     return;
   }
@@ -9719,6 +9799,8 @@ async function _ovOpenElection(year) {
       <div id="camp-content-career" style="display:none;padding:16px 20px">
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Fundraising by Election Cycle</div>
         <div style="position:relative;height:180px;margin-bottom:20px"><canvas id="camp-career-chart"></canvas></div>
+        <!-- Lifetime giving + receiving edge lists (row-free, from /api/entity-profile) -->
+        <div id="camp-career-edges" style="margin-bottom:20px"></div>
         <div id="camp-career-races-hdr" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Election History</div>
         <div id="camp-career-races"></div>
         <div id="camp-career-empty" style="display:none;color:var(--muted);font-size:13px;padding:20px 0;text-align:center">No career data available.</div>

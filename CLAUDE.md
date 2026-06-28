@@ -28,6 +28,7 @@ These rebuild the static `.json`/`.json.gz` artifacts committed to the repo. Run
 ```bash
 python3 refresh_la_cache.py          # re-download current cycle from ethics.la.gov
 python3 build_candidate_index.py     # per-candidate career totals + monthly buckets (also emits la_filer_index.json.gz, the filer-keyed twin)
+python3 build_entity_profiles.py     # per-entity LIFETIME edge lists: top donors-in (by filer) + recipients-out (by donor name)
 python3 build_filer_lookup.py        # name → filer_number index
 python3 build_entities.py            # canonical entity table (run after refresh)
 python3 build_insights.py            # precomputed war chests, top donors (run after entities)
@@ -65,7 +66,9 @@ la_ethics_server.py  (ThreadingHTTPServer, stdlib only)
     │
     ├── .la_cache/                       per-year NDJSON.gz — lazy-downloaded from ethics.la.gov
     │   ├── la_entities.json.gz          canonical filer table (built offline, ships via data-cache release)
-    │   └── la_insights.json.gz          precomputed aggregates (built offline, ships via data-cache release)
+    │   ├── la_insights.json.gz          precomputed aggregates (built offline, ships via data-cache release)
+    │   ├── la_entity_donors.json.gz     per-filer receiving edge lists (top donors-in), built offline; ships whole (~2 MB)
+    │   └── la_entity_giving.json.gz     name-keyed giving edge lists (top recipients-out), built offline; Pages ships this hash-sharded
     ├── la_candidate_index.json.gz       per-candidate career summaries, keyed by normalized name (committed)
     ├── la_filer_index.json.gz           same career summaries keyed by filerNumber — exact identity, no name-collision merges (ships via data-cache release)
     ├── la_candidacies_raw.json.gz       SoS ballot appearances (committed)
@@ -94,6 +97,17 @@ All candidate lookup across datasets (contributions CSV, SoS candidacies, ethics
 
 Remaining edge: surfaces with no filer number — a shared bare-name `#/campaign/<name>` link, the Compare tab, and the profile's in-cycle transaction *lists* (still name-matched) — fall back to the name-keyed merge.
 
+### Per-Entity Lifetime Edge Lists (`/api/entity-profile`)
+
+The profile's lifetime **giving** and **receiving** lists used to require loading every cycle's rows into the browser. `build_entity_profiles.py` precomputes them in one pass over `contributions_yr*.json.gz`:
+
+- `la_entity_donors.json.gz` — `filerNumber` → receiving side (`top_donors`, `total_raised`, donor count, date span). Keyed by exact filer.
+- `la_entity_giving.json.gz` — `_norm_name(donor)` → giving side (`top_recipients` with their filer link, `total_given`). Name-keyed, because donors carry no filer on the row (same constraint as the [[project-la-pay-to-play]] tool).
+
+`build_entity_profile_payload(filer, name)` joins both into `{filer, name, receiving, giving}`. The Career tab fetches it in parallel (`_fetchEntityProfile` → `renderCampEdges`); a pure donor with no candidacy still shows their giving panel.
+
+**Pages sharding gotcha:** the giving map is ~22 MB, too big to ship whole, so `build_pages_site.py` hash-shards it into `GIVING_SHARDS` (128) buckets `la_entity_giving_shard_<n>.json.gz`; a donor profile fetches only its one bucket (~172 KB). The receiving map (~2 MB) ships whole. The **FNV-1a/32 shard function is replicated in three places that MUST stay identical** — `shard_of` (build_pages_site.py), `_giving_shard_of` (la_ethics_server.py), and `fnv1a` (static_api.js) — or a lookup misses its bucket. The server's `/data/la_entity_giving_shard_<n>.json.gz` route synthesizes a bucket on the fly so it emulates Pages for `test_static_client_parity.mjs` and `?static=1`. Both parity gates cover `/api/entity-profile`.
+
 ### Browser SPA (louisiana-campaign-finance.html)
 
 ~7,500 lines of vanilla HTML/CSS/JS — no framework, no bundler. Key subsystems all in one file:
@@ -120,6 +134,7 @@ The Net Cash Flow chart shows `contributions − expenditures`, not actual cash 
 | `/api/overview` | Precomputed party totals, top donors, monthly flow |
 | `/api/insights` | War chests, transfers, party totals |
 | `/api/entity` | Canonical entity record by name or filer_number |
+| `/api/entity-profile` | Lifetime giving + receiving edge lists for one entity (`receiving` by filer, `giving` by name); row-free |
 | `/api/coh` | Certified COH lookup |
 | `/api/races` | Elections grouped by (date, office) |
 | `/api/industry-breakdown` | Donor industry breakdown per filer |
