@@ -26,6 +26,8 @@ import socket
 import subprocess
 import sys
 import time
+import re
+import urllib.parse
 import urllib.request
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -154,6 +156,37 @@ def main():
             live = get(port, f'/api/industry-breakdown?filer={fn}&cycle={cyc}')
             d = diff_summary(live['breakdown'], by_cycle[cyc], f'industry[{fn}/{cyc}]')
             check(f'/api/industry-breakdown filer={fn} cycle={cyc}', d is None, d or '')
+
+        # ── entity-profile (lifetime giving + receiving edge lists) ───────────
+        # Optional artifacts — skip cleanly if a cold checkout lacks them.
+        try:
+            donors = load_gz('la_entity_donors.json.gz')
+            giving = load_gz('la_entity_giving.json.gz')
+        except OSError:
+            donors = giving = None
+            check('/api/entity-profile (artifacts present)', True,
+                  'skipped — la_entity_{donors,giving} not built yet')
+        if donors and giving:
+            def _norm(n):
+                n = (n or '').upper()
+                n = re.sub(r'\b(DR|MR|MRS|MS|JR|SR|II|III|IV|ESQ|PHD|MD)\.?\b', '', n)
+                n = re.sub(r'[^A-Z\s]', ' ', n)
+                return ' '.join(n.split())
+            # 4 biggest receivers (both sides) + 3 biggest pure-donor givers
+            for fn, recv in sorted(donors.items(), key=lambda kv: -kv[1]['total_raised'])[:4]:
+                nm = recv['name']
+                live = get(port, f'/api/entity-profile?filer={fn}&name={urllib.parse.quote(nm)}')
+                expected = {'filer': fn, 'name': nm,
+                            'receiving': recv, 'giving': giving.get(_norm(nm))}
+                d = diff_summary(live, expected, f'entity-profile[{fn}]')
+                check(f'/api/entity-profile filer={fn} ({nm[:24]})', d is None, d or '')
+            for _, giv in sorted(giving.items(), key=lambda kv: -kv[1]['total_given'])[:3]:
+                nm = giv['name']
+                live = get(port, f'/api/entity-profile?name={urllib.parse.quote(nm)}')
+                expected = {'filer': '', 'name': nm,
+                            'receiving': None, 'giving': giving.get(_norm(nm))}
+                d = diff_summary(live, expected, f'entity-profile-give[{nm[:20]}]')
+                check(f'/api/entity-profile name={nm[:24]}', d is None, d or '')
 
     finally:
         proc.terminate()

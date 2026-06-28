@@ -124,6 +124,36 @@
     return {};
   }
 
+  // ── /api/entity-profile — lifetime giving + receiving edge lists ─────────
+  // Receiving ships whole (small); giving is hash-sharded by build_pages_site.py
+  // into GIVING_SHARDS buckets — fetch only the one the donor name lands in.
+  // FNV-1a/32 here MUST match the Python shard_of() in build_pages_site.py.
+  const GIVING_SHARDS = 128;
+  function fnv1a(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h >>> 0;
+  }
+  async function entityProfile(filer, name) {
+    filer = (filer || '').trim();
+    name  = (name || '').trim();
+    const norm = normName(name);
+    let receiving = null, giving = null;
+    if (filer) {
+      const donors = await fetchJSON('la_entity_donors.json.gz').catch(() => ({}));
+      receiving = donors[filer] || null;
+    }
+    if (norm) {
+      const shard = fnv1a(norm) % GIVING_SHARDS;
+      const bucket = await fetchJSON(`la_entity_giving_shard_${shard}.json.gz`).catch(() => ({}));
+      giving = bucket[norm] || null;
+    }
+    return { filer, name, receiving, giving };
+  }
+
   // ── /api/races (client-side office/year filtering over the full dump) ────
   const OFFICE_GROUPS = {
     major:    new Set(['governor', 'statewide', 'lt_governor']),
@@ -350,9 +380,9 @@
 
   global.StaticAPI = {
     search, overview, insights, electionResults, entity, races,
-    industryBreakdown, coh,
+    industryBreakdown, coh, entityProfile,
     candidateHistory: _candidateHistoryExact,
     streamRecordLines, records,
-    _internals: { normName, wsNorm, fetchJSON },
+    _internals: { normName, wsNorm, fetchJSON, fnv1a },
   };
 })(typeof window !== 'undefined' ? window : globalThis);

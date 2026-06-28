@@ -108,6 +108,17 @@ try {
     check(`industry-breakdown filer=${fn} cycle=${cyc}`, !d, d);
   }
 
+  // entity-profile: lifetime giving + receiving edge lists. The giving side is
+  // fetched from a hash-sharded bucket, so this also gates the JS FNV-1a vs the
+  // server's _giving_shard_of. Covers both-sides, pure-donor, and an empty side.
+  for (const [fn, nm] of [['3819', 'IBEW PAC'], ['1144', 'John Bel Edwards'],
+                          ['', 'Edward L Rispone'], ['', 'Democratic Governors Association']]) {
+    const live = await getJSON(`/api/entity-profile?filer=${fn}&name=${encodeURIComponent(nm)}`);
+    const mine = await S.entityProfile(fn, nm);
+    const d = diff(live, mine, `entity-profile[${fn}|${nm}]`);
+    check(`entity-profile filer=${fn || '∅'} name=${nm}`, !d, d);
+  }
+
   // coh single + batch
   {
     const d1 = diff(await getJSON('/api/coh?name=JEFF%20LANDRY'), await S.coh('JEFF LANDRY'), 'coh[name]');
