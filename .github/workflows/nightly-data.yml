@@ -93,6 +93,13 @@ jobs:
         # map for Pages. Needs only the refreshed contributions_yr*.json.gz.
         run: python build_entity_profiles.py
 
+      - name: Reshard transactions by filer (full activity)
+        # Per-filer itemized contributions/expenditures/loans (capped most-recent)
+        # so a committee's complete history loads as one fetch. Output
+        # .la_cache/la_entity_activity.json.gz ships via the upload glob;
+        # build_pages_site.py explodes it into per-filer files for Pages.
+        run: python build_entity_activity.py
+
       - name: Resolve donor identities
         # Conservative A+B+C clustering (punctuation/initial/nickname within
         # same surname+suffix+ZIP; orgs by name) so the donor leaderboard isn't

@@ -154,6 +154,18 @@
     return { filer, name, receiving, giving };
   }
 
+  // ── /api/entity-activity — one filer's full itemized activity ─────────────
+  // Pages ships this resharded per filer (build_pages_site.py explodes the
+  // canonical map into activity/<filer>.json.gz); the live server slices its
+  // in-memory map. A missing file degrades to the empty shell the server returns.
+  const _EMPTY_ACT = { c: [], e: [], l: [], nc: 0, ne: 0, nl: 0, cap: 0 };
+  async function entityActivity(filer) {
+    filer = (filer || '').trim();
+    if (!filer) return _EMPTY_ACT;
+    const b = await fetchJSON(`activity/${filer}.json.gz`).catch(() => null);
+    return b || _EMPTY_ACT;
+  }
+
   // ── /api/races (client-side office/year filtering over the full dump) ────
   const OFFICE_GROUPS = {
     major:    new Set(['governor', 'statewide', 'lt_governor']),
@@ -380,7 +392,7 @@
 
   global.StaticAPI = {
     search, overview, insights, electionResults, entity, races,
-    industryBreakdown, coh, entityProfile,
+    industryBreakdown, coh, entityProfile, entityActivity,
     candidateHistory: _candidateHistoryExact,
     streamRecordLines, records,
     _internals: { normName, wsNorm, fetchJSON, fnv1a },

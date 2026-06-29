@@ -39,6 +39,7 @@ SITE = os.path.join(BASE, '_site')
 # MUST stay identical to fnv1a() in static_api.js or lookups miss their bucket.
 GIVING_SHARDS = 128
 GIVING_SRC = 'la_entity_giving.json.gz'   # sharded below; not bulk-copied whole
+ACTIVITY_SRC = 'la_entity_activity.json.gz'  # exploded per-filer below; not whole
 
 def shard_of(s, n):
     h = 2166136261
@@ -68,6 +69,7 @@ OPTIONAL_ARTIFACTS = [
     # first nightly after introduction — the profile degrades to row-based lists.
     'la_entity_donors.json.gz',
     GIVING_SRC,
+    ACTIVITY_SRC,
 ]
 # Committed repo-root files the layer also reads
 REQUIRED_ROOT = [
@@ -165,9 +167,10 @@ def main():
     open(os.path.join(SITE, 'CNAME'), 'w').write('finance.charliestephens.xyz')
 
     n = 0
+    _explode = {GIVING_SRC, ACTIVITY_SRC}   # resharded below, not shipped whole
     for path in sorted(glob.glob(os.path.join(CACHE, '*.json.gz'))):
-        if os.path.basename(path) == GIVING_SRC:
-            continue   # sharded below instead of shipped whole
+        if os.path.basename(path) in _explode:
+            continue
         shutil.copy2(path, data_dir)
         n += 1
     for name in REQUIRED_ROOT:
@@ -190,6 +193,23 @@ def main():
         print(f'  sharded {GIVING_SRC} ({len(giving):,} donors) into {GIVING_SHARDS} buckets')
     else:
         print(f'  note: {GIVING_SRC} absent — entity-profile giving side empty on Pages')
+
+    # ── explode the per-entity activity map into one file per filer ───────────
+    # StaticAPI.entityActivity fetches activity/<filer>.json.gz — exactly one
+    # entity's full itemized history, so a profile never downloads the 29 MB map.
+    activity_src = os.path.join(CACHE, ACTIVITY_SRC)
+    if os.path.exists(activity_src):
+        with gzip.open(activity_src, 'rt', encoding='utf-8') as f:
+            activity = json.load(f)
+        act_dir = os.path.join(data_dir, 'activity')
+        os.makedirs(act_dir)
+        for filer, bundle in activity.items():
+            with gzip.open(os.path.join(act_dir, f'{filer}.json.gz'), 'wt', encoding='utf-8') as f:
+                json.dump(bundle, f, separators=(',', ':'), ensure_ascii=False)
+        n += len(activity)
+        print(f'  exploded {ACTIVITY_SRC} into {len(activity):,} per-filer activity files')
+    else:
+        print(f'  note: {ACTIVITY_SRC} absent — full-activity tabs fall back to loaded cycles on Pages')
 
     total_mb = sum(os.path.getsize(os.path.join(dp, f))
                    for dp, _, fs in os.walk(SITE) for f in fs) / 1e6

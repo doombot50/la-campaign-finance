@@ -970,6 +970,11 @@
   .edge-n { color:var(--muted); }
   .edge-empty { font-size:12px; color:var(--muted); padding:6px 0; }
 
+  /* Full-activity banner row atop a profile transaction table */
+  .camp-act-banner-row td { background:var(--accent-bg); color:var(--text-2);
+    font-size:11px; padding:6px 10px !important; border-bottom:1px solid var(--accent-border); }
+  .camp-act-banner-row strong { color:var(--accent); }
+
   /* ── Win/loss election-result badge ─────────────────────────── */
   /* Lives inside the header — no separate background/border zone */
   .camp-election { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
@@ -2594,6 +2599,7 @@ async function apiFetch(pathAndQuery) {
       case '/api/coh':                data = await StaticAPI.coh(p.get('name') || ''); break;
       case '/api/entity':             data = await StaticAPI.entity({ name: p.get('name'), filer: p.get('filer') }); break;
       case '/api/entity-profile':     data = await StaticAPI.entityProfile(p.get('filer') || '', p.get('name') || ''); break;
+      case '/api/entity-activity':    data = await StaticAPI.entityActivity(p.get('filer') || ''); break;
       default: return { ok: false, status: 404, json: async () => ({}) };
     }
     return { ok: true, status: 200, json: async () => data };
@@ -7349,6 +7355,59 @@ let _campTab     = 'contribs';
 let _campContribs = [], _campExps = [], _campLoans = [];
 let _campCohReports = [];   // certified annual reports (newest first) for the verify picker
 
+// ── FULL ACTIVITY: a committee's complete itemized history across all cycles ──
+// Resharded by filer (/api/entity-activity), so the profile's transaction tabs
+// span every cycle without loading any cycle's rows. Lists are capped to the
+// most-recent _campActivity.cap; totals (nc/ne/nl) are exact for the "N of M"
+// banner. Falls back to the loaded-cycle lists when no filer / not yet loaded.
+let _campActivity = null;
+const _mapActC = r => ({ date: r.d, contributor: r.c, amount: r.a || 0, party: r.p,
+  contributorZip: r.z, parish: r.pa, contributorState: r.s,
+  donorType: (typeof detectDonorType === 'function' ? detectDonorType(r.c || '') : '') });
+const _mapActE = r => ({ date: r.d, contributor: r.r, amount: r.a || 0,
+  description: r.de, parish: r.pa, recipientState: r.s });
+const _mapActL = r => ({ date: r.d, contributor: r.l, amount: r.a || 0,
+  rate: r.rt, parish: r.pa, lenderState: r.s });
+
+// Row source for a profile transaction tab: full-activity (all cycles) when the
+// bundle is loaded, otherwise the loaded-cycle lists. Returns {rows, full, total, cap}.
+function _campRows(kind) {
+  const a = _campActivity;
+  if (a) {
+    if (kind === 'c') return { rows: a.c.map(_mapActC), full: true, total: a.nc, cap: a.cap };
+    if (kind === 'e') return { rows: a.e.map(_mapActE), full: true, total: a.ne, cap: a.cap };
+    return { rows: a.l.map(_mapActL), full: true, total: a.nl, cap: a.cap };
+  }
+  return { rows: kind === 'c' ? _campContribs : kind === 'e' ? _campExps : _campLoans, full: false };
+}
+// Banner row atop a transaction table when showing full activity. Discloses the
+// cap when the entity has more records than were kept. Returned as a <tr> so it
+// drops into the existing tbody with no markup changes.
+function _campActivityBannerRow(kind, colspan) {
+  const a = _campActivity;
+  if (!a) return '';
+  const total = kind === 'c' ? a.nc : kind === 'e' ? a.ne : a.nl;
+  if (!total) return '';
+  const shown = Math.min(total, a.cap || total);
+  const more = total > shown
+    ? `most recent ${shown.toLocaleString()} of ${total.toLocaleString()} · lifetime totals shown above; full record on ethics.la.gov`
+    : `all ${total.toLocaleString()} across every cycle`;
+  return `<tr class="camp-act-banner-row"><td colspan="${colspan}"><strong>Lifetime</strong> · ${more}</td></tr>`;
+}
+
+async function _fetchCampActivity(filer) {
+  if (!filer) return;   // activity is filer-keyed; bare-name profiles keep cycle view
+  try {
+    const r = await apiFetch(`/api/entity-activity?filer=${encodeURIComponent(filer)}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    if (filer !== _campFiler) return;        // user navigated away before this resolved
+    if (!data || (!data.nc && !data.ne && !data.nl)) return;   // nothing to show
+    _campActivity = data;
+    if (['contribs', 'exps', 'loans'].includes(_campTab)) campSwitchTab(_campTab);
+  } catch (e) { /* full activity is an enhancement — keep the cycle view on failure */ }
+}
+
 // ============================================================
 // ELECTION RESULTS (win/loss badges)
 // ============================================================
@@ -7446,6 +7505,8 @@ function showCampaignProfile(name, openTab, filer) {
   // Exact filer identity (from a search result / entity) disambiguates two
   // people who share a normalized name; omitted callers fall back to name join.
   _campFiler    = filer || '';
+  _campActivity = null;
+  _fetchCampActivity(_campFiler);   // full itemized history across all cycles, in parallel
   const _cm     = _campaignMatch(name, _campFiler);   // filer-exact when known, else normalized-name join
   _campContribs = allData.filter(_cm)
                     .sort((a,b) => b.date.localeCompare(a.date));
@@ -8012,16 +8073,18 @@ function campSwitchTab(tab) {
 
   const empty = document.getElementById('camp-empty');
   if (tab === 'contribs') {
-    // Cycle data still loading: show a loading row, not a false "no records".
-    // loadData() refreshes this tab when the contributions arrive.
-    if (allData.length === 0) {
+    const src = _campRows('c');
+    // Cycle data still loading (and no full-activity bundle): show a loading row,
+    // not a false "no records". loadData()/​_fetchCampActivity refresh this tab.
+    if (!src.full && allData.length === 0) {
       empty.style.display = 'none';
       document.getElementById('camp-tbody-contribs').innerHTML =
         '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Loading contribution data…</td></tr>';
       return;
     }
-    empty.style.display = _campContribs.length ? 'none' : '';
-    document.getElementById('camp-tbody-contribs').innerHTML = _campContribs.map(d => `
+    empty.style.display = src.rows.length ? 'none' : '';
+    document.getElementById('camp-tbody-contribs').innerHTML =
+      _campActivityBannerRow('c', 7) + src.rows.map(d => `
       <tr>
         <td data-label="Date">${d.date||'—'}</td>
         <td data-label="Donor">${d.isTransfer ? '<span class="party-badge transfer" data-taptip onclick="_tapTip(this,event)" title="Committee-to-committee transfer — excluded from headline totals">Transfer</span> ' : ''}${escHtml(d.contributor||'—')}</td>
@@ -8032,15 +8095,18 @@ function campSwitchTab(tab) {
         <td data-label="Notes" style="font-size:11px;color:var(--muted);max-width:180px">${escHtml((d.notes||'').slice(0,80))}${filingLinkInline(d)}</td>
       </tr>`).join('');
   } else if (tab === 'exps') {
-    // If expenditure data hasn't been loaded yet, trigger a load and show a message
-    if (expData.length === 0) {
+    const src = _campRows('e');
+    // Without a full-activity bundle, fall back to the loaded-cycle expenditures
+    // (triggering a load if needed).
+    if (!src.full && expData.length === 0) {
       empty.style.display = 'none';
       document.getElementById('camp-tbody-exps').innerHTML =
         '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Loading expenditure data…</td></tr>';
       loadExpData();  // will refresh the modal tab once complete
     } else {
-      empty.style.display = _campExps.length ? 'none' : '';
-      document.getElementById('camp-tbody-exps').innerHTML = _campExps.map(d => `
+      empty.style.display = src.rows.length ? 'none' : '';
+      document.getElementById('camp-tbody-exps').innerHTML =
+        _campActivityBannerRow('e', 6) + src.rows.map(d => `
         <tr>
           <td data-label="Date">${d.date||'—'}</td>
           <td data-label="Recipient">${escHtml(d.contributor||'—')}</td>
@@ -8052,14 +8118,16 @@ function campSwitchTab(tab) {
     }
   } else {
     // Loans tab
-    if (loanData.length === 0) {
+    const src = _campRows('l');
+    if (!src.full && loanData.length === 0) {
       empty.style.display = 'none';
       document.getElementById('camp-tbody-loans').innerHTML =
         '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Loading loan data…</td></tr>';
       loadLoanData();  // will refresh the modal tab once complete
     } else {
-    empty.style.display = _campLoans.length ? 'none' : '';
-    document.getElementById('camp-tbody-loans').innerHTML = _campLoans.map(d => `
+    empty.style.display = src.rows.length ? 'none' : '';
+    document.getElementById('camp-tbody-loans').innerHTML =
+      _campActivityBannerRow('l', 6) + src.rows.map(d => `
       <tr>
         <td data-label="Date">${d.date||'—'}</td>
         <td data-label="Lender">${escHtml(d.contributor||'—')}${d._isSelf?' <span style="font-size:10px;color:var(--gold);font-weight:600">SELF</span>':''}</td>
