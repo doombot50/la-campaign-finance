@@ -100,6 +100,12 @@ jobs:
         # build_pages_site.py explodes it into per-filer files for Pages.
         run: python build_entity_activity.py
 
+      - name: Build per-cycle aggregates (instant first paint)
+        # Tiny additive sums per cycle (stat cards + party/industry breakdowns)
+        # the dashboard sums client-side to paint instantly before rows stream.
+        # Runs after retag so isTransfer + industry are baked on the rows.
+        run: python build_cycle_aggregates.py
+
       - name: Resolve donor identities
         # Conservative A+B+C clustering (punctuation/initial/nickname within
         # same surname+suffix+ZIP; orgs by name) so the donor leaderboard isn't

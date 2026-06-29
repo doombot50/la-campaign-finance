@@ -104,6 +104,7 @@
   // ── /api/overview · /api/insights · /api/election-results · /api/entity ──
   const overview        = () => fetchJSON('la_overview.json.gz');
   const insights        = () => fetchJSON('la_insights.json.gz');
+  const cycleAggregates = () => fetchJSON('la_cycle_agg.json.gz');
   const electionResults = () => fetchJSON('la_election_results.json');
 
   async function entity({ name, filer } = {}) {
@@ -391,7 +392,7 @@
   }
 
   global.StaticAPI = {
-    search, overview, insights, electionResults, entity, races,
+    search, overview, insights, cycleAggregates, electionResults, entity, races,
     industryBreakdown, coh, entityProfile, entityActivity,
     candidateHistory: _candidateHistoryExact,
     streamRecordLines, records,

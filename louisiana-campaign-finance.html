@@ -2592,6 +2592,7 @@ async function apiFetch(pathAndQuery) {
       case '/api/search':             data = await StaticAPI.search(p.get('q') || ''); break;
       case '/api/overview':           data = await StaticAPI.overview(); break;
       case '/api/insights':           data = await StaticAPI.insights(); break;
+      case '/api/cycle-aggregates':   data = await StaticAPI.cycleAggregates(); break;
       case '/api/election-results':   data = await StaticAPI.electionResults(); break;
       case '/api/races':              data = await StaticAPI.races(p.get('office'), p.get('year')); break;
       case '/api/industry-breakdown': data = await StaticAPI.industryBreakdown(p.get('filer'), p.get('cycle') || ''); break;
@@ -3024,6 +3025,77 @@ function _cycleBuckets() {
     keyOf: d => (d.date || '').slice(0, 4), span: `${minY}–${maxY}` };
 }
 
+// ── Instant first paint from per-cycle aggregates (Phase 2) ─────────────────
+// Tiny precomputed map (cycle -> additive sums). On cycle selection we sum the
+// selected cycles and paint the stat cards + party/industry breakdowns instantly
+// — before any rows stream — then renderAll() (from rows) takes over once loaded,
+// which is also what enables filtering and the table.
+let _cycleAggCache = null;
+async function _ensureCycleAgg() {
+  if (_cycleAggCache) return _cycleAggCache;
+  try {
+    const r = await apiFetch('/api/cycle-aggregates');
+    if (r.ok) _cycleAggCache = await r.json();
+  } catch (e) { /* preview is optional — silent */ }
+  return _cycleAggCache;
+}
+function _sumCycleAgg(cycles) {
+  if (!_cycleAggCache) return null;
+  const s = { gross:0, xfer:0, xfer_n:0, n:0, oos:0, by_parish:{}, by_party:{}, by_industry:{} };
+  let any = false;
+  for (const c of cycles) {
+    const a = _cycleAggCache[c];
+    if (!a) continue;
+    any = true;
+    s.gross += a.gross; s.xfer += a.xfer; s.xfer_n += a.xfer_n; s.n += a.n; s.oos += a.oos;
+    for (const [k,v] of Object.entries(a.by_parish))   s.by_parish[k]   = (s.by_parish[k]||0)+v;
+    for (const [k,v] of Object.entries(a.by_party))    s.by_party[k]    = (s.by_party[k]||0)+v;
+    for (const [k,v] of Object.entries(a.by_industry)) s.by_industry[k] = (s.by_industry[k]||0)+v;
+  }
+  return any ? s : null;
+}
+// Any active Money-In filter means the unfiltered aggregate would be wrong, so
+// the preview is skipped and the view waits for filtered rows.
+function _contribFiltersActive() {
+  if (_industryFilter) return true;
+  for (const [id, def] of [['party-select','ALL'],['parish-select','ALL'],['origin-select','ALL']])
+    if (document.getElementById(id)?.value !== def) return true;
+  if (parseFloat(document.getElementById('amt-min')?.value) > 0) return true;
+  if ((document.getElementById('amt-max')?.value || '').trim()) return true;
+  for (const id of ['candidate-search','donor-search','zip-search','notes-search'])
+    if ((document.getElementById(id)?.value || '').trim()) return true;
+  if (document.getElementById('btn-excl-ff')?.classList.contains('active')) return true;
+  if (document.getElementById('btn-only-transfers')?.classList.contains('active')) return true;
+  return false;
+}
+function _renderStatsFromAgg(s) {
+  const total = s.gross - s.xfer, count = s.n, avg = count ? s.gross / count : 0;
+  countUp(document.getElementById('stat-total'), total, formatMoney);
+  countUp(document.getElementById('stat-count'), count, v => Math.round(v).toLocaleString());
+  countUp(document.getElementById('stat-avg'),   avg,   formatMoney);
+  countUp(document.getElementById('stat-oos-total'), s.oos, formatMoney);
+  const topParish = Object.entries(s.by_parish).sort((a,b) => b[1]-a[1])[0];
+  document.getElementById('stat-top-parish').textContent = topParish ? topParish[0] : '—';
+  document.getElementById('stat-top-parish-sub').textContent = topParish ? formatMoney(topParish[1]) : 'No data';
+  const oosPct = s.gross ? ((s.oos / s.gross) * 100).toFixed(1) : '0.0';
+  document.getElementById('stat-oos-sub').textContent = `${oosPct}% of total raised`;
+  const subEl = document.getElementById('stat-total-sub');
+  if (subEl) { subEl.textContent = `${_cyclesLabel()} · ${count.toLocaleString()} records · loading…`; subEl.title=''; subEl.style.cursor=''; }
+}
+async function _renderCycleAggPreview() {
+  // Only meaningful before rows arrive, on the Money In tab, with no filters.
+  if (_isMoneyOut && _isMoneyOut()) return;
+  if (allData.length > 0) return;          // rows present → renderAll owns the view
+  if (_contribFiltersActive()) return;
+  await _ensureCycleAgg();
+  if (allData.length > 0) return;          // rows arrived while fetching
+  const s = _sumCycleAgg(getSelectedCycles());
+  if (!s) return;
+  _renderStatsFromAgg(s);
+  renderPartyChart(s.by_party);
+  renderDonorTypeChart(s.by_industry);
+}
+
 function updateLoadBtn() {
   const btn = document.getElementById('btn-load');
   const key = getSelectedCycles().join(',');
@@ -3164,6 +3236,7 @@ async function loadData() {
   updateEmptyState();   // hide empty-state splash while loading
   setStatus('loading');
   showMapSpinner(true);
+  _renderCycleAggPreview();   // instant stat cards + breakdowns from per-cycle aggregates
 
   if (proxyAvailable) {
     // Single cycle keeps the original fast path untouched; several cycles stream
@@ -3928,14 +4001,20 @@ function getDomPartyLabel(dem, rep, oth) {
 // ============================================================
 // PARTY CHART
 // ============================================================
-function renderPartyChart() {
-  if (!window.Chart) { ensureChart().then(renderPartyChart); return; }
+function renderPartyChart(preTotals) {
+  if (!window.Chart) { ensureChart().then(() => renderPartyChart(preTotals)); return; }
+  // preTotals (from the per-cycle aggregate) lets this paint instantly before
+  // rows load; without it, tally the loaded rows as before.
   const totals = { DEM:0, REP:0, IND:0, LBT:0, GRN:0, OTH:0 };
-  filteredData.forEach(d => {
-    const p = d.party;
-    if (totals[p] !== undefined) totals[p] += d.amount;
-    else totals.OTH += d.amount;
-  });
+  if (preTotals) {
+    for (const [k, v] of Object.entries(preTotals)) totals[totals[k] !== undefined ? k : 'OTH'] += v;
+  } else {
+    filteredData.forEach(d => {
+      const p = d.party;
+      if (totals[p] !== undefined) totals[p] += d.amount;
+      else totals.OTH += d.amount;
+    });
+  }
 
   // Only render slices that actually have money, preserving the canonical order.
   const present = PARTY_SLICE_ORDER.filter(k => totals[k] > 0);
@@ -4011,15 +4090,20 @@ function clearIndustryFilter() {
   renderAll();
 }
 
-function renderDonorTypeChart() {
-  if (!window.Chart) { ensureChart().then(renderDonorTypeChart); return; }
-  // Tally by industry using ALL loaded data (not filteredData) so the chart
-  // always shows the full industry picture for context
-  const totals = {};
-  filteredData.forEach(d => {
-    const ind = _getIndustry(d);
-    totals[ind] = (totals[ind] || 0) + d.amount;
-  });
+function renderDonorTypeChart(preTotals) {
+  if (!window.Chart) { ensureChart().then(() => renderDonorTypeChart(preTotals)); return; }
+  // preTotals (per-cycle aggregate by_industry) paints instantly before rows
+  // load; otherwise tally industry over the loaded rows.
+  let totals;
+  if (preTotals) {
+    totals = { ...preTotals };
+  } else {
+    totals = {};
+    filteredData.forEach(d => {
+      const ind = _getIndustry(d);
+      totals[ind] = (totals[ind] || 0) + d.amount;
+    });
+  }
   const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0) || 1;
 
   // Sort by total descending, cap at top 10 for readability

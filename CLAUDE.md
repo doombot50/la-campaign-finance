@@ -30,6 +30,7 @@ python3 refresh_la_cache.py          # re-download current cycle from ethics.la.
 python3 build_candidate_index.py     # per-candidate career totals + monthly buckets (also emits la_filer_index.json.gz, the filer-keyed twin)
 python3 build_entity_profiles.py     # per-entity LIFETIME edge lists: top donors-in (by filer) + recipients-out (by donor name)
 python3 build_entity_activity.py     # reshard transactions BY FILER: per-committee full itemized history (capped), all cycles
+python3 build_cycle_aggregates.py    # per-cycle additive sums (stat cards + party/industry) for instant first paint (run after retag)
 python3 build_filer_lookup.py        # name → filer_number index
 python3 build_entities.py            # canonical entity table (run after refresh)
 python3 build_insights.py            # precomputed war chests, top donors (run after entities)
@@ -140,6 +141,7 @@ The Net Cash Flow chart shows `contributions − expenditures`, not actual cash 
 | `/api/search` | Ranked entity search (built once, hot-reloaded) |
 | `/api/overview` | Precomputed party totals, top donors, monthly flow |
 | `/api/insights` | War chests, transfers, party totals |
+| `/api/cycle-aggregates` | Per-cycle additive sums; summed client-side for instant stat-card + breakdown paint before rows stream |
 | `/api/entity` | Canonical entity record by name or filer_number |
 | `/api/entity-profile` | Lifetime giving + receiving edge lists for one entity (`receiving` by filer, `giving` by name); row-free |
 | `/api/entity-activity` | One filer's full itemized history (contributions/expenditures/loans, capped most-recent) across all cycles |

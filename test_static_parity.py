@@ -138,6 +138,17 @@ def main():
             d = diff_summary(live[k], art.get(k), f'overview.{k}')
             check(f'/api/overview · {k}', d is None, d or '')
 
+        # ── cycle aggregates (served verbatim, live == artifact) ───────────
+        try:
+            cyc_art = load_gz('la_cycle_agg.json.gz')
+        except OSError:
+            cyc_art = None
+            check('/api/cycle-aggregates (artifact present)', True, 'skipped — not built yet')
+        if cyc_art is not None:
+            live = get(port, '/api/cycle-aggregates')
+            d = diff_summary(live, cyc_art, 'cycle-aggregates')
+            check(f'/api/cycle-aggregates ({len(cyc_art)} cycles)', d is None, d or '')
+
         # ── search ────────────────────────────────────────────────────────
         entries = load_gz('la_search_index.json.gz')['entries']
         for q in ('landry', 'pac', 'broome', 'smith', 'xyzzy-no-match'):
