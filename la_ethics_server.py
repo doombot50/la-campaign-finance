@@ -149,6 +149,30 @@ def _load_insights():
         _INSIGHTS_MTIME = mtime
 
 
+# ── Per-cycle contribution aggregates (built nightly by build_cycle_aggregates) ─
+# Tiny map (cycle -> additive sums) the dashboard sums client-side for instant
+# stat-card + breakdown paint before rows stream. Served verbatim, so the live
+# endpoint and the static artifact can't drift.
+_CYCLE_AGG = None
+_CYCLE_AGG_MTIME = 0
+_CYCLE_AGG_LOCK  = threading.Lock()
+
+def _load_cycle_agg():
+    global _CYCLE_AGG, _CYCLE_AGG_MTIME
+    with _CYCLE_AGG_LOCK:
+        p = os.path.join(CACHE_DIR, 'la_cycle_agg.json.gz')
+        if not os.path.exists(p):
+            if _CYCLE_AGG is None:
+                _CYCLE_AGG = {}
+            return
+        mtime = os.path.getmtime(p)
+        if _CYCLE_AGG is not None and mtime <= _CYCLE_AGG_MTIME:
+            return
+        with gzip.open(p, 'rt', encoding='utf-8') as f:
+            _CYCLE_AGG = json.load(f)
+        _CYCLE_AGG_MTIME = mtime
+
+
 # ── Per-entity LIFETIME edge lists (built nightly by build_entity_profiles.py) ─
 # Two row-free maps the profile reads instead of scanning loaded cycle rows:
 #   _ENTITY_DONORS  filerNumber       -> receiving side {top_donors, total_raised, ...}
@@ -2011,6 +2035,12 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == '/api/insights':
             _load_insights()
             self._json(_INSIGHTS or {})
+            return
+
+        # ── /api/cycle-aggregates — per-cycle additive sums for instant paint ─
+        if parsed.path == '/api/cycle-aggregates':
+            _load_cycle_agg()
+            self._json(_CYCLE_AGG or {})
             return
 
         # ── /api/entity — canonical entity lookup by filer number or name ────

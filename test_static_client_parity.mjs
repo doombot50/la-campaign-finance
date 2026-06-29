@@ -72,6 +72,12 @@ try {
     check('overview', !d, d);
   }
 
+  // cycle aggregates (served verbatim — client mirror must equal the endpoint)
+  {
+    const d = diff(await getJSON('/api/cycle-aggregates'), await S.cycleAggregates(), 'cycle-aggregates');
+    check('cycle-aggregates', !d, d);
+  }
+
   // races: default (major), all, federal, filtered
   for (const qs of ['', '?office=all', '?office=federal', '?office=state&year=2023']) {
     const d = diff(await getJSON(`/api/races${qs}`),

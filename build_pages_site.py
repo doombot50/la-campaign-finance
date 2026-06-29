@@ -64,6 +64,7 @@ REQUIRED_ARTIFACTS = [
 # after it was introduced; until then candidateHistory falls back to name-keyed.
 OPTIONAL_ARTIFACTS = [
     'la_filer_index.json.gz',
+    'la_cycle_agg.json.gz',   # instant first-paint preview; ships via the glob
     # Per-entity lifetime edge lists (build_entity_profiles.py). Receiving ships
     # whole; giving ships as la_entity_giving_shard_*.json.gz. Absent until the
     # first nightly after introduction — the profile degrades to row-based lists.
