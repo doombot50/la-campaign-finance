@@ -188,6 +188,25 @@ def main():
                 d = diff_summary(live, expected, f'entity-profile-give[{nm[:20]}]')
                 check(f'/api/entity-profile name={nm[:24]}', d is None, d or '')
 
+        # ── entity-activity (per-filer resharded itemized history) ────────────
+        try:
+            activity = load_gz('la_entity_activity.json.gz')
+        except OSError:
+            activity = None
+            check('/api/entity-activity (artifact present)', True,
+                  'skipped — la_entity_activity not built yet')
+        if activity:
+            # busiest few filers + an unknown one (empty-shell path)
+            sample = sorted(activity.items(), key=lambda kv: -kv[1].get('nc', 0))[:4]
+            for fn, bundle in sample:
+                live = get(port, f'/api/entity-activity?filer={fn}')
+                d = diff_summary(live, bundle, f'entity-activity[{fn}]')
+                check(f'/api/entity-activity filer={fn} (nc={bundle.get("nc")})', d is None, d or '')
+            live = get(port, '/api/entity-activity?filer=000nonexistent')
+            empty = {'c': [], 'e': [], 'l': [], 'nc': 0, 'ne': 0, 'nl': 0, 'cap': 0}
+            d = diff_summary(live, empty, 'entity-activity[unknown]')
+            check('/api/entity-activity filer=unknown (empty shell)', d is None, d or '')
+
     finally:
         proc.terminate()
         try:

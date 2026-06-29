@@ -218,6 +218,38 @@ def _build_giving_shard_gz(shard):
                                     ensure_ascii=False).encode('utf-8'))
 
 
+# ── Per-entity FULL ACTIVITY (built nightly by build_entity_activity.py) ───────
+# Transactions resharded by filer so a committee's complete itemized activity is
+# one lookup instead of a scan over every cycle. Lists are capped (most-recent
+# CAP per category); totals (nc/ne/nl) are exact so the UI can say "N of M".
+_ENTITY_ACTIVITY = None
+_ENTITY_ACTIVITY_MTIME = 0
+_ENTITY_ACTIVITY_LOCK  = threading.Lock()
+
+def _load_entity_activity():
+    global _ENTITY_ACTIVITY, _ENTITY_ACTIVITY_MTIME
+    with _ENTITY_ACTIVITY_LOCK:
+        p = os.path.join(CACHE_DIR, 'la_entity_activity.json.gz')
+        if not os.path.exists(p):
+            if _ENTITY_ACTIVITY is None:
+                _ENTITY_ACTIVITY = {}
+            return
+        mtime = os.path.getmtime(p)
+        if _ENTITY_ACTIVITY is not None and mtime <= _ENTITY_ACTIVITY_MTIME:
+            return
+        with gzip.open(p, 'rt', encoding='utf-8') as f:
+            _ENTITY_ACTIVITY = json.load(f)
+        _ENTITY_ACTIVITY_MTIME = mtime
+
+def build_entity_activity_payload(filer=''):
+    """One filer's resharded itemized activity — payload of /api/entity-activity.
+    Returns the precomputed bundle ({c,e,l,nc,ne,nl,cap}) or an empty shell."""
+    _load_entity_activity()
+    filer = (filer or '').strip()
+    bundle = (_ENTITY_ACTIVITY.get(filer) if (filer and _ENTITY_ACTIVITY) else None)
+    return bundle or {'c': [], 'e': [], 'l': [], 'nc': 0, 'ne': 0, 'nl': 0, 'cap': 0}
+
+
 def _load_filer_lookup():
     global _FILER_NUM
     with _FILER_NUM_LOCK:
@@ -1999,6 +2031,14 @@ class Handler(BaseHTTPRequestHandler):
             self._json(build_entity_profile_payload(filer, name))
             return
 
+        # ── /api/entity-activity — one filer's full itemized activity ─────────
+        if parsed.path == '/api/entity-activity':
+            filer = params.get('filer', [''])[0].strip()
+            if not filer:
+                self._json({'error': 'filer required'}); return
+            self._json(build_entity_activity_payload(filer))
+            return
+
         # ── /api/coh — certified COH lookup for one or all filers ────────────
         if parsed.path == '/api/coh':
             _load_ethics_coh()
@@ -2077,6 +2117,21 @@ class Handler(BaseHTTPRequestHandler):
         # test_static_client_parity.mjs runs the shipped static_api.js against
         # these routes and asserts equality with the live /api/* endpoints.
         if parsed.path.startswith('/data/'):
+            # Synthetic per-filer activity: Pages explodes the activity map into
+            # data/activity/<filer>.json.gz; here we slice it on demand so the
+            # static client (and ?static=1) see identical bundles without a build.
+            am = re.fullmatch(r'/data/activity/(\d+)\.json\.gz', parsed.path)
+            if am:
+                bundle = build_entity_activity_payload(am.group(1))
+                body = gzip.compress(json.dumps(bundle, separators=(',', ':'),
+                                                ensure_ascii=False).encode('utf-8'))
+                self.send_response(200)
+                self._cors_headers()
+                self.send_header('Content-Type', 'application/gzip')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             name = os.path.basename(parsed.path)
             if not re.fullmatch(r'[A-Za-z0-9_.\-]+\.(json|json\.gz)', name):
                 self._empty(404); return

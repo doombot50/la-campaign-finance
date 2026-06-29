@@ -29,6 +29,7 @@ These rebuild the static `.json`/`.json.gz` artifacts committed to the repo. Run
 python3 refresh_la_cache.py          # re-download current cycle from ethics.la.gov
 python3 build_candidate_index.py     # per-candidate career totals + monthly buckets (also emits la_filer_index.json.gz, the filer-keyed twin)
 python3 build_entity_profiles.py     # per-entity LIFETIME edge lists: top donors-in (by filer) + recipients-out (by donor name)
+python3 build_entity_activity.py     # reshard transactions BY FILER: per-committee full itemized history (capped), all cycles
 python3 build_filer_lookup.py        # name → filer_number index
 python3 build_entities.py            # canonical entity table (run after refresh)
 python3 build_insights.py            # precomputed war chests, top donors (run after entities)
@@ -108,6 +109,12 @@ The profile's lifetime **giving** and **receiving** lists used to require loadin
 
 **Pages sharding gotcha:** the giving map is ~22 MB, too big to ship whole, so `build_pages_site.py` hash-shards it into `GIVING_SHARDS` (128) buckets `la_entity_giving_shard_<n>.json.gz`; a donor profile fetches only its one bucket (~172 KB). The receiving map (~2 MB) ships whole. The **FNV-1a/32 shard function is replicated in three places that MUST stay identical** — `shard_of` (build_pages_site.py), `_giving_shard_of` (la_ethics_server.py), and `fnv1a` (static_api.js) — or a lookup misses its bucket. The server's `/data/la_entity_giving_shard_<n>.json.gz` route synthesizes a bucket on the fly so it emulates Pages for `test_static_client_parity.mjs` and `?static=1`. Both parity gates cover `/api/entity-profile`.
 
+### Per-Entity FULL ACTIVITY (`/api/entity-activity`)
+
+The data normally ships sharded by **year** (load a year = everyone's rows). To show *all of one committee's activity* across all cycles without loading every cycle, `build_entity_activity.py` reshards transactions **by filer**: per-filer contributions-received + expenditures + loans, each capped to the `CAP` (1500) most-recent rows, with exact totals (`nc/ne/nl`) kept for the "N of M" disclosure. Lifetime *totals* already come exactly from the aggregates, and a browser can't render 200k rows (the table paginates), so the cap is the right tradeoff — most committees fall under it and show everything.
+
+`la_entity_activity.json.gz` is one ~29 MB map (server holds it in memory, slices per filer for `/api/entity-activity?filer=<n>`). **Pages can't ship it whole**, so `build_pages_site.py` explodes it into `activity/<filer>.json.gz` (one file per filer) and `StaticAPI.entityActivity` fetches exactly one; the server's `/data/activity/<filer>.json.gz` route synthesizes a bundle on the fly to emulate Pages for `?static=1` and `test_static_client_parity.mjs`. The profile auto-fetches it (`_fetchCampActivity` → `_campRows`) and the Contributions/Expenditures/Loans tabs render full activity with a banner; falls back to loaded-cycle lists when no filer is known. Both parity gates cover it.
+
 ### Browser SPA (louisiana-campaign-finance.html)
 
 ~7,500 lines of vanilla HTML/CSS/JS — no framework, no bundler. Key subsystems all in one file:
@@ -135,6 +142,7 @@ The Net Cash Flow chart shows `contributions − expenditures`, not actual cash 
 | `/api/insights` | War chests, transfers, party totals |
 | `/api/entity` | Canonical entity record by name or filer_number |
 | `/api/entity-profile` | Lifetime giving + receiving edge lists for one entity (`receiving` by filer, `giving` by name); row-free |
+| `/api/entity-activity` | One filer's full itemized history (contributions/expenditures/loans, capped most-recent) across all cycles |
 | `/api/coh` | Certified COH lookup |
 | `/api/races` | Elections grouped by (date, office) |
 | `/api/industry-breakdown` | Donor industry breakdown per filer |

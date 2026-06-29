@@ -119,6 +119,15 @@ try {
     check(`entity-profile filer=${fn || '∅'} name=${nm}`, !d, d);
   }
 
+  // entity-activity: per-filer resharded itemized history (served by the server's
+  // synthetic /data/activity/<filer>.json.gz route, which emulates Pages).
+  for (const fn of ['1144', '1625', '000nonexistent']) {
+    const live = await getJSON(`/api/entity-activity?filer=${fn}`);
+    const mine = await S.entityActivity(fn);
+    const d = diff(live, mine, `entity-activity[${fn}]`);
+    check(`entity-activity filer=${fn}`, !d, d);
+  }
+
   // coh single + batch
   {
     const d1 = diff(await getJSON('/api/coh?name=JEFF%20LANDRY'), await S.coh('JEFF LANDRY'), 'coh[name]');
