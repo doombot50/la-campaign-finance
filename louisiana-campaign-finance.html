@@ -1228,9 +1228,35 @@
     background: transparent; border: none; color: var(--muted); border-radius: 7px;
     transition: all .15s; }
   .money-subtab.active { background: var(--accent); color: #fff; }
-  /* Cycle chip — permanent, no dismiss button */
+  /* Cycle chip — permanent, no dismiss button; opens the multi-cycle popover */
   .chip-cycle { background: var(--accent-bg); border-color: var(--accent-border); cursor: pointer; }
   .chip-cycle:hover { background: #d7ece8; }
+  .chip-cycle .cyc-caret { font-size: 9px; color: var(--muted); margin-left: 4px; }
+
+  /* ── Multi-cycle picker popover (the visible, discoverable control) ── */
+  .cycle-popover { position: fixed; z-index: 1200; width: 264px; padding: 10px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(15,28,26,0.18); font-size: 13px; }
+  .cycle-pop-hd { font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+  .cycle-pop-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .cycle-pop-presets button { font-size: 11px; padding: 3px 9px; border: 1px solid var(--border);
+    border-radius: 999px; background: transparent; color: var(--text); cursor: pointer; transition: all .12s; }
+  .cycle-pop-presets button:hover { border-color: var(--accent); color: var(--accent); }
+  .cycle-pop-list { max-height: 248px; overflow-y: auto; margin: 0 -4px; }
+  .cycle-pop-item { display: flex; align-items: center; gap: 8px; padding: 5px 6px;
+    border-radius: 6px; cursor: pointer; }
+  .cycle-pop-item:hover { background: #f7faf9; }
+  .cycle-pop-item input { accent-color: var(--accent); flex-shrink: 0; }
+  .cycle-pop-item .cyc-l { color: var(--text); }
+  .cycle-pop-item .cyc-s { color: var(--muted); font-size: 11px; margin-left: auto; white-space: nowrap; }
+  .cycle-pop-ft { display: flex; align-items: center; justify-content: space-between;
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .cyc-count { font-size: 11px; color: var(--muted); }
+  .cyc-apply { font-size: 12px; font-weight: 600; padding: 5px 16px; border: none;
+    border-radius: 6px; background: var(--accent); color: #fff; cursor: pointer; }
+  .cyc-apply:hover { filter: brightness(1.06); }
+  .cyc-apply:disabled { opacity: .5; cursor: default; }
 
   /* ── Overview / landing tab ────────────────────────────────── */
   .ov-hero {
@@ -6977,8 +7003,8 @@ function renderFilterChips() {
   bar.style.display = 'flex';
   bar.innerHTML = chips.map((c, i) => {
     if (c.type === 'cycle') {
-      // Permanent cycle chip — click to type cycle: in search
-      return `<span class="filter-chip chip-cycle" title="Click to change cycle" onclick="_focusSearchWithToken('cycle:')"><span class="chip-label">${escHtml(c.label)}</span></span>`;
+      // Permanent cycle chip — opens the multi-cycle picker popover
+      return `<span class="filter-chip chip-cycle" title="Select one or more election cycles" onclick="_openCyclePopover(event)"><span class="chip-label">${escHtml(c.label)}</span><span class="cyc-caret">▾</span></span>`;
     }
     return `<span class="filter-chip"><span class="chip-label">${escHtml(c.label)}</span><span class="chip-x" data-idx="${i}" onclick="_dismissChip(this)">×</span></span>`;
   }).join('') + (dismissible.length ? `<button class="chip-clear-all" onclick="clearCurrentTabFilters()">Clear all ×</button>` : '');
@@ -9107,6 +9133,103 @@ function _focusSearchWithToken(prefix) {
   input.value = prefix;
   input.focus();
   _doGlobalSearch(prefix);
+}
+
+// ── Multi-cycle picker popover ──────────────────────────────────────────────
+// The visible, discoverable control for the additive multi-cycle aggregation
+// that already works under the hood (loadData loops getSelectedCycles()). Drives
+// _setSelectedCycles + a full reload, exactly like the dropdown change handler.
+function _applyCycleSelection(cycles) {
+  _setSelectedCycles(cycles);
+  allData = []; laEthicsData = []; filteredData = [];
+  expData = []; expFiltered = [];
+  loanData = []; loanFiltered = [];
+  _loadedCycle = null;
+  updateLoadBtn();
+  loadData();
+  if (document.getElementById('expenditures-view').style.display !== 'none') loadExpData();
+  if (document.getElementById('loans-view').style.display !== 'none') loadLoanData();
+  _saveUrlState();
+}
+
+let _cyclePopoverEl = null;
+function _closeCyclePopover() {
+  if (_cyclePopoverEl) { _cyclePopoverEl.remove(); _cyclePopoverEl = null; }
+  document.removeEventListener('mousedown', _cyclePopoverOutside, true);
+  document.removeEventListener('keydown', _cyclePopoverKey, true);
+}
+function _cyclePopoverOutside(e) {
+  if (_cyclePopoverEl && !_cyclePopoverEl.contains(e.target) && !e.target.closest('.chip-cycle')) _closeCyclePopover();
+}
+function _cyclePopoverKey(e) { if (e.key === 'Escape') _closeCyclePopover(); }
+
+function _openCyclePopover(evt) {
+  evt.stopPropagation();
+  if (_cyclePopoverEl) { _closeCyclePopover(); return; }   // toggle off
+  const chip = evt.currentTarget;
+  const opts = (_allCycleOpts || Array.from(document.getElementById('cycle-select').options))
+    .map(o => ({ value: o.value, label: o.text.split('—')[0].trim(), sub: (o.text.split('—')[1] || '').trim() }));
+  const selected = new Set(getSelectedCycles());
+
+  const pop = document.createElement('div');
+  pop.className = 'cycle-popover';
+  pop.setAttribute('role', 'dialog');
+  pop.setAttribute('aria-label', 'Select election cycles');
+  pop.innerHTML =
+    `<div class="cycle-pop-hd">Election cycles</div>
+     <div class="cycle-pop-presets">
+       <button type="button" data-preset="all">All cycles</button>
+       <button type="button" data-preset="recent3">Last 3</button>
+       <button type="button" data-preset="gov">Governor cycles</button>
+       <button type="button" data-preset="clear">Clear</button>
+     </div>
+     <div class="cycle-pop-list">` +
+       opts.map(o =>
+        `<label class="cycle-pop-item">
+           <input type="checkbox" value="${o.value}" ${selected.has(o.value) ? 'checked' : ''}>
+           <span class="cyc-l">${escHtml(o.label)}</span>
+           <span class="cyc-s">${escHtml(o.sub)}</span>
+         </label>`).join('') +
+     `</div>
+     <div class="cycle-pop-ft"><span class="cyc-count"></span><button type="button" class="cyc-apply">Apply</button></div>`;
+  document.body.appendChild(pop);
+  _cyclePopoverEl = pop;
+
+  // Position under the chip, clamped to the viewport.
+  const r = chip.getBoundingClientRect();
+  pop.style.top  = `${Math.min(r.bottom + 6, window.innerHeight - pop.offsetHeight - 8)}px`;
+  pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))}px`;
+
+  const list    = pop.querySelector('.cycle-pop-list');
+  const countEl = pop.querySelector('.cyc-count');
+  const applyBtn = pop.querySelector('.cyc-apply');
+  const checked = () => [...list.querySelectorAll('input:checked')].map(c => c.value);
+  const sync = () => {
+    const n = checked().length;
+    countEl.textContent = n === 0 ? 'None selected' : n === opts.length ? 'All cycles' : `${n} selected`;
+    applyBtn.disabled = n === 0;
+  };
+  sync();
+  list.addEventListener('change', sync);
+  pop.querySelectorAll('.cycle-pop-presets button').forEach(b => b.addEventListener('click', () => {
+    const set = vals => list.querySelectorAll('input').forEach(c => { c.checked = vals.has(c.value); });
+    const p = b.dataset.preset;
+    if (p === 'all')          set(new Set(opts.map(o => o.value)));
+    else if (p === 'clear')   set(new Set());
+    else if (p === 'recent3') set(new Set(opts.slice(0, 3).map(o => o.value)));
+    else if (p === 'gov')     set(new Set(opts.filter(o => /gov/i.test(o.sub)).map(o => o.value)));
+    sync();
+  }));
+  applyBtn.addEventListener('click', () => {
+    const sel = checked();
+    _closeCyclePopover();
+    if (sel.length) _applyCycleSelection(sel);
+  });
+  // Defer listener attach so this very click doesn't immediately close it.
+  setTimeout(() => {
+    document.addEventListener('mousedown', _cyclePopoverOutside, true);
+    document.addEventListener('keydown', _cyclePopoverKey, true);
+  }, 0);
 }
 
 // Add a cycle value to the comma list in the search input (e.g. "cycle:2020," → "cycle:2020,2016,")
