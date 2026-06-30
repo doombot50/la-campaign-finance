@@ -43,6 +43,29 @@ def _existing_year_files(key, rtype):
             if os.path.exists(p := srv._year_cache_path(y, rtype))]
 
 
+def _bundle_complete(key, rtype):
+    """Mirror build_pages_site.py's completeness gate so a *partially* present
+    bundle re-downloads instead of being silently skipped.
+
+    Contributions exist for every year upstream (the Pages gate requires
+    2000..current contiguous), so a contributions bundle is complete only when
+    every year file is on disk. A single lost year file — e.g. an interrupted
+    `gh release upload --clobber` that deleted a release asset and never restored
+    it, which is exactly how contributions_yr2003 went missing and blocked the
+    Pages deploy — therefore forces a re-download that rebuilds the gap.
+
+    Expenditures/loans legitimately have empty years (no records -> no file, e.g.
+    expenditures 2008, loans 2027), and the gate only asks for one file per
+    bundle, so >=1 present is "complete". Requiring every year for those would
+    re-download a genuinely-empty bundle every night forever."""
+    this_year = time.localtime().tm_year
+    years = [y for y in srv._key_years(key) if y <= this_year]
+    present = sum(os.path.exists(srv._year_cache_path(y, rtype)) for y in years)
+    if rtype == 'contributions':
+        return present == len(years)
+    return present > 0
+
+
 def _needs_schema_backfill(paths):
     """True if the first cached record lacks 'reportNumber' — i.e. it was parsed
     before the filing-link fields existed. A one-shot trigger to re-download an
@@ -78,9 +101,16 @@ def main():
                 for p in have:
                     os.utime(p, (old, old))
                 print(f'[{rtype}/{key}] present but missing filing fields -> re-downloading (backfill)')
-            elif have:
+            elif have and _bundle_complete(key, rtype):
                 print(f'[{rtype}/{key}] {len(have)} year files present -> skip')
                 continue
+            elif have:
+                # Partially present: an expected year file is missing (e.g. a
+                # release asset was lost to an interrupted clobber-upload).
+                # Re-download the whole bundle to restore the gap — otherwise the
+                # Pages completeness gate blocks every deploy until it reappears.
+                print(f'[{rtype}/{key}] incomplete ({len(have)} year files present,'
+                      f' year file(s) missing) -> re-downloading')
             else:
                 print(f'[{rtype}/{key}] missing -> downloading')
 

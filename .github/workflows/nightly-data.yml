@@ -137,7 +137,23 @@ jobs:
         run: node test_static_client_parity.mjs
 
       - name: Upload cache snapshots to release
-        run: gh release upload data-cache .la_cache/*.json.gz --clobber
+        # `gh release upload --clobber` deletes each existing asset before
+        # re-uploading it, so a transient API 5xx mid-command can strand an asset
+        # (deleted, never restored). That is exactly how contributions_yr2003 went
+        # missing and blocked the Pages completeness gate for days. Retry the whole
+        # command so a flake re-clobbers — and thus restores — every asset from the
+        # still-present local .la_cache copies.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if gh release upload data-cache .la_cache/*.json.gz --clobber; then
+              echo "Release upload succeeded on attempt $attempt."
+              exit 0
+            fi
+            echo "Release upload attempt $attempt failed; retrying in $((attempt * 10))s..."
+            sleep $((attempt * 10))
+          done
+          echo "ERROR: release upload failed after 5 attempts."
+          exit 1
 
       - name: Publish donations export for the pay-to-play tool
         # Flat-file handoff to the la-pay-to-play repo (build_p2p_export.py,
