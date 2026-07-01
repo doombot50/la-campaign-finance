@@ -1961,6 +1961,48 @@ def prefetch_background(csv_key, report_type='contributions'):
             print(f'  Background prefetch error for {csv_key}: {e}')
     threading.Thread(target=_run, daemon=True).start()
 
+# ── Static asset serving: compression + validators ───────────────────────────
+# Every static byte the dashboard loads (the ~500 KB HTML shell, vendor libs,
+# committed JSON artifacts, the 5 MB election lookup) used to ship uncompressed
+# with no cache headers, so every visit re-downloaded everything. This layer
+# gzips compressible bodies once, holds them in memory keyed by file mtime, and
+# issues ETags so repeat visits collapse to 304s. Hot-reload safe: a nightly
+# deploy that swaps a file on disk changes its mtime and the next request
+# re-reads and re-compresses it.
+_ASSET_CACHE = {}                          # {(path, gz): (mtime_ns, size, etag, body)}
+_ASSET_LOCK = threading.Lock()
+_ASSET_CACHE_MAX_BODY = 48 * 1024 * 1024   # never pin a pathological body in RAM
+
+# Content-Type prefixes worth gzipping. Fonts (woff2), PNGs and .gz artifacts
+# are already compressed — recompressing wastes CPU for ~0 gain.
+_COMPRESSIBLE_TYPES = ('text/', 'application/json', 'application/javascript',
+                       'application/manifest+json', 'application/x-ndjson',
+                       'image/svg')
+
+def _asset_etag(st):
+    # Weak validator from mtime+size — content-coding may vary per client
+    # (gzip vs identity), which is exactly what a weak ETag is for.
+    return f'W/"{st.st_mtime_ns:x}-{st.st_size:x}"'
+
+def _asset_body(fpath, st, want_gzip):
+    """Return (etag, body) for one on-disk file, gzip-compressed when asked.
+    Bodies are cached in memory keyed by (path, encoding) and invalidated by
+    mtime/size, so the disk read + compression happen once per deploy."""
+    key = (fpath, want_gzip)
+    with _ASSET_LOCK:
+        hit = _ASSET_CACHE.get(key)
+        if hit and hit[0] == st.st_mtime_ns and hit[1] == st.st_size:
+            return hit[2], hit[3]
+    with open(fpath, 'rb') as fh:
+        raw = fh.read()
+    body = gzip.compress(raw, compresslevel=6) if want_gzip else raw
+    etag = _asset_etag(st)
+    if len(body) <= _ASSET_CACHE_MAX_BODY:
+        with _ASSET_LOCK:
+            _ASSET_CACHE[key] = (st.st_mtime_ns, st.st_size, etag, body)
+    return etag, body
+
+
 # ── HTTP Handler ──────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'   # required for chunked transfer-encoding
@@ -1974,19 +2016,12 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
 
-        # Serve the dashboard HTML at root
+        # Serve the dashboard HTML at root. no-cache = revalidate every visit;
+        # the ETag turns an unchanged shell into a 304 instead of a ~500 KB
+        # (129 KB gzipped) re-download.
         if parsed.path in ('/', '/index.html', '/louisiana-campaign-finance.html'):
-            if os.path.exists(HTML_FILE):
-                with open(HTML_FILE, 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', 'text/html; charset=utf-8')
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            else:
-                self.send_response(404)
-                self.end_headers()
+            if not self._send_asset(HTML_FILE, 'text/html; charset=utf-8', 'no-cache'):
+                self._empty(404)
             return
 
         # Standalone "Does money win?" scrollytelling page. It fetches its data
@@ -1994,17 +2029,8 @@ class Handler(BaseHTTPRequestHandler):
         # from the committed repo-root file (same path Pages ships to _site/data/).
         if parsed.path == '/does-money-win.html':
             fpath = os.path.join(BASE_DIR, 'does-money-win.html')
-            if os.path.exists(fpath):
-                with open(fpath, 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', 'text/html; charset=utf-8')
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            else:
-                self.send_response(404)
-                self.end_headers()
+            if not self._send_asset(fpath, 'text/html; charset=utf-8', 'no-cache'):
+                self._empty(404)
             return
 
         if parsed.path == '/health':
@@ -2024,19 +2050,14 @@ class Handler(BaseHTTPRequestHandler):
             })
             return
 
-        # Flat election-results lookup (win/loss badges). Static, cached client-side.
+        # Flat election-results lookup (win/loss badges). At ~5 MB raw this was
+        # the single largest uncompressed response — gzipped it's ~670 KB, and
+        # an hour of client caching + ETag revalidation covers repeat visits
+        # (the file only changes on a nightly deploy).
         if parsed.path == '/api/election-results':
             lk = os.path.join(BASE_DIR, 'la_election_lookup.json')
-            if os.path.exists(lk):
-                with open(lk, 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.send_header('Content-Length', str(len(body)))
-                self._cors_headers()
-                self.end_headers()
-                self.wfile.write(body)
-            else:
+            if not self._send_asset(lk, 'application/json; charset=utf-8',
+                                    'public, max-age=3600', cors=True):
                 self._json({})   # gracefully empty if not built yet
             return
 
@@ -2205,15 +2226,12 @@ class Handler(BaseHTTPRequestHandler):
                     break
             if not fpath:
                 self._empty(404); return
-            with open(fpath, 'rb') as fh:
-                body = fh.read()
-            self.send_response(200)
-            self._cors_headers()
-            self.send_header('Content-Type',
-                             'application/gzip' if name.endswith('.gz') else 'application/json')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            # .gz artifacts ship as raw gzip bytes with NO Content-Encoding
+            # (the static client decompresses them itself) — exactly like
+            # Pages. Plain .json is gzipped on the wire like any other asset.
+            self._send_asset(fpath,
+                             'application/gzip' if name.endswith('.gz') else 'application/json',
+                             'public, max-age=3600', cors=True)
             return
 
         # PWA assets (manifest + icons referenced from the dashboard <head>)
@@ -2225,31 +2243,17 @@ class Handler(BaseHTTPRequestHandler):
         }
         if parsed.path in _PWA_ASSETS:
             fpath = os.path.join(BASE_DIR, parsed.path.lstrip('/'))
-            if os.path.exists(fpath):
-                with open(fpath, 'rb') as fh:
-                    body = fh.read()
-                self.send_response(200)
-                self.send_header('Content-Type', _PWA_ASSETS[parsed.path])
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            else:
+            if not self._send_asset(fpath, _PWA_ASSETS[parsed.path],
+                                    'public, max-age=86400'):
                 self._empty(404)
             return
 
-        # The static data layer itself (loaded by the dashboard's script tag)
+        # The static data layer itself (loaded by the dashboard's script tag).
+        # no-cache: it changes with the code, so always revalidate (→ 304).
         if parsed.path == '/static_api.js':
             fpath = os.path.join(BASE_DIR, 'static_api.js')
-            if os.path.exists(fpath):
-                with open(fpath, 'rb') as fh:
-                    body = fh.read()
-                self.send_response(200)
-                self._cors_headers()
-                self.send_header('Content-Type', 'application/javascript; charset=utf-8')
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            else:
+            if not self._send_asset(fpath, 'application/javascript; charset=utf-8',
+                                    'no-cache', cors=True):
                 self._empty(404)
             return
 
@@ -2270,15 +2274,11 @@ class Handler(BaseHTTPRequestHandler):
                       '.css': 'text/css; charset=utf-8',
                       '.png': 'image/png', '.map': 'application/json',
                       '.woff2': 'font/woff2'}
-            with open(fpath, 'rb') as fh:
-                body = fh.read()
-            self.send_response(200)
-            self._cors_headers()
-            self.send_header('Content-Type',
-                             ctypes.get(os.path.splitext(fpath)[1], 'application/octet-stream'))
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            # Pinned library versions + fonts change ~never: a day of client
+            # caching, then a cheap ETag revalidation.
+            self._send_asset(fpath,
+                             ctypes.get(os.path.splitext(fpath)[1], 'application/octet-stream'),
+                             'public, max-age=86400', cors=True)
             return
 
         # Static data files — serve gzip-encoded JSON directly so the browser can
@@ -2290,21 +2290,13 @@ class Handler(BaseHTTPRequestHandler):
         }
         if parsed.path in _STATIC_DATA:
             fpath = os.path.join(BASE_DIR, _STATIC_DATA[parsed.path])
-            if os.path.exists(fpath):
-                with open(fpath, 'rb') as fh:
-                    body = fh.read()
-                self.send_response(200)
-                self._cors_headers()
-                self.send_header('Content-Type', 'application/json')
-                if fpath.endswith('.gz'):
-                    self.send_header('Content-Encoding', 'gzip')
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            else:
-                self.send_response(404)
-                self._cors_headers()
-                self.end_headers()
+            # .gz files are pre-compressed on disk and sent with
+            # Content-Encoding so the browser transparently decompresses;
+            # plain .json is gzipped on the wire like any other asset.
+            if not self._send_asset(fpath, 'application/json',
+                                    'public, max-age=3600', cors=True,
+                                    content_encoding='gzip' if fpath.endswith('.gz') else None):
+                self._empty(404)
             return
 
         if parsed.path not in ('/api/la-ethics', '/api/la-expenditures', '/api/la-loans'):
@@ -2475,6 +2467,55 @@ class Handler(BaseHTTPRequestHandler):
         self._cors_headers()
         self.send_header('Content-Length', '0')
         self.end_headers()
+
+    def _send_asset(self, fpath, ctype, cache_control, cors=False,
+                    content_encoding=None):
+        """Serve one on-disk file with gzip compression and conditional-GET.
+
+        content_encoding='gzip' marks a file whose BYTES are already a gzip
+        stream that should be transparently decompressed by the browser
+        (the committed .json.gz artifacts) — it's sent as-is with the header.
+        Otherwise compressible types are gzipped (and cached) when the client
+        accepts it. Returns False when the file is missing so the caller keeps
+        its own 404 / fallback behavior.
+        """
+        try:
+            st = os.stat(fpath)
+        except OSError:
+            return False
+        etag = _asset_etag(st)
+        compressible = (content_encoding is None
+                        and ctype.startswith(_COMPRESSIBLE_TYPES))
+        inm = self.headers.get('If-None-Match') or ''
+        if etag in [t.strip() for t in inm.split(',')]:
+            self.send_response(304)
+            if cors:
+                self._cors_headers()
+            self.send_header('ETag', etag)
+            self.send_header('Cache-Control', cache_control)
+            if compressible:
+                self.send_header('Vary', 'Accept-Encoding')
+            self.end_headers()
+            return True
+        want_gzip = compressible and 'gzip' in (self.headers.get('Accept-Encoding') or '')
+        etag, body = _asset_body(fpath, st, want_gzip)
+        self.send_response(200)
+        if cors:
+            self._cors_headers()
+        self.send_header('Content-Type', ctype)
+        if want_gzip or content_encoding == 'gzip':
+            self.send_header('Content-Encoding', 'gzip')
+        if compressible:
+            self.send_header('Vary', 'Accept-Encoding')
+        self.send_header('ETag', etag)
+        self.send_header('Cache-Control', cache_control)
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass   # client disconnected mid-write
+        return True
 
     def _json(self, data):
         # Compact separators (indent=2 inflated every response 20-40%) and

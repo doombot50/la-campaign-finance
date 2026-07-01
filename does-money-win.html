@@ -5,7 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Does Money Win? — Louisiana Elections</title>
 <meta name="description" content="How often does the candidate with the biggest campaign war chest actually win in Louisiana — and does it depend on the office? A data story built on 25 years of Secretary of State results and Board of Ethics fundraising.">
+<meta name="color-scheme" content="light">
+<!-- Link previews — this page exists to be shared. -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Louisiana Campaign Finance">
+<meta property="og:title" content="Does Money Win? — Louisiana Elections">
+<meta property="og:description" content="How often does the biggest war chest actually win in Louisiana — and does it depend on the office? 25 years of election results vs. fundraising.">
+<meta property="og:url" content="https://moneywins.charliestephens.xyz/">
+<meta property="og:image" content="https://finance.charliestephens.xyz/icon-512.png">
+<meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2314756b'/%3E%3Ctext x='8' y='12' font-size='11' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'%3E$%3C/text%3E%3C/svg%3E">
+<!-- Above-the-fold font weights start downloading during HTML parse instead of
+     after CSS evaluation (crossorigin is mandatory on font preloads, even
+     same-origin, or the browser fetches them twice). -->
+<link rel="preload" as="font" type="font/woff2" href="vendor/fonts/libre-franklin-latin-400-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="vendor/fonts/libre-franklin-latin-800-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="vendor/fonts/ibm-plex-mono-latin-600-normal.woff2" crossorigin>
+<!-- Kick off the page's one data fetch during head parse; the story script at
+     the bottom of the body awaits this shared promise instead of starting its
+     own fetch only after the whole document has parsed. -->
+<script>window.__MW_DATA = fetch('data/la_money_wins.json');</script>
 <!-- Self-hosted fonts (same vendor/ dir the dashboard ships; works on the live
      server's /vendor/ route and on GitHub Pages' _site/vendor/). -->
 <style>
@@ -232,7 +251,9 @@ function renderTier(rows) {
     const w = Math.max(2, X(row.rate) - x0);
     const bar = el('rect', { x: x0, y, width: 0, height: bh, rx: 6, fill: 'var(--teal)' });
     svg.appendChild(bar);
-    bar.animate([{ width: 0 }, { width: w }], { duration: 900, delay: 120 * i, fill: 'forwards', easing: 'cubic-bezier(.2,.7,.2,1)' });
+    // WAAPI keyframes need CSS values — unitless numbers are rejected
+    // ("Invalid keyframe value") and the bars would snap instead of grow.
+    bar.animate([{ width: '0px' }, { width: w + 'px' }], { duration: 900, delay: 120 * i, fill: 'forwards', easing: 'cubic-bezier(.2,.7,.2,1)' });
     setTimeout(() => bar.setAttribute('width', w), 900 + 120 * i);
     svg.appendChild(el('text', { x: X(row.rate) + 8, y: y + bh / 2 + 4, 'font-size': 13,
       'font-weight': 600, 'font-family': 'var(--mono)', fill: 'var(--teal-dark)' }, pct(row.rate)));
@@ -301,7 +322,7 @@ function renderAdvantage(rows) {
     const bar = el('rect', { x, y: y0, width: bw, height: 0, rx: 7,
       fill: i === n - 1 ? 'var(--teal-dark)' : 'var(--teal)' });
     svg.appendChild(bar);
-    bar.animate([{ height: 0, y: y0 }, { height: h, y: y0 - h }],
+    bar.animate([{ height: '0px', y: y0 + 'px' }, { height: h + 'px', y: (y0 - h) + 'px' }],
       { duration: 850, delay: 120 * i, fill: 'forwards', easing: 'cubic-bezier(.2,.7,.2,1)' });
     setTimeout(() => { bar.setAttribute('height', h); bar.setAttribute('y', y0 - h); }, 850 + 120 * i);
     svg.appendChild(el('text', { x: x + bw / 2, y: y0 - h - 10, 'text-anchor': 'middle',
@@ -335,7 +356,9 @@ function renderUpsets(upsets) {
 }
 
 // ── Load + render ────────────────────────────────────────────────────────────
-fetch('data/la_money_wins.json')
+// The fetch itself starts in <head> (window.__MW_DATA) so the download runs
+// while the document parses; fall back to fetching here if that ever vanishes.
+(window.__MW_DATA || fetch('data/la_money_wins.json'))
   .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
   .then((d) => {
     const o = d.overall;
