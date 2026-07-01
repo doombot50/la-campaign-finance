@@ -85,6 +85,14 @@ jobs:
         # the server, so search/profile totals stay in sync with the records.
         run: python build_candidate_index.py
 
+      - name: Rebuild "does money win?" story data
+        # Joins the freshly rebuilt candidate index (war chests) to committed SoS
+        # candidacies + results -> la_money_wins.json, the data behind the
+        # standalone does-money-win.html. Committed below so Render + Pages ship
+        # the refreshed figures. Non-fatal: a stale committed copy is harmless.
+        continue-on-error: true
+        run: python build_money_wins.py
+
       - name: Build per-entity lifetime edge lists
         # Top donors-in (by filer) and recipients-out (by donor name) per entity,
         # so the profile's lifetime giving/receiving lists render row-free.
@@ -187,11 +195,13 @@ jobs:
             || git checkout -- ethics_coh_cache.json
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ethics_coh_cache.json
+          # la_money_wins.json is regenerated above from the fresh index; commit
+          # it alongside the COH cache so Render + Pages ship the refreshed story.
+          git add ethics_coh_cache.json la_money_wins.json
           if git diff --cached --quiet; then
-            echo "COH cache unchanged — nothing to commit."
+            echo "COH cache + money-wins unchanged — nothing to commit."
           else
-            git commit -m "Nightly COH cache refresh"
+            git commit -m "Nightly COH cache + money-wins refresh"
             # --autostash: tolerate any stray working-tree changes so a push
             # race with daytime merges can't strand the night's progress again
             git pull --rebase --autostash origin main
