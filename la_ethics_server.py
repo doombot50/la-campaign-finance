@@ -1989,6 +1989,24 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
             return
 
+        # Standalone "Does money win?" scrollytelling page. It fetches its data
+        # from data/la_money_wins.json, which the /data/<name> route below serves
+        # from the committed repo-root file (same path Pages ships to _site/data/).
+        if parsed.path == '/does-money-win.html':
+            fpath = os.path.join(BASE_DIR, 'does-money-win.html')
+            if os.path.exists(fpath):
+                with open(fpath, 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.send_response(404)
+                self.end_headers()
+            return
+
         if parsed.path == '/health':
             self._json({'status': 'ok', 'port': PORT,
                         'cache_dir': CACHE_DIR,
@@ -2521,6 +2539,7 @@ if __name__ == '__main__':
     print('    GET /api/la-expenditures?cycle=2024 -- expenditures')
     print('    GET /api/coh                        -- certified COH from ethics PDFs (all)')
     print('    GET /api/coh?name=MANDIE+LANDRY     -- COH for one filer')
+    print('    GET /does-money-win.html            -- "does money win?" data story')
     print()
     print('  Data pre-fetching in background. First user request returns immediately.')
     print('  Cache is refreshed automatically every 24 hours.')

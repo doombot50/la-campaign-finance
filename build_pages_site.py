@@ -77,6 +77,7 @@ REQUIRED_ROOT = [
     'la_candidacies_raw.json.gz',
     'ethics_coh_cache.json',
     'la_election_results.json',
+    'la_money_wins.json',   # data for the standalone does-money-win.html story
 ]
 
 
@@ -155,6 +156,8 @@ def main():
 
     _emit_index_html(os.path.join(BASE, 'louisiana-campaign-finance.html'),
                      os.path.join(SITE, 'index.html'))
+    # Standalone "does money win?" story — verbatim; fetches data/la_money_wins.json.
+    shutil.copy2(os.path.join(BASE, 'does-money-win.html'), SITE)
     shutil.copy2(os.path.join(BASE, 'static_api.js'), SITE)
     # sw.js must sit at the site root so its scope covers the whole project path.
     shutil.copy2(os.path.join(BASE, 'sw.js'), SITE)

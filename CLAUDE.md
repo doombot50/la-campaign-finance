@@ -39,6 +39,7 @@ python3 build_election_results.py    # per-race results + vote %
 python3 build_donor_industries.py    # donor → industry classification
 python3 build_politician_lookup.py   # party + bio enrichment
 python3 retag_caches.py              # re-tag party labels + transfers + industry on all cached records
+python3 build_money_wins.py          # "does money win?" — money-leader win rate by office tier (feeds does-money-win.html; run after candidate-index + election-results)
 python3 build_static_api.py          # static twins of /api/search, races, overview, industry (server-less mode)
 python3 test_static_parity.py        # gate: static artifacts == live API (runs nightly before upload)
 node test_static_client_parity.mjs   # gate: shipped static_api.js == live API end-to-end
@@ -129,6 +130,14 @@ The data normally ships sharded by **year** (load a year = everyone's rows). To 
 - **Print-to-PDF** — chart canvases are snapshotted to PNG before printing to prevent reflow
 
 The Net Cash Flow chart shows `contributions − expenditures`, not actual cash on hand. The green dots (certified F102/F202 ending balances) are ground truth; the gold line is an approximation.
+
+### "Does Money Win?" data story (`does-money-win.html`)
+
+A standalone, self-contained scrollytelling page (inline CSS/JS, hand-drawn **inline SVG** charts — no Chart.js, no framework, matching the zero-dep philosophy) that answers: how often does the biggest war chest actually win, and does it depend on the office? It reasons over `la_money_wins.json`, precomputed by `build_money_wins.py`, which **joins artifacts already committed** — `la_candidacies_raw.json.gz` (every SoS candidacy, name-keyed) + `la_candidate_index.json.gz` (per-cycle fundraising) + `la_election_results.json` (the `ambiguous` same-name flag). Zero new data sources.
+
+- **Race unit:** raw candidacies grouped by `(date, office)`; counts when exactly one `Elected` winner, ≥2 candidates, no `ambiguous` name, and ≥2 candidates with reported fundraising (so "money leader" is a real comparison).
+- **Money metric:** cumulative raised *in-cycle through the election month* (`money_through_month`), NOT full-cycle `raised` — full-cycle inflates winners who keep raising after they win (67.7% vs the honest 66.1%).
+- **Serving:** the page fetches `data/la_money_wins.json` — one relative path that resolves on both the live server (its `/data/<name>` route falls back to the committed repo-root file; the page itself is served by a dedicated `/does-money-win.html` route) and Pages (`build_pages_site.py` copies the HTML into `_site/` and lists the JSON in `REQUIRED_ROOT` → `_site/data/`). Linked from the dashboard Overview. Unit-tested by `tests/test_money_wins.py` (stdlib, CI).
 
 ### API Endpoints
 
