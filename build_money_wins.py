@@ -62,8 +62,11 @@ METHODOLOGY = (
     "during the election's four-year cycle through the month of the election — "
     "not the full cycle, which would inflate winners who keep raising money after "
     "they win. A race counts only when at least two candidates reported "
-    "fundraising, so “money leader” is a real comparison. Same-name filer "
-    "collisions and party-committee races are excluded. Candidates who raised too "
+    "fundraising, so “money leader” is a real comparison. Federal offices "
+    "(President, U.S. House and Senate) are left out — those campaigns report to "
+    "the FEC, not the state, so the Ethics figures don't capture their money. "
+    "Same-name filer collisions and party-committee races are excluded. "
+    "Candidates who raised too "
     "little to itemize with the Ethics board don't appear in the fundraising data, "
     "so this leans toward races where money was actually raised and reported."
 )
@@ -78,11 +81,19 @@ def cycle_of(election_date):
     return f'{start}-{start + 3}'
 
 
+def is_federal(rank):
+    """Ranks 1-3 (President, U.S. Senate, U.S. House) are federal offices. Their
+    campaigns report to the FEC, not the Louisiana Board of Ethics, so the state
+    fundraising figures for them are incomplete and misleading — excluded."""
+    return rank <= 3
+
+
 def tier_of(rank):
     """office_rank (from build_election_results.office_rank) -> display tier.
-    Federal alone is only a handful of races, so ranks 1-6 fold together."""
+    Federal offices are excluded upstream (see is_federal); 4-6 are the statewide
+    executive/constitutional offices (Governor, AG, Treasurer, ...)."""
     if rank <= 6:
-        return 'Statewide & Federal'
+        return 'Statewide'
     if rank in (7, 8):
         return 'Legislative'
     if rank == 12:
@@ -142,7 +153,7 @@ def advantage_bucket(ratio):
 
 
 ADVANTAGE_ORDER = ['<2x', '2-5x', '5-10x', '>10x']
-TIER_ORDER = ['Statewide & Federal', 'Legislative', 'Judicial', 'Local']
+TIER_ORDER = ['Statewide', 'Legislative', 'Judicial', 'Local']
 
 
 # ── main analysis ────────────────────────────────────────────────────────────
@@ -164,11 +175,15 @@ def analyze(raw, cidx, results):
         winners = [c for c in cands if c['outcome'] == 'Elected']
         if len(winners) != 1 or len(cands) < 2:
             continue
+        winner = winners[0]
+        # Federal offices (President/U.S. Senate/U.S. House) report to the FEC,
+        # not the state — their LA Ethics fundraising is incomplete. Exclude them.
+        if is_federal(winner['rank']):
+            continue
         # Drop the whole race if any candidate's name is a known collision.
         if any(results.get(c['name'], {}).get('ambiguous') for c in cands):
             continue
 
-        winner = winners[0]
         for c in cands:
             c['money'] = money_through_month(cidx.get(c['name']), edate)
 

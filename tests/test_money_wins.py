@@ -33,14 +33,21 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(bmw.cycle_of('11/05/2024'), '2024-2027')
 
     def test_tier_of(self):
-        self.assertEqual(bmw.tier_of(1), 'Statewide & Federal')   # President
-        self.assertEqual(bmw.tier_of(6), 'Statewide & Federal')   # AG/SoS/...
+        self.assertEqual(bmw.tier_of(4), 'Statewide')   # Governor
+        self.assertEqual(bmw.tier_of(6), 'Statewide')   # AG/SoS/...
         self.assertEqual(bmw.tier_of(7), 'Legislative')           # State Senator
         self.assertEqual(bmw.tier_of(8), 'Legislative')           # State Rep
         self.assertEqual(bmw.tier_of(12), 'Judicial')
         self.assertEqual(bmw.tier_of(10), 'Local')
         self.assertEqual(bmw.tier_of(15), 'Local')
         self.assertEqual(bmw.tier_of(20), 'Local')
+
+    def test_is_federal(self):
+        self.assertTrue(bmw.is_federal(1))    # President
+        self.assertTrue(bmw.is_federal(2))    # U.S. Senate
+        self.assertTrue(bmw.is_federal(3))    # U.S. House
+        self.assertFalse(bmw.is_federal(4))   # Governor (state)
+        self.assertFalse(bmw.is_federal(8))   # State Rep
 
     def test_money_through_month_sums_only_in_cycle_pre_election(self):
         entry = {
@@ -99,6 +106,11 @@ class TestAnalyze(unittest.TestCase):
                              'vote_pct': 70.0, 'outcome': 'Elected', 'rank': 7, 'party': 'REP'}],
             'UNFUNDED FOE': [{'office': 'State Senator -- 2nd', 'date': '10/12/2019',
                               'vote_pct': 30.0, 'outcome': 'Defeated', 'rank': 7, 'party': 'DEM'}],
+            # A FEDERAL race (rank 3, U.S. House) -> excluded (FEC-reported money).
+            'FED WINNER': [{'office': 'U. S. Representative -- 3rd', 'date': '10/12/2019',
+                            'vote_pct': 60.0, 'outcome': 'Elected', 'rank': 3, 'party': 'REP'}],
+            'FED LOSER': [{'office': 'U. S. Representative -- 3rd', 'date': '10/12/2019',
+                           'vote_pct': 40.0, 'outcome': 'Defeated', 'rank': 3, 'party': 'DEM'}],
         }
         self.cidx = {
             'RICH WINNER': _entry('2016-2019', '2019-09', 50000),
@@ -108,6 +120,8 @@ class TestAnalyze(unittest.TestCase):
             'AMBI GUOUS': _entry('2016-2019', '2019-09', 30000),
             'OTHER JUDGE': _entry('2016-2019', '2019-09', 20000),
             'LONE FUNDED': _entry('2016-2019', '2019-09', 40000),
+            'FED WINNER': _entry('2016-2019', '2019-09', 90000),
+            'FED LOSER': _entry('2016-2019', '2019-09', 70000),
             # UNFUNDED FOE deliberately absent from the index.
         }
         self.results = {'AMBI GUOUS': {'ambiguous': True}}
@@ -145,6 +159,15 @@ class TestAnalyze(unittest.TestCase):
         names_in_scatter = {p['name'] for p in out['scatter']}
         self.assertNotIn('AMBI GUOUS', names_in_scatter)
         self.assertNotIn('OTHER JUDGE', names_in_scatter)
+
+    def test_federal_race_excluded_everywhere(self):
+        out = bmw.analyze(self.raw, self.cidx, self.results)
+        names_in_scatter = {p['name'] for p in out['scatter']}
+        self.assertNotIn('FED WINNER', names_in_scatter)
+        self.assertNotIn('FED LOSER', names_in_scatter)
+        self.assertNotIn('Statewide', {r['tier'] for r in out['by_tier']})  # none here
+        # The two qualifying races are still just the Legislative + Local ones.
+        self.assertEqual(out['overall']['n_races'], 2)
 
     def test_scatter_shares_in_unit_interval(self):
         out = bmw.analyze(self.raw, self.cidx, self.results)
