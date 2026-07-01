@@ -378,5 +378,64 @@ class TestCrossLanguageNormParity(unittest.TestCase):
                 self.assertEqual(s._norm_name(raw), expected)
 
 
+class TestAssetServing(unittest.TestCase):
+    """The static-asset layer (_asset_etag/_asset_body) behind _send_asset:
+    gzip round-trips, mtime-keyed memory caching, and validator stability."""
+
+    def setUp(self):
+        import tempfile
+        self.dir = tempfile.TemporaryDirectory()
+        self.path = os.path.join(self.dir.name, 'asset.json')
+        with open(self.path, 'w') as f:
+            f.write('{"hello": "world"}' * 100)
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_gzip_body_round_trips(self):
+        import gzip
+        st = os.stat(self.path)
+        etag, body = s._asset_body(self.path, st, want_gzip=True)
+        with open(self.path, 'rb') as f:
+            self.assertEqual(gzip.decompress(body), f.read())
+
+    def test_identity_body_is_raw_bytes(self):
+        st = os.stat(self.path)
+        _, body = s._asset_body(self.path, st, want_gzip=False)
+        with open(self.path, 'rb') as f:
+            self.assertEqual(body, f.read())
+
+    def test_etag_is_weak_and_stable(self):
+        st = os.stat(self.path)
+        e1 = s._asset_etag(st)
+        e2 = s._asset_etag(os.stat(self.path))
+        self.assertTrue(e1.startswith('W/"') and e1.endswith('"'))
+        self.assertEqual(e1, e2)
+
+    def test_cache_hit_and_mtime_invalidation(self):
+        st = os.stat(self.path)
+        etag1, body1 = s._asset_body(self.path, st, want_gzip=True)
+        # Second call with an unchanged file must come from the memory cache.
+        etag1b, body1b = s._asset_body(self.path, st, want_gzip=True)
+        self.assertIs(body1, body1b)
+        self.assertEqual(etag1, etag1b)
+        # Rewrite the file (new mtime/size) → new etag, new body.
+        with open(self.path, 'w') as f:
+            f.write('{"changed": true}')
+        st2 = os.stat(self.path)
+        etag2, body2 = s._asset_body(self.path, st2, want_gzip=True)
+        self.assertNotEqual(etag1, etag2)
+        self.assertNotEqual(body1, body2)
+
+    def test_compressible_type_allowlist(self):
+        # The route layer only gzips these prefixes — fonts/PNGs/.gz stay raw.
+        for ct in ('text/html; charset=utf-8', 'application/json',
+                   'application/javascript; charset=utf-8'):
+            self.assertTrue(ct.startswith(s._COMPRESSIBLE_TYPES), ct)
+        for ct in ('font/woff2', 'image/png', 'application/gzip',
+                   'application/octet-stream'):
+            self.assertFalse(ct.startswith(s._COMPRESSIBLE_TYPES), ct)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

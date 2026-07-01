@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Louisiana Campaign Finance Dashboard</title>
+<meta name="description" content="Explore Louisiana political contributions, expenditures, and loans — interactive dashboards, candidate war chests, donor profiles, and election results built on Board of Ethics filings.">
+<!-- The app ships light-only; telling the UA prevents dark-mode form-control
+     and scrollbar mismatches on devices set to dark. -->
+<meta name="color-scheme" content="light">
+<!-- Link previews (Slack/iMessage/social) — profiles and races have shareable
+     permanent URLs, so make the unfurl worth sharing. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Louisiana Campaign Finance">
+<meta property="og:title" content="Louisiana Campaign Finance Dashboard">
+<meta property="og:description" content="Who funds Louisiana politics? Interactive contributions, expenditures, war chests, and election results from Board of Ethics filings.">
+<meta property="og:url" content="https://finance.charliestephens.xyz/">
+<meta property="og:image" content="https://finance.charliestephens.xyz/icon-512.png">
+<meta name="twitter:card" content="summary">
 <!-- PWA: installable from the browser menu. Light-only redesign — theme-color
      matches the dark app header bar. -->
 <link rel="manifest" href="manifest.json">
@@ -18,6 +31,15 @@
      Map tiles (CARTO) are the only remaining third-party origin, and only once
      the Money tab's map opens — warm the DNS early. -->
 <link rel="dns-prefetch" href="https://basemaps.cartocdn.com">
+<!-- Preload the above-the-fold font weights so they start downloading during
+     HTML parse instead of after the ~500 KB inline stylesheet is evaluated —
+     kills most of the fallback-font flash. (crossorigin is mandatory on font
+     preloads, even same-origin, or the browser fetches them twice.) Remaining
+     weights load on demand via @font-face. -->
+<link rel="preload" as="font" type="font/woff2" href="vendor/fonts/libre-franklin-latin-400-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="vendor/fonts/libre-franklin-latin-600-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="vendor/fonts/libre-franklin-latin-700-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="vendor/fonts/ibm-plex-mono-latin-400-normal.woff2" crossorigin>
 <!-- Leaflet + Chart.js are self-hosted under vendor/ and injected lazily by
      ensureLeaflet() / ensureChart() — see the loaders in the app script. -->
 <style>
