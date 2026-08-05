@@ -77,10 +77,33 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(bmw.advantage_bucket(7.0), '5-10x')
         self.assertEqual(bmw.advantage_bucket(25.0), '>10x')
 
+    def test_spend_through_month_reads_the_out_side(self):
+        """The primary metric is spending, so it must sum 'out', not 'in', and
+        obey the same in-cycle / pre-election truncation."""
+        entry = {
+            'cycles': {'2020-2023': {'raised': 999}},
+            'monthly': {
+                '2020-06': {'in': 10, 'out': 100},   # in cycle, before election
+                '2021-03': {'in': 20, 'out': 250},   # in cycle, election month
+                '2021-09': {'in': 30, 'out': 500},   # in cycle, AFTER election
+                '2018-01': {'in': 40, 'out': 777},   # different cycle
+            },
+        }
+        self.assertEqual(bmw.spend_through_month(entry, '03/15/2021'), 350)
+        self.assertEqual(bmw.money_through_month(entry, '03/15/2021'), 30)
 
-def _entry(cyc, month, amount):
-    """Minimal candidate-index entry with all money in one pre-election month."""
-    return {'cycles': {cyc: {'raised': amount}}, 'monthly': {month: {'in': amount, 'out': 0}}}
+    def test_spend_through_month_none_when_no_cycle_record(self):
+        entry = {'cycles': {'2016-2019': {'raised': 5}}, 'monthly': {}}
+        self.assertIsNone(bmw.spend_through_month(entry, '03/15/2021'))
+        self.assertIsNone(bmw.spend_through_month(None, '03/15/2021'))
+
+
+def _entry(cyc, month, raised, spent):
+    """Minimal candidate-index entry with all money in one pre-election month.
+    Carries both sides because the headline metric is spending and the
+    comparison block still needs fundraising."""
+    return {'cycles': {cyc: {'raised': raised}},
+            'monthly': {month: {'in': raised, 'out': spent}}}
 
 
 class TestAnalyze(unittest.TestCase):
@@ -111,30 +134,41 @@ class TestAnalyze(unittest.TestCase):
                             'vote_pct': 60.0, 'outcome': 'Elected', 'rank': 3, 'party': 'REP'}],
             'FED LOSER': [{'office': 'U. S. Representative -- 3rd', 'date': '10/12/2019',
                            'vote_pct': 40.0, 'outcome': 'Defeated', 'rank': 3, 'party': 'DEM'}],
+            # A LOAN-FINANCED statewide race (rank 5): the winner raised almost
+            # nothing but outspent everyone from personal loans. Ranking by money
+            # RAISED calls this an upset; ranking by SPENDING calls it a money win.
+            'LOAN WINNER': [{'office': 'Attorney General', 'date': '10/12/2019',
+                             'vote_pct': 58.0, 'outcome': 'Elected', 'rank': 5, 'party': 'REP'}],
+            'FUNDRAISER LOSER': [{'office': 'Attorney General', 'date': '10/12/2019',
+                                  'vote_pct': 42.0, 'outcome': 'Defeated', 'rank': 5, 'party': 'DEM'}],
         }
         self.cidx = {
-            'RICH WINNER': _entry('2016-2019', '2019-09', 50000),
-            'POOR LOSER': _entry('2016-2019', '2019-09', 10000),
-            'BIG SPENDER': _entry('2016-2019', '2019-09', 80000),
-            'CHEAP WINNER': _entry('2016-2019', '2019-09', 5000),
-            'AMBI GUOUS': _entry('2016-2019', '2019-09', 30000),
-            'OTHER JUDGE': _entry('2016-2019', '2019-09', 20000),
-            'LONE FUNDED': _entry('2016-2019', '2019-09', 40000),
-            'FED WINNER': _entry('2016-2019', '2019-09', 90000),
-            'FED LOSER': _entry('2016-2019', '2019-09', 70000),
+            #                                       cycle       month     raised  spent
+            'RICH WINNER': _entry('2016-2019', '2019-09', 50000, 50000),
+            'POOR LOSER': _entry('2016-2019', '2019-09', 10000, 10000),
+            'BIG SPENDER': _entry('2016-2019', '2019-09', 80000, 80000),
+            'CHEAP WINNER': _entry('2016-2019', '2019-09', 5000, 5000),
+            'AMBI GUOUS': _entry('2016-2019', '2019-09', 30000, 30000),
+            'OTHER JUDGE': _entry('2016-2019', '2019-09', 20000, 20000),
+            'LONE FUNDED': _entry('2016-2019', '2019-09', 40000, 40000),
+            'FED WINNER': _entry('2016-2019', '2019-09', 90000, 90000),
+            'FED LOSER': _entry('2016-2019', '2019-09', 70000, 70000),
+            'LOAN WINNER': _entry('2016-2019', '2019-09', 1000, 90000),
+            'FUNDRAISER LOSER': _entry('2016-2019', '2019-09', 80000, 20000),
             # UNFUNDED FOE deliberately absent from the index.
         }
         self.results = {'AMBI GUOUS': {'ambiguous': True}}
 
     def test_counts_and_money_leader(self):
         out = bmw.analyze(self.raw, self.cidx, self.results)
-        # Two races qualify (Legislative + Local). The judicial race is dropped
-        # (ambiguous) and the senate race is dropped (only one funded candidate).
-        self.assertEqual(out['overall']['n_races'], 2)
-        # Legislative: money leader (RICH WINNER) won. Local: money leader
-        # (BIG SPENDER) lost. So money won 1 of 2.
-        self.assertEqual(out['overall']['money_won'], 1)
-        self.assertEqual(out['overall']['rate'], 0.5)
+        # Three races qualify (Legislative + Local + Statewide). The judicial race
+        # is dropped (ambiguous), the senate race is dropped (one funded
+        # candidate), the U.S. House race is dropped (federal).
+        self.assertEqual(out['overall']['n_races'], 3)
+        # By SPENDING: Legislative leader won, Local leader lost, Statewide leader
+        # (LOAN WINNER) won. So money won 2 of 3.
+        self.assertEqual(out['overall']['money_won'], 2)
+        self.assertEqual(out['overall']['rate'], 0.667)
 
     def test_tier_breakdown_sums_to_total(self):
         out = bmw.analyze(self.raw, self.cidx, self.results)
@@ -143,6 +177,31 @@ class TestAnalyze(unittest.TestCase):
         tiers = {r['tier']: r for r in out['by_tier']}
         self.assertEqual(tiers['Legislative']['rate'], 1.0)  # money won
         self.assertEqual(tiers['Local']['rate'], 0.0)        # money lost
+        self.assertEqual(tiers['Statewide']['rate'], 1.0)    # loan-funded win
+
+    def test_spending_metric_credits_the_loan_financed_candidate(self):
+        """The whole point of the metric change: a candidate who self-funds is
+        the money leader even though they raised almost nothing."""
+        out = bmw.analyze(self.raw, self.cidx, self.results)
+        self.assertEqual(out['metric'], 'spent')
+        # LOAN WINNER must NOT appear as an upset victim or victor — by spending
+        # they were the money leader, and they won.
+        self.assertNotIn('LOAN WINNER', {u['name'] for u in out['upsets']})
+        self.assertNotIn('LOAN WINNER', {u['winner'] for u in out['upsets']})
+
+    def test_compare_block_reports_flips_and_false_upsets(self):
+        out = bmw.analyze(self.raw, self.cidx, self.results)
+        c = out['compare']
+        # By RAISED the leader won only the Legislative race -> 1 of 3.
+        self.assertEqual(c['raised']['n_races'], 3)
+        self.assertEqual(c['raised']['money_won'], 1)
+        # Exactly one race where the biggest fundraiser != the biggest spender.
+        self.assertEqual(c['leader_flips']['n'], 1)
+        self.assertEqual(c['leader_flips']['of'], 3)
+        # Of the 2 raised-based "upsets", the Attorney General one is false:
+        # the winner actually outspent the fundraising leader.
+        self.assertEqual(c['false_upsets']['of'], 2)
+        self.assertEqual(c['false_upsets']['n'], 1)
 
     def test_upset_recorded_with_ratio(self):
         out = bmw.analyze(self.raw, self.cidx, self.results)
@@ -165,9 +224,9 @@ class TestAnalyze(unittest.TestCase):
         names_in_scatter = {p['name'] for p in out['scatter']}
         self.assertNotIn('FED WINNER', names_in_scatter)
         self.assertNotIn('FED LOSER', names_in_scatter)
-        self.assertNotIn('Statewide', {r['tier'] for r in out['by_tier']})  # none here
-        # The two qualifying races are still just the Legislative + Local ones.
-        self.assertEqual(out['overall']['n_races'], 2)
+        # The qualifying races are the Legislative + Local + Statewide ones; the
+        # federal race never enters despite both candidates being well funded.
+        self.assertEqual(out['overall']['n_races'], 3)
 
     def test_scatter_shares_in_unit_interval(self):
         out = bmw.analyze(self.raw, self.cidx, self.results)
@@ -191,8 +250,30 @@ class TestShippedArtifact(unittest.TestCase):
 
     def test_top_level_keys(self):
         for k in ('overall', 'by_tier', 'by_advantage', 'scatter', 'upsets',
-                  'methodology', 'span', 'generated'):
+                  'methodology', 'span', 'generated', 'metric', 'compare'):
             self.assertIn(k, self.d)
+
+    def test_metric_is_spending(self):
+        self.assertEqual(self.d['metric'], 'spent')
+
+    def test_compare_block_shape(self):
+        c = self.d['compare']
+        for k in ('raised', 'spent', 'by_tier', 'leader_flips', 'false_upsets'):
+            self.assertIn(k, c)
+        # The spent side of `compare` must agree with the headline.
+        self.assertEqual(c['spent']['n_races'], self.d['overall']['n_races'])
+        self.assertEqual(c['spent']['rate'], self.d['overall']['rate'])
+        # Sub-counts can never exceed their base.
+        self.assertLessEqual(c['leader_flips']['n'], c['leader_flips']['of'])
+        self.assertLessEqual(c['false_upsets']['n'], c['false_upsets']['of'])
+
+    def test_upsets_are_genuine_on_the_spending_measure(self):
+        """Every listed upset must be a race the winner was actually outspent in
+        — that is what makes the page's 'outspent N×' language true."""
+        for u in self.d['upsets']:
+            if u['winner_spent'] is None:
+                continue
+            self.assertGreater(u['lead_spent'], u['winner_spent'], u)
 
     def test_tier_counts_sum_to_total(self):
         self.assertEqual(sum(r['n'] for r in self.d['by_tier']),
