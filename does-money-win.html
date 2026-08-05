@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Does Money Win? — Louisiana Elections</title>
-<meta name="description" content="How often does the candidate with the biggest campaign war chest actually win in Louisiana — and does it depend on the office? A data story built on 25 years of Secretary of State results and Board of Ethics fundraising.">
+<meta name="description" content="How often does the biggest-spending candidate actually win in Louisiana — and does it depend on the office? A data story built on 25 years of Secretary of State results and Board of Ethics filings.">
 <meta name="color-scheme" content="light">
 <!-- Link previews — this page exists to be shared. -->
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Louisiana Campaign Finance">
 <meta property="og:title" content="Does Money Win? — Louisiana Elections">
-<meta property="og:description" content="How often does the biggest war chest actually win in Louisiana — and does it depend on the office? 25 years of election results vs. fundraising.">
+<meta property="og:description" content="How often does the biggest-spending candidate actually win in Louisiana — and does it depend on the office? 25 years of election results vs. fundraising.">
 <meta property="og:url" content="https://moneywins.charliestephens.xyz/">
 <meta property="og:image" content="https://finance.charliestephens.xyz/icon-512.png">
 <meta name="twitter:card" content="summary">
@@ -118,8 +118,8 @@
 <header class="hero">
   <div class="wrap">
     <h1>Does money <span class="q">win</span><br>elections?</h1>
-    <p>Twenty-five years of Louisiana races, where the biggest campaign war chest
-       meets the ballot box.</p>
+    <p>Twenty-five years of Louisiana races, where the biggest-spending
+       campaign meets the ballot box.</p>
     <div class="scrollcue">Scroll ↓</div>
   </div>
 </header>
@@ -134,13 +134,27 @@
   </section>
 
   <section class="reveal" id="s-tier">
-    <p class="kicker">It depends on the office</p>
-    <h2>Money talks loudest for the legislature</h2>
+    <p class="kicker">Does the office change the answer?</p>
+    <h2>Less than you would think</h2>
     <p class="lede" id="tier-lede"></p>
     <div class="card"><figure>
       <svg id="tierChart" viewBox="0 0 760 300" role="img" aria-label="Money-leader win rate by office tier"></svg>
     </figure></div>
     <p class="note" style="margin-top:12px">Dashed line = a coin flip (50%). Everything to its right is a money-leader edge.</p>
+  </section>
+
+  <section class="reveal" id="s-measure">
+    <p class="kicker">Which money?</p>
+    <h2>Raised is not spent — and it changes who counts as the money candidate</h2>
+    <p class="lede" id="cmp-lede"></p>
+    <div class="card"><figure>
+      <svg id="cmpChart" viewBox="0 0 760 340" role="img" aria-label="Money-leader win rate by office tier, measured by spending versus by fundraising"></svg>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--teal)"></i> Measured by money spent</span>
+        <span><i class="dot" style="background:#c9a06a"></i> Measured by money raised</span>
+      </div>
+    </figure></div>
+    <p class="note" id="cmp-note" style="margin-top:12px"></p>
   </section>
 
   <section class="reveal" id="s-scatter">
@@ -162,9 +176,9 @@
     <h2>The more you outspend, the more you win</h2>
     <p class="lede" id="adv-lede"></p>
     <div class="card"><figure>
-      <svg id="advChart" viewBox="0 0 760 320" role="img" aria-label="Win rate of the best-funded candidate by spending advantage"></svg>
+      <svg id="advChart" viewBox="0 0 760 320" role="img" aria-label="Win rate of the biggest-spending candidate by spending advantage"></svg>
     </figure></div>
-    <p class="note" style="margin-top:12px">Each bar: how often the best-funded candidate won, grouped by how many times more they raised than the next-best-funded rival.</p>
+    <p class="note" style="margin-top:12px">Each bar: how often the biggest-spending candidate won, grouped by how many times more they spent than the next-biggest spender.</p>
   </section>
 
   <section class="reveal" id="s-upsets">
@@ -226,7 +240,7 @@ function animateBig(rate, nRaces) {
   }, { threshold: 0.5 }).observe(node);
   $('bigcap').innerHTML =
     `Across <b>${nRaces.toLocaleString()}</b> contested Louisiana races since 2000, ` +
-    `the candidate with the biggest war chest won <b>${target}%</b> of the time. ` +
+    `the candidate who <b>spent the most</b> won <b>${target}%</b> of the time. ` +
     `Money is a powerful favorite — but roughly <b>1 in 3</b> races, it wasn't enough.`;
 }
 
@@ -259,6 +273,43 @@ function renderTier(rows) {
       'font-weight': 600, 'font-family': 'var(--mono)', fill: 'var(--teal-dark)' }, pct(row.rate)));
     svg.appendChild(el('text', { x: x0 + 8, y: y + bh / 2 + 4, 'font-size': 11,
       'font-family': 'var(--mono)', fill: 'rgba(255,255,255,.85)' }, row.n + ' races'));
+  });
+}
+
+// ── Measure comparison: spending vs fundraising, per tier ────────────────────
+// Two bars per tier. The point of the chart is that the teal (spending) bars sit
+// close together while the gold (fundraising) ones fan out — i.e. the "money
+// matters less locally" story is an artifact of measuring the wrong thing.
+function renderCompare(rows) {
+  const svg = $('cmpChart');
+  const W = 760, rowH = 72, padL = 168, padR = 78, top = 24, bh = 22, gap = 6;
+  const H = top + rows.length * rowH + 24;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const x0 = padL, x1 = W - padR, span = x1 - x0;
+  const X = (r) => x0 + span * r;
+  svg.appendChild(el('line', { x1: X(0.5), y1: top - 8, x2: X(0.5), y2: top + rows.length * rowH - 10,
+    stroke: '#b7c2be', 'stroke-width': 1.5, 'stroke-dasharray': '4 4' }));
+  svg.appendChild(el('text', { x: X(0.5), y: top - 12, 'text-anchor': 'middle',
+    'font-size': 11, 'font-family': 'var(--mono)', fill: '#8a948f' }, '50%'));
+  rows.forEach((row, i) => {
+    const yTop = top + i * rowH;
+    svg.appendChild(el('text', { x: x0 - 14, y: yTop + bh + 2, 'text-anchor': 'end',
+      'font-size': 14, 'font-weight': 600, fill: '#0f1c1a' }, row.tier));
+    [['spent_rate', 'spent_n', 'var(--teal)', 0],
+     ['raised_rate', 'raised_n', '#c9a06a', bh + gap]].forEach(([rk, nk, fill, dy]) => {
+      const y = yTop + dy, rate = row[rk];
+      svg.appendChild(el('rect', { x: x0, y, width: span, height: bh, rx: 5, fill: '#eef1f0' }));
+      const w = Math.max(2, X(rate) - x0);
+      const bar = el('rect', { x: x0, y, width: 0, height: bh, rx: 5, fill });
+      svg.appendChild(bar);
+      bar.animate([{ width: '0px' }, { width: w + 'px' }],
+        { duration: 850, delay: 110 * i, fill: 'forwards', easing: 'cubic-bezier(.2,.7,.2,1)' });
+      setTimeout(() => bar.setAttribute('width', w), 850 + 110 * i);
+      svg.appendChild(el('text', { x: X(rate) + 8, y: y + bh / 2 + 4, 'font-size': 12,
+        'font-weight': 600, 'font-family': 'var(--mono)', fill: '#3d4a46' }, pct(rate)));
+      svg.appendChild(el('text', { x: x0 + 8, y: y + bh / 2 + 4, 'font-size': 10,
+        'font-family': 'var(--mono)', fill: 'rgba(255,255,255,.85)' }, row[nk] + ' races'));
+    });
   });
 }
 
@@ -333,7 +384,7 @@ function renderAdvantage(rows) {
       'font-size': 11, 'font-family': 'var(--mono)', fill: '#8a948f' }, row.n + ' races'));
   });
   svg.appendChild(el('text', { x: (padL + W - padR) / 2, y: H - 6, 'text-anchor': 'middle',
-    'font-size': 12, fill: 'var(--muted)' }, 'Best-funded candidate outspent the runner-up by…'));
+    'font-size': 12, fill: 'var(--muted)' }, 'Biggest spender outspent the runner-up by…'));
 }
 
 // ── Upsets ───────────────────────────────────────────────────────────────────
@@ -344,13 +395,13 @@ function renderUpsets(upsets) {
     const div = document.createElement('div');
     div.className = 'upset';
     const spentLine = (u.winner_spent != null)
-      ? `beaten by <span class="win">${titleCase(u.winner)}</span>, who raised <b>${fmt$(u.winner_spent)}</b> (${u.winner_vote_pct}%)`
+      ? `beaten by <span class="win">${titleCase(u.winner)}</span>, who spent <b>${fmt$(u.winner_spent)}</b> (${u.winner_vote_pct}%)`
       : `beaten by <span class="win">${titleCase(u.winner)}</span> (${u.winner_vote_pct}%)`;
     div.innerHTML =
       `<div class="top"><span class="who">${titleCase(u.name)}</span>` +
       (u.ratio ? `<span class="ratio">outspent ${u.ratio}×</span>` : '') + `</div>` +
       `<div class="office">${u.office} · ${u.date}</div>` +
-      `<div class="vs">Raised <b>${fmt$(u.lead_spent)}</b>, took ${u.lead_vote_pct}% — ${spentLine}.</div>`;
+      `<div class="vs">Spent <b>${fmt$(u.lead_spent)}</b>, took ${u.lead_vote_pct}% — ${spentLine}.</div>`;
     host.appendChild(div);
   });
 }
@@ -367,23 +418,43 @@ function renderUpsets(upsets) {
     const tiers = d.by_tier.slice().sort((a, b) => b.rate - a.rate);
     const best = tiers[0], worst = tiers[tiers.length - 1];
     $('tier-lede').innerHTML =
-      `Break the same races out by office and the picture splits. The best-funded candidate ` +
-      `won <b>${pct(best.rate)}</b> of <b>${best.tier}</b> races but only <b>${pct(worst.rate)}</b> ` +
-      `of <b>${worst.tier}</b> ones — where retail politics and low-dollar races blunt a cash edge.`;
+      `Split the same races by office and the bars barely move. The biggest spender won ` +
+      `<b>${pct(best.rate)}</b> of <b>${best.tier}</b> races and <b>${pct(worst.rate)}</b> of ` +
+      `<b>${worst.tier}</b> ones — a spread narrow enough that, at these sample sizes, it could ` +
+      `easily be chance. Money is about as good a bet for a parish council seat as for the legislature.`;
     renderTier(tiers);
 
+    const cmp = d.compare;
+    const fl = cmp.leader_flips, fu = cmp.false_upsets;
+    const ct = cmp.by_tier.slice().sort((a, b) => b.raised_rate - a.raised_rate);
+    const rHi = ct[0], rLo = ct[ct.length - 1];
+    $('cmp-lede').innerHTML =
+      `Louisiana candidates — local ones especially — bankroll campaigns with personal loans that ` +
+      `never appear as contributions received. So <em>who had the most money</em> depends on which ` +
+      `number you read. In <b>${pct(fl.rate)}</b> of races the biggest spender is a different person ` +
+      `than the biggest fundraiser. Measure by fundraising and the office tiers fan out — ` +
+      `<b>${pct(rHi.raised_rate)}</b> for <b>${rHi.tier}</b> against <b>${pct(rLo.raised_rate)}</b> ` +
+      `for <b>${rLo.tier}</b>. Measure by spending and that gap mostly closes. This page uses ` +
+      `spending throughout.`;
+    renderCompare(cmp.by_tier);
+    $('cmp-note').innerHTML =
+      `The overall answer barely cares: <b>${pct(cmp.spent.rate)}</b> by spending, ` +
+      `<b>${pct(cmp.raised.rate)}</b> by fundraising. The details care a lot — of the ` +
+      `<b>${fu.of}</b> races where the top <em>fundraiser</em> lost, <b>${fu.n}</b> ` +
+      `(${pct(fu.rate)}) were races the winner actually outspent. Those are not upsets at all.`;
+
     $('scatter-lede').innerHTML =
-      `Every dot is one candidate in one race: how much of the money they raised, against how much ` +
-      `of the vote they won. The cloud leans up and to the right` +
+      `Every dot is one candidate in one race: how much of the money spent in that race was theirs, ` +
+      `against how much of the vote they won. The cloud leans up and to the right` +
       (d.scatter_r != null ? ` (correlation <b>r = ${d.scatter_r.toFixed(2)}</b>)` : '') +
       ` — but plenty of dots sit well below the line, where money bought fewer votes than it paid for.`;
     renderScatter(d.scatter, d.scatter_r);
 
     const lo = d.by_advantage[0], hi = d.by_advantage[d.by_advantage.length - 1];
     $('adv-lede').innerHTML =
-      `A small money lead barely moves the needle — win the money race by less than 2× and you win ` +
-      `only <b>${pct(lo.rate)}</b> of the time. Outspend a rival more than 10-to-1 and it climbs to ` +
-      `<b>${pct(hi.rate)}</b>.`;
+      `A small money lead barely moves the needle — outspend your nearest rival by less than 2× and ` +
+      `you win only <b>${pct(lo.rate)}</b> of the time. Outspend them more than 10-to-1 and it climbs ` +
+      `to <b>${pct(hi.rate)}</b>.`;
     renderAdvantage(d.by_advantage);
 
     $('upset-lede').innerHTML =
