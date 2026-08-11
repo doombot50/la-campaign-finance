@@ -128,6 +128,13 @@ def main():
     print('Scanning record spine...')
     spine = scan_spine()
     print(f'  {len(spine)} distinct filer numbers')
+    if not spine:
+        # Publishing an empty entity table would silently strip every party
+        # label, transfer flag (retag_caches reads this file) and war chest.
+        # Fail with the actual cause instead of a ZeroDivisionError in the
+        # summary print below.
+        sys.exit('ABORT: no records found in .la_cache/*_yr*.json.gz — the record '
+                 'cache is missing or empty; not overwriting la_entities.json.gz.')
 
     entities = {}
     n_party = n_coh = n_career = n_races = 0
