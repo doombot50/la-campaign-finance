@@ -11,6 +11,11 @@
 # build_pages_site.py refuses to assemble an incomplete site (missing year
 # files or artifacts), so a flaky release download can never publish a
 # silently-broken deploy — the previous good deploy just stays live.
+#
+# The deploy step is retried once (see below): GitHub's Pages backend
+# occasionally leaves a deployment in `deployment_queued` until the action's
+# poll timeout, which used to mean one platform flake = a full day of stale
+# data, since nothing re-runs this workflow until the next nightly.
 
 name: Deploy Pages site
 
@@ -39,7 +44,9 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      # Fall back to the retry's URL — when the first attempt times out its
+      # page_url output is empty.
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -63,6 +70,24 @@ jobs:
         with:
           path: _site
 
+      # First attempt. `continue-on-error` keeps a timeout from failing the job
+      # outright so the retry below gets a turn; the retry re-fails the job for
+      # real if it also can't publish.
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+        with:
+          # 20 min instead of the action's 10 — Pages' queue is sometimes just
+          # slow rather than stuck, and waiting is cheaper than a re-deploy.
+          timeout: 1200000
+
+      # Retry once. Each invocation creates a *fresh* Pages deployment from the
+      # already-uploaded artifact, and the action cancels the deployment it gave
+      # up on, so re-running it is safe (not a double-publish).
+      - name: Deploy to GitHub Pages (retry)
+        id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 1200000

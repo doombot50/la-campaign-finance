@@ -395,8 +395,15 @@ def main():
 
     payload = analyze(raw, cidx, results)
 
-    with open(OUT_FILE, 'w', encoding='utf-8') as f:
+    # Atomic write. la_money_wins.json is a COMMITTED file, and the nightly's
+    # "Commit COH cache if changed" step runs with `if: always()` — so a run
+    # cancelled part-way through this dump used to commit and publish a truncated
+    # JSON that does-money-win.html could not parse. tmp + replace means the file
+    # on disk is either the old payload or the whole new one.
+    tmp = OUT_FILE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(payload, f, separators=(',', ':'), ensure_ascii=False)
+    os.replace(tmp, OUT_FILE)
 
     o = payload['overall']
     c = payload['compare']

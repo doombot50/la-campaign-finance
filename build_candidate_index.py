@@ -135,6 +135,10 @@ t0 = time.time()
 total = 0
 for fn in sorted(os.listdir(CACHE)):
     fp = os.path.join(CACHE, fn)
+    # Require the exact .json.gz suffix: a leftover `*.json.gz.tmp` from an
+    # interrupted download/retag also starts with the record prefix, and would
+    # either crash the ingest (truncated gzip) or double-count a whole year.
+    if not fn.endswith('.json.gz'): continue
     if   fn.startswith('contributions_yr'):  k = 'c'
     elif fn.startswith('expenditures_yr'):   k = 'e'
     elif fn.startswith('loans_yr'):          k = 'l'

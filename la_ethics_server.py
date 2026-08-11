@@ -953,6 +953,15 @@ LOAN_URLS = {
     '2000-2003': 'https://www.ethics.la.gov/Pub/CampFinan/DataDownload/LoanReports/Loans_2000_to_2003.csv',
 }
 
+def _cycle_param(params):
+    """The ?cycle= query param as an int year, or None when it isn't a year.
+    Every caller feeds it to get_csv_key/int(), which raised ValueError on junk
+    (`?cycle=`, `?cycle=abc`) — an unhandled exception that killed the request
+    with no response and a traceback in the log instead of a clean error."""
+    raw = (params.get('cycle', ['2024'])[0] or '').strip()
+    return int(raw) if re.fullmatch(r'\d{4}', raw) else None
+
+
 def get_csv_key(year):
     y = int(year)
     if y >= 2024: return '2024-2027'
@@ -1890,6 +1899,13 @@ def download_and_cache(csv_key, report_type='contributions'):
             'User-Agent': 'Mozilla/5.0 LACampaignFinanceDashboard/1.0',
             'Accept-Encoding': 'identity',
         })
+        # Years this bundle owns. A record whose *date* falls outside them (a
+        # data-entry typo, or a late-filed transaction carried on a neighbouring
+        # bundle) must never overwrite the year file the owning bundle built —
+        # doing so replaced a complete year with a handful of stray rows, and the
+        # completeness gates then saw the file as present and never healed it.
+        owned_years = set(_key_years(csv_key))
+        stream_complete = False
         try:
             with urllib.request.urlopen(req, timeout=300) as resp:
                 text_stream = io.TextIOWrapper(resp, encoding='utf-8-sig', errors='replace')
@@ -1927,16 +1943,30 @@ def download_and_cache(csv_key, report_type='contributions'):
                         year_counts[year] += 1
                     except Exception:
                         continue
+            stream_complete = True   # CSV consumed end to end
         finally:
-            # Always close writers; on success rename .tmp -> final path
+            # Always close writers, then promote .tmp -> final path.
             for year, fh in year_writers.items():
                 fh.close()
-            if year_counts:  # only rename if we got data (not an error mid-stream)
-                for year in year_writers:
-                    tmp  = _year_cache_path(year, report_type) + tmp_suffix
-                    dest = _year_cache_path(year, report_type)
-                    if os.path.exists(tmp):
-                        os.replace(tmp, dest)
+            for year in year_writers:
+                tmp  = _year_cache_path(year, report_type) + tmp_suffix
+                dest = _year_cache_path(year, report_type)
+                if not os.path.exists(tmp):
+                    continue
+                # Promote ONLY a fully-read stream: a socket error / read timeout
+                # part-way through leaves every open year file truncated, and
+                # publishing those installed a silently-partial cache whose fresh
+                # mtime made every later run skip it as complete. Discard instead
+                # and leave the previous good files in place.
+                # Out-of-range years are never promoted over an existing file
+                # (see owned_years above).
+                promote = stream_complete and bool(year_counts) and (
+                    year in owned_years or not os.path.exists(dest))
+                if promote:
+                    os.replace(tmp, dest)
+                else:
+                    try: os.remove(tmp)
+                    except OSError: pass
 
         total = sum(year_counts.values())
         dupes = sum(year_dupes.values())
@@ -2040,7 +2070,11 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == '/api/data-status':
-            cycle = params.get('cycle', ['2024'])[0]
+            cycle = _cycle_param(params)
+            if cycle is None:
+                # 400, not 200: the record endpoints stream NDJSON, and a 200
+                # error body would be parsed as a junk record by the client.
+                self._json({'error': 'cycle must be a 4-digit year'}, 400); return
             csv_key = get_csv_key(cycle)
             st = get_status(f'contributions_{csv_key}')
             self._json({
@@ -2300,22 +2334,24 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path not in ('/api/la-ethics', '/api/la-expenditures', '/api/la-loans'):
-            self.send_response(404)
-            self._cors_headers()
-            self.end_headers()
+            # _empty() (not a bare send_response) so the 404 carries
+            # Content-Length: 0 — an HTTP/1.1 keep-alive client otherwise waits
+            # for a body that never arrives.
+            self._empty(404)
             return
 
         report_type = ('contributions' if parsed.path == '/api/la-ethics' else
                        'expenditures'  if parsed.path == '/api/la-expenditures' else
                        'loans')
-        cycle = params.get('cycle', ['2024'])[0]
-        csv_key = get_csv_key(cycle)
+        y = _cycle_param(params)
+        if y is None:
+            self._json({'error': 'cycle must be a 4-digit year'}, 400); return
+        csv_key = get_csv_key(y)
         status_key = f'{report_type}_{csv_key}'
 
         # Gate on the PRIMARY year only.
         # The previous year (y-1) may live in a different 4-year CSV bundle; if so,
         # kick off a background download for that bundle too so it eventually fills in.
-        y = int(cycle)
         years_wanted = [y - 1, y]   # ideal two-year window
         prev_csv_key = get_csv_key(y - 1)
         if not _year_is_fresh(y, report_type):
@@ -2361,7 +2397,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             import traceback
             traceback.print_exc()
-            print(f'  Streaming error for {report_type} cycle={cycle}: {e}')
+            print(f'  Streaming error for {report_type} cycle={y}: {e}')
 
     def _stream_years_json(self, years, report_type, ndjson=False):
         """Stream per-year NDJSON cache files via chunked transfer-encoding —
@@ -2517,7 +2553,7 @@ class Handler(BaseHTTPRequestHandler):
             pass   # client disconnected mid-write
         return True
 
-    def _json(self, data):
+    def _json(self, data, status=200):
         # Compact separators (indent=2 inflated every response 20-40%) and
         # gzip anything non-trivial — candidate-history monthly buckets and
         # search results run to hundreds of KB.
@@ -2525,7 +2561,7 @@ class Handler(BaseHTTPRequestHandler):
         gzipped = len(body) > 1024 and 'gzip' in (self.headers.get('Accept-Encoding') or '')
         if gzipped:
             body = gzip.compress(body, compresslevel=3)
-        self.send_response(200)
+        self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         if gzipped:
             self.send_header('Content-Encoding', 'gzip')

@@ -22,7 +22,12 @@ def normalize(name):
 # norm_name -> {filer_number -> count}  (pick most-common filer per name)
 lookup = defaultdict(lambda: defaultdict(int))
 
-files = sorted([f for f in os.listdir(CACHE) if f.startswith('contributions_yr')], reverse=True)
+# The .json.gz suffix is required: a leftover `*.json.gz.tmp` from an interrupted
+# download/retag also starts with the prefix, sorts newest under reverse=True, and
+# would be read as a (possibly truncated) year file.
+files = sorted([f for f in os.listdir(CACHE)
+                if f.startswith('contributions_yr') and f.endswith('.json.gz')],
+               reverse=True)
 print(f'Scanning {len(files)} year files...')
 
 total = 0

@@ -63,15 +63,21 @@ self.addEventListener('activate', (event) => {
 });
 
 // Serve from cache, then update the cache in the background for next time.
-async function staleWhileRevalidate(request, cacheName) {
+// `event` is required: on a cache hit the response resolves immediately, and
+// without event.waitUntil() holding the background fetch open the browser is
+// free to kill the worker before cache.put() lands — so the "revalidate" half
+// of stale-while-revalidate would silently never happen and the cached copy
+// could stay stale indefinitely.
+async function staleWhileRevalidate(event, request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
   const network = fetch(request)
     .then((res) => {
-      if (res && res.ok) cache.put(request, res.clone());
+      if (res && res.ok) return cache.put(request, res.clone()).then(() => res);
       return res;
     })
     .catch(() => cached);   // offline: fall back to whatever we have
+  if (cached) event.waitUntil(network);
   return cached || network;
 }
 
@@ -89,7 +95,7 @@ self.addEventListener('fetch', (event) => {
   // Navigations → the shell, served fast and revalidated.
   if (req.mode === 'navigate') {
     event.respondWith(
-      staleWhileRevalidate(req, SHELL_CACHE)
+      staleWhileRevalidate(event, req, SHELL_CACHE)
         .then((res) => res || caches.match('./index.html'))
     );
     return;
@@ -97,10 +103,10 @@ self.addEventListener('fetch', (event) => {
 
   // Nightly data artifacts → stale-while-revalidate in their own cache.
   if (url.pathname.includes('/data/')) {
-    event.respondWith(staleWhileRevalidate(req, DATA_CACHE));
+    event.respondWith(staleWhileRevalidate(event, req, DATA_CACHE));
     return;
   }
 
   // Other same-origin static assets (static_api.js, icons, manifest) → SWR.
-  event.respondWith(staleWhileRevalidate(req, SHELL_CACHE));
+  event.respondWith(staleWhileRevalidate(event, req, SHELL_CACHE));
 });
