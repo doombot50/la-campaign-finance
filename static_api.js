@@ -46,22 +46,29 @@
 
   // Async generator: NDJSON lines from a gzipped year file. A 404 yields
   // nothing — the live server likewise skips year files that don't exist.
-  async function* ndjsonLines(name) {
-    const res = await fetch(`${base()}/${name}`);
+  // `resPromise` lets a caller start the fetch ahead of iteration (see
+  // streamRecordLines); the finally block cancels the reader so a consumer
+  // that breaks out early doesn't leave the connection open.
+  async function* ndjsonLines(name, resPromise) {
+    const res = await (resPromise || fetch(`${base()}/${name}`));
     if (res.status === 404) return;
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${name}`);
     const reader = gunzipStream(res).getReader();
-    const decoder = new TextDecoder();
-    let buf = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const lines = buf.split('\n');
-      buf = lines.pop();
-      for (const ln of lines) if (ln) yield ln;
+    try {
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const ln of lines) if (ln) yield ln;
+      }
+      if (buf.trim()) yield buf.trim();
+    } finally {
+      reader.cancel().catch(() => {});
     }
-    if (buf.trim()) yield buf.trim();
   }
 
   // ── name normalizers (exact mirrors of the server's) ─────────────────────
@@ -379,8 +386,27 @@
     return [y - 1, y];
   }
   async function* streamRecordLines(type, cycleYear) {
-    for (const y of cycleYears(cycleYear)) {
-      yield* ndjsonLines(`${type}_yr${y}.json.gz`);
+    // Start both year fetches up front so the second file's bytes are already
+    // in flight while the first streams; output order (y-1 then y) is
+    // unchanged, so the live server's byte-parity holds.
+    const years = cycleYears(cycleYear);
+    const started = years.map(y => {
+      const p = fetch(`${base()}/${type}_yr${y}.json.gz`);
+      p.catch(() => {});   // handled when its turn comes — avoid an unhandled rejection
+      return p;
+    });
+    let i = 0;
+    try {
+      for (; i < years.length; i++) {
+        yield* ndjsonLines(`${type}_yr${years[i]}.json.gz`, started[i]);
+      }
+    } finally {
+      // A consumer that stopped early leaves later prefetches unconsumed —
+      // cancel their bodies so the connections don't dangle.
+      for (let j = i + 1; j < started.length; j++) {
+        started[j].then(r => { if (r && r.body) r.body.cancel().catch(() => {}); })
+                  .catch(() => {});
+      }
     }
   }
   async function records(type, cycleYear) {

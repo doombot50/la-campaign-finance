@@ -2450,8 +2450,15 @@ class Handler(BaseHTTPRequestHandler):
             _load_donor_industries()
 
         try:
+            # Batch output into ~64 KB blocks before it hits the gzip/chunk
+            # writers. Per-record writes meant hundreds of thousands of
+            # GzipFile.write calls and (the handler's wfile is unbuffered)
+            # one tiny socket write per record for identity responses — the
+            # bulk of this endpoint's per-request CPU.
+            FLUSH_AT = 65536
+            batch = bytearray()
             if not ndjson:
-                out.write(b'[')
+                batch += b'['
             first = True
             for year in years:
                 p = _year_cache_path(year, report_type)
@@ -2478,12 +2485,20 @@ class Handler(BaseHTTPRequestHandler):
                             except Exception:
                                 pass
                         if ndjson:
-                            out.write(raw.encode('utf-8') + b'\n')
+                            batch += raw.encode('utf-8')
+                            batch += b'\n'
                         else:
-                            out.write((b'' if first else b',') + raw.encode('utf-8'))
+                            if not first:
+                                batch += b','
+                            batch += raw.encode('utf-8')
                         first = False
+                        if len(batch) >= FLUSH_AT:
+                            out.write(bytes(batch))
+                            batch.clear()
             if not ndjson:
-                out.write(b']')
+                batch += b']'
+            if batch:
+                out.write(bytes(batch))
             out.close()   # flushes the gzip trailer through the chunk writer
             # Terminating chunk signals end of chunked body
             self.wfile.write(b'0\r\n\r\n')
