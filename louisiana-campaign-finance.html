@@ -3278,7 +3278,104 @@ function _showStatSkeletons() {
 
 let _noticeDismissTimer = null;
 
+// ── Bounded-concurrency task runner ─────────────────────────────────────────
+// Runs async task thunks with at most `limit` in flight; resolves when all
+// have settled. Tasks handle their own errors (a throw is logged, never
+// propagated) so one failed cycle can't abort the others.
+async function _runLimit(tasks, limit) {
+  let next = 0;
+  const worker = async () => {
+    while (next < tasks.length) {
+      const i = next++;
+      try { await tasks[i](); }
+      catch (e) { console.warn('load task failed:', e); }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, tasks.length)) }, worker));
+}
+// Streams per cycle to run at once. Browsers pool ~6 connections per host, and
+// the main thread still parses every line, so 4 saturates the pipe without
+// starving rendering; low-memory devices (capped at 2 cycles anyway) stay at 2.
+function _loadConcurrency() { return _isLowMemoryDevice() ? 2 : 4; }
+
+// Load generation token: every loadData() bumps it, and everything in flight
+// checks it. Without this, a stream started before the user switched cycles
+// kept appending its rows into the fresh load's array (mixing deselected
+// cycles into the new view).
+let _loadGen = 0;
+
+// Progress + paint scheduler shared by all of one load's concurrent cycle
+// streams. Coalesces their status-text updates and decides when a mid-stream
+// partial paint is worth its cost: once at each early threshold so first
+// content shows in seconds, then on an adaptive interval that backs off as
+// the dataset (and therefore the price of a full re-render) grows —
+// previously each cycle re-triggered the early thresholds, so an all-cycles
+// load paid ~2 full re-renders per cycle over an ever-growing dataset.
+function _makeLoadProgress(gen, cycles, bufs) {
+  const multi = cycles.length > 1;
+  // Sum of the previous session's record counts for these cycles (when known)
+  // drives the determinate progress bar.
+  const expected = cycles.reduce((s, c) => s + ((getCycleStats(c) || {}).count || 0), 0) || null;
+  const THRESHOLDS = [15000, 60000];
+  let thIdx = 0, done = 0;
+  let lastText = 0, lastPaint = 0, minGap = 2500, paintTimer = null;
+  const count = () => { let n = 0; for (const b of bufs) n += b.length; return n; };
+  const stale = () => gen !== _loadGen;
+
+  function paintNow() {
+    if (stale()) return;
+    clearTimeout(paintTimer); paintTimer = null;
+    const t0 = performance.now();
+    laEthicsData = [].concat(...bufs);
+    _partialLoad = true;
+    try { mergeAndRender(); } finally { _partialLoad = false; }
+    lastPaint = performance.now();
+    // Adaptive cadence: cap repaint overhead at ~20% of wall time so paints
+    // stay frequent while the dataset is small and back off as it grows.
+    minGap = Math.max(2500, (lastPaint - t0) * 4);
+  }
+  function requestPaint() {
+    if (stale() || paintTimer) return;
+    const wait = lastPaint + minGap - performance.now();
+    if (wait <= 0) paintNow();
+    else paintTimer = setTimeout(() => { paintTimer = null; paintNow(); }, wait);
+  }
+  function updateText(force) {
+    if (stale()) return;
+    const now = performance.now();
+    if (!force && now - lastText < 300) return;
+    lastText = now;
+    const n = count(), ns = n.toLocaleString();
+    document.getElementById('la-status').textContent = `Loading… ${ns} records so far`;
+    const msg = multi
+      ? `Loading ${isAllCycles() ? 'all' : cycles.length} cycles — ${ns} records so far (${done} of ${cycles.length} cycles done)`
+      : `Loading ${_cyclePeriodLabel(cycles[0])} contributions… ${ns} records so far`;
+    _loadStrip(true, msg, expected ? n / expected : null, force);
+  }
+  return {
+    tick() {
+      if (stale()) return;
+      updateText(false);
+      const n = count();
+      if (thIdx < THRESHOLDS.length && n >= THRESHOLDS[thIdx]) { thIdx++; requestPaint(); }
+      else if (lastPaint && performance.now() - lastPaint > minGap * 2) requestPaint();
+    },
+    // A cycle's IndexedDB copy landed: paint promptly so repeat visitors see
+    // rows immediately instead of after the whole selection resolves.
+    cachedReady() { if (!stale()) { updateText(true); requestPaint(); } },
+    cycleDone()   { if (!stale()) { done++; updateText(true); requestPaint(); } },
+    finish() {
+      if (stale()) return;
+      clearTimeout(paintTimer); paintTimer = null;
+      _loadStrip(false);
+      document.getElementById('la-status').textContent =
+        `${laEthicsData.length.toLocaleString()} LA Ethics records`;
+    },
+  };
+}
+
 async function loadData() {
+  const gen = ++_loadGen;
   const cycles = getSelectedCycles();
   // btn-load is hidden now but may still be referenced; guard safely
   const btn = document.getElementById('btn-load');
@@ -3291,17 +3388,23 @@ async function loadData() {
   _renderCycleAggPreview();   // instant stat cards + breakdowns from per-cycle aggregates
 
   if (proxyAvailable) {
-    // Single cycle keeps the original fast path untouched; several cycles stream
-    // in one after another (accumulating into laEthicsData) so the table fills
-    // progressively instead of blocking on the whole multi-cycle payload.
+    // Each cycle streams into its own buffer, all cycles concurrently (bounded
+    // by _loadConcurrency), and the shared paint scheduler assembles
+    // laEthicsData snapshots from the buffers — the table fills progressively
+    // and no cycle waits for the ones ahead of it in the selection.
     laEthicsData = [];
     if (cycles.length > 1) {
       _loadStrip(true, `Loading ${isAllCycles() ? 'all' : cycles.length} cycles — this is a larger download and may take a little while…`, null, true);
     }
-    for (const cyc of cycles) {
-      await fetchLAEthicsLive(cyc);
-    }
-    if (cycles.length > 1) _loadStrip(false);   // clear the multi-cycle notice
+    const bufs = cycles.map(() => []);
+    const prog = _makeLoadProgress(gen, cycles, bufs);
+    await _runLimit(cycles.map((cyc, i) => async () => {
+      await _fetchContribCycleRows(cyc, gen, bufs[i], prog);
+      prog.cycleDone();
+    }), _loadConcurrency());
+    if (gen !== _loadGen) return;   // a newer selection owns the UI now
+    laEthicsData = [].concat(...bufs);
+    prog.finish();
     // If the device cap trimmed the request, say so (and auto-dismiss).
     if (_cycleCapNotice) {
       const asked = _cycleCapNotice; _cycleCapNotice = 0;
@@ -3311,6 +3414,7 @@ async function loadData() {
     }
   }
 
+  if (gen !== _loadGen) return;
   mergeAndRender();
   showMapSpinner(false);
   setStatus('ok');
@@ -3372,67 +3476,61 @@ function _loadStrip(show, text, frac, force) {
   }
 }
 
-async function fetchLAEthicsLive(cycle) {
+// Fetch one cycle's contributions into `buf`, its per-cycle buffer. Runs
+// concurrently with the other selected cycles (bounded by _runLimit); the
+// paint scheduler in `prog` owns all rendering and status text. Returns when
+// the cycle is fully ingested, or abandons silently when a newer loadData()
+// bumped _loadGen. IndexedDB slices keep the same per-cycle keys as before
+// (live_<cycle>), so existing caches stay valid.
+async function _fetchContribCycleRows(cycle, gen, buf, prog) {
+  if (gen !== _loadGen) return;
   const cacheKey = `live_${cycle}`;
-  // laEthicsData accumulates across cycles (loadData resets it once up front),
-  // so each cycle appends onto whatever earlier cycles already loaded. _base
-  // marks where this cycle's slice begins, so a stale-cache refetch can drop
-  // just this cycle's rows before re-streaming.
-  const _base = laEthicsData.length;
   const cached = await idbGet(cacheKey);
+  if (gen !== _loadGen) return;
   if (cached) {
-    for (const r of cached) laEthicsData.push(r);
-    document.getElementById('la-status').textContent = `${laEthicsData.length.toLocaleString()} LA Ethics records (cached)`;
+    for (const r of cached) buf.push(r);
+    prog.cachedReady();
     if (!await _cachedCycleStale(cacheKey + ':asof')) {
       return;
     }
-    // Cache predates the latest nightly build: show it instantly, then fall
-    // through to the normal fetch to replace it — visibly, via the strip.
-    _partialLoad = true;
-    try { mergeAndRender(); } finally { _partialLoad = false; }
+    if (gen !== _loadGen) return;
+    // Cache predates the latest nightly build: the cached rows are already
+    // painted; fall through to re-stream and replace them — visibly.
     _loadStrip(true, 'Newer nightly data available — updating…', null, true);
   }
+
+  const ingestLine = (ln) => {
+    if (!ln) return;
+    try {
+      const d = JSON.parse(ln);
+      if (!d.donorType) d.donorType = detectDonorType(d.contributor);
+      buf.push(d);
+    } catch (e) { /* torn line — ignore */ }
+  };
+  const persist = () => {   // fire-and-forget, same keys as always
+    idbSet(cacheKey, buf.slice());
+    idbSet(cacheKey + ':asof', Date.now());
+  };
+  // A failed refetch shouldn't blank a cycle we have a (stale) copy of.
+  const restoreCached = () => {
+    if (cached && !buf.length) for (const r of cached) buf.push(r);
+  };
 
   if (STATIC_MODE) {
     // Server-less: stream the per-year artifacts through the same progressive
     // ingestion as the live path. Files always exist (published nightly), so
     // there is no 202 wait state.
-    laEthicsData.length = _base;   // drop this cycle's stale-cache copy (if any)
-    const _expected = (typeof getCycleStats === 'function' && getCycleStats(cycle)?.count) || null;
-    let lastTick = 0;
-    const PARTIAL_RENDER_AT = [15000, 60000];
-    let renderIdx = 0;
+    buf.length = 0;   // drop the stale-cache copy (if any) before re-streaming
     try {
       for await (const ln of StaticAPI.streamRecordLines('contributions', cycle)) {
-        try {
-          const d = JSON.parse(ln);
-          if (!d.donorType) d.donorType = detectDonorType(d.contributor);
-          laEthicsData.push(d);
-        } catch (e) { /* torn line */ }
-        if ((laEthicsData.length & 1023) === 0) {
-          const now = performance.now();
-          if (now - lastTick > 300) {
-            lastTick = now;
-            const n = laEthicsData.length.toLocaleString();
-            document.getElementById('la-status').textContent = `Loading… ${n} records so far`;
-            _loadStrip(true, `Loading ${_cyclePeriodLabel(cycle)} contributions… ${n} records so far`,
-                       _expected ? laEthicsData.length / _expected : null);
-          }
-          if (renderIdx < PARTIAL_RENDER_AT.length &&
-              laEthicsData.length >= PARTIAL_RENDER_AT[renderIdx]) {
-            renderIdx++;
-            _partialLoad = true;
-            try { mergeAndRender(); } finally { _partialLoad = false; }
-          }
-        }
+        if (gen !== _loadGen) return;   // for-await return cancels the stream
+        ingestLine(ln);
+        if ((buf.length & 1023) === 0) prog.tick();
       }
-      idbSet(cacheKey, laEthicsData.slice(_base));   // persist just this cycle's slice (fire-and-forget)
-      idbSet(cacheKey + ':asof', Date.now());
-      document.getElementById('la-status').textContent =
-        `${laEthicsData.length.toLocaleString()} LA Ethics records`;
-      _loadStrip(false);
+      persist();
     } catch (err) {
       console.warn('Static data load error:', err);
+      restoreCached();
       document.getElementById('la-status').textContent = `Error loading data: ${err.message}`;
       _loadStrip(true, `⚠ Could not load data: ${err.message} — reload the page to retry`, null, true);
     }
@@ -3440,7 +3538,9 @@ async function fetchLAEthicsLive(cycle) {
   }
 
   // Poll until the server has finished downloading and caching the CSV.
-  // On first deploy the server pre-fetches in the background; we just need to wait.
+  // On first deploy the server pre-fetches in the background; we just need to
+  // wait — and with cycles polling concurrently, several missing bundles
+  // download server-side in parallel instead of one after another.
   // Transient errors (free-tier cold starts answer the first requests with
   // 502s) are retried with backoff instead of aborting the whole load.
   const MAX_POLLS   = 40;   // up to ~3.5 minutes
@@ -3449,13 +3549,15 @@ async function fetchLAEthicsLive(cycle) {
   let retries = 0;
 
   for (let attempt = 0; attempt <= MAX_POLLS; attempt++) {
+    if (gen !== _loadGen) return;
     try {
       const resp = await fetch(`${API_BASE}/api/la-ethics?cycle=${cycle}&format=ndjson`);
+      if (gen !== _loadGen) return;
 
       if (resp.status === 202) {
         // Server is still downloading — show progress and wait
         retries = 0;
-        const info = await resp.json().catch(() => ({}));
+        await resp.json().catch(() => ({}));
         const elapsed = attempt * (POLL_MS / 1000);
         document.getElementById('la-status').textContent =
           `Downloading data from ethics.la.gov… (${elapsed}s elapsed — this happens once)`;
@@ -3470,58 +3572,30 @@ async function fetchLAEthicsLive(cycle) {
 
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-      // Progressive NDJSON stream: parse records as bytes arrive and paint
-      // the dashboard twice mid-stream, so first content shows in seconds
-      // instead of after the full payload. Partial paints are flagged so
-      // cycle-delta stats are never saved from incomplete data.
-      laEthicsData.length = _base;   // drop this cycle's stale-cache copy (if any)
-      const _expected = (typeof getCycleStats === 'function' && getCycleStats(cycle)?.count) || null;
+      // Progressive NDJSON stream: parse records as bytes arrive; the shared
+      // scheduler decides when a partial paint is worth it. Partial paints are
+      // flagged so cycle-delta stats are never saved from incomplete data.
+      buf.length = 0;   // drop the stale-cache copy / an aborted attempt's rows
       const reader  = resp.body.getReader();
       const decoder = new TextDecoder();
-      let buf = '', lastTick = 0;
-      const PARTIAL_RENDER_AT = [15000, 60000];
-      let renderIdx = 0;
-      const ingestLine = (ln) => {
-        if (!ln) return;
-        try {
-          const d = JSON.parse(ln);
-          if (!d.donorType) d.donorType = detectDonorType(d.contributor);
-          laEthicsData.push(d);
-        } catch (e) { /* torn line — ignore */ }
-      };
+      let sbuf = '';
       while (true) {
         const { done, value } = await reader.read();
+        if (gen !== _loadGen) { reader.cancel().catch(() => {}); return; }
         if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop();   // keep the trailing partial line
+        sbuf += decoder.decode(value, { stream: true });
+        const lines = sbuf.split('\n');
+        sbuf = lines.pop();   // keep the trailing partial line
         for (const ln of lines) ingestLine(ln);
-        const now = performance.now();
-        if (now - lastTick > 300) {
-          lastTick = now;
-          const n = laEthicsData.length.toLocaleString();
-          document.getElementById('la-status').textContent =
-            `Loading… ${n} records so far`;
-          _loadStrip(true, `Loading ${_cyclePeriodLabel(cycle)} contributions… ${n} records so far`,
-                     _expected ? laEthicsData.length / _expected : null);
-        }
-        if (renderIdx < PARTIAL_RENDER_AT.length &&
-            laEthicsData.length >= PARTIAL_RENDER_AT[renderIdx]) {
-          renderIdx++;
-          _partialLoad = true;
-          try { mergeAndRender(); } finally { _partialLoad = false; }
-        }
+        prog.tick();
       }
-      ingestLine(buf.trim());
-      idbSet(cacheKey, laEthicsData.slice(_base));   // persist just this cycle's slice (fire-and-forget)
-      idbSet(cacheKey + ':asof', Date.now());
-      document.getElementById('la-status').textContent =
-        `${laEthicsData.length.toLocaleString()} LA Ethics records`;
-      _loadStrip(false);
+      ingestLine(sbuf.trim());
+      persist();
       return;
 
     } catch(err) {
       console.warn('LA Ethics fetch error:', err);
+      if (gen !== _loadGen) return;
       if (retries < MAX_RETRIES) {
         retries++;
         const delay = 2000 * Math.pow(2, retries - 1);
@@ -3531,6 +3605,7 @@ async function fetchLAEthicsLive(cycle) {
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
+      restoreCached();
       document.getElementById('la-status').textContent =
         `Error loading data: ${err.message}`;
       _loadStrip(true, `⚠ Could not load data: ${err.message} — reload the page to retry`, null, true);
@@ -3570,6 +3645,18 @@ function mergeAndRender() {
   applyFiltersAndRender();
 }
 
+// Calendar year of a record's date, cached on the record. Server dates are
+// ISO (YYYY-MM-DD), so a numeric prefix parse avoids allocating a Date per
+// row — the filter pass runs over every loaded row on every render, which is
+// millions of Date objects per keystroke with several cycles loaded. Odd
+// formats (CSV upload) fall back to the Date parser once, then hit the cache.
+function _recYear(d) {
+  if (d._yr !== undefined) return d._yr;
+  let y = parseInt(d.date, 10);
+  if (!(y >= 1000 && y <= 9999)) y = new Date(d.date).getFullYear();
+  return (d._yr = y);
+}
+
 // ============================================================
 // FILTERS
 // ============================================================
@@ -3589,9 +3676,7 @@ function applyFiltersAndRender() {
 
   filteredData = allData.filter(d => {
     if (!d.date) return false;
-    const dt = new Date(d.date);
-    const yr = dt.getFullYear();
-    if (!cycleYears.has(yr)) return false;
+    if (!cycleYears.has(_recYear(d))) return false;
     if (party !== 'ALL') {
       if (party === 'PAC') { if (d.donorType !== 'PAC') return false; }
       else if (party === 'PAC-DEM') { if (d.donorType !== 'PAC' || detectPACParty(d.contributor) !== 'PAC-DEM') return false; }
@@ -4706,8 +4791,8 @@ function normalizeParty(p) {
 function updateStatusBar() {
   document.getElementById('status-records').textContent = filteredData.length.toLocaleString();
   document.getElementById('status-updated').textContent = new Date().toLocaleTimeString();
-  // Note: la-status is owned by fetchLAEthicsLive (shows record count / "cached") —
-  // don't clobber it here.
+  // Note: la-status is owned by the contribution loaders (record count /
+  // progress text) — don't clobber it here.
 }
 
 function setStatus(state) {
@@ -5201,7 +5286,13 @@ document.getElementById('notes-search')?.setAttribute('aria-label', 'Search note
 ['exp-loading-msg', 'loan-loading-msg'].forEach(id => document.getElementById(id)?.setAttribute('aria-live', 'polite'));
 
 // ── Fetch expenditure data ────────────────────────────────────────
+// Generation tokens for the exp/loan loaders, same job as _loadGen for
+// contributions: a load that was superseded by a cycle change must never
+// apply its (now wrong) rows over the newer selection's.
+let _expLoadGen = 0, _loanLoadGen = 0;
+
 async function loadExpData() {
+  const gen = ++_expLoadGen;
   // Expenditures exist from 2002 on. With several cycles selected, fan out and
   // accumulate (see _loadExpMulti); the single-cycle path below is unchanged.
   const expCycles = getSelectedCycles().filter(c => parseInt(c) >= 2002);
@@ -5211,7 +5302,7 @@ async function loadExpData() {
     document.getElementById('exp-loading-msg').style.display = 'none';
     return;
   }
-  if (expCycles.length > 1) { await _loadExpMulti(expCycles); return; }
+  if (expCycles.length > 1) { await _loadExpMulti(expCycles, gen); return; }
   const cycle = expCycles[0];
   if (parseInt(cycle) < 2000) {
     document.getElementById('exp-unavailable-msg').style.display = '';
@@ -5226,6 +5317,7 @@ async function loadExpData() {
   // ── IndexedDB cache check ─────────────────────────────────────
   const expCacheKey = `exp_${cycle}`;
   const expCached = await idbGet(expCacheKey);
+  if (gen !== _expLoadGen) return;
   if (expCached) {
     expData = expCached;
     // Re-tag categories so cached rows reflect the current category labels
@@ -5252,6 +5344,7 @@ async function loadExpData() {
 
   // Shared by the live poll and the static path so behavior can't diverge.
   const applyExpData = (raw) => {
+    if (gen !== _expLoadGen) return;   // superseded by a newer selection
     expData = raw;
     // Tag each record with category
     expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
@@ -5343,18 +5436,20 @@ async function _fetchExpCycleRaw(cycle) {
   return cached || [];
 }
 
-// Load several cycles of expenditures, accumulating into expData, then render once.
-async function _loadExpMulti(cycles) {
+// Load several cycles of expenditures concurrently (bounded), accumulating
+// into expData in selection order, then render once.
+async function _loadExpMulti(cycles, gen) {
   document.getElementById('exp-loading-msg').style.display = '';
   document.getElementById('exp-unavailable-msg').style.display = 'none';
   document.getElementById('exp-table').style.display = '';
   document.getElementById('exp-loading-msg').textContent =
     `Loading ${isAllCycles() ? 'all' : cycles.length} cycles of expenditures…`;
+  const parts = new Array(cycles.length);
+  await _runLimit(cycles.map((c, i) => async () => { parts[i] = await _fetchExpCycleRaw(c); }),
+                  _loadConcurrency());
+  if (gen !== _expLoadGen) return;   // superseded by a newer selection
   const acc = [];
-  for (const c of cycles) {
-    const part = await _fetchExpCycleRaw(c);
-    if (part && part.length) for (const r of part) acc.push(r);
-  }
+  for (const part of parts) if (part && part.length) for (const r of part) acc.push(r);
   expData = acc;
   expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
   document.getElementById('exp-loading-msg').style.display = 'none';
@@ -5808,10 +5903,11 @@ let _loanLenderSorted = [];
 
 // ── Fetch loan data ───────────────────────────────────────────
 async function loadLoanData() {
+  const gen = ++_loanLoadGen;
   // Several cycles selected → fan out and accumulate; single-cycle path below
   // is unchanged.
   const loanCycles = getSelectedCycles();
-  if (loanCycles.length > 1) { await _loadLoanMulti(loanCycles); return; }
+  if (loanCycles.length > 1) { await _loadLoanMulti(loanCycles, gen); return; }
   const cycle = loanCycles[0];
   document.getElementById('loan-loading-msg').style.display = '';
   document.getElementById('loan-unavailable-msg').style.display = 'none';
@@ -5820,6 +5916,7 @@ async function loadLoanData() {
   // ── IndexedDB cache check ─────────────────────────────────────
   const loanCacheKey = `loan_${cycle}`;
   const loanCached = await idbGet(loanCacheKey);
+  if (gen !== _loanLoadGen) return;
   if (loanCached) {
     loanData = loanCached;
     document.getElementById('loan-loading-msg').style.display = 'none';
@@ -5844,6 +5941,7 @@ async function loadLoanData() {
 
   // Shared by the live poll and the static path so behavior can't diverge.
   const applyLoanData = (raw) => {
+    if (gen !== _loanLoadGen) return;   // superseded by a newer selection
     loanData = raw.map(d => {
       // detect self-loan: lender name closely matches candidate name
       const lender = (d.contributor || '').toUpperCase();
@@ -5941,18 +6039,20 @@ async function _fetchLoanCycleRaw(cycle) {
   return cached || [];
 }
 
-// Load several cycles of loans, accumulating into loanData, then render once.
-async function _loadLoanMulti(cycles) {
+// Load several cycles of loans concurrently (bounded), accumulating into
+// loanData in selection order, then render once.
+async function _loadLoanMulti(cycles, gen) {
   document.getElementById('loan-loading-msg').style.display = '';
   document.getElementById('loan-unavailable-msg').style.display = 'none';
   document.getElementById('loan-table').style.display = '';
   document.getElementById('loan-loading-msg').textContent =
     `Loading ${isAllCycles() ? 'all' : cycles.length} cycles of loans…`;
+  const parts = new Array(cycles.length);
+  await _runLimit(cycles.map((c, i) => async () => { parts[i] = await _fetchLoanCycleRaw(c); }),
+                  _loadConcurrency());
+  if (gen !== _loanLoadGen) return;   // superseded by a newer selection
   const acc = [];
-  for (const c of cycles) {
-    const part = await _fetchLoanCycleRaw(c);
-    if (part && part.length) for (const r of part) acc.push(r);
-  }
+  for (const part of parts) if (part && part.length) for (const r of part) acc.push(r);
   loanData = acc;
   document.getElementById('loan-loading-msg').style.display = 'none';
   document.getElementById('loan-loading-msg').textContent = 'Loading loan data…';
@@ -6244,8 +6344,7 @@ function buildDonorsAgg() {
   let totalAll = 0;
   allData.forEach(d => {
     if (!d.date) return;
-    const yr = new Date(d.date).getFullYear();
-    if (!cycleYears.has(yr)) return;
+    if (!cycleYears.has(_recYear(d))) return;
     const k = d.contributor || 'Unknown';
     let rec = byDonor[k];
     if (!rec) rec = byDonor[k] = { name: k, total: 0, count: 0, committees: new Set(), type: d.donorType || '', rep: 0, dem: 0 };
@@ -6527,7 +6626,7 @@ function renderCompare() {
   }
 
   const cycleYears = _cycleYearSet(getSelectedCycles());
-  const inCycle = (d) => cycleYears.has(new Date(d.date).getFullYear());
+  const inCycle = (d) => cycleYears.has(_recYear(d));
 
   const cards = _compareSel.map(name => {
     const _cm = _campaignMatch(name);   // normalized join — search names vs as-filed records
@@ -6689,7 +6788,7 @@ function showContributorProfile(name) {
   const cycleYears = _cycleYearSet(getSelectedCycles());
   const contribs   = allData.filter(d => {
     if (d.contributor !== name) return false;
-    return cycleYears.has(new Date(d.date).getFullYear());
+    return cycleYears.has(_recYear(d));
   }).sort((a, b) => b.date.localeCompare(a.date));
 
   if (!contribs.length) {
@@ -9315,8 +9414,9 @@ function _focusSearchWithToken(prefix) {
 
 // ── Multi-cycle picker popover ──────────────────────────────────────────────
 // The visible, discoverable control for the additive multi-cycle aggregation
-// that already works under the hood (loadData loops getSelectedCycles()). Drives
-// _setSelectedCycles + a full reload, exactly like the dropdown change handler.
+// that already works under the hood (loadData streams getSelectedCycles()
+// concurrently). Drives _setSelectedCycles + a full reload, exactly like the
+// dropdown change handler.
 function _applyCycleSelection(cycles) {
   _setSelectedCycles(cycles);
   allData = []; laEthicsData = []; filteredData = [];

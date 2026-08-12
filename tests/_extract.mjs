@@ -8,7 +8,9 @@ import { readFileSync } from 'node:fs';
 // Brace-match a `function NAME(...) { ... }` declaration starting at `from`.
 function grabFunction(src, name) {
   // Match the exact name followed by `(` so `foo` doesn't grab `fooHtml`.
-  const m = new RegExp(`function\\s+${name}\\s*\\(`).exec(src);
+  // The optional `async` prefix must be captured too, or an extracted
+  // async function's `await`s become syntax errors.
+  const m = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`).exec(src);
   if (!m) throw new Error(`function not found: ${name}`);
   const start = m.index;
   let depth = 0, started = false, i = start;

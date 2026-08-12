@@ -14,6 +14,7 @@ const fe = extract(HTML, {
     '_raceDistrictNum', '_officeRank', '_raceDateSortKey', '_electionDateLabel',
     '_electionDateShort', '_raceAnchorId', '_cmpRaceYear', 'fmtRaisedShort',
     'outcomeClass', 'outcomeLabel', 'escHtml', 'partyBadge',
+    '_runLimit', '_recYear',
   ],
 });
 
@@ -144,4 +145,41 @@ test('partyBadge: maps known parties to their CSS class', () => {
   assert.match(fe.partyBadge('DEM'), /party-dem/);
   assert.match(fe.partyBadge('XYZ'), /party-ind/);   // unknown -> independent styling
   assert.match(fe.partyBadge(''), />\?</);           // empty -> "?"
+});
+
+// ── Concurrent cycle loading ──────────────────────────────────────────────────
+test('_runLimit: runs every task, never more than `limit` at once', async () => {
+  let inFlight = 0, peak = 0;
+  const ran = [];
+  const tasks = Array.from({ length: 9 }, (_, i) => async () => {
+    inFlight++; peak = Math.max(peak, inFlight);
+    await new Promise(r => setTimeout(r, 5));
+    inFlight--; ran.push(i);
+  });
+  await fe._runLimit(tasks, 3);
+  assert.equal(ran.length, 9);
+  assert.equal(new Set(ran).size, 9);   // each task exactly once
+  assert.ok(peak <= 3, `peak concurrency ${peak} exceeded limit 3`);
+  assert.ok(peak > 1, 'tasks did not actually overlap');
+});
+
+test('_runLimit: a throwing task does not abort the others', async () => {
+  const done = [];
+  const tasks = [
+    async () => { done.push(1); },
+    async () => { throw new Error('boom'); },
+    async () => { done.push(3); },
+  ];
+  await fe._runLimit(tasks, 2);   // must resolve, not reject
+  assert.deepEqual(done.sort(), [1, 3]);
+});
+
+test('_recYear: fast ISO path, cache, and odd-format fallback', () => {
+  const iso = { date: '2024-05-01' };
+  assert.equal(fe._recYear(iso), 2024);
+  assert.equal(iso._yr, 2024);                    // cached on the record
+  iso.date = '1999-01-01';
+  assert.equal(fe._recYear(iso), 2024);           // cache wins — date never mutates in practice
+  assert.equal(fe._recYear({ date: '3/5/2024' }), 2024);   // CSV-upload format → Date fallback
+  assert.ok(Number.isNaN(fe._recYear({ date: '' })));      // unparseable → NaN (filtered out)
 });
