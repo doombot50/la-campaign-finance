@@ -68561,7 +68561,28 @@
   },
   "FAIR RATES FIRST": {
     "filer_id": "PAC990756",
-    "checked_at": "2026-07-12T10:39:32.833015Z"
+    "reports": [
+      {
+        "report_id": 135299,
+        "report_period": "Annual",
+        "report_year": 2025,
+        "form_type": "F202",
+        "date_filed": "8/7/2026",
+        "beginning_coh": 2203.82,
+        "ending_coh": 0.0,
+        "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-135299.pdf"
+      }
+    ],
+    "report_id": 135299,
+    "report_period": "Annual",
+    "report_year": 2025,
+    "form_type": "F202",
+    "date_filed": "8/7/2026",
+    "beginning_coh": 2203.82,
+    "ending_coh": 0.0,
+    "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-135299.pdf",
+    "fetched_at": "2026-08-14T10:11:56.743346Z",
+    "checked_at": "2026-08-14T10:11:56.743360Z"
   },
   "TIM BURNS": {
     "filer_id": "CAN990449",
@@ -99955,8 +99976,8 @@
     "beginning_coh": 7384.46,
     "ending_coh": 4934.46,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-109377.pdf",
-    "fetched_at": "2026-07-14T10:57:10.538718Z",
-    "checked_at": "2026-07-14T10:57:10.538728Z"
+    "fetched_at": "2026-08-14T10:11:58.473667Z",
+    "checked_at": "2026-08-14T10:11:58.473682Z"
   },
   "KERRI CALLAIS": {
     "filer_id": "CAN993311",
@@ -101803,8 +101824,8 @@
     "beginning_coh": 1584.61,
     "ending_coh": 0.0,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-111068.pdf",
-    "fetched_at": "2026-07-14T10:57:12.283857Z",
-    "checked_at": "2026-07-14T10:57:12.283874Z"
+    "fetched_at": "2026-08-14T10:12:00.257027Z",
+    "checked_at": "2026-08-14T10:12:00.257046Z"
   },
   "RENEW SHREVEPORT PAC LLC": {
     "filer_id": "PAC990706",
@@ -101828,8 +101849,8 @@
     "beginning_coh": 35840.43,
     "ending_coh": 6541.67,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-126605.pdf",
-    "fetched_at": "2026-07-14T10:57:14.056225Z",
-    "checked_at": "2026-07-14T10:57:14.056238Z"
+    "fetched_at": "2026-08-14T10:12:01.986378Z",
+    "checked_at": "2026-08-14T10:12:01.986397Z"
   },
   "VANESSA WAGUESPACK ANSEMAN": {
     "filer_id": "CAN993580",
@@ -101897,8 +101918,8 @@
     "beginning_coh": 7329.25,
     "ending_coh": 23315.71,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-108675.pdf",
-    "fetched_at": "2026-07-14T10:57:15.775241Z",
-    "checked_at": "2026-07-14T10:57:15.775254Z"
+    "fetched_at": "2026-08-14T10:12:03.786810Z",
+    "checked_at": "2026-08-14T10:12:03.786824Z"
   },
   "MICHAEL P WRIGHT": {
     "filer_id": "CAN992019",
@@ -102949,8 +102970,8 @@
     "beginning_coh": 35480.36,
     "ending_coh": 22522.95,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-119740.pdf",
-    "fetched_at": "2026-07-14T10:57:17.556993Z",
-    "checked_at": "2026-07-14T10:57:17.557007Z"
+    "fetched_at": "2026-08-14T10:12:05.513110Z",
+    "checked_at": "2026-08-14T10:12:05.513127Z"
   },
   "VANESSA LAFLEUR": {
     "filer_id": "CAN994890",
@@ -103258,8 +103279,8 @@
     "beginning_coh": 5341.35,
     "ending_coh": 4663.66,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-126001.pdf",
-    "fetched_at": "2026-07-14T10:57:19.343566Z",
-    "checked_at": "2026-07-14T10:57:19.343579Z"
+    "fetched_at": "2026-08-14T10:12:07.235023Z",
+    "checked_at": "2026-08-14T10:12:07.235037Z"
   },
   "TIFFANY L FOXWORTH": {
     "filer_id": "CAN992062",
@@ -103293,8 +103314,8 @@
     "beginning_coh": 524.02,
     "ending_coh": 524.02,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-109847.pdf",
-    "fetched_at": "2026-07-14T10:57:21.133847Z",
-    "checked_at": "2026-07-14T10:57:21.133861Z"
+    "fetched_at": "2026-08-14T10:12:08.963201Z",
+    "checked_at": "2026-08-14T10:12:08.963215Z"
   },
   "SHEVA SIMS": {
     "filer_id": "CAN991605",
@@ -103500,8 +103521,8 @@
     "beginning_coh": 291.36,
     "ending_coh": 0.0,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-120029.pdf",
-    "fetched_at": "2026-07-14T10:57:22.926911Z",
-    "checked_at": "2026-07-14T10:57:22.926923Z"
+    "fetched_at": "2026-08-14T10:12:10.692667Z",
+    "checked_at": "2026-08-14T10:12:10.692685Z"
   },
   "DAVID GRONER": {
     "filer_id": "CAN991734",
@@ -103549,8 +103570,8 @@
     "beginning_coh": 512.63,
     "ending_coh": 51495.93,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-108952.pdf",
-    "fetched_at": "2026-07-14T10:57:24.716757Z",
-    "checked_at": "2026-07-14T10:57:24.716770Z"
+    "fetched_at": "2026-08-14T10:12:12.419099Z",
+    "checked_at": "2026-08-14T10:12:12.419122Z"
   },
   "KENDRICK J GUIDRY": {
     "filer_id": "CAN993911",
@@ -105040,8 +105061,8 @@
     "beginning_coh": 194.94,
     "ending_coh": 1126.1,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-125977.pdf",
-    "fetched_at": "2026-07-14T10:57:26.497651Z",
-    "checked_at": "2026-07-14T10:57:26.497669Z"
+    "fetched_at": "2026-08-14T10:12:14.236612Z",
+    "checked_at": "2026-08-14T10:12:14.236629Z"
   },
   "TRUDY WHITE": {
     "filer_id": "CAN991338",
@@ -105104,8 +105125,8 @@
     "beginning_coh": 0.0,
     "ending_coh": 52123.79,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-108360.pdf",
-    "fetched_at": "2026-07-14T10:57:28.292122Z",
-    "checked_at": "2026-07-14T10:57:28.292134Z"
+    "fetched_at": "2026-08-14T10:12:15.962047Z",
+    "checked_at": "2026-08-14T10:12:15.962065Z"
   },
   "KEVIN KIMBALL": {
     "filer_id": "CAN993603",
@@ -105336,8 +105357,8 @@
     "beginning_coh": 15496.15,
     "ending_coh": 8577.65,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-108067.pdf",
-    "fetched_at": "2026-07-14T10:57:30.065046Z",
-    "checked_at": "2026-07-14T10:57:30.065063Z"
+    "fetched_at": "2026-08-14T10:12:17.689799Z",
+    "checked_at": "2026-08-14T10:12:17.689813Z"
   },
   "SIDNEY BERTHELOT": {
     "filer_id": "CAN995134",
@@ -105361,8 +105382,8 @@
     "beginning_coh": 0.0,
     "ending_coh": 16591.56,
     "pdf_url": "https://eap.ethics.la.gov/CFSearch/LA-109018.pdf",
-    "fetched_at": "2026-07-14T10:57:31.806195Z",
-    "checked_at": "2026-07-14T10:57:31.806211Z"
+    "fetched_at": "2026-08-14T10:12:19.408648Z",
+    "checked_at": "2026-08-14T10:12:19.408667Z"
   },
   "ANDREA MANUEL": {
     "filer_id": "CAN995308",
