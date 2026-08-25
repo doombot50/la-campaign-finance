@@ -17,7 +17,7 @@ story, then the craft).
 >
 > Outspend your opponent more than 10-to-1 and you're still only at 76%. The curve flattens fast.
 
-*243 characters.*
+*246 characters.*
 
 **Provenance:** `la_money_wins.json` → `overall` (523 races, 65.4%) and
 `by_advantage` (under 2× → 58.3%, over 10× → 75.8%).
@@ -35,9 +35,9 @@ rather than defending the number as universal.
 >
 > Four PACs — North, South, East and West — sit in a perfect little clique. All six pairs share ~half their donors. About $1M runs through each overlap.
 
-*231 characters.*
+*232 characters.*
 
-**Provenance:** `factions.json` → the four `*  PAC` nodes and the six edges among
+**Provenance:** `factions.json` → the four compass-named PAC nodes and the six edges among
 them (Jaccard 0.47–0.51, 649–723 shared donors, ~$1.0M shared dollars per pair).
 
 **Why it holds up:** Jaccard controls for size, so this isn't "big committee looks
@@ -62,7 +62,7 @@ portal. That's the part that makes it checkable rather than asserted.
 >
 > One of 181 races since 2000 where the biggest spender lost.
 
-*249 characters.*
+*248 characters.*
 
 **Provenance:** `la_money_wins.json` → `upsets[0]` (51.6× spending advantage) and
 `n_upsets` (181).
@@ -77,11 +77,11 @@ look before posting.
 
 > Something I got wrong at first:
 >
-> I ranked Louisiana candidates by money raised. But candidates here self-fund with personal loans that never show up as contributions.
+> I ranked Louisiana candidates by money raised. But candidates here self-fund with loans that never show up as contributions.
 >
-> Rank by money spent instead and the money leader changes in 78 of 506 races. 19% of my "upsets" weren't upsets.
+> Rank by money spent and the money leader changes in 78 of 506 races. 19% of my "upsets" weren't upsets.
 
-*272 characters.*
+*262 characters.*
 
 **Provenance:** `la_money_wins.json` → `compare.leader_flips` (78 of 506, 15.4%),
 `compare.false_upsets` (33 of 173, 19.1%), `compare.by_tier` (Legislative 74.1%
@@ -99,7 +99,7 @@ solid on fundraising largely dissolves on spending.
 >
 > 68 cents of every dollar went to a candidate who went on to win.
 
-*172 characters.*
+*171 characters.*
 
 **Provenance:** `la_donor_winrates.json` → `baseline` (11,620 valid races,
 $355,979,424 in pre-election contributions, 0.682 winner dollar share).
@@ -108,4 +108,4 @@ $355,979,424 in pre-election contributions, 0.682 winner dollar share).
 races, the best around 95%) is tempting but needs a caveat the tweet can't carry:
 incumbency correlates with win rate at r = 0.46. Restricted to non-incumbent
 bets the average only drops from 70% to 66%, so there's something real there —
-it's a blog post, not a post.
+it's a blog post, not a tweet.
