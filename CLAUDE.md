@@ -47,6 +47,12 @@ python3 fetch_historical_data.py     # seed .la_cache/ with 4-year historical bu
 python3 build_pwa_icons.py           # regenerate committed PWA icons (only if the design changes)
 ```
 
+Share graphics (not part of the data build — see `social/README.md`):
+```bash
+python3 social/build_social_cards.py   # 1600x900 tweet cards from la_money_wins.json (+ factions.json if the sibling repo is checked out)
+node social/render_cards.mjs           # screenshot them to social/out/*.png (needs playwright; dev-only, nothing imports it)
+```
+
 COH scraper (requires `pip install pdfplumber`):
 ```bash
 python3 fetch_ethics_coh.py                          # all filers, all annual years
