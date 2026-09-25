@@ -58,8 +58,8 @@ try {
   console.log('Static client parity (shipped static_api.js vs live API):');
 
   // search
-  for (const q of ['landry', 'pac', 'broome', 'aeisha']) {
-    const d = diff(await getJSON(`/api/search?q=${q}`), await S.search(q), `search[${q}]`);
+  for (const q of ['landry', 'pac', 'broome', 'aeisha', 'john edwards', 'Landry, Jeff', 'bel ed']) {
+    const d = diff(await getJSON(`/api/search?q=${encodeURIComponent(q)}`), await S.search(q), `search[${q}]`);
     check(`search q=${q}`, !d, d);
   }
 
@@ -88,7 +88,9 @@ try {
 
   // candidate-history: person with COH + flows, committee, alias-form name,
   // SoS ballot/maiden variant (exercises the nickname fallback), unknown
-  for (const name of ['SHARON WESTON BROOME', 'JAMBALAYA PAC', 'Aeisha S. Kelly', 'JEFF LANDRY', 'LIZ BAKER MURRILL', 'NOBODY AT ALL XYZ']) {
+  for (const name of ['SHARON WESTON BROOME', 'JAMBALAYA PAC', 'Aeisha S. Kelly', 'JEFF LANDRY', 'LIZ BAKER MURRILL', 'NOBODY AT ALL XYZ',
+                    // names several filers share: entity must resolve identically
+                    'TROY HEBERT', 'GLENN HAYES']) {
     const live = await getJSON(`/api/candidate-history?name=${encodeURIComponent(name)}`);
     const mine = await S.candidateHistory(name);
     const d = diff(live, mine, `ch[${name}]`);
@@ -138,6 +140,20 @@ try {
   {
     const d1 = diff(await getJSON('/api/coh?name=JEFF%20LANDRY'), await S.coh('JEFF LANDRY'), 'coh[name]');
     check('coh name=JEFF LANDRY', !d1, d1);
+  }
+
+  // election results: the full lookup, plus the per-name sharded path the
+  // profile badge uses on Pages (synthetic /data/la_election_lookup_shard_<n>).
+  {
+    const live = await getJSON('/api/election-results');
+    const d = diff(live, await S.electionResults(), 'election-results');
+    check(`election-results (${Object.keys(live).length} keys)`, !d, d);
+    const keys = Object.keys(live);
+    const sample = [...keys.slice(0, 40), ...keys.slice(-40),
+                    'JOHN BEL EDWARDS', 'EDWARDS', 'NOT A REAL PERSON XYZZY'];
+    const want = Object.fromEntries(sample.filter(k => k in live).map(k => [k, live[k]]));
+    const d2 = diff(want, await S.electionResultsFor(sample), 'election-results[sharded]');
+    check(`election-results sharded lookup (${Object.keys(want).length} of ${sample.length} keys)`, !d2, d2);
   }
 
   // record streams: static line counts vs live array lengths (cycle 2026)

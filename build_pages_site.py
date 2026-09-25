@@ -13,7 +13,10 @@ Lays out _site/ for actions/upload-pages-artifact:
   _site/data/             ← every .la_cache/*.json.gz (records + nightly
                             artifacts, seeded from the data-cache release by
                             fetch_cache_assets.py) plus the committed root
-                            data files the static layer reads
+                            data files the static layer reads, the hash-
+                            sharded giving map / election lookup, per-filer
+                            activity/, and version.json (the data version
+                            every data URL carries as ?v= — cache busting)
 
 Completeness gate: a deploy with missing year files or artifacts would be a
 silently-broken site, so this script FAILS unless everything the static data
@@ -23,6 +26,7 @@ Stdlib only. Run by .github/workflows/deploy-pages.yml.
 """
 import glob
 import gzip
+import hashlib
 import json
 import os
 import re
@@ -39,6 +43,11 @@ SITE = os.path.join(BASE, '_site')
 # MUST stay identical to fnv1a() in static_api.js or lookups miss their bucket.
 GIVING_SHARDS = 128
 GIVING_SRC = 'la_entity_giving.json.gz'   # sharded below; not bulk-copied whole
+# The election lookup (~5 MB) exists to badge ONE profile at a time, so it also
+# ships as buckets; StaticAPI.electionResultsFor fetches the one or two a name
+# needs. Same FNV-1a/32 as the giving shards, different bucket count.
+ELECTION_SHARDS = 64
+ELECTION_SRC = 'la_election_lookup.json'
 ACTIVITY_SRC = 'la_entity_activity.json.gz'  # exploded per-filer below; not whole
 
 def shard_of(s, n):
@@ -76,7 +85,7 @@ OPTIONAL_ARTIFACTS = [
 REQUIRED_ROOT = [
     'la_candidacies_raw.json.gz',
     'ethics_coh_cache.json',
-    'la_election_results.json',
+    ELECTION_SRC,   # what /api/election-results serves (also sharded below)
     'la_money_wins.json',   # data for the standalone does-money-win.html story
 ]
 
@@ -107,6 +116,24 @@ def _emit_index_html(src, dst):
                          'in louisiana-campaign-finance.html')
     with open(dst, 'w', encoding='utf-8') as f:
         f.write(html)
+
+
+def data_version(paths):
+    """Content hash identifying this deploy's data — written to
+    data/version.json and appended by static_api.js to every data URL as ?v=.
+
+    Hashes the INPUT files (release artifacts + committed data) rather than the
+    emitted shards, whose gzip headers carry a fresh timestamp on every build:
+    a code-only redeploy of identical data keeps the same version, so returning
+    visitors keep their caches. This script is hashed too, so a change to how
+    the data is laid out (shard counts, file names) always gets a new version."""
+    h = hashlib.sha256()
+    for path in sorted(set(paths) | {os.path.abspath(__file__)}):
+        h.update(os.path.relpath(path, BASE).encode('utf-8') + b'\0')
+        with open(path, 'rb') as f:
+            for chunk in iter(lambda: f.read(1 << 20), b''):
+                h.update(chunk)
+    return h.hexdigest()[:16]
 
 
 def main():
@@ -198,6 +225,19 @@ def main():
     else:
         print(f'  note: {GIVING_SRC} absent — entity-profile giving side empty on Pages')
 
+    # ── shard the election lookup (name key -> result) for per-profile fetches ─
+    with open(os.path.join(BASE, ELECTION_SRC), encoding='utf-8') as f:
+        lookup = json.load(f)
+    ebuckets = [{} for _ in range(ELECTION_SHARDS)]
+    for k, v in lookup.items():
+        ebuckets[shard_of(k, ELECTION_SHARDS)][k] = v
+    for i, b in enumerate(ebuckets):
+        with gzip.open(os.path.join(data_dir, f'la_election_lookup_shard_{i}.json.gz'),
+                       'wt', encoding='utf-8') as f:
+            json.dump(b, f, separators=(',', ':'), ensure_ascii=False)
+    n += ELECTION_SHARDS
+    print(f'  sharded {ELECTION_SRC} ({len(lookup):,} keys) into {ELECTION_SHARDS} buckets')
+
     # ── explode the per-entity activity map into one file per filer ───────────
     # StaticAPI.entityActivity fetches activity/<filer>.json.gz — exactly one
     # entity's full itemized history, so a profile never downloads the 29 MB map.
@@ -214,6 +254,13 @@ def main():
         print(f'  exploded {ACTIVITY_SRC} into {len(activity):,} per-filer activity files')
     else:
         print(f'  note: {ACTIVITY_SRC} absent — full-activity tabs fall back to loaded cycles on Pages')
+
+    # ── data version: the cache key the static layer + service worker use ────
+    version = data_version(glob.glob(os.path.join(CACHE, '*.json.gz')) +
+                           [os.path.join(BASE, name) for name in REQUIRED_ROOT])
+    with open(os.path.join(data_dir, 'version.json'), 'w', encoding='utf-8') as f:
+        json.dump({'v': version}, f)
+    print(f'  data version {version}')
 
     total_mb = sum(os.path.getsize(os.path.join(dp, f))
                    for dp, _, fs in os.walk(SITE) for f in fs) / 1e6

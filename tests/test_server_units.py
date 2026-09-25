@@ -439,3 +439,145 @@ class TestAssetServing(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
+
+
+class TestSearchPayload(unittest.TestCase):
+    """/api/search ranking (build_search_payload) — mirrored by StaticAPI.search."""
+
+    @staticmethod
+    def _e(name, raised):
+        return {'name': name, 'name_upper': name.upper(), 'is_candidate': True,
+                'total_raised': raised, 'n_cycles': 1, 'n_races': 1,
+                'last_office': '', 'last_outcome': '', 'last_date': '',
+                'filer_number': ''}
+
+    def setUp(self):
+        self.entries = [self._e('JOHN EDWARDS', 10.0), self._e('JOHN BEL EDWARDS', 900.0),
+                        self._e('JEFF LANDRY', 500.0), self._e('ALFRED BELL', 5.0),
+                        self._e('DANA ANDERSON', 1.0)]
+
+    def names(self, q):
+        return [r['name'] for r in s.build_search_payload(self.entries, q)['results']]
+
+    def test_words_match_in_any_order(self):
+        self.assertEqual(self.names('john edwards'), ['JOHN BEL EDWARDS', 'JOHN EDWARDS'])
+        self.assertEqual(self.names('edwards john'), ['JOHN BEL EDWARDS', 'JOHN EDWARDS'])
+
+    def test_last_comma_first_form(self):
+        self.assertEqual(self.names('Landry, Jeff'), ['JEFF LANDRY'])
+
+    def test_word_start_tier_ranks_first(self):
+        # Both words start a name word in JOHN BEL EDWARDS (tier 0); in
+        # ALFRED BELL, ED only appears mid-word, so it ranks after (tier 1).
+        self.assertEqual(self.names('bel ed'), ['JOHN BEL EDWARDS', 'ALFRED BELL'])
+
+    def test_any_word_start_occurrence_counts(self):
+        # AN first occurs mid-word (DANA) but also starts ANDERSON → tier 0.
+        p = s.build_search_payload(self.entries, 'an')
+        self.assertEqual(p['results'][0]['name'], 'DANA ANDERSON')
+
+    def test_short_and_empty_queries(self):
+        self.assertEqual(s.build_search_payload(self.entries, 'j'),
+                         {'results': [], 'query': 'J', 'total': 0})
+        self.assertEqual(s.build_search_payload(self.entries, ', ,')['total'], 0)
+
+    def test_query_echo_and_total(self):
+        p = s.build_search_payload(self.entries, '  john ')
+        self.assertEqual(p['query'], 'JOHN')
+        self.assertEqual(p['total'], 2)
+
+
+class TestSearchTotalsInCents(unittest.TestCase):
+    def test_totals_are_rounded_to_cents(self):
+        # Unrounded float sums depend on summation order, which made the live
+        # index and the nightly artifact differ by ~1e-9 and fail parity.
+        for e in s.build_search_entries():
+            self.assertEqual(e['total_raised'], round(e['total_raised'], 2), e['name'])
+        ov = s.build_overview_payload()
+        self.assertEqual(ov['total_raised'], round(ov['total_raised'], 2))
+
+
+class TestEntityNameTieBreak(unittest.TestCase):
+    """A name shared by several filers resolves to the highest filer number,
+    independent of file order (StaticAPI.entity applies the same rule)."""
+
+    def setUp(self):
+        import gzip, json, tempfile
+        self.dir = tempfile.TemporaryDirectory()
+        ents = {
+            '6134': {'filer_number': '6134', 'name': 'Troy Hebert', 'aliases': []},
+            '1791': {'filer_number': '1791', 'name': 'Troy Hebert', 'aliases': []},
+            '5788': {'filer_number': '5788', 'name': 'Troy  Hebert Sr', 'aliases': ['TROY HEBERT']},
+            '42':   {'filer_number': '42',   'name': 'Solo Filer', 'aliases': []},
+        }
+        with gzip.open(os.path.join(self.dir.name, 'la_entities.json.gz'), 'wt') as f:
+            json.dump({'entities': ents}, f)
+        self.saved = (s.CACHE_DIR, s._ENTITIES, s._ENTITIES_BYNAME, s._ENTITIES_MTIME)
+        s.CACHE_DIR, s._ENTITIES, s._ENTITIES_BYNAME, s._ENTITIES_MTIME = self.dir.name, None, None, 0
+
+    def tearDown(self):
+        s.CACHE_DIR, s._ENTITIES, s._ENTITIES_BYNAME, s._ENTITIES_MTIME = self.saved
+        self.dir.cleanup()
+
+    def test_highest_filer_wins_regardless_of_order(self):
+        self.assertEqual(s._get_entity(name='troy hebert')['filer_number'], '6134')
+
+    def test_unique_name_and_filer_lookup(self):
+        self.assertEqual(s._get_entity(name='SOLO  FILER')['filer_number'], '42')
+        self.assertEqual(s._get_entity(filer='1791')['filer_number'], '1791')
+        self.assertIsNone(s._get_entity(name='NOBODY'))
+
+    def test_filer_rank(self):
+        self.assertEqual(s._filer_rank('6134'), 6134)
+        self.assertEqual(s._filer_rank('PAC12'), -1)
+
+
+class TestShardHash(unittest.TestCase):
+    """FNV-1a/32 bucket function: the server, build_pages_site.py and
+    static_api.js (tests/test_static_api_units.mjs pins the same vectors)
+    must agree or a sharded lookup misses its bucket."""
+
+    VECTORS = {'': 2166136261, 'A': 3289118412,
+               'JEFF LANDRY': 1291349976, 'JOHN BEL EDWARDS': 2036631187}
+
+    def test_vectors(self):
+        for text, h in self.VECTORS.items():
+            self.assertEqual(s._fnv1a(text), h, text)
+
+    def test_build_script_agrees(self):
+        import build_pages_site as b
+        for text in self.VECTORS:
+            for n in (b.GIVING_SHARDS, b.ELECTION_SHARDS):
+                self.assertEqual(b.shard_of(text, n), s._fnv1a(text) % n)
+        self.assertEqual((b.GIVING_SHARDS, b.ELECTION_SHARDS),
+                         (s.GIVING_SHARDS, s.ELECTION_SHARDS))
+
+    def test_election_shard_holds_exactly_its_keys(self):
+        import gzip, json
+        with open(os.path.join(s.BASE_DIR, 'la_election_lookup.json'), encoding='utf-8') as f:
+            lookup = json.load(f)
+        key = next(iter(lookup))
+        shard = s._fnv1a(key) % s.ELECTION_SHARDS
+        sub = json.loads(gzip.decompress(s._build_election_shard_gz(shard)))
+        self.assertEqual(sub[key], lookup[key])
+        self.assertTrue(all(s._fnv1a(k) % s.ELECTION_SHARDS == shard for k in sub))
+        self.assertEqual(sub, {k: v for k, v in lookup.items()
+                               if s._fnv1a(k) % s.ELECTION_SHARDS == shard})
+
+
+class TestPagesDataVersion(unittest.TestCase):
+    """data/version.json: same inputs → same version; any byte change → new."""
+
+    def test_content_hash(self):
+        import tempfile
+        import build_pages_site as b
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, 'x.json.gz')
+            with open(p, 'wb') as f:
+                f.write(b'one')
+            v1 = b.data_version([p])
+            self.assertEqual(v1, b.data_version([p]))
+            self.assertRegex(v1, r'^[0-9a-f]{16}$')
+            with open(p, 'wb') as f:
+                f.write(b'two')
+            self.assertNotEqual(v1, b.data_version([p]))

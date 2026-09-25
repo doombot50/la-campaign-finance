@@ -109,7 +109,9 @@ The profile's lifetime **giving** and **receiving** lists used to require loadin
 
 `build_entity_profile_payload(filer, name)` joins both into `{filer, name, receiving, giving}`. The Career tab fetches it in parallel (`_fetchEntityProfile` → `renderCampEdges`); a pure donor with no candidacy still shows their giving panel.
 
-**Pages sharding gotcha:** the giving map is ~22 MB, too big to ship whole, so `build_pages_site.py` hash-shards it into `GIVING_SHARDS` (128) buckets `la_entity_giving_shard_<n>.json.gz`; a donor profile fetches only its one bucket (~172 KB). The receiving map (~2 MB) ships whole. The **FNV-1a/32 shard function is replicated in three places that MUST stay identical** — `shard_of` (build_pages_site.py), `_giving_shard_of` (la_ethics_server.py), and `fnv1a` (static_api.js) — or a lookup misses its bucket. The server's `/data/la_entity_giving_shard_<n>.json.gz` route synthesizes a bucket on the fly so it emulates Pages for `test_static_client_parity.mjs` and `?static=1`. Both parity gates cover `/api/entity-profile`.
+**Pages sharding gotcha:** the giving map is ~22 MB, too big to ship whole, so `build_pages_site.py` hash-shards it into `GIVING_SHARDS` (128) buckets `la_entity_giving_shard_<n>.json.gz`; a donor profile fetches only its one bucket (~172 KB). The receiving map (~2 MB) ships whole. The **FNV-1a/32 shard function is replicated in three places that MUST stay identical** — `shard_of` (build_pages_site.py), `_fnv1a` (la_ethics_server.py), and `fnv1a` (static_api.js) — or a lookup misses its bucket; `TestShardHash` (Python) and the `fnv1a` vector test (Node) pin the same reference hashes. The server's `/data/la_entity_giving_shard_<n>.json.gz` route synthesizes a bucket on the fly so it emulates Pages for `test_static_client_parity.mjs` and `?static=1`. Both parity gates cover `/api/entity-profile`.
+
+The **election lookup** is sharded the same way: `la_election_lookup.json` (~5 MB, what `/api/election-results` serves) ships whole *and* as `ELECTION_SHARDS` (64) buckets `la_election_lookup_shard_<n>.json.gz` (~13 KB). On Pages a profile's win/loss badge calls `StaticAPI.electionResultsFor(keys)` for the name's (≤2) lookup keys instead of downloading the whole file; the server synthesizes these buckets under `/data/` too, and the client parity gate covers both the full and sharded paths. (Pages used to ship `la_election_results.json` — the raw build input with same-name "ambiguous" people and no first+last keys — which put badges on the wrong namesakes.)
 
 ### Per-Entity FULL ACTIVITY (`/api/entity-activity`)
 
@@ -125,8 +127,9 @@ The data normally ships sharded by **year** (load a year = everyone's rows). To 
 - **Concurrent cycle loading** — a multi-cycle selection streams every cycle in parallel (bounded by `_loadConcurrency()`: 4 desktop / 2 low-memory) into per-cycle buffers; contributions, expenditures, and loans all fan out through the shared `_runLimit` runner. A single paint scheduler (`_makeLoadProgress`) owns mid-stream partial renders — 15k/60k-row thresholds fire once globally, then repaints back off adaptively as the dataset (and re-render cost) grows. A load-generation token (`_loadGen` and friends) makes superseded loads abandon their streams, so switching cycles mid-load can't mix rows from a deselected cycle into the new view.
 - **Token-based search filter** — `zip:`, `party:`, `donor:`, `recipient:`, `category:`, `min:`, `max:` parsed client-side; available tokens change by active tab
 - **Chart.js** — Net Cash Flow (cumulative contributions − expenditures) and bar charts; certified COH green anchor dots overlay the cash flow line. Chart.js and Leaflet are **self-hosted under `vendor/`** (no CDN at runtime) and **lazy-loaded** (`ensureChart()` / `ensureLeaflet()`) — neither loads on the Overview landing; every chart render function and the map init self-heal if invoked before their library arrives. The contributions pre-load is deferred to `requestIdleCallback` on a pure Overview landing. The live server serves `vendor/` via an allowlisted `/vendor/<file>` route; `build_pages_site.py` copies the dir into `_site/vendor/`.
-- **Fonts** — Libre Franklin + IBM Plex Mono are **self-hosted** (latin woff2 under `vendor/fonts/`, `@font-face` in the inline `<style>`); no Google Fonts origin at runtime. CARTO map tiles are the only remaining third-party origin (dns-prefetched, loaded only when the map opens).
-- **Service worker** (`sw.js`, Pages-only) — same-origin shell + `vendor/` libs + fonts cache stale-while-revalidate; data artifacts stale-while-revalidate. Near-instant repeat visits and offline. Registered only in `STATIC_MODE`; shipped to `_site/` root by `build_pages_site.py`. Bump `CACHE_VERSION` in `sw.js` to force-evict.
+- **Fonts** — Libre Franklin + IBM Plex Mono are **self-hosted** (latin woff2 under `vendor/fonts/`, `@font-face` in the inline `<style>`); no Google Fonts origin at runtime. CARTO map tiles are the only remaining third-party origin (dns-prefetched, loaded only when the map opens); the parish choropleth reads the self-hosted `vendor/la_parishes.json` (64 parishes cut from the Census county file, ~62 KB).
+- **Service worker** (`sw.js`, Pages-only) — same-origin shell + `vendor/` libs + fonts cache stale-while-revalidate. Data is **versioned**: `build_pages_site.py` writes `data/version.json` (`{v}` = content hash of the input data + the build script), `static_api.js` appends `?v=<v>` to every data URL (`StaticAPI.dataVersion()`), and the SW serves versioned data cache-first (immutable), `version.json` network-first (pruning other versions' entries), and per-year record files network-only (their parsed rows live in IndexedDB). Near-instant repeat visits and offline. Registered only in `STATIC_MODE`; shipped to `_site/` root by `build_pages_site.py`. Bump `CACHE_VERSION` in `sw.js` to force-evict. Never make data stale-while-revalidate again: that answered the IndexedDB re-stream with old cached bytes which were then saved as current.
+- **IndexedDB freshness** — cycle caches are written via `_saveCycleCache(key, rows)` (markers only after the rows land) and checked by `_cachedCycleStale(key)`. On Pages the check is identity: `<key>:ver` must equal the deployed data version. The live server keeps the timestamp check (`<key>:asof` vs the nightly `built_at` from `/api/insights`). The server's `/data/version.json` synthesizes a version so `?static=1` exercises the Pages path.
 - **URL state serialization** — cycle, tab, filters → query params for shareability
 - **Print-to-PDF** — chart canvases are snapshotted to PNG before printing to prevent reflow
 
@@ -151,7 +154,7 @@ A standalone, self-contained scrollytelling page (inline CSS/JS, hand-drawn **in
 | `/api/la-expenditures` | Stream expenditures NDJSON |
 | `/api/la-loans` | Stream loans NDJSON |
 | `/api/candidate-history` | Career profile: financial + races + certified COH |
-| `/api/search` | Ranked entity search (built once, hot-reloaded) |
+| `/api/search` | Ranked entity search (`build_search_payload`: every query word must match, any order; mirrored by `StaticAPI.search`) |
 | `/api/overview` | Precomputed party totals, top donors, monthly flow |
 | `/api/insights` | War chests, transfers, party totals |
 | `/api/cycle-aggregates` | Per-cycle additive sums; summed client-side for instant stat-card + breakdown paint before rows stream |
@@ -161,7 +164,7 @@ A standalone, self-contained scrollytelling page (inline CSS/JS, hand-drawn **in
 | `/api/coh` | Certified COH lookup |
 | `/api/races` | Elections grouped by (date, office) |
 | `/api/industry-breakdown` | Donor industry breakdown per filer |
-| `/api/election-results` | Full election dates + results lookup |
+| `/api/election-results` | Flat win/loss lookup (`la_election_lookup.json`; Pages also ships it sharded) |
 | `/api/data-status` | Cache download progress (browser polls this while a cycle loads) |
 | `/health` | Health check (used by Render.com) |
 

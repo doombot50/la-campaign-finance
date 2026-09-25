@@ -14,7 +14,7 @@ const fe = extract(HTML, {
     '_raceDistrictNum', '_officeRank', '_raceDateSortKey', '_electionDateLabel',
     '_electionDateShort', '_raceAnchorId', '_cmpRaceYear', 'fmtRaisedShort',
     'outcomeClass', 'outcomeLabel', 'escHtml', 'partyBadge',
-    '_runLimit', '_recYear',
+    '_runLimit', '_recYear', 'detectDonorType',
   ],
 });
 
@@ -182,4 +182,19 @@ test('_recYear: fast ISO path, cache, and odd-format fallback', () => {
   assert.equal(fe._recYear(iso), 2024);           // cache wins — date never mutates in practice
   assert.equal(fe._recYear({ date: '3/5/2024' }), 2024);   // CSV-upload format → Date fallback
   assert.ok(Number.isNaN(fe._recYear({ date: '' })));      // unparseable → NaN (filtered out)
+});
+
+test('detectDonorType: short union acronyms match whole words only', () => {
+  // Real unions still classify as UNION
+  for (const n of ['LAE/NEA PAC', 'AFT COPE', 'UAW V-CAP', 'CWA-COPE PCC',
+                   'IBEW LOCAL 130', 'LOUISIANA AFL-CIO', 'Plumbers Local 60 PAC Fund']) {
+    assert.equal(fe.detectDonorType(n), 'UNION', n);
+  }
+  // Cajun surnames and -CRAFT/-AFT businesses used to match NEA/AFT as substrings
+  for (const [n, want] of [['NICHOLAS BABINEAUX', 'OTH'], ['JEFFERY ARCENEAUX', 'OTH'],
+                           ['MEREDITH LANDRENEAU', 'OTH'], ['NEAL KIRBY', 'OTH'],
+                           ['KELLY CRAFT', 'OTH'], ['DRAFTKINGS, INC.', 'BUS'],
+                           ['ARCENEAUX FORD, INC.', 'BUS'], ['LOUISIANA CRAFT BEVERAGE PAC', 'PAC']]) {
+    assert.equal(fe.detectDonorType(n), want, n);
+  }
 });

@@ -19,6 +19,28 @@
   // root. Node tests override via STATIC_DATA_BASE.
   const base = () => (global.STATIC_DATA_BASE || 'data');
 
+  // ── data version (cache busting) ──────────────────────────────────────────
+  // build_pages_site.py writes data/version.json = {v: <content hash of the
+  // deployed data>}. Every data URL carries ?v=<that>, so a URL names one
+  // immutable build: the service worker can serve it cache-first, and cached
+  // bytes from an older deploy can never answer a request for the current one.
+  // Fetched once per page load and revalidated (no-cache), never served stale
+  // from the HTTP cache. Absent (older site, local ?static=1 without it) →
+  // null → plain unversioned URLs, as before.
+  let _versionP = null;
+  function dataVersion() {
+    if (!_versionP) {
+      _versionP = fetch(`${base()}/version.json`, { cache: 'no-cache' })
+        .then(r => (r.ok ? r.json() : null))
+        .then(j => (j && typeof j.v === 'string' && j.v ? j.v : null))
+        .catch(() => null);
+    }
+    return _versionP;
+  }
+  function _dataUrl(name, v) {
+    return `${base()}/${name}` + (v ? `?v=${encodeURIComponent(v)}` : '');
+  }
+
   // ── fetch + gzip plumbing ─────────────────────────────────────────────────
   const _cache = {};   // name -> Promise<parsed JSON>
 
@@ -32,7 +54,7 @@
   async function fetchJSON(name) {
     if (!(name in _cache)) {
       _cache[name] = (async () => {
-        const res = await fetch(`${base()}/${name}`);
+        const res = await fetch(_dataUrl(name, await dataVersion()));
         if (!res.ok) throw new Error(`HTTP ${res.status} for ${name}`);
         if (name.endsWith('.gz')) {
           return JSON.parse(await new Response(gunzipStream(res)).text());
@@ -50,7 +72,7 @@
   // streamRecordLines); the finally block cancels the reader so a consumer
   // that breaks out early doesn't leave the connection open.
   async function* ndjsonLines(name, resPromise) {
-    const res = await (resPromise || fetch(`${base()}/${name}`));
+    const res = await (resPromise || fetch(_dataUrl(name, await dataVersion())));
     if (res.status === 404) return;
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${name}`);
     const reader = gunzipStream(res).getReader();
@@ -85,15 +107,24 @@
   }
 
   // ── /api/search ───────────────────────────────────────────────────────────
+  // Mirrors build_search_payload: every query word must appear (any order);
+  // tier 0 when every word starts a name word, else tier 1; $ raised within.
   async function search(q) {
     q = (q || '').trim().toUpperCase();
     if (q.length < 2) return { results: [], query: q, total: 0 };
     const { entries } = await fetchJSON('la_search_index.json.gz');
+    const toks = q.split(/[^A-Z0-9]+/).filter(Boolean);
     const word = [], contains = [];
-    for (const e of entries) {
-      const pos = e.name_upper.indexOf(q);
-      if (pos < 0) continue;
-      (pos === 0 || e.name_upper[pos - 1] === ' ' ? word : contains).push(e);
+    if (toks.length) {
+      for (const e of entries) {
+        const nu = e.name_upper, padded = ' ' + nu;
+        let hit = true, atWordStart = true;
+        for (const t of toks) {
+          if (!nu.includes(t)) { hit = false; break; }
+          if (!padded.includes(' ' + t)) atWordStart = false;
+        }
+        if (hit) (atWordStart ? word : contains).push(e);
+      }
     }
     word.sort((a, b) => b.total_raised - a.total_raised);
     contains.sort((a, b) => b.total_raised - a.total_raised);
@@ -112,7 +143,36 @@
   const overview        = () => fetchJSON('la_overview.json.gz');
   const insights        = () => fetchJSON('la_insights.json.gz');
   const cycleAggregates = () => fetchJSON('la_cycle_agg.json.gz');
-  const electionResults = () => fetchJSON('la_election_results.json');
+  // The flat, dashboard-facing lookup — the same file /api/election-results
+  // serves (NOT la_election_results.json, the raw build input that still
+  // carries same-name "ambiguous" people and lacks the first+last keys).
+  const electionResults = () => fetchJSON('la_election_lookup.json');
+
+  // Numeric filer number for tie-breaking (mirrors _filer_rank on the server).
+  function _filerRank(fn) {
+    return /^\d+$/.test(fn) ? Number(fn) : -1;
+  }
+  // name/alias -> filer, built once per loaded entity table (mirrors the
+  // server's _ENTITIES_BYNAME). When several filers share a name, the highest
+  // filer number wins on both sides — an order-independent rule, because JS
+  // iterates numeric object keys ascending rather than in file order.
+  const _entityNameIdx = new WeakMap();
+  function _entityNameIndex(entities) {
+    let idx = _entityNameIdx.get(entities);
+    if (!idx) {
+      idx = new Map();
+      for (const [fn, e] of Object.entries(entities)) {
+        for (const nm of [e.name || '', ...(e.aliases || [])]) {
+          const key = wsNorm(nm);
+          if (!key) continue;
+          const cur = idx.get(key);
+          if (cur === undefined || _filerRank(fn) > _filerRank(cur)) idx.set(key, fn);
+        }
+      }
+      _entityNameIdx.set(entities, idx);
+    }
+    return idx;
+  }
 
   async function entity({ name, filer } = {}) {
     const { entities } = await fetchJSON('la_entities.json.gz');
@@ -123,11 +183,8 @@
       // the server's _get_entity, which does the same).
     }
     if (name) {
-      const key = wsNorm(name);
-      for (const e of Object.values(entities)) {
-        if (wsNorm(e.name) === key) return e;
-        for (const a of (e.aliases || [])) if (wsNorm(a) === key) return e;
-      }
+      const fn = _entityNameIndex(entities).get(wsNorm(name));
+      if (fn !== undefined) return entities[fn];
     }
     return {};
   }
@@ -160,6 +217,24 @@
       giving = bucket[norm] || null;
     }
     return { filer, name, receiving, giving };
+  }
+
+  // ── election lookup, by key ───────────────────────────────────────────────
+  // A profile badges ONE person, so Pages ships the ~5 MB lookup hash-sharded
+  // (build_pages_site.py) and this fetches only the bucket(s) holding the asked
+  // keys: {key: entry} for each key present, exactly as in the full lookup.
+  const ELECTION_SHARDS = 64;
+  async function electionResultsFor(keys) {
+    const out = {};
+    for (const k of new Set(keys || [])) {
+      if (!k) continue;
+      // A missing bucket (e.g. a site built before sharding) reads as empty —
+      // no badge — like a missing giving shard does in entityProfile.
+      const bucket = await fetchJSON(`la_election_lookup_shard_${fnv1a(k) % ELECTION_SHARDS}.json.gz`)
+        .catch(() => ({}));
+      if (Object.prototype.hasOwnProperty.call(bucket, k)) out[k] = bucket[k];
+    }
+    return out;
   }
 
   // ── /api/entity-activity — one filer's full itemized activity ─────────────
@@ -290,6 +365,16 @@
   }
   // Map identity -> the one source key with it; drop collisions (mirrors
   // _namekey_index) so a fuzzy fallback never attaches the wrong person's money.
+  // Memoized per loaded artifact object: fetchJSON hands back the same parsed
+  // object for the whole session, and rebuilding an index over every name in
+  // the candidate index / candidacies / COH cache on each profile open cost
+  // tens of thousands of regex normalizations on the main thread.
+  const _namekeyIdxCache = new WeakMap();
+  function _namekeyIndexOf(obj) {
+    let idx = _namekeyIdxCache.get(obj);
+    if (!idx) { idx = _namekeyIndex(Object.keys(obj)); _namekeyIdxCache.set(obj, idx); }
+    return idx;
+  }
   function _namekeyIndex(keys) {
     const idx = {}, collided = new Set();
     for (const k of keys) {
@@ -325,9 +410,9 @@
     // formal spellings when no filer pins the identity, so the career chart,
     // election history, and certified COH all resolve to the same person.
     const nk     = _nameKey(name);
-    const ciIdx  = _namekeyIndex(Object.keys(index));
-    const crIdx  = _namekeyIndex(Object.keys(racesRaw));
-    const cohIdx = _namekeyIndex(Object.keys(cohCache));
+    const ciIdx  = _namekeyIndexOf(index);
+    const crIdx  = _namekeyIndexOf(racesRaw);
+    const cohIdx = _namekeyIndexOf(cohCache);
 
     const financial = filerEntry || index[norm] || (t2 && index[t2]) ||
                       (nk && (nk in ciIdx) ? index[ciIdx[nk]] : null) || {};
@@ -390,8 +475,9 @@
     // in flight while the first streams; output order (y-1 then y) is
     // unchanged, so the live server's byte-parity holds.
     const years = cycleYears(cycleYear);
+    const v = await dataVersion();
     const started = years.map(y => {
-      const p = fetch(`${base()}/${type}_yr${y}.json.gz`);
+      const p = fetch(_dataUrl(`${type}_yr${y}.json.gz`, v));
       p.catch(() => {});   // handled when its turn comes — avoid an unhandled rejection
       return p;
     });
@@ -418,10 +504,10 @@
   }
 
   global.StaticAPI = {
-    search, overview, insights, cycleAggregates, electionResults, entity, races,
+    search, overview, insights, cycleAggregates, electionResults, electionResultsFor, entity, races,
     industryBreakdown, coh, entityProfile, entityActivity,
     candidateHistory: _candidateHistoryExact,
-    streamRecordLines, records,
+    streamRecordLines, records, dataVersion,
     _internals: { normName, wsNorm, fetchJSON, fnv1a },
   };
 })(typeof window !== 'undefined' ? window : globalThis);

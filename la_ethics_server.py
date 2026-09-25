@@ -17,7 +17,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 import urllib.request
-import json, csv, io, os, re, time, gzip, threading, gc, sys
+import json, csv, io, os, re, time, gzip, threading, gc, sys, hashlib
 from datetime import date
 
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
@@ -91,6 +91,11 @@ _ENTITIES_BYNAME = None   # normalized display name / alias -> filer_number
 _ENTITIES_MTIME  = 0
 _ENTITIES_LOCK   = threading.Lock()
 
+def _filer_rank(fn):
+    """Numeric filer number for tie-breaking (non-numeric sorts below any
+    numeric one). Mirrored by _filerRank in static_api.js."""
+    return int(fn) if (fn.isascii() and fn.isdigit()) else -1
+
 def _load_entities():
     global _ENTITIES, _ENTITIES_BYNAME, _ENTITIES_MTIME
     with _ENTITIES_LOCK:
@@ -109,7 +114,14 @@ def _load_entities():
         for fn, e in ents.items():
             for nm in [e.get('name', '')] + (e.get('aliases') or []):
                 key = re.sub(r'\s+', ' ', nm.strip().upper())
-                if key:
+                # A few names/aliases belong to several filers (the same person's
+                # successive committees, or namesakes). Pick the highest filer
+                # number — the most recently registered — rather than whichever
+                # came last in file order, so the choice is order-independent and
+                # StaticAPI.entity (whose JS object iteration can't reproduce
+                # file order for numeric keys) resolves to the same record.
+                if key and (key not in byname or
+                            _filer_rank(fn) > _filer_rank(byname[key])):
                     byname[key] = fn
         _ENTITIES, _ENTITIES_BYNAME, _ENTITIES_MTIME = ents, byname, mtime
         print(f'  Entities: {len(ents)} loaded from la_entities.json.gz')
@@ -220,18 +232,24 @@ def build_entity_profile_payload(filer='', name=''):
     return {'filer': filer, 'name': name, 'receiving': receiving, 'giving': giving}
 
 
-# Pages ships the giving map as GIVING_SHARDS hash buckets (build_pages_site.py).
+# Pages ships big name-keyed maps as hash buckets (build_pages_site.py): the
+# giving map in GIVING_SHARDS buckets, the election lookup in ELECTION_SHARDS.
 # FNV-1a/32 — MUST stay identical to fnv1a() in static_api.js and shard_of() in
-# build_pages_site.py, or a donor's bucket lookup misses. The /data/ route
-# synthesizes these buckets so the server emulates Pages exactly for parity tests
-# and local ?static=1 use.
+# build_pages_site.py, or a bucket lookup misses. The /data/ route synthesizes
+# these buckets so the server emulates Pages exactly for parity tests and local
+# ?static=1 use.
 GIVING_SHARDS = 128
-def _giving_shard_of(s):
+ELECTION_SHARDS = 64
+
+def _fnv1a(s):
     h = 2166136261
     for ch in s:
         h ^= ord(ch)
         h = (h * 16777619) & 0xFFFFFFFF
-    return h % GIVING_SHARDS
+    return h
+
+def _giving_shard_of(s):
+    return _fnv1a(s) % GIVING_SHARDS
 
 def _build_giving_shard_gz(shard):
     """Gzip bytes of the donor-name->giving submap whose names hash to `shard`."""
@@ -240,6 +258,46 @@ def _build_giving_shard_gz(shard):
            if _giving_shard_of(k) == shard}
     return gzip.compress(json.dumps(sub, separators=(',', ':'),
                                     ensure_ascii=False).encode('utf-8'))
+
+
+_ELECTION_LOOKUP = None
+_ELECTION_LOOKUP_MTIME = 0
+_ELECTION_LOOKUP_LOCK = threading.Lock()
+
+def _build_election_shard_gz(shard):
+    """Gzip bytes of the la_election_lookup.json submap whose keys hash to
+    `shard` — what Pages serves as la_election_lookup_shard_<n>.json.gz."""
+    global _ELECTION_LOOKUP, _ELECTION_LOOKUP_MTIME
+    p = os.path.join(BASE_DIR, 'la_election_lookup.json')
+    with _ELECTION_LOOKUP_LOCK:
+        mtime = os.path.getmtime(p) if os.path.exists(p) else 0
+        if _ELECTION_LOOKUP is None or mtime != _ELECTION_LOOKUP_MTIME:
+            if mtime:
+                with open(p, 'r', encoding='utf-8') as f:
+                    _ELECTION_LOOKUP = json.load(f)
+            else:
+                _ELECTION_LOOKUP = {}
+            _ELECTION_LOOKUP_MTIME = mtime
+        lookup = _ELECTION_LOOKUP
+    sub = {k: v for k, v in lookup.items() if _fnv1a(k) % ELECTION_SHARDS == shard}
+    return gzip.compress(json.dumps(sub, separators=(',', ':'),
+                                    ensure_ascii=False).encode('utf-8'))
+
+
+def _local_data_version():
+    """Stand-in for Pages' data/version.json: changes whenever any data file
+    the /data/ route can serve is replaced."""
+    h = hashlib.sha256()
+    for base in (CACHE_DIR, BASE_DIR):
+        try:
+            entries = sorted(os.scandir(base), key=lambda e: e.name)
+        except OSError:
+            continue
+        for e in entries:
+            if e.name.endswith(('.json', '.json.gz')) and e.is_file():
+                st = e.stat()
+                h.update(f'{base}/{e.name}:{st.st_size}:{st.st_mtime_ns}\n'.encode('utf-8'))
+    return h.hexdigest()[:16]
 
 
 # ── Per-entity FULL ACTIVITY (built nightly by build_entity_activity.py) ───────
@@ -391,7 +449,10 @@ def _build_search_index():
                     'last_office': '', 'last_outcome': '', 'last_date': '',
                     'n_races': 0, 'total_raised': 0.0, 'n_cycles': 0,
                 }
-            e['total_raised'] = total
+            # Cents: an unrounded float sum depends on summation order, so the
+            # live index and the nightly artifact could differ by 1e-9 and trip
+            # the byte-for-byte parity gates.
+            e['total_raised'] = round(total, 2)
             e['n_cycles']     = len(cycles)
 
         for name, e in entries.items():
@@ -843,7 +904,7 @@ def build_overview_payload():
     _build_search_index()
     today_iso = time.strftime('%Y-%m-%d')
 
-    total_raised = sum(e['total_raised'] for e in _SEARCH_INDEX)
+    total_raised = round(sum(e['total_raised'] for e in _SEARCH_INDEX), 2)
     n_candidates = sum(1 for e in _SEARCH_INDEX if e['is_candidate'] and e['n_cycles'] > 0)
     n_committees = sum(1 for e in _SEARCH_INDEX if not e['is_candidate'])
 
@@ -899,6 +960,51 @@ def build_overview_payload():
         'recent_elections':   recent,
         'top_fundraisers':    top_fundraisers,
     }
+
+
+_SEARCH_TOKEN_SPLIT = re.compile(r'[^A-Z0-9]+')
+
+def build_search_payload(entries, q):
+    """Ranked search over the entity index — payload of /api/search. Mirrored
+    exactly by StaticAPI.search (the client parity gate holds them equal).
+
+    Every query word must appear in the name, in any order, so "john edwards"
+    finds JOHN BEL EDWARDS and "Landry, Jeff" (the LAST, FIRST form donor
+    records use) finds JEFF LANDRY. Tier 0: every word begins a name word;
+    tier 1: some word only matches mid-word. Within a tier, biggest $ raised
+    first so a surname search surfaces the most prominent names."""
+    q = (q or '').strip().upper()
+    if len(q) < 2:
+        return {'results': [], 'query': q, 'total': 0}
+    toks = [t for t in _SEARCH_TOKEN_SPLIT.split(q) if t]
+    word, contains = [], []
+    if toks:
+        for e in entries:
+            nu = e['name_upper']
+            padded = ' ' + nu
+            at_word_start = True
+            for t in toks:
+                if t not in nu:
+                    break
+                if (' ' + t) not in padded:
+                    at_word_start = False
+            else:
+                (word if at_word_start else contains).append(e)
+    word.sort(key=lambda e: -e['total_raised'])
+    contains.sort(key=lambda e: -e['total_raised'])
+    ordered = word + contains
+    results = [{
+        'name':         e['name'],
+        'is_candidate': e['is_candidate'],
+        'total_raised': e['total_raised'],
+        'n_cycles':     e['n_cycles'],
+        'n_races':      e['n_races'],
+        'last_office':  e['last_office'],
+        'last_outcome': e['last_outcome'],
+        'last_date':    e['last_date'],
+        'filer_number': e['filer_number'],
+    } for e in ordered[:25]]
+    return {'results': results, 'query': q, 'total': len(ordered)}
 
 
 def build_search_entries():
@@ -2175,36 +2281,7 @@ class Handler(BaseHTTPRequestHandler):
         # ── /api/search — unified candidate/committee lookup ─────────────────
         if parsed.path == '/api/search':
             _build_search_index()
-            q = params.get('q', [''])[0].strip().upper()
-            if len(q) < 2:
-                self._json({'results': [], 'query': q, 'total': 0})
-                return
-            # Tier 0: query begins a name token (e.g. first/last name) — best.
-            # Tier 1: query appears mid-token. Within each tier rank by $ raised
-            # so a last-name search surfaces the biggest names first.
-            word, contains = [], []
-            for e in _SEARCH_INDEX:
-                nu = e['name_upper']
-                pos = nu.find(q)
-                if pos < 0:
-                    continue
-                at_word_start = pos == 0 or nu[pos - 1] == ' '
-                (word if at_word_start else contains).append(e)
-            word.sort(key=lambda e: -e['total_raised'])
-            contains.sort(key=lambda e: -e['total_raised'])
-            ordered = word + contains
-            results = [{
-                'name':         e['name'],
-                'is_candidate': e['is_candidate'],
-                'total_raised': e['total_raised'],
-                'n_cycles':     e['n_cycles'],
-                'n_races':      e['n_races'],
-                'last_office':  e['last_office'],
-                'last_outcome': e['last_outcome'],
-                'last_date':    e['last_date'],
-                'filer_number': e['filer_number'],
-            } for e in ordered[:25]]
-            self._json({'results': results, 'query': q, 'total': len(ordered)})
+            self._json(build_search_payload(_SEARCH_INDEX, params.get('q', [''])[0]))
             return
 
         # ── /api/overview — landing-page aggregate stats ─────────────────────
@@ -2238,13 +2315,26 @@ class Handler(BaseHTTPRequestHandler):
             name = os.path.basename(parsed.path)
             if not re.fullmatch(r'[A-Za-z0-9_.\-]+\.(json|json\.gz)', name):
                 self._empty(404); return
-            # Synthetic giving shards: Pages serves these as files (built by
-            # build_pages_site.py); here we generate the same bucket on demand so
-            # the static client sees an identical map without a site build.
-            m = re.fullmatch(r'la_entity_giving_shard_(\d+)\.json\.gz', name)
+            # Data version: Pages ships data/version.json (a content hash
+            # written by build_pages_site.py) that static_api.js appends to every
+            # data URL. Synthesize one from the served files' size+mtime so
+            # ?static=1 exercises the same versioned-URL + IndexedDB path.
+            if parsed.path == '/data/version.json':
+                self._json({'v': _local_data_version()})
+                return
+            # Synthetic giving / election-lookup shards: Pages serves these as
+            # files (built by build_pages_site.py); here we generate the same
+            # bucket on demand so the static client sees an identical map
+            # without a site build.
+            m = re.fullmatch(r'la_(entity_giving|election_lookup)_shard_(\d+)\.json\.gz', name)
             if m:
-                shard = int(m.group(1))
-                body = _build_giving_shard_gz(shard) if shard < GIVING_SHARDS else gzip.compress(b'{}')
+                shard = int(m.group(2))
+                if m.group(1) == 'entity_giving':
+                    body = (_build_giving_shard_gz(shard) if shard < GIVING_SHARDS
+                            else gzip.compress(b'{}'))
+                else:
+                    body = (_build_election_shard_gz(shard) if shard < ELECTION_SHARDS
+                            else gzip.compress(b'{}'))
                 self.send_response(200)
                 self._cors_headers()
                 self.send_header('Content-Type', 'application/gzip')
@@ -2298,7 +2388,7 @@ class Handler(BaseHTTPRequestHandler):
         # serves _site/vendor/.
         if parsed.path.startswith('/vendor/'):
             rel = parsed.path[len('/vendor/'):]
-            if not re.fullmatch(r'(images/|fonts/)?[A-Za-z0-9_.\-]+\.(js|css|png|map|woff2)', rel):
+            if not re.fullmatch(r'(images/|fonts/)?[A-Za-z0-9_.\-]+\.(js|css|png|map|woff2|json)', rel):
                 self._empty(404); return
             vroot = os.path.join(BASE_DIR, 'vendor')
             fpath = os.path.normpath(os.path.join(vroot, *rel.split('/')))
@@ -2307,7 +2397,7 @@ class Handler(BaseHTTPRequestHandler):
             ctypes = {'.js': 'application/javascript; charset=utf-8',
                       '.css': 'text/css; charset=utf-8',
                       '.png': 'image/png', '.map': 'application/json',
-                      '.woff2': 'font/woff2'}
+                      '.json': 'application/json', '.woff2': 'font/woff2'}
             # Pinned library versions + fonts change ~never: a day of client
             # caching, then a cheap ETag revalidation.
             self._send_asset(fpath,
