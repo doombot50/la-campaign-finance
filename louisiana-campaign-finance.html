@@ -2625,12 +2625,33 @@ function getDataBuiltAt() {
   }
   return _builtAtPromise;
 }
-async function _cachedCycleStale(asofKey) {
+// On Pages the cached rows are checked by IDENTITY: the deployed data version
+// (data/version.json, a content hash) must equal the one the rows were saved
+// under. Comparing the nightly build time against when we cached is not enough
+// there — a deploy goes live hours after its build time, so rows cached in
+// between could pass as fresh. The live server keeps the timestamp check.
+function _staticDataVersion() {
+  return (STATIC_MODE && typeof StaticAPI !== 'undefined' &&
+          typeof StaticAPI.dataVersion === 'function')
+    ? StaticAPI.dataVersion().catch(() => null) : Promise.resolve(null);
+}
+async function _cachedCycleStale(key) {
   try {
-    const [asof, builtAt] = await Promise.all([idbGet(asofKey), getDataBuiltAt()]);
+    const ver = await _staticDataVersion();
+    if (ver) return (await idbGet(key + ':ver')) !== ver;
+    const [asof, builtAt] = await Promise.all([idbGet(key + ':asof'), getDataBuiltAt()]);
     if (!builtAt) return false;           // can't tell — keep the cache
     return !asof || builtAt > asof;       // data rebuilt after we cached it
   } catch (e) { return false; }
+}
+// Persist one cycle's rows plus the markers _cachedCycleStale reads. Markers
+// are written only once the rows have actually landed, so a failed write
+// (quota, private mode) can never leave older rows labeled as current.
+async function _saveCycleCache(key, rows) {
+  if (!await idbSet(key, rows)) return;
+  idbSet(key + ':asof', Date.now());
+  const ver = await _staticDataVersion();
+  if (ver) idbSet(key + ':ver', ver);
 }
 
 // fetch()-shaped router: call sites keep their resp.ok / resp.json() shape.
@@ -2745,8 +2766,10 @@ async function idbSet(key, data) {
       tx.objectStore(IDB_STORE).put({ ts: Date.now(), data }, key);
       tx.oncomplete = () => resolve();
       tx.onerror    = () => reject(tx.error);
+      tx.onabort    = () => reject(tx.error);
     });
-  } catch (e) { /* ignore quota / private-mode errors */ }
+    return true;
+  } catch (e) { return false; /* quota / private-mode errors: cache is optional */ }
 }
 
 // ============================================================
@@ -3490,7 +3513,7 @@ async function _fetchContribCycleRows(cycle, gen, buf, prog) {
   if (cached) {
     for (const r of cached) buf.push(r);
     prog.cachedReady();
-    if (!await _cachedCycleStale(cacheKey + ':asof')) {
+    if (!await _cachedCycleStale(cacheKey)) {
       return;
     }
     if (gen !== _loadGen) return;
@@ -3508,8 +3531,7 @@ async function _fetchContribCycleRows(cycle, gen, buf, prog) {
     } catch (e) { /* torn line — ignore */ }
   };
   const persist = () => {   // fire-and-forget, same keys as always
-    idbSet(cacheKey, buf.slice());
-    idbSet(cacheKey + ':asof', Date.now());
+    _saveCycleCache(cacheKey, buf.slice());
   };
   // A failed refetch shouldn't blank a cycle we have a (stale) copy of.
   const restoreCached = () => {
@@ -4036,13 +4058,12 @@ async function renderChoropleth() {
   showMapSpinner(true);
   if (!geojsonData) {
     try {
-      const resp = await fetch('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json');
-      const data = await resp.json();
-      // Filter to Louisiana (FIPS starts with 22)
-      geojsonData = {
-        type: 'FeatureCollection',
-        features: data.features.filter(f => f.id && String(f.id).startsWith('22'))
-      };
+      // Self-hosted: the 64 Louisiana parishes (~62 KB) cut from the Census
+      // US-counties file, instead of pulling the whole 3.2 MB file from a
+      // third-party origin on every session just to discard 98% of it.
+      const resp = await fetch('vendor/la_parishes.json');
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      geojsonData = await resp.json();
     } catch(e) {
       console.warn('Could not load GeoJSON:', e);
       showMapSpinner(false);
@@ -4813,10 +4834,13 @@ function detectDonorType(name) {
   // not PAC (e.g. "Plumbers Local 60 PAC Fund", "Carpenters Local 1098 CAR-PIC Fund")
   if (// Named union acronyms
       n.includes('AFL-CIO') || n.includes('SEIU')  || n.includes('IBEW')  ||
-      n.includes('UAW')     || n.includes('UFCW')  || n.includes('LIUNA') ||
+      n.includes('UFCW')    || n.includes('LIUNA') ||
       n.includes('AFSCME')  || n.includes('IATSE') || n.includes('APWU')  ||
       n.includes('NALC')    || n.includes('IUOE')  || n.includes('UNITE HERE') ||
-      n.includes('CWA')     || n.includes('AFT')   || n.includes('NEA')   ||
+      // Short acronyms only as whole words: as bare substrings NEA matched
+      // Cajun surnames (Babineaux, Arceneaux, Landreneau, McNeal) and AFT
+      // matched Craft/Kraft/Shafter, labeling individuals as unions.
+      /\b(UAW|CWA|AFT|NEA)\b/.test(n) ||
       n.includes('TEAMSTERS') ||
       // "Union" or "Local NNN" appearing anywhere in the name
       n.includes('UNION') || /\bLOCAL\s+\d+\b/.test(n) ||
@@ -5331,7 +5355,7 @@ async function loadExpData() {
       _refreshCampStats();
       if (_campTab === 'exps') campSwitchTab('exps');
     }
-    if (!await _cachedCycleStale(expCacheKey + ':asof')) {
+    if (!await _cachedCycleStale(expCacheKey)) {
       return;
     }
     // else fall through: the cached view stays up while fresh data loads
@@ -5348,8 +5372,7 @@ async function loadExpData() {
     expData = raw;
     // Tag each record with category
     expData.forEach(r => { r._cat = detectExpCategory(r.description || ''); });
-    idbSet(expCacheKey, expData);   // persist (fire-and-forget)
-    idbSet(expCacheKey + ':asof', Date.now());
+    _saveCycleCache(expCacheKey, expData);   // persist (fire-and-forget)
     document.getElementById('exp-loading-msg').style.display = 'none';
     populateExpCampaignDropdown();
     renderExpAll();
@@ -5414,12 +5437,12 @@ async function loadExpData() {
 async function _fetchExpCycleRaw(cycle) {
   const key = `exp_${cycle}`;
   const cached = await idbGet(key);
-  if (cached && !(await _cachedCycleStale(key + ':asof'))) return cached;
+  if (cached && !(await _cachedCycleStale(key))) return cached;
   if (!proxyAvailable) return cached || [];
   if (STATIC_MODE) {
     try {
       const raw = await StaticAPI.records('expenditures', cycle);
-      idbSet(key, raw); idbSet(key + ':asof', Date.now());
+      _saveCycleCache(key, raw);
       return raw;
     } catch (e) { console.error('Expenditure static load error:', e); return cached || []; }
   }
@@ -5429,7 +5452,7 @@ async function _fetchExpCycleRaw(cycle) {
       if (r.status === 202) { await new Promise(res => setTimeout(res, 3000)); continue; }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const raw = await r.json();
-      idbSet(key, raw); idbSet(key + ':asof', Date.now());
+      _saveCycleCache(key, raw);
       return raw;
     } catch (e) { await new Promise(res => setTimeout(res, 3000)); }
   }
@@ -5928,7 +5951,7 @@ async function loadLoanData() {
       _refreshCampStats();
       if (_campTab === 'loans') campSwitchTab('loans');
     }
-    if (!await _cachedCycleStale(loanCacheKey + ':asof')) {
+    if (!await _cachedCycleStale(loanCacheKey)) {
       return;
     }
     // else fall through: the cached view stays up while fresh data loads
@@ -5950,8 +5973,7 @@ async function loadLoanData() {
       d._isSelf = parts.some(p => p.length > 2 && lender.includes(p));
       return d;
     });
-    idbSet(loanCacheKey, loanData);   // persist (fire-and-forget)
-    idbSet(loanCacheKey + ':asof', Date.now());
+    _saveCycleCache(loanCacheKey, loanData);   // persist (fire-and-forget)
     document.getElementById('loan-loading-msg').style.display = 'none';
     populateLoanCampaignDropdown();
     renderLoanAll();
@@ -6011,7 +6033,7 @@ async function loadLoanData() {
 async function _fetchLoanCycleRaw(cycle) {
   const key = `loan_${cycle}`;
   const cached = await idbGet(key);
-  if (cached && !(await _cachedCycleStale(key + ':asof'))) return cached;
+  if (cached && !(await _cachedCycleStale(key))) return cached;
   if (!proxyAvailable) return cached || [];
   const tag = (raw) => raw.map(d => {
     const lender = (d.contributor || '').toUpperCase();
@@ -6022,7 +6044,7 @@ async function _fetchLoanCycleRaw(cycle) {
   if (STATIC_MODE) {
     try {
       const raw = tag(await StaticAPI.records('loans', cycle));
-      idbSet(key, raw); idbSet(key + ':asof', Date.now());
+      _saveCycleCache(key, raw);
       return raw;
     } catch (e) { console.error('Loan static load error:', e); return cached || []; }
   }
@@ -6032,7 +6054,7 @@ async function _fetchLoanCycleRaw(cycle) {
       if (r.status === 202) { await new Promise(res => setTimeout(res, 3000)); continue; }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const raw = tag(await r.json());
-      idbSet(key, raw); idbSet(key + ':asof', Date.now());
+      _saveCycleCache(key, raw);
       return raw;
     } catch (e) { await new Promise(res => setTimeout(res, 3000)); }
   }
@@ -7648,8 +7670,19 @@ async function _fetchCampActivity(filer) {
 // ============================================================
 let electionResults = {};
 let _electionResultsLoaded = false;
-async function loadElectionResults() {
+async function loadElectionResults(name) {
   if (_electionResultsLoaded) return;
+  // Pages: the badge needs only this name's (at most two) lookup keys, so
+  // fetch just the hash bucket(s) holding them (~13 KB each) instead of the
+  // whole ~5 MB lookup. getElectionResult reads the merged entries as usual.
+  if (STATIC_MODE && typeof StaticAPI !== 'undefined' &&
+      typeof StaticAPI.electionResultsFor === 'function') {
+    const keys = _wlLookupKeys(name);
+    if (!keys.length) return;
+    try { Object.assign(electionResults, await StaticAPI.electionResultsFor(keys)); }
+    catch (e) { /* offline / not built — badges simply won't show */ }
+    return;
+  }
   try {
     const resp = await apiFetch(`/api/election-results`);
     if (resp.ok) electionResults = await resp.json();
@@ -7662,15 +7695,22 @@ function _wlNormName(s) {
   s = (s || '').toUpperCase().replace(/\b(DR|MR|MRS|MS|JR|SR|II|III|IV|ESQ|PHD|MD)\.?\b/g, '').replace(/[^A-Z\s]/g, ' ');
   return s.split(/\s+/).filter(Boolean).join(' ');
 }
+// Lookup keys for a person's name: exact normalized full name (T1), then
+// first+last (T2). Committee-shaped names never get a badge.
+function _wlLookupKeys(name) {
+  if (!name || _WL_COMMITTEE_RE.test(name) || /\d/.test(name) || name.includes('&')) return [];
+  const norm = _wlNormName(name);
+  const toks = norm.split(' ');
+  if (toks.length < 2) return [];
+  return [norm, toks[0] + ' ' + toks[toks.length - 1]];
+}
 // High-confidence lookup: exact full name (T1) then unambiguous first+last (T2).
 // The served artifact already excludes ambiguous names and non-unique first+last,
 // so the client only needs normalize + two dict lookups + a party sanity check.
 function getElectionResult(name, party) {
-  if (!name || _WL_COMMITTEE_RE.test(name) || /\d/.test(name) || name.includes('&')) return null;
-  const norm = _wlNormName(name);
-  const toks = norm.split(' ');
-  if (toks.length < 2) return null;
-  let e = electionResults[norm] || electionResults[toks[0] + ' ' + toks[toks.length - 1]];
+  const keys = _wlLookupKeys(name);
+  if (!keys.length) return null;
+  let e = electionResults[keys[0]] || electionResults[keys[1]];
   if (!e) return null;
   if (party && (party === 'DEM' || party === 'REP') && (e.party === 'DEM' || e.party === 'REP') && party !== e.party) return null;
   return e;
@@ -7778,7 +7818,7 @@ function showCampaignProfile(name, openTab, filer) {
   if (loanData.length === 0) loadLoanData();
   // Election result may load async on first open; re-render once available.
   const _p = (_campContribs[0] || _campExps[0] || {}).party || 'OTH';
-  loadElectionResults().then(() => renderCampElection(name, _p));
+  loadElectionResults(name).then(() => renderCampElection(name, _p));
   // Reset the estimate stat (repopulated async by fetchCareerData). The
   // certified COH slot is always visible — fetchCareerData resets it itself.
   const _cohEstStat = document.getElementById('camp-coh-est-stat');
@@ -9625,7 +9665,12 @@ function _gsTokenHighlight() {
   });
 }
 
+// Bumped on every search-box change: a response for an older query (slow
+// network, or the first static-mode search still downloading the index)
+// must not overwrite the results — or reopen the dropdown — for a newer one.
+let _gsSeq = 0;
 async function _doGlobalSearch(q) {
+  const seq = ++_gsSeq;
   const box = document.getElementById('global-search-results');
   if (!q) {
     box.style.display = 'none';
@@ -9680,10 +9725,12 @@ async function _doGlobalSearch(q) {
     const res = await apiFetch(`/api/search?q=${encodeURIComponent(q.trim())}`);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
+    if (seq !== _gsSeq) return;   // superseded by a newer keystroke
     _gsResults = data.results || [];
     _gsActive = -1;
     _renderSearchResults(data.total || _gsResults.length);
   } catch (e) {
+    if (seq !== _gsSeq) return;
     _gsPosition();
     box.innerHTML = `<div class="gs-empty">Search unavailable (${e.message})</div>`;
     box.style.display = 'block';

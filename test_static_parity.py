@@ -76,30 +76,12 @@ def diff_summary(a, b, path='$'):
 
 
 def rank_search(entries, q):
-    """Mirror of the /api/search two-tier ranking (and of the static client's)."""
-    q = q.strip().upper()
-    if len(q) < 2:
-        return []
-    word, contains = [], []
-    for e in entries:
-        nu = e['name_upper']
-        pos = nu.find(q)
-        if pos < 0:
-            continue
-        (word if pos == 0 or nu[pos - 1] == ' ' else contains).append(e)
-    word.sort(key=lambda e: -e['total_raised'])
-    contains.sort(key=lambda e: -e['total_raised'])
-    return [{
-        'name':         e['name'],
-        'is_candidate': e['is_candidate'],
-        'total_raised': e['total_raised'],
-        'n_cycles':     e['n_cycles'],
-        'n_races':      e['n_races'],
-        'last_office':  e['last_office'],
-        'last_outcome': e['last_outcome'],
-        'last_date':    e['last_date'],
-        'filer_number': e['filer_number'],
-    } for e in (word + contains)[:25]]
+    """The artifact's entries ranked by the server's own /api/search ranking
+    (build_search_payload), so this gate checks the shipped entries without
+    carrying a third copy of the ranking rules (the JS mirror in static_api.js
+    is checked end-to-end by test_static_client_parity.mjs)."""
+    from la_ethics_server import build_search_payload
+    return build_search_payload(entries, q)['results']
 
 
 def main():
@@ -151,8 +133,9 @@ def main():
 
         # ── search ────────────────────────────────────────────────────────
         entries = load_gz('la_search_index.json.gz')['entries']
-        for q in ('landry', 'pac', 'broome', 'smith', 'xyzzy-no-match'):
-            live = get(port, f'/api/search?q={q}')
+        for q in ('landry', 'pac', 'broome', 'smith', 'xyzzy-no-match',
+                  'john edwards', 'Landry, Jeff', 'bel ed'):
+            live = get(port, f'/api/search?q={urllib.parse.quote(q)}')
             mine = rank_search(entries, q)
             d = diff_summary(live['results'], mine, f'search[{q}]')
             check(f'/api/search?q={q} ({len(mine)} results)', d is None, d or '')

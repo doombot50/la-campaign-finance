@@ -29,7 +29,8 @@ parsed records in IndexedDB so subsequent loads are instant.
 - **Money In / Money Out / Loans** — filterable tables and charts over every
   contribution, expenditure, and loan filed in the selected cycle.
 - **Unified header search** drives entity lookup (candidates and committees,
-  ranked by total raised) and *also* filtering via token syntax:
+  ranked by total raised; words match in any order, so "edwards john" and
+  "Landry, Jeff" work) and *also* filtering via token syntax:
   `zip:70801`, `party:rep`, `donor:exxon`, `recipient:acme`, `category:media`,
   `min:5k`, `max:1.5m`, … Available tokens change with the active tab —
   contributions tokens on Money In, expenditure tokens on Money Out. The **?**
