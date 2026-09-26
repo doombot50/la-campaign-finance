@@ -28,9 +28,9 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <!-- Fonts (Libre Franklin + IBM Plex Mono) are self-hosted under vendor/fonts/
      via @font-face in the stylesheet below — no Google Fonts origin at runtime.
-     Map tiles (CARTO) are the only remaining third-party origin, and only once
+     Map tiles (Esri) are the only remaining third-party origin, and only once
      the Money tab's map opens — warm the DNS early. -->
-<link rel="dns-prefetch" href="https://basemaps.cartocdn.com">
+<link rel="dns-prefetch" href="https://server.arcgisonline.com">
 <!-- Preload the above-the-fold font weights so they start downloading during
      HTML parse instead of after the ~500 KB inline stylesheet is evaluated —
      kills most of the fallback-font flash. (crossorigin is mandatory on font
@@ -126,7 +126,6 @@
     /* Type scale */
     --fs-xs: 10px; --fs-sm: 12px; --fs-base: 13px;
     --fs-lg: 15px; --fs-xl: 22px; --fs-hero: 27px;
-    --tile-url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
   }
   html { scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) {
@@ -2776,9 +2775,19 @@ async function idbSet(key, data) {
 // ============================================================
 // THEME TOGGLE
 // ============================================================
-const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+// Basemap: Esri's keyless light-gray canvas. CARTO's basemaps (used until
+// 2026-09) began requiring an API key — keyless tiles still return 200 but
+// are stamped "API KEY REQUIRED", which blanked the map. Note Esri orders
+// the path {z}/{y}/{x}, and it has no native tiles past z16.
+const TILE_LIGHT = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+const TILE_ATTRIBUTION = 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; ' +
+  'Esri, HERE, Garmin, &copy; OpenStreetMap contributors, and the GIS User Community';
 let tileLayer = null;
+function _baseTileLayer() {
+  return L.tileLayer(TILE_LIGHT, {
+    attribution: TILE_ATTRIBUTION, maxNativeZoom: 16, maxZoom: 19
+  });
+}
 
 // Party-slice display metadata (order = legend order). Declared here, above
 // applyTheme(), because applyTheme() calls renderPartyChart() during initial
@@ -2803,13 +2812,10 @@ function applyTheme() {
   // matches the dark app header bar.
   const tc = document.querySelector('meta[name="theme-color"]');
   if (tc) tc.setAttribute('content', '#0f1c1a');
-  // Map tiles are the light CARTO basemap (initMap also reads TILE_LIGHT).
+  // Map tiles are the light Esri basemap (initMap builds the same layer).
   if (map) {
     if (tileLayer) map.removeLayer(tileLayer);
-    tileLayer = L.tileLayer(TILE_LIGHT, {
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: 'abcd', maxZoom: 19
-    }).addTo(map);
+    tileLayer = _baseTileLayer().addTo(map);
   }
   // Chart.js default text colour for the light theme.
   if (window.Chart) {
@@ -2825,7 +2831,7 @@ function applyTheme() {
 
 // ============================================================
 // INIT MAP — lazy: created on first Money-tab activation so the Overview
-// landing doesn't pay for Leaflet setup or CARTO tile downloads.
+// landing doesn't pay for Leaflet setup or map tile downloads.
 // ============================================================
 let map = null;
 function initMap() {
@@ -2844,10 +2850,7 @@ function initMap() {
       setTimeout(dismiss, 8000);
     }
   }
-  tileLayer = L.tileLayer(TILE_LIGHT, {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 19
-  }).addTo(map);
+  tileLayer = _baseTileLayer().addTo(map);
 
   // Built here (not at top level) because L is now loaded lazily and only
   // guaranteed present once initMap runs behind ensureLeaflet().
