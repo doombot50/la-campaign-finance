@@ -2858,6 +2858,20 @@ function initMap() {
   }
   tileLayer = _baseTileLayer().addTo(map);
 
+  // #map stretches with its grid row, which changes height after init (the
+  // Top Parishes panel fills in, the tab is shown). Leaflet only re-measures
+  // on window resize, so without this it keeps a stale size and leaves part
+  // of the map untiled, with bubbles drawn past the last row of tiles.
+  // Coalesced to one re-measure per frame.
+  if (window.ResizeObserver) {
+    let pending = false;
+    new ResizeObserver(() => {
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(() => { pending = false; map.invalidateSize(); });
+    }).observe(map.getContainer());
+  }
+
   // Built here (not at top level) because L is now loaded lazily and only
   // guaranteed present once initMap runs behind ensureLeaflet().
   const legend = L.control({position:'bottomright'});
