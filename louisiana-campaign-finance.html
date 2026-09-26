@@ -2521,6 +2521,8 @@ function ensureLeaflet() {
 // farthest from its edges), computed from vendor/la_parishes.json so every
 // bubble sits inside its own parish — a plain centroid can fall outside a
 // crescent/coastal shape (Plaquemines, Lafourche, St. John the Baptist).
+// Exceptions, pinned by hand to where the people are: Orleans (downtown,
+// not New Orleans East) and St. Bernard (Chalmette, not the eastern marsh).
 const PARISHES = [
   {name:"Acadia",lat:30.30,lng:-92.42},{name:"Allen",lat:30.65,lng:-92.79},
   {name:"Ascension",lat:30.22,lng:-90.92},{name:"Assumption",lat:29.94,lng:-91.09},
@@ -2539,11 +2541,11 @@ const PARISHES = [
   {name:"Lafourche",lat:29.55,lng:-90.35},{name:"LaSalle",lat:31.78,lng:-92.18},
   {name:"Lincoln",lat:32.62,lng:-92.70},{name:"Livingston",lat:30.48,lng:-90.75},
   {name:"Madison",lat:32.38,lng:-91.28},{name:"Morehouse",lat:32.82,lng:-91.81},
-  {name:"Natchitoches",lat:31.51,lng:-93.05},{name:"Orleans",lat:30.09,lng:-89.91},
+  {name:"Natchitoches",lat:31.51,lng:-93.05},{name:"Orleans",lat:29.96,lng:-90.07},
   {name:"Ouachita",lat:32.44,lng:-92.18},{name:"Plaquemines",lat:29.65,lng:-89.84},
   {name:"Pointe Coupee",lat:30.62,lng:-91.60},{name:"Rapides",lat:31.17,lng:-92.56},
   {name:"Red River",lat:32.10,lng:-93.34},{name:"Richland",lat:32.30,lng:-91.90},
-  {name:"Sabine",lat:31.56,lng:-93.54},{name:"St. Bernard",lat:29.84,lng:-89.50},
+  {name:"Sabine",lat:31.56,lng:-93.54},{name:"St. Bernard",lat:29.95,lng:-89.96},
   {name:"St. Charles",lat:29.92,lng:-90.40},{name:"St. Helena",lat:30.87,lng:-90.71},
   {name:"St. James",lat:30.02,lng:-90.81},{name:"St. John the Baptist",lat:30.11,lng:-90.52},
   {name:"St. Landry",lat:30.59,lng:-91.97},{name:"St. Martin",lat:30.25,lng:-91.78},
