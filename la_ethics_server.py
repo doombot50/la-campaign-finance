@@ -1508,6 +1508,52 @@ _FALLBACK_LOOKUP = {
 }
 
 _POLITICIAN_LOOKUP: dict = {}
+
+# ── Party corrections by filer number (la_party_corrections.json) ─────────────
+# The name lookup can mislabel a namesake or leave a publicly aligned committee
+# as OTH. These filer-keyed corrections are the ONE list both this dashboard and
+# Louisiana Airwaves apply: `when: always` replaces the name-matched label,
+# `when: oth` fills it only where the lookup says OTH. Loaded alongside the
+# politician lookup; applied by party_for() / party_detail_for() at every place
+# a filer's party is assigned (CSV parse, retag_caches.py, build_entities.py).
+PARTY_CORRECTIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'la_party_corrections.json')
+_PARTY_CORRECTIONS: dict = {}
+
+
+def _load_party_corrections(path=None):
+    global _PARTY_CORRECTIONS
+    path = path or PARTY_CORRECTIONS_FILE
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            _PARTY_CORRECTIONS = json.load(f).get('filers') or {}
+    except FileNotFoundError:
+        _PARTY_CORRECTIONS = {}
+    except Exception as e:
+        print(f'  WARNING: could not load {path}: {e}')
+        _PARTY_CORRECTIONS = {}
+    return _PARTY_CORRECTIONS
+
+
+def corrected_party(party, filer):
+    """`party` (from the name lookup) after this filer's correction, if any."""
+    c = _PARTY_CORRECTIONS.get(str(filer or '').strip())
+    if c and (c.get('when') == 'always' or party in (None, '', 'OTH')):
+        return c['party']
+    return party
+
+
+def party_for(name, filer=None):
+    """A filer's party: the name lookup, then the filer-keyed correction."""
+    return corrected_party(lookup_party(name), filer)
+
+
+def party_detail_for(detail, filer):
+    """lookup_party_detail() output with the filer's correction applied; a
+    corrected label carries source 'manual_correction' (shown as verified)."""
+    p = corrected_party(detail['party'], filer)
+    if p == detail['party']:
+        return detail
+    return {'party': p, 'source': 'manual_correction', 'matched': None}
 # Lazily-built (nickname-canonical first, last) -> lookup key index, used as the
 # last-resort party match: it bridges "J Douglas Welborn" to the lookup's "DOUG
 # WELBORN" and "Toni Higginbotham" to "TONI MANNING HIGGINBOTHAM". Collisions are
@@ -1554,6 +1600,8 @@ def _load_politician_lookup():
     if not _POLITICIAN_LOOKUP:
         _POLITICIAN_LOOKUP = {k: {'party': v} for k, v in _FALLBACK_LOOKUP.items()}
         print(f'  Politician lookup: using built-in fallback ({len(_FALLBACK_LOOKUP)} entries)')
+    if _load_party_corrections():
+        print(f'  Party corrections: {len(_PARTY_CORRECTIONS)} filer(s) from {os.path.basename(PARTY_CORRECTIONS_FILE)}')
 
 def _bust_stale_caches():
     """Delete old-format or stale cache files so they are rebuilt in NDJSON format."""
@@ -1853,7 +1901,7 @@ def _parse_contribution_row(row):
         'amount':             round(amt, 2),
         'date':               parse_date(row.get('ContributionDate', '')),
         'candidate':          filer or 'Unknown',
-        'party':              lookup_party(filer),
+        'party':              party_for(filer, row.get('FilerNumber')),
         'source':             'LA Ethics',
         'type':               contrib_type,
         'filerNumber':        (row.get('FilerNumber') or '').strip(),
@@ -1915,7 +1963,7 @@ def _parse_expenditure_row(row):
         'amount':          round(amt, 2),
         'date':            parse_date(row.get('ExpenditureDate', '')),
         'candidate':       filer or 'Unknown',
-        'party':           lookup_party(filer),
+        'party':           party_for(filer, row.get('FilerNumber')),
         'source':          'LA Ethics (Expenditure)',
         'description':     (row.get('ExpenditureDescription') or '').strip(),
         'filerNumber':     (row.get('FilerNumber') or '').strip(),
@@ -1954,7 +2002,7 @@ def _parse_loan_row(row):
         'rate':         round(rate, 4),
         'date':         parse_date(row.get('LoanDate', '')),
         'candidate':    filer or 'Unknown',
-        'party':        lookup_party(filer),
+        'party':        party_for(filer, row.get('FilerNumber')),
         'source':       'LA Ethics (Loan)',
         'filerNumber':  (row.get('FilerNumber') or '').strip(),
         **_filing_fields(row),   # reportNumber + reportCode (filing PDF derived client-side)

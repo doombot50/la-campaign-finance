@@ -1,0 +1,11 @@
+{
+"about": "Party-label corrections keyed by Ethics filer number: the one list both this dashboard and Louisiana Airwaves (doombot50/Lousiana-DMAs) apply. Party is normally matched from the filer's name (la_politicians_lookup.json), which can mislabel a namesake or leave a publicly aligned committee as OTH. when=always replaces whatever the name lookup says; when=oth applies only where it says OTH. Each entry is an editorial call with its reason, so it can be audited or reverted. Edit here only: the nightly refresh publishes this file on the data-cache release and Airwaves syncs its copy from there.",
+"filers": {
+"1314": {"party": "REP", "when": "always", "name": "Blair Edwards", "why": "Blair Downing Edwards, First Circuit Court of Appeal judge, ran as a Republican for the open 1st District Supreme Court seat in the May 2026 closed GOP primary (WAFB, WBRZ, Louisiana Illuminator). The name lookup matched a different Blair Edwards, a Democratic local official."},
+"160": {"party": "REP", "when": "oth", "name": "John L. (Jay) Dardenne", "why": "Republican; former Secretary of State and Lieutenant Governor."},
+"3354": {"party": "DEM", "when": "oth", "name": "Gumbo PAC", "why": "Democratic-aligned super PAC; ran the anti-Landry air war in 2023."},
+"6034": {"party": "REP", "when": "oth", "name": "RGA (Republican Governors Association) Right Direction PAC", "why": "The Republican Governors Association's Louisiana independent-expenditure vehicle."},
+"621": {"party": "DEM", "when": "oth", "name": "Claude (Buddy) Leach, Jr.", "why": "Democrat; former congressman and chairman of the Louisiana Democratic Party."},
+"632": {"party": "DEM", "when": "oth", "name": "Walter J. Boasso", "why": "Elected to the state Senate as a Republican, switched to the Democratic Party to run for governor in 2007, the cycle his spending is from."}
+}
+}

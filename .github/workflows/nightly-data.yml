@@ -72,8 +72,8 @@ jobs:
         run: python build_entities.py
 
       - name: Re-tag party labels + flag transfers on cached records
-        # lookup_party improvements and la_politicians_lookup.json corrections
-        # propagate to ALL year files (incl. old cycles seeded from the release,
+        # lookup_party improvements, la_politicians_lookup.json corrections and
+        # the filer-keyed la_party_corrections.json propagate to ALL year files (incl. old cycles seeded from the release,
         # which are otherwise never re-parsed). Also sets isTransfer on
         # committee-to-committee contributions using the entity table built above.
         run: python retag_caches.py
@@ -167,7 +167,9 @@ jobs:
         # still-present local .la_cache copies.
         run: |
           for attempt in 1 2 3 4 5; do
-            if gh release upload data-cache .la_cache/*.json.gz --clobber; then
+            # la_party_corrections.json rides along: Louisiana Airwaves
+            # (Lousiana-DMAs fetch_cache.py) syncs its copy from the release.
+            if gh release upload data-cache .la_cache/*.json.gz la_party_corrections.json --clobber; then
               echo "Release upload succeeded on attempt $attempt."
               exit 0
             fi

@@ -156,6 +156,7 @@ def main():
                 pd = srv.lookup_party_detail(alt)
                 if pd['party'] != 'OTH':
                     break
+        pd = srv.party_detail_for(pd, fn)   # filer-keyed la_party_corrections.json
 
         # Certified COH join
         coh_key = find(coh_by_norm)
