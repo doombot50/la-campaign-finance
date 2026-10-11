@@ -98,7 +98,7 @@ All candidate lookup across datasets (contributions CSV, SoS candidacies, ethics
 - `build_entities.py` joins career by exact filer; `build_pages_site.py` publishes the filer index; `test_static_client_parity.mjs` gates the filer path.
 - The dashboard threads `filer_number` from search results into the profile fetch (`showCampaignProfile(name, tab, filer)`).
 
-Remaining edge: surfaces with no filer number — a shared bare-name `#/campaign/<name>` link, the Compare tab, and the profile's in-cycle transaction *lists* (still name-matched) — fall back to the name-keyed merge.
+Profile permalinks now carry the filer (`#/campaign/<name>?filer=<n>`) whenever the profile was opened with one, and the lifetime giving list's recipient links carry theirs. Remaining edge: surfaces with no filer number — an old bare-name `#/campaign/<name>` link, the Compare tab, and the profile's in-cycle transaction *lists* (still name-matched) — fall back to the name-keyed merge.
 
 ### Per-Entity Lifetime Edge Lists (`/api/entity-profile`)
 
@@ -118,6 +118,14 @@ The **election lookup** is sharded the same way: `la_election_lookup.json` (~5 M
 The data normally ships sharded by **year** (load a year = everyone's rows). To show *all of one committee's activity* across all cycles without loading every cycle, `build_entity_activity.py` reshards transactions **by filer**: per-filer contributions-received + expenditures + loans, each capped to the `CAP` (1500) most-recent rows, with exact totals (`nc/ne/nl`) kept for the "N of M" disclosure. Lifetime *totals* already come exactly from the aggregates, and a browser can't render 200k rows (the table paginates), so the cap is the right tradeoff — most committees fall under it and show everything.
 
 `la_entity_activity.json.gz` is one ~29 MB map (server holds it in memory, slices per filer for `/api/entity-activity?filer=<n>`). **Pages can't ship it whole**, so `build_pages_site.py` explodes it into `activity/<filer>.json.gz` (one file per filer) and `StaticAPI.entityActivity` fetches exactly one; the server's `/data/activity/<filer>.json.gz` route synthesizes a bundle on the fly to emulate Pages for `?static=1` and `test_static_client_parity.mjs`. The profile auto-fetches it (`_fetchCampActivity` → `_campRows`) and the Contributions/Expenditures/Loans tabs render full activity with a banner; falls back to loaded-cycle lists when no filer is known. Both parity gates cover it.
+
+### Airtime from Louisiana Airwaves (`la_filer_media.json`)
+
+The sibling repo `doombot50/Lousiana-DMAs` (airwaves.charliestephens.xyz) sums what every committee paid TV and radio stations from these same expenditure filings, and matches buyers in the stations' FCC political files to state filers. Its `build_committees_page.py` publishes `data/filer_media.json`: `filerNumber` → `{n, tv, ra, nts, nrs, y0, y1, top, pf:{docs, recent, latest, st, live}}`, plus `fcc` (`scraped`, `days`) and `data_through`.
+
+- The nightly workflow's "Pull airtime summary" step curls it into the committed repo-root `la_filer_media.json` (non-fatal; the committed copy stays on failure). Airwaves rebuilds at 11:17 UTC, after this repo's 09:00 run, so the copy is one night behind.
+- The live server serves it from its `/data/<name>` repo-root fallback; `build_pages_site.py` lists it in `REQUIRED_ROOT`. The dashboard loads it once (`_loadFilerMedia`) and fills the profile header's `#camp-airtime` strip (`_renderCampAirtime` → `_mediaFor` → `_airtimeHtml`): filer-exact when the filer is known, else a name match only when exactly one filer carries the name.
+- **Permalinks carry the filer:** `#/campaign/<name>?filer=<n>` (`_campaignHash` / `_parseCampaignRoute`). Airwaves' committee profiles link here that way, and each airtime strip links back to `committees.html#f=<filer>`. Bare-name links still work as before.
 
 ### Browser SPA (louisiana-campaign-finance.html)
 

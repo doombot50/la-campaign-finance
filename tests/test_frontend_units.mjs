@@ -198,3 +198,47 @@ test('detectDonorType: short union acronyms match whole words only', () => {
     assert.equal(fe.detectDonorType(n), want, n);
   }
 });
+
+// ── Filer-exact campaign permalinks + the Airwaves airtime strip ─────────────
+const air = extract(HTML, {
+  consts: ['AIRWAVES_COMMITTEES_URL'],
+  fns: ['_campaignHash', '_parseCampaignRoute', '_normNameJS', '_mediaFor', '_airtimeHtml',
+        'formatMoneyShort', 'escHtml'],
+});
+
+test('_campaignHash / _parseCampaignRoute round-trip, with and without a filer', () => {
+  for (const [name, filer] of [['John Bel Edwards', '1314'], ['A?B & C/D', '77'], ['Jeff Landry', '']]) {
+    const h = air._campaignHash(name, filer);
+    assert.ok(h.startsWith('#/campaign/'));
+    assert.deepEqual(air._parseCampaignRoute(h.slice('#/campaign/'.length)), { name, filer });
+  }
+  assert.equal(air._campaignHash('Jeff Landry'), '#/campaign/Jeff%20Landry');   // old links unchanged
+  // Links written by Louisiana Airwaves' committee profiles.
+  assert.deepEqual(air._parseCampaignRoute('Blair%20Edwards?filer=1314'), { name: 'Blair Edwards', filer: '1314' });
+});
+
+test('_mediaFor: filer is exact; a name falls back only when unambiguous', () => {
+  const media = { filers: {
+    '1': { n: 'John Smith' }, '2': { n: 'JOHN SMITH, JR.' }, '3': { n: 'Gumbo PAC' },
+  } };
+  const f = (name, filer) => air._mediaFor(media, name, filer, air._normNameJS);
+  assert.equal(f('John Smith', '2').filer, '2');
+  assert.equal(f('Gumbo PAC', '9'), null);              // known filer, no airtime: no name guess
+  assert.equal(f('Gumbo Pac', '').filer, '3');
+  assert.equal(f('John Smith', ''), null);               // two filers normalize alike
+  assert.equal(air._mediaFor(null, 'x', '', air._normNameJS), null);
+});
+
+test('_airtimeHtml: paid airtime, live bookings, and the Airwaves link', () => {
+  const fcc = { scraped: '2026-10-11', since: '2026-09-28', days: 14 };
+  const h = air._airtimeHtml({ n: 'Blair Edwards', tv: 332282, ra: 0, nts: 11, nrs: 0, y0: '2026', y1: '2026',
+    top: ['WVUE', 'WAFB'], pf: { docs: 158, recent: 3, latest: '2026-10-07', st: 11, live: 2 } }, '1314', fcc);
+  assert.match(h, /\$332K<\/b> TV \(11 stations\) in 2026/);
+  assert.match(h, /Booking now:.*3 FCC political-file documents.*14 days to Oct 11, at 2 stations \(latest Oct 7\)/);
+  assert.match(h, /committees\.html#f=1314/);
+  const quiet = air._airtimeHtml({ n: 'X', tv: 0, ra: 0, nts: 0, nrs: 0,
+    pf: { docs: 1, recent: 0, latest: '2026-09-01', st: 1, live: 0 } }, '5', fcc);
+  assert.match(quiet, /No TV or radio payments reported yet/);
+  assert.match(quiet, /1 document this cycle, latest Sep 1; none in the last 14 days/);
+  assert.doesNotMatch(air._airtimeHtml({ n: '<b>', tv: 10, ra: 0, nts: 1, nrs: 0, top: ['<i>'] }, '6', null), /<i>/);
+});

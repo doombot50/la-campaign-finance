@@ -87,6 +87,7 @@ REQUIRED_ROOT = [
     'ethics_coh_cache.json',
     ELECTION_SRC,   # what /api/election-results serves (also sharded below)
     'la_money_wins.json',   # data for the standalone does-money-win.html story
+    'la_filer_media.json',  # TV/radio airtime + FCC bookings per filer, from Louisiana Airwaves
 ]
 
 
