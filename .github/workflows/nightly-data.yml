@@ -93,6 +93,20 @@ jobs:
         continue-on-error: true
         run: python build_money_wins.py
 
+      - name: Pull airtime summary from Louisiana Airwaves
+        # Per-filer TV/radio dollars + FCC political-file bookings, published
+        # nightly by the Lousiana-DMAs repo (build_committees_page.py →
+        # data/filer_media.json) and shown on each campaign profile. That
+        # rebuild runs at 11:17 UTC, after this one, so this picks up the
+        # previous night's copy. Committed below. Non-fatal: on any failure
+        # (site down, bad JSON) the committed copy stays.
+        continue-on-error: true
+        run: |
+          curl -fsSL --retry 3 --max-time 60 \
+            https://airwaves.charliestephens.xyz/data/filer_media.json -o la_filer_media.json.new
+          python -c "import json,sys; d=json.load(open('la_filer_media.json.new')); sys.exit(0 if len(d.get('filers') or {}) > 100 else 'too few filers')"
+          mv la_filer_media.json.new la_filer_media.json
+
       - name: Build per-entity lifetime edge lists
         # Top donors-in (by filer) and recipients-out (by donor name) per entity,
         # so the profile's lifetime giving/receiving lists render row-free.
@@ -195,13 +209,14 @@ jobs:
             || git checkout -- ethics_coh_cache.json
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # la_money_wins.json is regenerated above from the fresh index; commit
-          # it alongside the COH cache so Render + Pages ship the refreshed story.
-          git add ethics_coh_cache.json la_money_wins.json
+          # la_money_wins.json is regenerated above from the fresh index, and
+          # la_filer_media.json pulled from Airwaves; commit them alongside the
+          # COH cache so Render + Pages ship the refreshed copies.
+          git add ethics_coh_cache.json la_money_wins.json la_filer_media.json
           if git diff --cached --quiet; then
-            echo "COH cache + money-wins unchanged — nothing to commit."
+            echo "COH cache, money-wins + airtime unchanged — nothing to commit."
           else
-            git commit -m "Nightly COH cache + money-wins refresh"
+            git commit -m "Nightly COH cache + money-wins + airtime refresh"
             # --autostash: tolerate any stray working-tree changes so a push
             # race with daytime merges can't strand the night's progress again
             git pull --rebase --autostash origin main

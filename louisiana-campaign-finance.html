@@ -998,6 +998,13 @@
 
   /* ── Win/loss election-result badge ─────────────────────────── */
   /* Lives inside the header — no separate background/border zone */
+  /* Airtime strip (from Louisiana Airwaves): TV/radio paid + FCC bookings */
+  .camp-airtime { margin-top:6px; font-size:11px; line-height:1.55; color:var(--muted); }
+  .camp-airtime b { color:var(--text); font-weight:600; }
+  .camp-airtime .air-k { font-size:9px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; margin-right:4px; }
+  .camp-airtime .air-live { color:var(--gold); font-weight:700; }
+  .camp-airtime a { color:var(--gold); text-decoration:none; white-space:nowrap; }
+  .camp-airtime a:hover { text-decoration:underline; }
   .camp-election { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
     margin-top:6px; }
   .wl-badge { display:inline-flex; align-items:center; gap:5px; padding:2px 9px;
@@ -1080,6 +1087,7 @@
     }
     body.printing-profile .cp-meta, body.printing-profile #camp-meta,
     body.printing-profile #camp-election { color:#444 !important; }
+    body.printing-profile #camp-airtime, body.printing-profile #camp-airtime b { color:#444 !important; }
     /* Hide modal controls that make no sense on paper */
     body.printing-profile .cp-close,
     body.printing-profile .camp-close-btn,
@@ -7545,12 +7553,27 @@ if (STATIC_MODE && 'serviceWorker' in navigator && window.isSecureContext) {
 }
 
 // ============================================================
-// PERMANENT URLS — #/campaign/NAME · #/donor/NAME · #/race/DATE/OFFICE
+// PERMANENT URLS — #/campaign/NAME[?filer=N] · #/donor/NAME · #/race/DATE/OFFICE
 // Profiles and races are citable artifacts: every one gets a shareable,
 // bookmarkable URL (VPAP/FEC pattern). Opening a profile pushes the route;
 // the browser Back button closes it again.
 // ============================================================
 let _pendingDonorRoute = null;   // donor routes need contribution data loaded first
+
+// A campaign permalink carries the exact filer when known
+// (#/campaign/NAME?filer=N), so a shared link — or one from Louisiana Airwaves —
+// opens that one filer instead of merging everyone who shares the name. Names
+// are encodeURIComponent'd, so a '?' inside one can't be read as the separator.
+function _campaignHash(name, filer) {
+  return '#/campaign/' + encodeURIComponent(name) +
+    (filer ? '?filer=' + encodeURIComponent(filer) : '');
+}
+function _parseCampaignRoute(rest) {
+  const i = rest.indexOf('?');
+  const name  = decodeURIComponent(i < 0 ? rest : rest.slice(0, i));
+  const filer = i < 0 ? '' : (new URLSearchParams(rest.slice(i + 1)).get('filer') || '').trim();
+  return { name, filer };
+}
 
 function _setRouteHash(hash) {
   if (location.hash === hash) return;
@@ -7591,7 +7614,8 @@ function _applyRoute() {
     return;
   }
   if (m[1] === 'campaign') {
-    showCampaignProfile(decodeURIComponent(m[2]));
+    const r = _parseCampaignRoute(m[2]);
+    showCampaignProfile(r.name, undefined, r.filer);
   } else if (m[1] === 'donor') {
     const name = decodeURIComponent(m[2]);
     if (allData.length) showContributorProfile(name);
@@ -7856,7 +7880,86 @@ function showCampaignProfile(name, openTab, filer) {
   requestAnimationFrame(() => requestAnimationFrame(() => renderCampCashFlow()));
   // Move focus into the dialog
   document.querySelector('#camp-modal .cp-close')?.focus();
-  _setRouteHash('#/campaign/' + encodeURIComponent(name));   // permanent, shareable URL
+  _renderCampAirtime(name, _campFiler);   // TV/radio + FCC bookings, async; hidden when none
+  _setRouteHash(_campaignHash(name, _campFiler));   // permanent, shareable URL (filer-exact when known)
+}
+
+// ============================================================
+// AIRTIME — what this filer paid TV and radio stations, and what the stations'
+// FCC political files show it booking now, from Louisiana Airwaves
+// (airwaves.charliestephens.xyz). The nightly refresh pulls that site's
+// data/filer_media.json into la_filer_media.json; both sides key on the Ethics
+// filer number. The political file runs weeks ahead of the state reports.
+// ============================================================
+const AIRWAVES_COMMITTEES_URL = 'https://airwaves.charliestephens.xyz/committees.html';
+let _filerMediaP = null;
+function _loadFilerMedia() {
+  if (!_filerMediaP) {
+    _filerMediaP = (STATIC_MODE && typeof StaticAPI !== 'undefined'
+        ? StaticAPI._internals.fetchJSON('la_filer_media.json')
+        : fetch('data/la_filer_media.json').then(r => (r.ok ? r.json() : null)))
+      .catch(() => null);
+  }
+  return _filerMediaP;
+}
+
+// The media entry for a profile. A known filer is exact (no entry = no
+// airtime). Without one, fall back to the name — but only when exactly one
+// filer in the media file carries it, so a namesake's airtime never shows.
+function _mediaFor(media, name, filer, norm) {
+  const all = media && media.filers;
+  if (!all) return null;
+  if (filer) return all[filer] ? { filer: String(filer), e: all[filer] } : null;
+  const t = norm(name);
+  if (!t) return null;
+  let hit = null;
+  for (const f in all) {
+    if (norm(all[f].n) !== t) continue;
+    if (hit) return null;            // ambiguous: two filers share the name
+    hit = { filer: f, e: all[f] };
+  }
+  return hit;
+}
+
+function _airtimeHtml(e, filer, fcc) {
+  const day = iso => new Date(iso + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const plural = (n, w) => `${n.toLocaleString('en-US')} ${w}${n === 1 ? '' : 's'}`;
+  const parts = [];
+  const paid = [];
+  if (e.tv) paid.push(`<b>${formatMoneyShort(e.tv)}</b> TV (${plural(e.nts, 'station')})`);
+  if (e.ra) paid.push(`<b>${formatMoneyShort(e.ra)}</b> radio (${plural(e.nrs, 'station')})`);
+  if (paid.length) {
+    const yrs = e.y0 ? (e.y0 === e.y1 ? ` in ${e.y0}` : `, ${e.y0}–${e.y1}`) : '';
+    parts.push(`<span class="air-k">On air</span>Paid ${paid.join(' + ')}${yrs}` +
+      (e.top && e.top.length ? ` · top ${e.top.map(escHtml).join(', ')}` : ''));
+  } else {
+    parts.push(`<span class="air-k">On air</span>No TV or radio payments reported yet`);
+  }
+  const p = e.pf;
+  if (p && fcc) {
+    parts.push(p.recent
+      ? `<span class="air-live">● Booking now:</span> <b>${plural(p.recent, 'FCC political-file document')}</b> ` +
+        `in the ${fcc.days} days to ${day(fcc.scraped)}, at ${plural(p.live, 'station')}` +
+        (p.latest ? ` (latest ${day(p.latest)})` : '')
+      : `FCC political files: ${plural(p.docs, 'document')} this cycle` +
+        (p.latest ? `, latest ${day(p.latest)}` : '') + `; none in the last ${fcc.days} days`);
+  }
+  const href = `${AIRWAVES_COMMITTEES_URL}#f=${encodeURIComponent(filer)}`;
+  return parts.join(' · ') +
+    ` · <a href="${href}" target="_blank" rel="noopener" title="Stations, markets and year-by-year airtime for filer ${escHtml(filer)} on Louisiana Airwaves">Louisiana Airwaves ↗</a>`;
+}
+
+async function _renderCampAirtime(name, filer) {
+  const el = document.getElementById('camp-airtime');
+  if (!el) return;
+  el.style.display = 'none';
+  el.innerHTML = '';
+  const media = await _loadFilerMedia();
+  if (name !== _campName || (filer || '') !== _campFiler) return;   // navigated away
+  const hit = _mediaFor(media, name, filer, _normNameJS);
+  if (!hit) return;
+  el.innerHTML = _airtimeHtml(hit.e, hit.filer, media.fcc);
+  el.style.display = '';
 }
 
 function _cyclePeriodLabel(cycleYear) {
@@ -8584,7 +8687,7 @@ function _edgePanel(title, sub, rows, kind) {
     const own = (kind === 'recipient' && r.filer && r.filer === _campFiler)
       ? ` <span style="font-size:9px;color:var(--muted)">own committee</span>` : '';
     const gifts = r.n ? `<span class="edge-n"> · ${r.n} gift${r.n === 1 ? '' : 's'}</span>` : '';
-    const href  = `#/campaign/${encodeURIComponent(nm)}`;
+    const href  = _campaignHash(nm, kind === 'recipient' ? r.filer : '');
     return `<a class="edge-row" href="${href}" title="Open ${escHtml(nm)}">
       <span class="edge-name">${escHtml(nm)}${own}</span>
       <span class="edge-amt">${formatMoney(r.amount)}${gifts}</span>
@@ -10202,6 +10305,8 @@ async function _ovOpenElection(year) {
         <div class="cp-meta" id="camp-meta"></div>
         <!-- Election result badge lives here, inside the header -->
         <div id="camp-election" class="camp-election" style="display:none"></div>
+        <!-- TV/radio airtime + FCC bookings, from Louisiana Airwaves (filer-keyed) -->
+        <div id="camp-airtime" class="camp-airtime" style="display:none"></div>
       </div>
       <div class="cp-header-actions" style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         <select id="camp-verify-year" class="verify-year" style="display:none" aria-label="Choose which certified report year to open" onchange="_campVerifySelectYear()"></select>
