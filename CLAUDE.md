@@ -78,6 +78,7 @@ la_ethics_server.py  (ThreadingHTTPServer, stdlib only)
     ├── la_filer_lookup.json             name → filer_number (committed)
     ├── la_donor_industries.json         donor → industry (committed)
     ├── la_politicians_lookup.json       party + bio enrichment (committed)
+    ├── la_party_corrections.json        filer-keyed party fixes, shared with Louisiana Airwaves (committed)
     └── ethics_coh_cache.json            certified F102/F202 COH, scraped by fetch_ethics_coh.py (committed)
 ```
 
@@ -99,6 +100,14 @@ All candidate lookup across datasets (contributions CSV, SoS candidacies, ethics
 - The dashboard threads `filer_number` from search results into the profile fetch (`showCampaignProfile(name, tab, filer)`).
 
 Profile permalinks now carry the filer (`#/campaign/<name>?filer=<n>`) whenever the profile was opened with one, and the lifetime giving list's recipient links carry theirs. Remaining edge: surfaces with no filer number — an old bare-name `#/campaign/<name>` link, the Compare tab, and the profile's in-cycle transaction *lists* (still name-matched) — fall back to the name-keyed merge.
+
+### Party corrections (`la_party_corrections.json`)
+
+Party is matched from a filer's **name** (`lookup_party` over `la_politicians_lookup.json`), so a namesake can take someone else's label (filer 1314, Judge Blair Downing Edwards, matched a Democratic local official named Blair Edwards) and a publicly aligned PAC stays `OTH`. `la_party_corrections.json` fixes these **by filer number**, and it is the one list for both this dashboard and Louisiana Airwaves:
+
+- Each entry: `party`, `when` (`always` replaces the name-matched label; `oth` fills it only where the lookup says OTH), `name`, and `why` (the public source). `TestPartyCorrections` checks the shape.
+- `party_for(name, filer)` / `party_detail_for(detail, filer)` in the server apply it wherever a party is assigned: CSV parsing, `retag_caches.py` (so every cached record carries it), and `build_entities.py` (source `manual_correction`, shown as ✓ verified).
+- The nightly upload publishes it on the `data-cache` release; Airwaves' `fetch_cache.py` syncs it into that repo's `data/party_corrections.json`. Airwaves reads party from these records anyway, so the copy only covers the hours before a retag. **Add corrections here, never in Airwaves.**
 
 ### Per-Entity Lifetime Edge Lists (`/api/entity-profile`)
 

@@ -11,6 +11,7 @@ candidate index, the politician lookup, donor industries, COH cache) — no
 
 Stdlib only (unittest). Run: python3 -m unittest discover -s tests -p 'test_*.py'
 """
+import json
 import os
 import sys
 import unittest
@@ -208,6 +209,43 @@ class TestPartyLookup(unittest.TestCase):
         self.assertEqual(s.lookup_party('Entergy Corporation Employee PAC'), 'OTH')
         # ...and a bare name with two differently-partied matches stays unresolved.
         self.assertEqual(s.lookup_party('James Caldwell'), 'OTH')
+
+
+class TestPartyCorrections(unittest.TestCase):
+    """la_party_corrections.json: the filer-keyed list shared with Airwaves."""
+
+    @classmethod
+    def setUpClass(cls):
+        s._load_politician_lookup()   # also loads the corrections
+
+    def test_file_is_well_formed(self):
+        with open(s.PARTY_CORRECTIONS_FILE, encoding='utf-8') as f:
+            filers = json.load(f)['filers']
+        self.assertTrue(filers)
+        for fn, c in filers.items():
+            self.assertRegex(fn, r'^\d+$', 'keys are bare Ethics filer numbers')
+            self.assertIn(c['party'], {'DEM', 'REP', 'IND', 'LBT', 'GRN', 'OTH'}, fn)
+            self.assertIn(c['when'], {'always', 'oth'}, fn)
+            self.assertTrue(c.get('name') and c.get('why'), f'{fn} needs a name and a reason')
+
+    def test_always_replaces_a_namesake_match(self):
+        # The name lookup puts "Blair Edwards" on a Democratic namesake.
+        self.assertEqual(s.lookup_party('Blair Edwards'), 'DEM')
+        self.assertEqual(s.party_for('Blair Edwards', '1314'), 'REP')
+        self.assertEqual(s.party_for('Blair Edwards', ' 1314 '), 'REP')
+        self.assertEqual(s.party_for('Blair Edwards', '999999'), 'DEM')   # another filer: untouched
+        self.assertEqual(s.party_for('Blair Edwards'), 'DEM')
+
+    def test_oth_only_fills_but_never_overrides(self):
+        self.assertEqual(s.lookup_party('Gumbo PAC'), 'OTH')
+        self.assertEqual(s.party_for('Gumbo PAC', '3354'), 'DEM')
+        self.assertEqual(s.corrected_party('REP', '3354'), 'REP')
+
+    def test_detail_marks_the_correction(self):
+        d = s.party_detail_for(s.lookup_party_detail('Gumbo PAC'), '3354')
+        self.assertEqual((d['party'], d['source']), ('DEM', 'manual_correction'))
+        plain = s.lookup_party_detail('JEFF LANDRY')
+        self.assertIs(s.party_detail_for(plain, '999999'), plain)
 
 
 class TestBuildRacesPayload(unittest.TestCase):

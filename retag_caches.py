@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Nightly annotation pass over the cached .la_cache/*.json.gz records:
 
-1. Party re-tag — re-runs lookup_party with the current politician lookup so
-   corrections and matcher improvements reach old-cycle files that are never
-   re-parsed from CSV.
+1. Party re-tag — re-runs lookup_party with the current politician lookup, then
+   the filer-keyed la_party_corrections.json (srv.party_for), so corrections
+   and matcher improvements reach old-cycle files that are never re-parsed
+   from CSV.
 2. Transfer flagging (contributions only) — sets isTransfer=true when the
    contributor resolves to a known kind='committee' entity (name or alias) in
    la_entities.json.gz. Person-named contributors are deliberately NOT flagged:
@@ -108,7 +109,7 @@ for path in sorted(paths):
                 continue
             r = json.loads(line)
             old = r.get('party')
-            new = srv.lookup_party(r.get('candidate', ''))
+            new = srv.party_for(r.get('candidate', ''), r.get('filerNumber'))
             if new != old:
                 changed += 1
             r['party'] = new
