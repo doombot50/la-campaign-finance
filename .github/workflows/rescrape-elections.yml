@@ -34,19 +34,23 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       PYTHONUNBUFFERED: "1"   # live log lines, not minutes-late chunks
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
       - name: Full re-scrape (delete raw cache to re-qualify all history)
         # No raw cache => already_seen is empty => every election date is
         # scraped fresh, so all local offices get parish-qualified. Rewrites
-        # both la_candidacies_raw.json.gz and la_election_results.json.
+        # la_candidacies_raw.json.gz and la_election_results.json, then derives
+        # la_election_lookup.json (what the dashboard's win/loss badges read)
+        # from the new results — skipping that left the lookup's office names
+        # un-qualified after the first re-scrape.
         run: |
           rm -f la_candidacies_raw.json.gz
           python build_election_results.py
+          python build_election_lookup.py
 
       - name: Guard against a flaky / partial scrape
         # A transient SoS failure makes fetch() return None and silently drops
@@ -78,7 +82,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add la_candidacies_raw.json.gz la_election_results.json
+          git add la_candidacies_raw.json.gz la_election_results.json la_election_lookup.json
           if git diff --cached --quiet; then
             echo "No change to commit."; exit 0
           fi

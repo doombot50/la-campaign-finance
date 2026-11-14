@@ -24,18 +24,30 @@ was scraped from -> "Vermilion Parish Sheriff". State/federal/legislative/
 judicial-district offices are left untouched (they span parishes and already
 carry a unique district; they also live only in the Multiparish file).
 
-NOTE: this runs incrementally — already-scraped election dates in
-la_candidacies_raw.json.gz are skipped, so the parish qualification only applies
-to NEW dates. To re-qualify the full history, delete la_candidacies_raw.json.gz
-first and re-scrape from scratch.
+NOTE: this runs incrementally (nightly — see nightly-data.yml). A date already
+in la_candidacies_raw.json.gz is skipped once it is settled; it is scraped again
+while it is still moving (see dates_to_scrape):
+  - upcoming, or held within the last REFRESH_DAYS — candidates withdraw and
+    election-night returns become official results;
+  - held, but no outcome was ever recorded — it was scraped before the vote.
+A re-scrape REPLACES that date's rows, and is discarded if it looks like a
+partial fetch (see rescrape_ok), so a flaky night can't erase good results.
+
+Parish qualification only applies to dates as they are scraped. To re-qualify
+the full history, delete la_candidacies_raw.json.gz first and re-scrape from
+scratch (rescrape-elections.yml).
 """
 import urllib.request, json, re, time, sys, gzip
 from collections import defaultdict
+from datetime import date, timedelta
 
 RAW_FILE = 'la_candidacies_raw.json.gz'
 
 SOS_BASE = 'https://voterportal.sos.la.gov/ElectionResults/ElectionResults/Data'
 MIN_YEAR = 2000
+# Keep re-scraping an election for this long after it is held: election-night
+# returns are unofficial until certified, and recounts can move them.
+REFRESH_DAYS = 45
 
 def fetch(blob, timeout=25, retries=2):
     url = f'{SOS_BASE}?blob={blob}'
@@ -156,9 +168,8 @@ def date_key(ed):  # 'MM/DD/YYYY' -> 'YYYYMMDD'
     return yy + mm + dd
 
 # ── Scrape: collect ALL candidacies per normalized name ─────────────────────
-candidacies = defaultdict(list)   # norm_name -> [ {party, office, outcome, vote_pct, date, rank, party_office} ]
-
-def ingest(cand_data, votes_data, ed, parish=''):
+# `into`: norm_name -> [ {party, office, outcome, vote_pct, date, rank, party_office} ]
+def ingest(cand_data, votes_data, ed, parish, into):
     if not cand_data: return 0
     vote_idx, race_tot = {}, defaultdict(int)
     for vr in as_list((votes_data or {}).get('Races', {}).get('Race')):
@@ -183,7 +194,7 @@ def ingest(cand_data, votes_data, ed, parish=''):
             vt, outcome = vote_idx.get((rid, ch['ID']), (0, ''))
             tot = race_tot.get(rid, 0)
             pct = round(100 * vt / tot, 1) if tot else None
-            candidacies[norm].append({
+            into[norm].append({
                 'party': norm_party(party), 'office': office, 'outcome': outcome,
                 'vote_pct': pct, 'date': ed, 'rank': office_rank(office),
                 'party_office': is_party_office(office),
@@ -191,25 +202,94 @@ def ingest(cand_data, votes_data, ed, parish=''):
             n += 1
     return n
 
+def parse_date(ed):  # 'MM/DD/YYYY' -> date
+    mm, dd, yy = ed.split('/')
+    return date(int(yy), int(mm), int(dd))
+
+def dates_to_scrape(portal_dates, by_date, today, refresh_days=REFRESH_DAYS):
+    """Which of the portal's election dates to scrape on this run.
+
+    by_date maps each date already in the raw file to its candidacy rows. A date
+    is scraped when it is new, or still moving:
+      - upcoming, or held within the last `refresh_days`;
+      - held, with no outcome recorded on any row (scraped before the vote, and
+        no run since — without this a pre-election scrape would stay blank
+        forever).
+    Older dates with results are settled and skipped; a few blank outcomes among
+    recorded ones (11/04/2014 has two) are how the portal left them.
+    """
+    cutoff = today - timedelta(days=refresh_days)
+    todo = []
+    for ed in portal_dates:
+        rows = by_date.get(ed)
+        if rows is None or parse_date(ed) >= cutoff or not any(c.get('outcome') for c in rows):
+            todo.append(ed)
+    return sorted(todo, key=date_key)
+
+def rescrape_ok(old_rows, new_rows):
+    """Whether a re-scrape of one date may replace the rows we already hold.
+
+    fetch() returns None on a transient SoS failure, which silently drops that
+    file's candidacies. Results don't un-happen and candidate lists only shrink
+    by the odd withdrawal, so a re-scrape with fewer recorded outcomes, or under
+    80% of the rows, is a partial fetch — keep what we have and try again on the
+    next run. Returns (ok, reason).
+    """
+    if not new_rows:
+        return False, 'no candidacies returned'
+    if len(new_rows) < 0.8 * len(old_rows):
+        return False, f'row count fell {len(old_rows)} -> {len(new_rows)}'
+    old_out = sum(1 for c in old_rows if c.get('outcome'))
+    new_out = sum(1 for c in new_rows if c.get('outcome'))
+    if new_out < old_out:
+        return False, f'recorded outcomes fell {old_out} -> {new_out}'
+    return True, ''
+
+def replace_date(cands, ed, fresh):
+    """Swap every candidacy on date `ed` for the freshly scraped `fresh`
+    (norm -> rows), keeping each name's list chronological and dropping names
+    left with no candidacies (a withdrawn first-time candidate)."""
+    for norm in list(cands):
+        kept = [c for c in cands[norm] if c.get('date') != ed]
+        if kept:
+            cands[norm] = kept
+        else:
+            del cands[norm]
+    for norm, rows in fresh.items():
+        cands.setdefault(norm, []).extend(rows)
+        cands[norm].sort(key=lambda c: date_key(c['date']))   # stable
+
+def scrape_date(ed, bd):
+    """Scrape one election date -> ({norm: [candidacy, ...]}, n_multiparish, n_parish)."""
+    fresh = defaultdict(list)
+    n1 = ingest(fetch(f'{bd}/RacesCandidates_Multiparish.htm'),
+                fetch(f'{bd}/Votes_Multiparish.htm'), ed, '', fresh)
+    n2 = 0
+    pe = fetch(f'{bd}/ParishesInElection.htm')
+    pids = ([p['ParishValue'] for p in as_list(pe.get('ParishesInElection', {}).get('Parish'))]
+            if pe else [f'{p:02d}' for p in range(1, 65)])
+    for pid in pids:
+        parish = LA_PARISHES.get(str(pid).zfill(2), '')
+        n2 += ingest(fetch(f'{bd}/RacesCandidates/ByParish_{pid}.htm'),
+                     fetch(f'{bd}/VotesParish/Votes_{pid}.htm'), ed, parish, fresh)
+        time.sleep(0.04)
+    return fresh, n1, n2
+
 def main():
     # ── Load existing raw candidacies for incremental re-run ───────────────────
     import os
+    existing = {}
     if os.path.exists(RAW_FILE):
-        import gzip as _gz
-        with _gz.open(RAW_FILE, 'rt', encoding='utf-8') as _f:
+        with gzip.open(RAW_FILE, 'rt', encoding='utf-8') as _f:
             existing = json.load(_f)
-        # Find which election dates are already in the raw data
-        already_seen = set()
-        for cs in existing.values():
-            for c in cs:
-                already_seen.add(c.get('date', ''))
-        # Pre-populate candidacies from existing data
-        for norm, cs in existing.items():
-            candidacies[norm].extend(cs)
+    cands = {norm: list(cs) for norm, cs in existing.items()}
+    by_date = defaultdict(list)
+    for cs in existing.values():
+        for c in cs:
+            by_date[c.get('date', '')].append(c)
+    if existing:
         print(f'Loaded {len(existing):,} names from existing {RAW_FILE}')
-        print(f'Already-scraped election dates: {len(already_seen)}')
-    else:
-        already_seen = set()
+        print(f'Already-scraped election dates: {len(by_date)}')
 
     el = fetch('ElectionDates.htm')
     if not el:
@@ -217,37 +297,38 @@ def main():
     date2blob = {}
     for d in el['Dates']['Date']:
         mm, dd, yy = d['ElectionDate'].split('/')
-        ed = d['ElectionDate']
-        if int(yy) >= MIN_YEAR and ed not in already_seen:
-            date2blob[ed] = f'{yy}{mm}{dd}'
-    dates = sorted(date2blob, key=date_key)
-    print(f'{len(dates)} NEW elections to scrape since {MIN_YEAR}.')
+        if int(yy) >= MIN_YEAR:
+            date2blob[d['ElectionDate']] = f'{yy}{mm}{dd}'
+    dates = dates_to_scrape(date2blob, by_date, date.today())
+    n_new = sum(1 for ed in dates if ed not in by_date)
+    print(f'{n_new} NEW elections to scrape since {MIN_YEAR}, '
+          f'{len(dates) - n_new} unsettled to refresh.')
 
     t0 = time.time()
     for i, ed in enumerate(dates):
-        bd = date2blob[ed]
-        n1 = ingest(fetch(f'{bd}/RacesCandidates_Multiparish.htm'),
-                    fetch(f'{bd}/Votes_Multiparish.htm'), ed)
-        n2 = 0
-        pe = fetch(f'{bd}/ParishesInElection.htm')
-        pids = ([p['ParishValue'] for p in as_list(pe.get('ParishesInElection', {}).get('Parish'))]
-                if pe else [f'{p:02d}' for p in range(1, 65)])
-        for pid in pids:
-            parish = LA_PARISHES.get(str(pid).zfill(2), '')
-            n2 += ingest(fetch(f'{bd}/RacesCandidates/ByParish_{pid}.htm'),
-                         fetch(f'{bd}/VotesParish/Votes_{pid}.htm'), ed, parish)
-            time.sleep(0.04)
-        if (i + 1) % 10 == 0 or i == len(dates) - 1:
+        fresh, n1, n2 = scrape_date(ed, date2blob[ed])
+        if ed in by_date:
+            ok, why = rescrape_ok(by_date[ed], [c for cs in fresh.values() for c in cs])
+            if not ok:
+                print(f'  {ed}: re-scrape discarded ({why}) — keeping existing rows')
+                continue
+        replace_date(cands, ed, fresh)
+        if ed in by_date or (i + 1) % 10 == 0 or i == len(dates) - 1:
             print(f'  {i+1}/{len(dates)} {ed}: +{n1}mp +{n2}parish | '
-                  f'{len(candidacies)} names | {time.time()-t0:.0f}s')
+                  f'{len(cands)} names | {time.time()-t0:.0f}s')
+
+    if cands == existing:
+        # Nothing moved: leave the committed files byte-identical (a rewritten
+        # .gz differs by its header timestamp) so the nightly commits nothing.
+        print('No change to candidacies — outputs left as they are.')
+        return
 
     # Persist raw candidacies so the collapse logic can be re-tuned later
     # WITHOUT re-scraping the SoS portal.
     with gzip.open(RAW_FILE, 'wt', encoding='utf-8') as f:
-        json.dump(candidacies, f)
+        json.dump(cands, f)
     print(f'Saved raw candidacies -> {RAW_FILE}')
-    collapse(candidacies)
-
+    collapse(cands)
 
 def collapse(candidacies):
     """Collapse all candidacies per name into one representative entry.
@@ -300,7 +381,8 @@ def collapse(candidacies):
             'party_office_only': not real,
         }
 
-    json.dump(out, open('la_election_results.json', 'w'), indent=0)
+    with open('la_election_results.json', 'w') as f:
+        json.dump(out, f, indent=0)
     print(f'Wrote la_election_results.json: {len(out)} names '
           f'({n_ambig} ambiguous, '
           f'{sum(1 for v in out.values() if v["party_office_only"])} party-office-only)')

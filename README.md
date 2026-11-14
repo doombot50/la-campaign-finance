@@ -124,7 +124,7 @@ one filer ID — for those, the chart over-rolls-up.
 | `.la_cache/` | Per-year NDJSON-gzip caches of contributions / expenditures / loans (auto-populated) |
 | `la_candidate_index.json.gz` | Per-candidate career index: per-cycle totals, monthly in/out, all-time totals |
 | `la_candidacies_raw.json.gz` | Raw candidacy records (date, office, outcome, vote_pct) |
-| `la_election_lookup.json` / `la_election_results.json` | Election dates + per-race results |
+| `la_election_results.json` / `la_election_lookup.json` | One representative race per candidate name (with the same-name `ambiguous` flag), and the flat win/loss map derived from it that the dashboard reads |
 | `la_filer_lookup.json` | name → numeric filerNumber, 5,494 entries |
 | `la_politicians_lookup.json` | party + bio enrichment for known politicians |
 | `la_donor_industries.json` | donor → industry classification |
@@ -143,8 +143,8 @@ the underlying source data changes meaningfully.
 | `fetch_historical_data.py` | seeds `.la_cache/` with all 4-year CSV bundles | once per project setup, or to add historical years |
 | `build_candidate_index.py` | `.la_cache/la_candidate_index.json.gz` | nightly (workflow) after `retag_caches.py`; aggregates per-candidate career data + monthly buckets, transfer-aware. The committed repo-root copy is only a cold-boot fallback — the server prefers the `.la_cache/` copy when newer |
 | `build_filer_lookup.py` | `la_filer_lookup.json` | after a `.la_cache/` refresh |
-| `build_election_lookup.py` | `la_election_lookup.json` | when state election dates change |
-| `build_election_results.py` | `la_election_results.json` | after new races complete |
+| `build_election_results.py` | `la_candidacies_raw.json.gz`, `la_election_results.json` | nightly (workflow); incremental — scrapes new election dates plus any still unsettled (upcoming, held in the last 45 days, or scraped before the vote) |
+| `build_election_lookup.py` | `la_election_lookup.json` | nightly (workflow), straight after `build_election_results.py` |
 | `build_donor_industries.py` | `la_donor_industries.json` | when donor classification rules change |
 | `build_politician_lookup.py` | `la_politicians_lookup.json` | when party / bio data needs refresh |
 | `fetch_ethics_coh.py` | `ethics_coh_cache.json` (+ `.ethics_pdf_cache/` PDFs) | to add/refresh certified COH anchors |

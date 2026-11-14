@@ -34,8 +34,9 @@ python3 build_cycle_aggregates.py    # per-cycle additive sums (stat cards + par
 python3 build_filer_lookup.py        # name → filer_number index
 python3 build_entities.py            # canonical entity table (run after refresh)
 python3 build_insights.py            # precomputed war chests, top donors (run after entities)
-python3 build_election_lookup.py     # election dates
-python3 build_election_results.py    # per-race results + vote %
+python3 build_election_results.py    # incremental SoS scrape → la_candidacies_raw.json.gz + la_election_results.json (nightly; see "Election results" below)
+python3 build_election_lookup.py     # la_election_results.json → la_election_lookup.json, the flat win/loss map the dashboard reads (run after results)
+python3 build_donor_entities.py      # donor identity resolution (spelling/initial/nickname clusters) → la_donor_entities.json.gz; feeds insights (nightly, before build_insights)
 python3 build_donor_industries.py    # donor → industry classification
 python3 build_politician_lookup.py   # party + bio enrichment
 python3 retag_caches.py              # re-tag party labels + transfers + industry on all cached records
@@ -43,8 +44,21 @@ python3 build_money_wins.py          # "does money win?" — money-leader win ra
 python3 build_static_api.py          # static twins of /api/search, races, overview, industry (server-less mode)
 python3 test_static_parity.py        # gate: static artifacts == live API (runs nightly before upload)
 node test_static_client_parity.mjs   # gate: shipped static_api.js == live API end-to-end
+python3 build_pages_site.py          # assemble _site/ for GitHub Pages (completeness gate, shards, data/version.json)
+python3 build_p2p_export.py          # flat donations CSV for the la-pay-to-play repo (nightly → cf_donations.csv.gz on the data-cache release)
+python3 fetch_cache_assets.py        # pull .la_cache/ snapshots from the data-cache release (Render build, Pages deploy, local warm start)
 python3 fetch_historical_data.py     # seed .la_cache/ with 4-year historical bundles (one-time setup)
 python3 build_pwa_icons.py           # regenerate committed PWA icons (only if the design changes)
+```
+
+Analysis and reconciliation — run by hand, not on the nightly; nothing at runtime reads their output:
+```bash
+python3 reconcile_scrape.py          # download the report PDFs carrying the most contribution dollars into .ethics_pdf_cache/
+python3 build_certified_totals.py    # certified Summary-Page totals from those PDFs → certified_report_totals.json (committed; needs pdfplumber)
+python3 reconcile_totals.py          # cross-check CSV-derived totals against the certified report figures (needs pdfplumber)
+python3 analyze_donor_winrates.py    # exploratory "donors who never lose" → la_donor_winrates.json (committed)
+python3 analyze_oth.py               # top OTH-party filers by dollar volume, with a best-guess category
+python3 measure_winloss.py           # win/loss badge coverage, using election_match.py (the shared filer → SoS result matcher)
 ```
 
 COH scraper (requires `pip install pdfplumber`):
@@ -71,10 +85,17 @@ la_ethics_server.py  (ThreadingHTTPServer, stdlib only)
     │   ├── la_entities.json.gz          canonical filer table (built offline, ships via data-cache release)
     │   ├── la_insights.json.gz          precomputed aggregates (built offline, ships via data-cache release)
     │   ├── la_entity_donors.json.gz     per-filer receiving edge lists (top donors-in), built offline; ships whole (~2 MB)
-    │   └── la_entity_giving.json.gz     name-keyed giving edge lists (top recipients-out), built offline; Pages ships this hash-sharded
+    │   ├── la_entity_giving.json.gz     name-keyed giving edge lists (top recipients-out), built offline; Pages ships this hash-sharded
+    │   ├── la_entity_activity.json.gz   per-filer itemized history (capped), built offline; Pages ships one file per filer
+    │   ├── la_cycle_agg.json.gz         per-cycle additive sums for instant first paint, built offline
+    │   └── la_donor_entities.json.gz    resolved donor identities, built offline; feeds insights
     ├── la_candidate_index.json.gz       per-candidate career summaries, keyed by normalized name (committed)
     ├── la_filer_index.json.gz           same career summaries keyed by filerNumber — exact identity, no name-collision merges (ships via data-cache release)
-    ├── la_candidacies_raw.json.gz       SoS ballot appearances (committed)
+    ├── la_candidacies_raw.json.gz       SoS ballot appearances (committed; refreshed nightly)
+    ├── la_election_results.json         one representative race per name, with the same-name `ambiguous` flag (committed; refreshed nightly)
+    ├── la_election_lookup.json          flat win/loss map served by /api/election-results (committed; refreshed nightly)
+    ├── la_money_wins.json               "does money win?" story data (committed; refreshed nightly)
+    ├── la_filer_media.json              airtime per filer, pulled from Louisiana Airwaves (committed; refreshed nightly)
     ├── la_filer_lookup.json             name → filer_number (committed)
     ├── la_donor_industries.json         donor → industry (committed)
     ├── la_politicians_lookup.json       party + bio enrichment (committed)
@@ -114,7 +135,7 @@ Party is matched from a filer's **name** (`lookup_party` over `la_politicians_lo
 The profile's lifetime **giving** and **receiving** lists used to require loading every cycle's rows into the browser. `build_entity_profiles.py` precomputes them in one pass over `contributions_yr*.json.gz`:
 
 - `la_entity_donors.json.gz` — `filerNumber` → receiving side (`top_donors`, `total_raised`, donor count, date span). Keyed by exact filer.
-- `la_entity_giving.json.gz` — `_norm_name(donor)` → giving side (`top_recipients` with their filer link, `total_given`). Name-keyed, because donors carry no filer on the row (same constraint as the [[project-la-pay-to-play]] tool).
+- `la_entity_giving.json.gz` — `_norm_name(donor)` → giving side (`top_recipients` with their filer link, `total_given`). Name-keyed, because donors carry no filer on the row (same constraint as the la-pay-to-play tool, which `build_p2p_export.py` feeds).
 
 `build_entity_profile_payload(filer, name)` joins both into `{filer, name, receiving, giving}`. The Career tab fetches it in parallel (`_fetchEntityProfile` → `renderCampEdges`); a pure donor with no candidacy still shows their giving panel.
 
@@ -132,13 +153,13 @@ The data normally ships sharded by **year** (load a year = everyone's rows). To 
 
 The sibling repo `doombot50/Lousiana-DMAs` (airwaves.charliestephens.xyz) sums what every committee paid TV and radio stations from these same expenditure filings, and matches buyers in the stations' FCC political files to state filers. Its `build_committees_page.py` publishes `data/filer_media.json`: `filerNumber` → `{n, tv, ra, nts, nrs, y0, y1, top, pf:{docs, recent, latest, st, live}}`, plus `fcc` (`scraped`, `days`) and `data_through`.
 
-- The nightly workflow's "Pull airtime summary" step curls it into the committed repo-root `la_filer_media.json` (non-fatal; the committed copy stays on failure). Airwaves rebuilds at 11:17 UTC, after this repo's 09:00 run, so the copy is one night behind.
+- The nightly workflow's "Pull airtime summary" step curls it into the committed repo-root `la_filer_media.json` (non-fatal; the committed copy stays on failure). Airwaves rebuilds at 11:17 UTC, after this repo's 08:17 run, so a punctual run carries the previous night's copy. (GitHub can start a scheduled run hours late; when it starts after 11:17 the copy is same-day.)
 - The live server serves it from its `/data/<name>` repo-root fallback; `build_pages_site.py` lists it in `REQUIRED_ROOT`. The dashboard loads it once (`_loadFilerMedia`) and fills the profile header's `#camp-airtime` strip (`_renderCampAirtime` → `_mediaFor` → `_airtimeHtml`): filer-exact when the filer is known, else a name match only when exactly one filer carries the name.
 - **Permalinks carry the filer:** `#/campaign/<name>?filer=<n>` (`_campaignHash` / `_parseCampaignRoute`). Airwaves' committee profiles link here that way, and each airtime strip links back to `committees.html#f=<filer>`. Bare-name links still work as before.
 
 ### Browser SPA (louisiana-campaign-finance.html)
 
-~7,500 lines of vanilla HTML/CSS/JS — no framework, no bundler. Key subsystems all in one file:
+~10,400 lines of vanilla HTML/CSS/JS — no framework, no bundler. Key subsystems all in one file:
 
 - **IndexedDB wrapper** — persists parsed cycle data across page loads
 - **Concurrent cycle loading** — a multi-cycle selection streams every cycle in parallel (bounded by `_loadConcurrency()`: 4 desktop / 2 low-memory) into per-cycle buffers; contributions, expenditures, and loans all fan out through the shared `_runLimit` runner. A single paint scheduler (`_makeLoadProgress`) owns mid-stream partial renders — 15k/60k-row thresholds fire once globally, then repaints back off adaptively as the dataset (and re-render cost) grows. A load-generation token (`_loadGen` and friends) makes superseded loads abandon their streams, so switching cycles mid-load can't mix rows from a deselected cycle into the new view.
@@ -151,6 +172,20 @@ The sibling repo `doombot50/Lousiana-DMAs` (airwaves.charliestephens.xyz) sums w
 - **Print-to-PDF** — chart canvases are snapshotted to PNG before printing to prevent reflow
 
 The Net Cash Flow chart shows `contributions − expenditures`, not actual cash on hand. The green dots (certified F102/F202 ending balances) are ground truth; the gold line is an approximation.
+
+### Election results (`build_election_results.py`)
+
+Win/loss badges, the Races tab, career race rows and "Does Money Win?" all read three committed files that are built as a chain and committed as a set: the scrape writes `la_candidacies_raw.json.gz` (every SoS candidacy) and collapses it into `la_election_results.json`; `build_election_lookup.py` then derives `la_election_lookup.json`. Run the lookup build whenever the results change — the two drifted apart once, when a full re-scrape skipped it.
+
+The scrape is **incremental and runs nightly** (the "Refresh election results" step, before anything that joins races). `dates_to_scrape` picks, from the portal's election list:
+
+- dates not in the raw file yet;
+- dates still moving — upcoming, or held within `REFRESH_DAYS` (45): candidates withdraw, and election-night returns become certified results;
+- held dates with **no outcome on any row** — scraped before the vote and never revisited.
+
+Settled history is skipped, so a quiet night costs one request. A re-scrape **replaces** that date's rows (`replace_date`), and `rescrape_ok` discards it if it has fewer recorded outcomes or under 80% of the rows already held — `fetch()` returns `None` on a transient SoS failure, which would otherwise silently drop candidacies. The script writes nothing when nothing changed (a rewritten `.gz` differs by its header timestamp and would commit every night). `tests/test_election_results.py` covers all of this against a fake portal.
+
+Parish qualification ("Vermilion Parish Sheriff") is applied as each date is scraped. Re-qualifying all history means deleting the raw file and scraping every date: the manual `rescrape-elections.yml` workflow (~1–3 hours, with its own >5%-loss guard).
 
 ### "Does Money Win?" data story (`does-money-win.html`)
 
@@ -188,7 +223,10 @@ A standalone, self-contained scrollytelling page (inline CSS/JS, hand-drawn **in
 ### Deployment & CI
 
 - **Render.com** (`render.yaml`): `buildCommand` calls `fetch_cache_assets.py` to pull `.json.gz` files from a `data-cache` GitHub release so the instance starts warm; `startCommand` is `python3 la_ethics_server.py`; health check at `/health`.
-- **Nightly GitHub Actions** (`.github/workflows/nightly-data.yml`, 0900 UTC / ~3 AM Central): seeds cache from release → re-downloads current cycle → re-tags party labels → builds entities + insights → uploads refreshed `.json.gz` back to release → runs incremental COH scrape → commits `ethics_coh_cache.json` → push triggers Render auto-deploy.
+- **Nightly GitHub Actions** (`.github/workflows/nightly-data.yml`, 08:17 UTC / ~2–3 AM Central; kept off the top of the hour, where GitHub's scheduler started it 6–10 hours late): seeds cache from release → re-downloads current cycle → scrapes new/unsettled election dates → builds entities → re-tags party labels + transfers → rebuilds the candidate index, money-wins, edge lists, per-filer activity, cycle aggregates, donor entities, insights and the static API twins → runs both parity gates → uploads refreshed `.json.gz` back to the release → publishes the pay-to-play export → runs the incremental COH scrape → commits `ethics_coh_cache.json`, the three election files, `la_money_wins.json` and `la_filer_media.json` → push triggers Render auto-deploy.
+- **GitHub Pages** (`.github/workflows/deploy-pages.yml`, finance.charliestephens.xyz): the server-less twin. Runs on push to `main` and after every successful nightly or election re-scrape: `fetch_cache_assets.py` → `build_pages_site.py` (refuses to assemble an incomplete site) → deploy. `actions/deploy-pages` waits at most 10 minutes per attempt (it clamps a larger `timeout`), so the deploy is attempted up to three times, pausing between attempts because every attempt shares one deployment ID (the commit SHA) and a retry can be hit by the previous attempt's cancel.
+- **Election re-scrape** (`.github/workflows/rescrape-elections.yml`, manual): full-history SoS scrape; see "Election results" above.
+- **CI** (`.github/workflows/ci.yml`): the unit suite on every push/PR.
 
 ## Key Constraints
 

@@ -3,13 +3,16 @@
 #   1. Seeds .la_cache/ from the rolling `data-cache` GitHub release
 #   2. Re-downloads the current-cycle contributions/expenditures/loans
 #      (plus any missing historical bundles — one-time backfill)
-#   3. Builds the entity table, then retags records (party + isTransfer),
+#   3. Scrapes new + still-unsettled election dates from the SoS portal
+#      (incremental — a handful of requests on a quiet night)
+#   4. Builds the entity table, then retags records (party + isTransfer),
 #      then rebuilds the candidate career index and insight blocks from the
 #      freshly tagged records — totals recalculated nightly, transfer-aware
-#   4. Uploads refreshed cache snapshots back to the release (--clobber)
-#   5. Runs an incremental COH scrape (new filers + 30-day stale recheck)
-#   6. Commits ethics_coh_cache.json if changed -> push -> Render auto-deploys,
-#      and the deploy's buildCommand re-bakes the warm cache into the image.
+#   5. Uploads refreshed cache snapshots back to the release (--clobber)
+#   6. Runs an incremental COH scrape (new filers + 30-day stale recheck)
+#   7. Commits the COH cache, election data, money-wins and airtime if changed
+#      -> push -> Render auto-deploys (its buildCommand re-bakes the warm cache
+#      into the image); this run's completion triggers the Pages deploy.
 #
 # The COH step is self-completing: it processes top-raised-first and saves
 # incrementally, so even if the first runs hit the step timeout, each night
@@ -20,7 +23,10 @@ name: Nightly data refresh
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 9 * * *'   # nightly, 3-4am Central
+    # Nightly, ~2-3am Central. Deliberately off the top of the hour: at
+    # '0 9 * * *' GitHub's scheduler queue started this run 6-10 hours late
+    # every day (15:23-19:28 UTC across Nov 5-14, 2026).
+    - cron: '17 8 * * *'
 
 concurrency:
   group: nightly-data
@@ -37,9 +43,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       PYTHONUNBUFFERED: "1"   # live log lines, not minutes-late chunks
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -61,6 +67,20 @@ jobs:
 
       - name: Refresh contribution/expenditure/loan caches
         run: python refresh_la_cache.py
+
+      - name: Refresh election results (incremental)
+        # New election dates, plus ones still moving: upcoming, held in the
+        # last 45 days (unofficial -> certified), or scraped before the vote
+        # with no outcome recorded (build_election_results.dates_to_scrape).
+        # Settled history is skipped, so a quiet night is one request. Runs
+        # before everything that joins races: entities, money-wins, the Races
+        # static twin. A partial re-scrape is discarded inside the script, and
+        # it only writes when something changed. Non-fatal: if the SoS portal
+        # is down the committed copies stay. Committed below.
+        continue-on-error: true
+        run: |
+          python build_election_results.py
+          python build_election_lookup.py
 
       - name: Build canonical entity table
         # Joins the fresh records to party/COH/career/race data once, centrally.
@@ -97,9 +117,9 @@ jobs:
         # Per-filer TV/radio dollars + FCC political-file bookings, published
         # nightly by the Lousiana-DMAs repo (build_committees_page.py →
         # data/filer_media.json) and shown on each campaign profile. That
-        # rebuild runs at 11:17 UTC, after this one, so this picks up the
-        # previous night's copy. Committed below. Non-fatal: on any failure
-        # (site down, bad JSON) the committed copy stays.
+        # rebuild is scheduled for 11:17 UTC, after this one, so a punctual
+        # run picks up the previous night's copy. Committed below. Non-fatal:
+        # on any failure (site down, bad JSON) the committed copy stays.
         continue-on-error: true
         run: |
           curl -fsSL --retry 3 --max-time 60 \
@@ -202,23 +222,30 @@ jobs:
         # with atomic writes, so a TERM here loses at most the in-flight filer.
         run: timeout --signal=TERM --kill-after=60 115m python fetch_ethics_coh.py --recheck 30 || true
 
-      - name: Commit COH cache if changed
+      - name: Commit refreshed data if changed
         if: always()
         run: |
           # Never commit a corrupt cache: if the JSON doesn't parse (e.g. the
           # scrape was killed mid-write), restore the last good version.
           python -c "import json; json.load(open('ethics_coh_cache.json'))" \
             || git checkout -- ethics_coh_cache.json
+          # Same for the election files, which are committed as a set: the
+          # lookup is derived from the results, the results from the raw
+          # candidacies.
+          python -c "import gzip, json; json.load(gzip.open('la_candidacies_raw.json.gz', 'rt')); json.load(open('la_election_results.json')); json.load(open('la_election_lookup.json'))" \
+            || git checkout -- la_candidacies_raw.json.gz la_election_results.json la_election_lookup.json
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # la_money_wins.json is regenerated above from the fresh index, and
-          # la_filer_media.json pulled from Airwaves; commit them alongside the
-          # COH cache so Render + Pages ship the refreshed copies.
-          git add ethics_coh_cache.json la_money_wins.json la_filer_media.json
+          # la_money_wins.json is regenerated above from the fresh index,
+          # la_filer_media.json pulled from Airwaves, and the election files
+          # scraped from the SoS portal; commit them alongside the COH cache so
+          # Render + Pages ship the refreshed copies.
+          git add ethics_coh_cache.json la_money_wins.json la_filer_media.json \
+            la_candidacies_raw.json.gz la_election_results.json la_election_lookup.json
           if git diff --cached --quiet; then
-            echo "COH cache, money-wins + airtime unchanged — nothing to commit."
+            echo "COH cache, elections, money-wins + airtime unchanged — nothing to commit."
           else
-            git commit -m "Nightly COH cache + money-wins + airtime refresh"
+            git commit -m "Nightly COH cache + elections + money-wins + airtime refresh"
             # --autostash: tolerate any stray working-tree changes so a push
             # race with daytime merges can't strand the night's progress again
             git pull --rebase --autostash origin main
