@@ -19,6 +19,8 @@ release is present (otherwise they're skipped). Force the gates with
 | File | What it covers | Needs data release? |
 |---|---|---|
 | `tests/test_server_units.py` | `la_ethics_server.py` pure helpers (name normalization, office classification, cycle/date math, ZIP→state, party lookup) and the **races / search / overview / industry** payload builders | No — committed root artifacts only |
+| `tests/test_election_results.py` | `build_election_results.py`'s incremental scrape: which election dates get (re)fetched, the partial-fetch guard, date replacement, and `main()` end to end against a fake portal | No |
+| `tests/test_money_wins.py` | `build_money_wins.py`: cycle/tier mapping, the through-election-month money metric, race reconstruction, and the invariants of the committed `la_money_wins.json` | No |
 | `tests/test_frontend_units.mjs` | The dashboard's pure JS, extracted from `louisiana-campaign-finance.html`: the **Races-tab office-importance ordering** (`_officeRank` / district sort), date helpers, anchors, money/outcome formatting, HTML escaping | No |
 | `tests/test_static_api_units.mjs` | `static_api.js` building blocks: `normName` / `wsNorm` (cross-checked against the server's `_norm_name`), party-office detection | No |
 | `test_static_parity.py` | Live API == static artifacts (existing gate) | **Yes** |
@@ -30,7 +32,7 @@ the nightly workflow, where the data release is seeded into `.la_cache/`.
 
 ## How the JS unit tests work
 
-The dashboard ships as one ~7,500-line HTML file with no build step, so the pure
+The dashboard ships as one ~10,400-line HTML file with no build step, so the pure
 helpers are extracted by name (`tests/_extract.mjs` brace-matches the
 declaration and evaluates it in isolation). This only works for self-contained
 functions with no DOM/global dependencies — exactly the logic worth unit-testing

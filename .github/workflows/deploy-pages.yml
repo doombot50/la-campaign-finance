@@ -12,9 +12,9 @@
 # files or artifacts), so a flaky release download can never publish a
 # silently-broken deploy — the previous good deploy just stays live.
 #
-# The deploy step is retried once (see below): GitHub's Pages backend
+# The deploy step is retried twice (see below): GitHub's Pages backend
 # occasionally leaves a deployment in `deployment_queued` until the action's
-# poll timeout, which used to mean one platform flake = a full day of stale
+# poll timeout, which otherwise means one platform flake = a full day of stale
 # data, since nothing re-runs this workflow until the next nightly.
 
 name: Deploy Pages site
@@ -44,13 +44,13 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      # Fall back to the retry's URL — when the first attempt times out its
+      # Fall back to the retries' URL — when an attempt times out its
       # page_url output is empty.
-      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url || steps.deployment_final.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -66,28 +66,41 @@ jobs:
         run: python build_pages_site.py
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
-      # First attempt. `continue-on-error` keeps a timeout from failing the job
-      # outright so the retry below gets a turn; the retry re-fails the job for
-      # real if it also can't publish.
+      # Up to three attempts. deploy-pages waits at most 10 minutes for a
+      # deployment (it clamps any larger `timeout`), then cancels it and fails.
+      # Each invocation creates a fresh Pages deployment from the already-
+      # uploaded artifact, so re-running it is safe (not a double-publish).
+      #
+      # Every attempt in a run shares one deployment ID — the commit SHA — and
+      # the cancel is addressed to that ID. A retry started straight after a
+      # timeout has come back "Deployment cancelled" within seconds (Nov 6,
+      # 2026), so each retry first waits for the previous cancel to land.
+      # `continue-on-error` keeps a failed attempt from failing the job so the
+      # next one gets a turn; the last attempt fails the job for real.
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         continue-on-error: true
-        with:
-          # 20 min instead of the action's 10 — Pages' queue is sometimes just
-          # slow rather than stuck, and waiting is cheaper than a re-deploy.
-          timeout: 1200000
 
-      # Retry once. Each invocation creates a *fresh* Pages deployment from the
-      # already-uploaded artifact, and the action cancels the deployment it gave
-      # up on, so re-running it is safe (not a double-publish).
+      - name: Let the cancelled deployment settle
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 90
+
       - name: Deploy to GitHub Pages (retry)
         id: deployment_retry
         if: steps.deployment.outcome == 'failure'
-        uses: actions/deploy-pages@v4
-        with:
-          timeout: 1200000
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+
+      - name: Let the cancelled deployment settle (again)
+        if: steps.deployment_retry.outcome == 'failure'
+        run: sleep 90
+
+      - name: Deploy to GitHub Pages (final retry)
+        id: deployment_final
+        if: steps.deployment_retry.outcome == 'failure'
+        uses: actions/deploy-pages@v5
