@@ -1168,6 +1168,17 @@
   .race-office { font-weight: 600; font-size: 13px; color: var(--text); }
   .race-date   { font-size: 11px; color: var(--muted); margin-left: 8px; }
   .race-cand-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  /* Federal races: FEC reporters, no Board of Ethics money shown */
+  .race-fed-note { padding: 7px 14px; font-size: 11px; color: var(--muted);
+    border-bottom: 1px solid var(--border); font-style: italic; }
+  a.fec-link { color: var(--muted); font-size: 11px; text-decoration: underline dotted; white-space: nowrap; }
+  a.fec-link:hover { color: var(--text); }
+  /* Career tab: someone who ran for federal office */
+  .camp-fed-note { margin: 0 0 14px; padding: 10px 14px; border-left: 3px solid var(--accent);
+    background: var(--accent-bg); border-radius: 0 6px 6px 0; font-size: 12px;
+    line-height: 1.55; color: var(--text-2); }
+  .camp-fed-note a { color: inherit; }
+  .camp-cycle-offices { font-size: 11px; color: var(--muted); margin: -12px 0 18px; line-height: 1.5; }
   .race-cand-table th {
     text-align: left; padding: 6px 12px 4px;
     font-size: 10px; font-weight: 600; color: var(--muted);
@@ -2422,7 +2433,7 @@
             <option value="">All Years</option>
           </select>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)">
-            Sort:
+            <span id="races-sort-label">Sort:</span>
             <button class="races-sort-btn active" data-rsort="raised" onclick="_setRacesSort(this)">Raised</button>
             <button class="races-sort-btn" data-rsort="coh" onclick="_setRacesSort(this)">Cash on Hand</button>
           </div>
@@ -2433,9 +2444,9 @@
         This dashboard is built on Louisiana Board of Ethics filings — it is <strong>not</strong> an FEC tool.
         Federal candidates report their campaign contributions and spending to the
         <a href="https://www.fec.gov" target="_blank" rel="noopener">Federal Election Commission</a>,
-        which is not included. Any dollar figures shown below appear <em>only</em> because the candidate
-        also held or sought a Louisiana <em>state</em> office subject to the Board of Ethics; they do
-        not reflect federal campaign fundraising.
+        which is not included, so these races show ballot results only. Each candidate links to their
+        FEC filings. A candidate's profile may still show money from earlier Louisiana <em>state</em>
+        campaigns — that is not federal fundraising.
       </div>
       <div id="races-loading" style="display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px">
         Loading races…
@@ -8583,7 +8594,11 @@ async function fetchCareerData(name) {
           raisedEl.style.textDecoration = '';
         }
         document.getElementById('camp-ct-spent').textContent   = formatMoney(fin.total_spent  || 0);
-        document.getElementById('camp-ct-cycles').textContent  = `${n} cycle${n === 1 ? '' : 's'} of history`;
+        // Someone who ran federally: these are state-campaign totals only.
+        const ranFed = (_careerData.races || []).some(r => _isFederalOffice(r.office));
+        document.getElementById('camp-ct-cycles').textContent  =
+          `${n} cycle${n === 1 ? '' : 's'} of ${ranFed ? 'state-campaign ' : ''}history` +
+          (ranFed ? ' · federal money is reported to the FEC' : '');
         strip.style.display = '';
       }
       // Certified COH from ethics annual filing. The stat is always visible:
@@ -8721,6 +8736,68 @@ function renderCampEdges() {
   el.innerHTML = `<div class="edge-grid">${panels.join('')}</div>`;
 }
 
+// Career cycle key ("2016-2019") → the distinct non-federal offices this person
+// was on the ballot for in that cycle, primary/runoff suffixes stripped.
+function _careerCycleOffices(races, cycleKeys) {
+  const out = {};
+  for (const key of cycleKeys) {
+    const m = (key || '').match(/^(\d{4})-(\d{4})$/);
+    if (!m) continue;
+    const lo = +m[1], hi = +m[2], seen = new Set();
+    for (const r of races) {
+      const p = (r.date || '').split('/');
+      const yr = p.length === 3 ? +p[2] : NaN;
+      if (!(yr >= lo && yr <= hi) || _isFederalOffice(r.office)) continue;
+      const base = (r.office || '')
+        .replace(/\s*-\s*(?:Republican|Democratic|Libertarian|Green|Independent|Other) Party$/i, '')
+        .replace(/\s+--\s+.*/, '').trim();
+      if (base) seen.add(base);
+    }
+    out[key] = [...seen];
+  }
+  return out;
+}
+
+// The federal caveat on a profile: shown when this person ran for President,
+// U.S. Senate or U.S. House. That money is reported to the FEC, so the chart
+// below holds only Louisiana state campaigns — labelled cycle by cycle so an
+// old legislative account isn't mistaken for a weak federal one.
+function _renderCampFederalNote(career, cycleOffices, labels = [], shortLabels = []) {
+  const note = document.getElementById('camp-career-fednote');
+  const cap  = document.getElementById('camp-career-cycle-offices');
+  if (!note || !cap) return;
+  const fed = {};   // base federal office → [years]
+  for (const r of (career && career.races) || []) {
+    if (!_isFederalOffice(r.office)) continue;
+    const base = (r.office || '').replace(/\s+--\s+.*/, '')
+      .replace(/-(?:Republican|Democratic|Libertarian|Green|Independent|Other) Party$/i, '').trim();
+    const p = (r.date || '').split('/');
+    const yr = p.length === 3 ? p[2] : '';
+    (fed[base] = fed[base] || new Set()).add(yr);
+  }
+  const offices = Object.keys(fed);
+  if (!offices.length) { note.style.display = 'none'; cap.style.display = 'none'; return; }
+  const ran = offices.map(o => `${escHtml(o)} (${[...fed[o]].filter(Boolean).sort().join(', ')})`).join('; ');
+  const name = (career && (career.name || career.financial?.name)) || _campName || '';
+  const hasState = labels.length > 0;
+  note.innerHTML = `<strong style="color:var(--gold)">Federal fundraising is not shown.</strong>
+    Ran for ${ran}. Federal campaigns report to the
+    <a href="${_fecSearchUrl(name, offices[0])}" target="_blank" rel="noopener noreferrer">Federal Election Commission ↗</a>,
+    not the Louisiana Board of Ethics. ${hasState
+      ? 'The figures below come <em>only</em> from Louisiana state campaigns and accounts — they are not this candidate\'s federal fundraising and shouldn\'t be compared with it.'
+      : 'This profile has no Louisiana state campaign money.'}`;
+  note.style.display = '';
+  if (hasState) {
+    cap.innerHTML = 'By cycle: ' + labels.map((l, i) => {
+      const offs = cycleOffices[l] || [];
+      return `<span style="white-space:nowrap">${escHtml(shortLabels[i] || l)} — ${offs.length ? escHtml(offs.join(', ')) : 'no state race on file'}</span>`;
+    }).join(' · ');
+    cap.style.display = '';
+  } else {
+    cap.style.display = 'none';
+  }
+}
+
 function renderCampCareer() {
   if (!window.Chart) { ensureChart().then(renderCampCareer); return; }
   renderCampEdges();   // lifetime giving/receiving — independent of cycle/race data
@@ -8734,6 +8811,7 @@ function renderCampCareer() {
     empty.style.display = hasEdges ? 'none' : '';
     racesEl.innerHTML = '';
     if (racesHdr) racesHdr.style.display = 'none';
+    _renderCampFederalNote(null, {});
     return;
   }
   empty.style.display = 'none';
@@ -8767,6 +8845,12 @@ function renderCampCareer() {
     const m = l.match(/^(\d{4})-(\d{4})$/);
     return m ? `${m[1]}–${m[2].slice(2)}` : l;
   });
+
+  // Which state office each cycle's money was raised for. Someone now in
+  // federal office still has real state-era figures here; without the office
+  // they read as a (tiny) congressional campaign.
+  const cycleOffices = _careerCycleOffices(_careerData.races || [], activeLabels);
+  _renderCampFederalNote(_careerData, cycleOffices, activeLabels, shortLabels);
 
   // Inline plugin: draw dollar value above each bar so small bars stay readable
   const barValuePlugin = {
@@ -8812,6 +8896,11 @@ function renderCampCareer() {
         tooltip: {
           callbacks: {
             title: items => activeLabels[items[0].dataIndex] || items[0].label,
+            afterTitle: items => {
+              const offs = cycleOffices[activeLabels[items[0].dataIndex]];
+              return offs && offs.length ? 'State race: ' + offs.join(', ')
+                                         : 'No state race on file this cycle';
+            },
             label: c => ` ${c.dataset.label}: ${formatMoney(c.raw)}`
           }
         }
@@ -8882,6 +8971,7 @@ function renderCampCareer() {
       <div class="race-office">
         <div>${escHtml(g.base)}</div>
         ${g.district ? `<div class="race-office-sub">${escHtml(g.district)}</div>` : ''}
+        ${_isFederalOffice(g.base) ? `<div class="race-office-sub">Federal race — fundraising reported to the FEC, not shown here</div>` : ''}
       </div>
       <div class="race-outcome">
         <div><span class="wl-badge ${cls}">${label}</span>${via}</div>
@@ -8975,6 +9065,19 @@ function _raceDistrictNum(office) {
   m = o.match(/DISTRICT\s+([A-Z])\b/);            // lettered seats (e.g. PSC "District E")
   if (m) return m[1].charCodeAt(0) - 64;
   return 9999;                                     // at-large / unnumbered sorts last in its tier
+}
+// Federal offices (President, U.S. Senate, U.S. House) report fundraising to
+// the FEC, not the Louisiana Board of Ethics — this dashboard has none of it.
+function _isFederalOffice(office) {
+  const r = _officeRank(office)[0];
+  return r >= 1 && r <= 3;
+}
+// FEC candidate search for a federal candidate. House/Senate candidates are
+// filtered to Louisiana; presidential candidates are not state-bound.
+function _fecSearchUrl(name, office) {
+  const pres = _officeRank(office)[0] === 1;
+  return 'https://www.fec.gov/data/candidates/?q=' + encodeURIComponent(name || '') +
+         (pres ? '' : '&state=LA');
 }
 function _officeRank(office) {
   const o = (office || '').toUpperCase();
@@ -9085,7 +9188,10 @@ function _renderRacesData(data) {
 
   // Sort candidates within each race by the active sort key; tag office rank.
   races = races.map(race => {
+    const federal = race.federal ?? _isFederalOffice(race.office);
     const cands = [...race.candidates].sort((a, b) => {
+      // Federal races carry no Ethics money (FEC reporters) — order by votes.
+      if (federal) return (b.vote_pct ?? -1) - (a.vote_pct ?? -1);
       if (_racesSort === 'coh') {
         // Candidates with COH data float up; ties broken by raised
         const ca = a.coh_ending ?? -1, cb = b.coh_ending ?? -1;
@@ -9127,6 +9233,9 @@ async function loadRaces(force) {
   // tool) — surface that caveat whenever the Federal view is active.
   const fedNote = document.getElementById('races-federal-note');
   if (fedNote) fedNote.style.display = (officeFilter === 'federal') ? 'block' : 'none';
+  // Raised / Cash-on-Hand sorting has nothing to sort on in federal races.
+  const sortBox = document.getElementById('races-sort-label')?.parentElement;
+  if (sortBox) sortBox.style.display = (officeFilter === 'federal') ? 'none' : 'flex';
   const yearSel      = document.getElementById('races-year-filter');
   const desiredYear  = yearSel.value;   // preserve the user's pick across office changes
 
@@ -9165,6 +9274,7 @@ async function loadRaces(force) {
 }
 
 function renderRaceCard(race) {
+  if (race.federal ?? _isFederalOffice(race.office)) return _renderFederalRaceCard(race);
   const cands = race.candidates || [];
   // Show COH column only if any candidate in this race has certified COH data
   const hasCoh = cands.some(c => c.coh_ending != null);
@@ -9212,6 +9322,43 @@ function renderRaceCard(race) {
         <th style="text-align:right">Spent</th>
         ${hasCoh ? '<th style="text-align:right">Cash on Hand</th>' : ''}
         <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+// Federal race card: ballot results only. These candidates report to the FEC,
+// so any Board of Ethics figures would be leftovers from a state campaign
+// (or $0) — comparing them across the field ranks people by the wrong money.
+// Each row links out to the candidate's FEC filings instead.
+function _renderFederalRaceCard(race) {
+  const cands = race.candidates || [];
+  const rows = cands.map(c => {
+    const pct = c.vote_pct != null ? c.vote_pct.toFixed(1) + '%' : '—';
+    const won = (c.outcome||'').toUpperCase().includes('ELECT');
+    return `<tr style="${won ? 'background:rgba(22,163,74,.04)' : ''}">
+      <td style="font-weight:${won?'600':'400'}"><span class="contributor-link" data-candidate="${escHtml(c.name)}" data-filer="${c.filer_number||''}" onclick="showCampaignProfile(this.dataset.candidate,'career',this.dataset.filer)" title="View ${escHtml(c.name)}'s profile">${escHtml(c.name)}</span></td>
+      <td data-label="Party">${partyBadge(c.party)}</td>
+      <td data-label="Outcome" class="${outcomeClass(c.outcome)}">${outcomeLabel(c.outcome)}</td>
+      <td data-label="Vote %" style="text-align:right">${pct}</td>
+      <td data-label="Fundraising" style="text-align:right"><a class="fec-link" href="${_fecSearchUrl(c.name, race.office)}" target="_blank" rel="noopener noreferrer" title="Federal campaigns report to the Federal Election Commission — view ${escHtml(c.name)}'s FEC filings">Reports to FEC ↗</a></td>
+    </tr>`;
+  }).join('');
+  return `<div class="race-card" id="${_raceAnchorId(race.date, race.office)}">
+    <div class="race-card-header">
+      <span><span class="race-office">${race.office}</span><span class="race-date">${race.date}</span></span>
+      <span style="font-size:10px;color:var(--muted)">${cands.length} candidate${cands.length!==1?'s':''}
+        <a href="#/race/${encodeURIComponent(race.date)}/${encodeURIComponent(race.office)}"
+           style="margin-left:6px;color:var(--muted);font-size:9px;text-decoration:underline dotted" title="Permanent link to this race — copy the URL to share">permalink</a>
+      </span>
+    </div>
+    <div class="race-fed-note">Federal race — campaign money is reported to the FEC, not the Louisiana Board of Ethics, so none is shown here.</div>
+    <table class="race-cand-table m-cards">
+      <thead><tr>
+        <th>Candidate</th><th>Party</th><th>Outcome</th>
+        <th style="text-align:right">Vote %</th>
+        <th style="text-align:right">Fundraising</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -10373,8 +10520,10 @@ async function _ovOpenElection(year) {
       </div>
       <!-- Career tab — multi-cycle financials + race history -->
       <div id="camp-content-career" style="display:none;padding:16px 20px">
+        <div id="camp-career-fednote" class="camp-fed-note" style="display:none"></div>
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Fundraising by Election Cycle</div>
         <div style="position:relative;height:180px;margin-bottom:20px"><canvas id="camp-career-chart"></canvas></div>
+        <div id="camp-career-cycle-offices" class="camp-cycle-offices" style="display:none"></div>
         <!-- Lifetime giving + receiving edge lists (row-free, from /api/entity-profile) -->
         <div id="camp-career-edges" style="margin-bottom:20px"></div>
         <div id="camp-career-races-hdr" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Election History</div>

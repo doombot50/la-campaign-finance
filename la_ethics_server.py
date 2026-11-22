@@ -750,12 +750,14 @@ def build_races_payload(office_filter='major', year_filter=''):
                     continue
 
                 key = (race_date, office)
+                federal = otype in FEDERAL_TYPES
                 if key not in races_by_key:
                     races_by_key[key] = {
                         'date': race_date,
                         'year': yr,
                         'office': office,
                         'office_type': otype,
+                        'federal': federal,
                         'candidates': [],
                     }
 
@@ -783,6 +785,15 @@ def build_races_payload(office_filter='major', year_filter=''):
                 coh_entry   = _get_ethics_coh(cand_name)
                 if not coh_entry and nk and nk in coh_idx:
                     coh_entry = _ETHICS_COH.get(coh_idx[nk])
+
+                # Federal candidates report to the FEC, not the Board of Ethics.
+                # Whatever the state index holds for this cycle is residue from a
+                # state campaign (an old legislative account winding down, or $0),
+                # and comparing it across a federal field ranks candidates by the
+                # wrong money. Ship no figures; the dashboard links to the FEC.
+                if federal:
+                    raised = spent = borrowed = None
+                    coh_entry = None
                 coh_ending  = coh_entry.get('ending_coh')  if coh_entry else None
                 coh_year    = coh_entry.get('report_year') if coh_entry else None
                 coh_pdf_url = coh_entry.get('pdf_url')     if coh_entry else None

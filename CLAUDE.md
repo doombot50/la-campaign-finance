@@ -185,6 +185,8 @@ The scrape is **incremental and runs nightly** (the "Refresh election results" s
 
 Settled history is skipped, so a quiet night costs one request. A re-scrape **replaces** that date's rows (`replace_date`), and `rescrape_ok` discards it if it has fewer recorded outcomes or under 80% of the rows already held — `fetch()` returns `None` on a transient SoS failure, which would otherwise silently drop candidacies. The script writes nothing when nothing changed (a rewritten `.gz` differs by its header timestamp and would commit every night). `tests/test_election_results.py` covers all of this against a fake portal.
 
+**Federal races carry no money.** Federal candidates report to the FEC, not the Board of Ethics, so `build_races_payload` marks races `federal: true` and ships `raised`/`spent`/`borrowed`/COH as `null` for them; any state-index figure would be leftover state-campaign money (or $0) and ranks the field by the wrong money. The Races tab renders them as ballot results with a "Reports to FEC" link per candidate (`_renderFederalRaceCard`, `_fecSearchUrl`), and a profile with any federal race gets a caveat plus the state office behind each career cycle (`_renderCampFederalNote`, `_careerCycleOffices`). `_isFederalOffice` (frontend) and `FEDERAL_TYPES` (server) are the two federal tests.
+
 Parish qualification ("Vermilion Parish Sheriff") is applied as each date is scraped. Re-qualifying all history means deleting the raw file and scraping every date: the manual `rescrape-elections.yml` workflow (~1–3 hours, with its own >5%-loss guard).
 
 ### "Does Money Win?" data story (`does-money-win.html`)
