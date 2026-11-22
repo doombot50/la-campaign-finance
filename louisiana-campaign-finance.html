@@ -8767,8 +8767,10 @@ function _renderCampFederalNote(career, cycleOffices, labels = [], shortLabels =
   const cap  = document.getElementById('camp-career-cycle-offices');
   if (!note || !cap) return;
   const fed = {};   // base federal office → [years]
+  let latest = null;   // most recent federal candidacy — picks the FEC link
   for (const r of (career && career.races) || []) {
     if (!_isFederalOffice(r.office)) continue;
+    if (!latest || _raceDateSortKey(r.date) > _raceDateSortKey(latest.date)) latest = r;
     const base = (r.office || '').replace(/\s+--\s+.*/, '')
       .replace(/-(?:Republican|Democratic|Libertarian|Green|Independent|Other) Party$/i, '').trim();
     const p = (r.date || '').split('/');
@@ -8782,11 +8784,16 @@ function _renderCampFederalNote(career, cycleOffices, labels = [], shortLabels =
   const hasState = labels.length > 0;
   note.innerHTML = `<strong style="color:var(--gold)">Federal fundraising is not shown.</strong>
     Ran for ${ran}. Federal campaigns report to the
-    <a href="${_fecSearchUrl(name, offices[0])}" target="_blank" rel="noopener noreferrer">Federal Election Commission ↗</a>,
+    <a href="${_fecUrl(name, latest.office, latest.date)}" target="_blank" rel="noopener noreferrer">Federal Election Commission ↗</a>,
     not the Louisiana Board of Ethics. ${hasState
       ? 'The figures below come <em>only</em> from Louisiana state campaigns and accounts — they are not this candidate\'s federal fundraising and shouldn\'t be compared with it.'
       : 'This profile has no Louisiana state campaign money.'}`;
   note.style.display = '';
+  if (!_fecSeats) {   // IDs not loaded yet: re-render with the direct link once they are
+    _loadFecIds().then(seats => {
+      if (seats && _careerData === career) _renderCampFederalNote(career, cycleOffices, labels, shortLabels);
+    });
+  }
   if (hasState) {
     cap.innerHTML = 'By cycle: ' + labels.map((l, i) => {
       const offs = cycleOffices[l] || [];
@@ -9079,6 +9086,46 @@ function _fecSearchUrl(name, office) {
   return 'https://www.fec.gov/data/candidates/?q=' + encodeURIComponent(name || '') +
          (pres ? '' : '&state=LA');
 }
+// FEC candidate IDs (la_fec_candidates.json, built by build_fec_candidates.py)
+// so a federal candidate's link opens their FEC page, not a name search.
+let _fecIdsP = null, _fecSeats = null;
+function _loadFecIds() {
+  if (!_fecIdsP) {
+    _fecIdsP = (STATIC_MODE && typeof StaticAPI !== 'undefined'
+        ? StaticAPI._internals.fetchJSON('la_fec_candidates.json')
+        : fetch('data/la_fec_candidates.json').then(r => (r.ok ? r.json() : null)))
+      .then(d => { _fecSeats = (d && d.seats) || null; return _fecSeats; })
+      .catch(() => null);
+  }
+  return _fecIdsP;
+}
+// Mirrors match() in build_fec_candidates.py — keep the two in step. An ID
+// only when exactly one FEC candidate fits chamber + last name + year (+ first
+// name when needed); anything less falls back to the name search.
+function _fecIdFor(seats, name, office, date) {
+  const o = (office || '').toUpperCase();
+  const seat = /\bU\.?\s*S\.?\s+SENAT|UNITED STATES SENAT/.test(o) ? 'S'
+             : /\bU\.?\s*S\.?\s+REP|UNITED STATES REP|CONGRESS/.test(o) ? 'H' : null;
+  const toks = (name || '').toUpperCase()
+    .replace(/\b(DR|MR|MRS|MS|JR|SR|II|III|IV|ESQ|PHD|MD|HON)\.?\b/g, '')
+    .replace(/[^A-Z\s]/g, ' ').split(/\s+/).filter(Boolean);
+  if (!seat || !toks.length || !seats) return null;
+  let pool = (seats[seat] || {})[toks[toks.length - 1]] || [];
+  const p = (date || '').split('/');
+  const yr = p.length === 3 ? parseInt(p[2], 10) : parseInt((date || '').slice(0, 4), 10) || 0;
+  if (yr) pool = pool.filter(c => c.years.includes(yr) || c.years.includes(yr + 1));
+  let ids = new Set(pool.map(c => c.id));
+  if (ids.size > 1) {
+    pool = pool.filter(c => (c.first || '').split(' ')[0] === toks[0]);
+    ids = new Set(pool.map(c => c.id));
+  }
+  return ids.size === 1 ? [...ids][0] : null;
+}
+function _fecUrl(name, office, date) {
+  const id = _fecIdFor(_fecSeats, name, office, date);
+  return id ? `https://www.fec.gov/data/candidate/${encodeURIComponent(id)}/`
+            : _fecSearchUrl(name, office);
+}
 function _officeRank(office) {
   const o = (office || '').toUpperCase();
   const d = _raceDistrictNum(office);
@@ -9250,7 +9297,10 @@ async function loadRaces(force) {
   try {
     // Always fetch the office's full history; year is filtered client-side so
     // switching years is instant and we can default to the most recent one.
-    const res = await apiFetch(`/api/races?office=${encodeURIComponent(officeFilter)}&year=`);
+    const [res] = await Promise.all([
+      apiFetch(`/api/races?office=${encodeURIComponent(officeFilter)}&year=`),
+      _loadFecIds(),   // FEC IDs for federal cards' direct links (never throws)
+    ]);
     if (!res.ok) throw new Error('Server error ' + res.status);
     _racesData = await res.json();
 
@@ -9342,7 +9392,7 @@ function _renderFederalRaceCard(race) {
       <td data-label="Party">${partyBadge(c.party)}</td>
       <td data-label="Outcome" class="${outcomeClass(c.outcome)}">${outcomeLabel(c.outcome)}</td>
       <td data-label="Vote %" style="text-align:right">${pct}</td>
-      <td data-label="Fundraising" style="text-align:right"><a class="fec-link" href="${_fecSearchUrl(c.name, race.office)}" target="_blank" rel="noopener noreferrer" title="Federal campaigns report to the Federal Election Commission — view ${escHtml(c.name)}'s FEC filings">Reports to FEC ↗</a></td>
+      <td data-label="Fundraising" style="text-align:right"><a class="fec-link" href="${_fecUrl(c.name, race.office, race.date)}" target="_blank" rel="noopener noreferrer" title="Federal campaigns report to the Federal Election Commission — view ${escHtml(c.name)}'s FEC filings">Reports to FEC ↗</a></td>
     </tr>`;
   }).join('');
   return `<div class="race-card" id="${_raceAnchorId(race.date, race.office)}">

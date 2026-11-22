@@ -5,13 +5,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { extract } from './_extract.mjs';
 
 const HTML = join(dirname(fileURLToPath(import.meta.url)), '..', 'louisiana-campaign-finance.html');
 const fe = extract(HTML, {
   consts: ['PARTY_CSS'],
   fns: [
-    '_raceDistrictNum', '_officeRank', '_isFederalOffice', '_fecSearchUrl', '_careerCycleOffices', '_raceDateSortKey', '_electionDateLabel',
+    '_raceDistrictNum', '_officeRank', '_isFederalOffice', '_fecSearchUrl', '_fecIdFor', '_careerCycleOffices', '_raceDateSortKey', '_electionDateLabel',
     '_electionDateShort', '_raceAnchorId', '_cmpRaceYear', 'fmtRaisedShort',
     'outcomeClass', 'outcomeLabel', 'escHtml', 'partyBadge',
     '_runLimit', '_recYear', 'detectDonorType',
@@ -42,6 +43,13 @@ test('_fecSearchUrl: Louisiana filter for Congress, none for President', () => {
     'https://www.fec.gov/data/candidates/?q=Julia%20Letlow&state=LA');
   assert.equal(fe._fecSearchUrl('A B', 'President of the United States'),
     'https://www.fec.gov/data/candidates/?q=A%20B');
+});
+
+test('_fecIdFor: same cases as build_fec_candidates.match', () => {
+  const fix = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'fec_match_cases.json'), 'utf8'));
+  for (const [name, office, date, want, why] of fix.cases)
+    assert.equal(fe._fecIdFor(fix.seats, name, office, date), want, why);
+  assert.equal(fe._fecIdFor(null, 'BILL CASSIDY', 'U. S. Senator', '11/03/2020'), null);
 });
 
 test('_careerCycleOffices: state offices per cycle, federal races left out', () => {

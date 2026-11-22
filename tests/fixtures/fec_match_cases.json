@@ -1,0 +1,30 @@
+{
+  "seats": {
+    "H": {
+      "LETLOW":   [{"id": "H0LA05202", "first": "JULIA BARNHILL", "years": [2020, 2021, 2022, 2024]}],
+      "CARTER":   [{"id": "H6LA02178", "first": "TROY A", "years": [2016, 2021, 2022, 2024]},
+                   {"id": "H8LA02054", "first": "KAREN", "years": [2006, 2008]}],
+      "PETERSON": [{"id": "H8LA02054", "first": "KAREN", "years": [2006, 2008]}],
+      "WILLIAMS": [{"id": "H4LA05171", "first": "PETER", "years": [2014, 2024]}],
+      "SMITH":    [{"id": "H2LA01001", "first": "JOHN", "years": [2022]},
+                   {"id": "H2LA03002", "first": "JANE", "years": [2022]}]
+    },
+    "S": {
+      "CASSIDY":  [{"id": "S4LA00107", "first": "WILLIAM M", "years": [2014, 2020, 2026]}],
+      "LETLOW":   [{"id": "S6LA00999", "first": "JULIA", "years": [2026]}]
+    }
+  },
+  "cases": [
+    ["JULIA LETLOW", "U. S. Representative -- 5th Congressional District", "03/20/2021", "H0LA05202", "odd-year special falls in the next even cycle"],
+    ["JULIA LETLOW", "U. S. Senator", "11/03/2026", "S6LA00999", "chamber picks the right ID for the same person"],
+    ["BILL CASSIDY", "U. S. Senator", "11/03/2020", "S4LA00107", "unique last name: nickname still matches"],
+    ["KAREN CARTER", "U. S. Representative -- 2nd Congressional District", "11/07/2006", "H8LA02054", "year narrows a shared last name"],
+    ["TROY CARTER", "U. S. Representative -- 2nd Congressional District - Democratic Party", "04/24/2021", "H6LA02178", "primary suffix on the office"],
+    ["PETER WILLIAMS", "U. S. Representative -- 5th Congressional District", "11/04/2014", "H4LA05171", "district ignored: FEC keeps only the latest"],
+    ["JOHN SMITH JR", "U. S. Representative -- 1st Congressional District", "11/08/2022", "H2LA01001", "first name breaks a tie; suffix stripped"],
+    ["BOB SMITH", "U. S. Representative -- 1st Congressional District", "11/08/2022", null, "tie with no first-name match: no guess"],
+    ["BILL CASSIDY", "U. S. Senator", "11/04/2008", null, "no FEC candidacy that year"],
+    ["JEFF LANDRY", "Governor", "10/14/2023", null, "not a federal seat"],
+    ["JULIA LETLOW", "President of the United States", "11/05/2024", null, "president is not mapped"]
+  ]
+}
