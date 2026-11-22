@@ -266,7 +266,7 @@ class TestBuildRacesPayload(unittest.TestCase):
 
     def test_race_and_candidate_keys(self):
         race = self.major['races'][0]
-        self.assertEqual(set(race), {'candidates', 'date', 'office', 'office_type', 'year'})
+        self.assertEqual(set(race), {'candidates', 'date', 'federal', 'office', 'office_type', 'year'})
         cand = race['candidates'][0]
         for k in ('name', 'party', 'outcome', 'vote_pct', 'filer_number',
                   'cycle', 'raised', 'spent', 'coh_ending'):
@@ -301,6 +301,22 @@ class TestBuildRacesPayload(unittest.TestCase):
         federal_types = {'us_senate', 'us_house', 'president'}
         self.assertGreater(fed['total'], 0)
         self.assertTrue(all(r['office_type'] in federal_types for r in fed['races']))
+
+    def test_federal_races_carry_no_ethics_money(self):
+        # Federal candidates report to the FEC. Any Board of Ethics figure on
+        # their race would be state-campaign residue, so none is shipped.
+        fed = s.build_races_payload('federal', '')
+        self.assertTrue(all(r['federal'] for r in fed['races']))
+        for r in fed['races']:
+            for c in r['candidates']:
+                for k in ('raised', 'spent', 'borrowed', 'coh_ending',
+                          'coh_year', 'coh_pdf_url', 'coh_report_id'):
+                    self.assertIsNone(c[k], (r['office'], c['name'], k))
+
+    def test_state_races_keep_their_money(self):
+        self.assertTrue(all(r['federal'] is False for r in self.major['races']))
+        self.assertTrue(any(c['raised'] for r in self.major['races']
+                            for c in r['candidates']))
 
     def test_major_and_federal_are_disjoint(self):
         # The Races tab splits federal out of "Major Offices"; a race must land in

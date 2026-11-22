@@ -11,7 +11,7 @@ const HTML = join(dirname(fileURLToPath(import.meta.url)), '..', 'louisiana-camp
 const fe = extract(HTML, {
   consts: ['PARTY_CSS'],
   fns: [
-    '_raceDistrictNum', '_officeRank', '_raceDateSortKey', '_electionDateLabel',
+    '_raceDistrictNum', '_officeRank', '_isFederalOffice', '_fecSearchUrl', '_careerCycleOffices', '_raceDateSortKey', '_electionDateLabel',
     '_electionDateShort', '_raceAnchorId', '_cmpRaceYear', 'fmtRaisedShort',
     'outcomeClass', 'outcomeLabel', 'escHtml', 'partyBadge',
     '_runLimit', '_recYear', 'detectDonorType',
@@ -25,6 +25,36 @@ test('_officeRank: federal offices rank above everything', () => {
   const rep  = fe._officeRank('U. S. Representative -- 3rd Congressional District')[0];
   const gov  = fe._officeRank('Governor')[0];
   assert.ok(pres < sen && sen < rep && rep < gov, `${pres} < ${sen} < ${rep} < ${gov}`);
+});
+
+test('_isFederalOffice: President, U.S. Senate and U.S. House only', () => {
+  for (const o of ['President of the United States', 'United States Senator',
+                   'U. S. Representative -- 3rd Congressional District'])
+    assert.equal(fe._isFederalOffice(o), true, o);
+  for (const o of ['Governor', 'State Senator -- 5th Senatorial District',
+                   'State Representative -- 96th Representative District',
+                   'Vermilion Parish Sheriff', 'Constitutional Amendment', ''])
+    assert.equal(fe._isFederalOffice(o), false, o);
+});
+
+test('_fecSearchUrl: Louisiana filter for Congress, none for President', () => {
+  assert.equal(fe._fecSearchUrl('Julia Letlow', 'U. S. Representative -- 5th Congressional District'),
+    'https://www.fec.gov/data/candidates/?q=Julia%20Letlow&state=LA');
+  assert.equal(fe._fecSearchUrl('A B', 'President of the United States'),
+    'https://www.fec.gov/data/candidates/?q=A%20B');
+});
+
+test('_careerCycleOffices: state offices per cycle, federal races left out', () => {
+  const races = [
+    { date: '10/20/2007', office: 'State Representative -- 82nd Representative District' },
+    { date: '11/17/2007', office: 'State Representative -- 82nd Representative District' },
+    { date: '05/03/2008', office: 'U. S. Representative -- 1st Congressional District-Republican Party' },
+    { date: '11/04/2014', office: 'U. S. Representative -- 1st Congressional District' },
+  ];
+  const out = fe._careerCycleOffices(races, ['2004-2007', '2008-2011', '2012-2015']);
+  assert.deepEqual(out['2004-2007'], ['State Representative']);
+  assert.deepEqual(out['2008-2011'], []);
+  assert.deepEqual(out['2012-2015'], []);
 });
 
 test('_officeRank: full importance ordering is monotonic', () => {
