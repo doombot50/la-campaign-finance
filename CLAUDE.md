@@ -35,6 +35,7 @@ python3 build_filer_lookup.py        # name → filer_number index
 python3 build_entities.py            # canonical entity table (run after refresh)
 python3 build_insights.py            # precomputed war chests, top donors (run after entities)
 python3 build_election_results.py    # incremental SoS scrape → la_candidacies_raw.json.gz + la_election_results.json (nightly; see "Election results" below)
+python3 build_fec_candidates.py      # FEC API → la_fec_candidates.json, Louisiana House/Senate candidates' FEC IDs for direct links (nightly)
 python3 build_election_lookup.py     # la_election_results.json → la_election_lookup.json, the flat win/loss map the dashboard reads (run after results)
 python3 build_donor_entities.py      # donor identity resolution (spelling/initial/nickname clusters) → la_donor_entities.json.gz; feeds insights (nightly, before build_insights)
 python3 build_donor_industries.py    # donor → industry classification
@@ -96,6 +97,7 @@ la_ethics_server.py  (ThreadingHTTPServer, stdlib only)
     ├── la_election_lookup.json          flat win/loss map served by /api/election-results (committed; refreshed nightly)
     ├── la_money_wins.json               "does money win?" story data (committed; refreshed nightly)
     ├── la_filer_media.json              airtime per filer, pulled from Louisiana Airwaves (committed; refreshed nightly)
+    ├── la_fec_candidates.json           FEC candidate IDs for LA House/Senate candidates (committed; refreshed nightly)
     ├── la_filer_lookup.json             name → filer_number (committed)
     ├── la_donor_industries.json         donor → industry (committed)
     ├── la_politicians_lookup.json       party + bio enrichment (committed)
@@ -187,6 +189,8 @@ Settled history is skipped, so a quiet night costs one request. A re-scrape **re
 
 **Federal races carry no money.** Federal candidates report to the FEC, not the Board of Ethics, so `build_races_payload` marks races `federal: true` and ships `raised`/`spent`/`borrowed`/COH as `null` for them; any state-index figure would be leftover state-campaign money (or $0) and ranks the field by the wrong money. The Races tab renders them as ballot results with a "Reports to FEC" link per candidate (`_renderFederalRaceCard`, `_fecSearchUrl`), and a profile with any federal race gets a caveat plus the state office behind each career cycle (`_renderCampFederalNote`, `_careerCycleOffices`). `_isFederalOffice` (frontend) and `FEDERAL_TYPES` (server) are the two federal tests.
 
+Those FEC links go **straight to the candidate's FEC page** when `la_fec_candidates.json` resolves them. `build_fec_candidates.py` pulls every Louisiana House/Senate candidate from the FEC API (nightly, non-fatal, writes only on change, refuses a short fetch) into `seats` → chamber (`H`/`S`) → each last-name token → `[{id, first, years}]`. Keys are by **chamber, not district**: FEC keeps only a candidate's latest district. `match()` there and `_fecIdFor` in the dashboard must stay identical: an ID only when exactly one candidate fits chamber + last name + election year (or year+1, for odd-year specials), with the first name breaking a tie; otherwise `_fecUrl` falls back to the FEC name search. Both run the shared cases in `tests/fixtures/fec_match_cases.json`. About 95% of SoS House/Senate candidacies resolve; the rest are mostly minor candidates who never filed with the FEC. The dashboard loads the file once (`_loadFecIds`) from `data/la_fec_candidates.json` (repo-root fallback on the server, `REQUIRED_ROOT` on Pages).
+
 Parish qualification ("Vermilion Parish Sheriff") is applied as each date is scraped. Re-qualifying all history means deleting the raw file and scraping every date: the manual `rescrape-elections.yml` workflow (~1–3 hours, with its own >5%-loss guard).
 
 ### "Does Money Win?" data story (`does-money-win.html`)
@@ -225,7 +229,7 @@ A standalone, self-contained scrollytelling page (inline CSS/JS, hand-drawn **in
 ### Deployment & CI
 
 - **Render.com** (`render.yaml`): `buildCommand` calls `fetch_cache_assets.py` to pull `.json.gz` files from a `data-cache` GitHub release so the instance starts warm; `startCommand` is `python3 la_ethics_server.py`; health check at `/health`.
-- **Nightly GitHub Actions** (`.github/workflows/nightly-data.yml`, 08:17 UTC / ~2–3 AM Central; kept off the top of the hour, where GitHub's scheduler started it 6–10 hours late): seeds cache from release → re-downloads current cycle → scrapes new/unsettled election dates → builds entities → re-tags party labels + transfers → rebuilds the candidate index, money-wins, edge lists, per-filer activity, cycle aggregates, donor entities, insights and the static API twins → runs both parity gates → uploads refreshed `.json.gz` back to the release → publishes the pay-to-play export → runs the incremental COH scrape → commits `ethics_coh_cache.json`, the three election files, `la_money_wins.json` and `la_filer_media.json` → push triggers Render auto-deploy.
+- **Nightly GitHub Actions** (`.github/workflows/nightly-data.yml`, 08:17 UTC / ~2–3 AM Central; kept off the top of the hour, where GitHub's scheduler started it 6–10 hours late): seeds cache from release → re-downloads current cycle → scrapes new/unsettled election dates → builds entities → re-tags party labels + transfers → rebuilds the candidate index, money-wins, edge lists, per-filer activity, cycle aggregates, donor entities, insights and the static API twins → runs both parity gates → uploads refreshed `.json.gz` back to the release → publishes the pay-to-play export → runs the incremental COH scrape → commits `ethics_coh_cache.json`, the three election files, `la_money_wins.json`, `la_filer_media.json` and `la_fec_candidates.json` → push triggers Render auto-deploy.
 - **GitHub Pages** (`.github/workflows/deploy-pages.yml`, finance.charliestephens.xyz): the server-less twin. Runs on push to `main` and after every successful nightly or election re-scrape: `fetch_cache_assets.py` → `build_pages_site.py` (refuses to assemble an incomplete site) → deploy. `actions/deploy-pages` waits at most 10 minutes per attempt (it clamps a larger `timeout`), so the deploy is attempted up to three times, pausing between attempts because every attempt shares one deployment ID (the commit SHA) and a retry can be hit by the previous attempt's cancel.
 - **Election re-scrape** (`.github/workflows/rescrape-elections.yml`, manual): full-history SoS scrape; see "Election results" above.
 - **CI** (`.github/workflows/ci.yml`): the unit suite on every push/PR.

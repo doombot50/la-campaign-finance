@@ -82,6 +82,15 @@ jobs:
           python build_election_results.py
           python build_election_lookup.py
 
+      - name: Refresh FEC candidate IDs
+        # Louisiana U.S. House/Senate candidates' FEC IDs, so federal race
+        # cards and profiles link straight to each candidate's FEC page
+        # (build_fec_candidates.py). Writes only when the FEC list changed and
+        # refuses a short fetch. Non-fatal: on any failure the committed copy
+        # stays and unmatched links fall back to an FEC name search.
+        continue-on-error: true
+        run: python build_fec_candidates.py
+
       - name: Build canonical entity table
         # Joins the fresh records to party/COH/career/race data once, centrally.
         # Runs BEFORE retag_caches.py so the transfer-flagging pass always has
@@ -240,7 +249,7 @@ jobs:
           # la_filer_media.json pulled from Airwaves, and the election files
           # scraped from the SoS portal; commit them alongside the COH cache so
           # Render + Pages ship the refreshed copies.
-          git add ethics_coh_cache.json la_money_wins.json la_filer_media.json \
+          git add ethics_coh_cache.json la_money_wins.json la_filer_media.json la_fec_candidates.json \
             la_candidacies_raw.json.gz la_election_results.json la_election_lookup.json
           if git diff --cached --quiet; then
             echo "COH cache, elections, money-wins + airtime unchanged — nothing to commit."
